@@ -9,7 +9,7 @@ JSONL ingestion, multiline search, process drainage, capture limits, oversized
 pagination, output envelope budgets, cache cleanup, adapter spans and document
 freshness. Reviews are fallible; the regression tests record the concrete claims.
 
-There are 42 Rust integration tests, 12 offline benchmark-harness tests and 3
+There are 43 Rust integration tests, 15 offline benchmark-harness tests and 3
 Node launcher tests. Actual codeindex and webindex adapter smoke tests are also
 provided in `scripts/check_adapters.py`. The standalone skill validator checks
 bundle structure, links, version agreement and the included MIT license.
@@ -25,3 +25,7 @@ reported input includes cached input; Claude logical input is the sum of uncache
 cache-read and cache-creation input. Output includes reasoning where supplied;
 reasoning is never added again. Missing metrics remain unknown. One run per cell
 cannot establish statistical significance or production task generalization.
+
+A fourth, opt-in task exercises command capture with 1,200 distinct progress
+lines before a failing worker-limit check. Both arms must run the command before
+and after repair. Its check script is immutable under the external grader.

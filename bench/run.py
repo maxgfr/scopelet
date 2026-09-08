@@ -27,6 +27,7 @@ from typing import Any, Iterable
 AGENTS = ("codex", "claude")
 ARMS = ("baseline", "default", "ultra", "shell_control")
 TASKS = ("task1", "task2", "task3")
+ALL_TASKS = (*TASKS, "task4")
 
 
 def csv_values(value: str) -> list[str]:
@@ -86,6 +87,32 @@ def is_expired(expires_at, now):
 
 """,
         )
+
+
+def checks_script() -> str:
+    lines = [
+        "import sys",
+        "sys.path.insert(0, '.')",
+        "from src.app import run_worker_check",
+        "",
+        "for index in range(1200):",
+        "    package = f'packages/service_{index % 17:02d}'",
+        "    test_name = f'test_pipeline_stage_{index % 29:02d}'",
+        "    artifact = f'build/cache/{index:04d}.json'",
+        "    print(f'[{index + 1:04d}/1200] {package}::{test_name} ... ok (artifact={artifact}, cases={index + 3})')",
+        "",
+        "if run_worker_check(0) != []:",
+        "    print('Traceback (most recent call last):')",
+        "    print('  File \\\"src/worker.py\\\", line 4, in worker_count')",
+        "    print('AssertionError: limit=0 must select zero workers; None means default workers')",
+        "    raise SystemExit(1)",
+        "if run_worker_check(None) != ['alpha', 'beta', 'gamma']:",
+        "    print('Traceback (most recent call last):')",
+        "    print('AssertionError: limit=None must retain the default worker set')",
+        "    raise SystemExit(1)",
+        "print('[1201/1200] checks complete ... passed')",
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def create_fixture(root: Path, task: str) -> dict[str, Any]:
@@ -161,6 +188,37 @@ assert normalize_identifier("Already_OK") == "already_ok"
 assert normalize_identifier(" one\\ttwo ") == "one_two"
 print("task3 acceptance passed")
 """
+    elif task == "task4":
+        _write(
+            root / "src/worker.py",
+            """def worker_count(items, limit=None):
+    # The check fixture distinguishes an explicit zero from the None default.
+    if not limit:
+        return list(items)
+    return list(items[:limit])
+""",
+        )
+        _write(
+            root / "src/app.py",
+            """from src.worker import worker_count
+
+def run_worker_check(limit=None):
+    return worker_count(["alpha", "beta", "gamma"], limit)
+""",
+        )
+        _write(root / "checks.py", checks_script())
+        _write(
+            root / "README.md",
+            "Run python3 checks.py once before editing to capture the failing build/test output.\n"
+            "Repair the worker limit behavior through its application call path, then run the same command again.\n",
+        )
+        acceptance = """import sys
+sys.path.insert(0, ".")
+from src.app import run_worker_check
+assert run_worker_check(0) == []
+assert run_worker_check(None) == ["alpha", "beta", "gamma"]
+print("task4 acceptance passed")
+"""
     else:
         raise ValueError(f"unknown task: {task}")
     if task == "task2":
@@ -200,6 +258,18 @@ assert normalize_identifier("Already_OK") == "already_ok"
 assert normalize_identifier(" one\\ttwo ") == "one_two"
 print("task3 acceptance passed")
 """
+    if task == "task4":
+        return """import hashlib
+import sys
+sys.path.insert(0, ".")
+from src.app import run_worker_check
+
+assert run_worker_check(0) == []
+assert run_worker_check(None) == ["alpha", "beta", "gamma"]
+with open("checks.py", "rb") as stream:
+    assert hashlib.sha256(stream.read()).hexdigest() == __CHECKS_HASH__
+print("task4 acceptance passed")
+""".replace("__CHECKS_HASH__", repr(sha256_bytes(checks_script().encode("utf-8"))))
     raise ValueError(f"unknown task: {task}")
 
 
@@ -219,8 +289,10 @@ def prompt_for(agent: str, task: str, arm: str, binary: Path) -> str:
     if arm in ("default", "ultra"):
         method = (
             f"Invoke the copied Scopelet skill explicitly and use scopelet mode {mode}. "
-            f"The executable is in SCOPELET_BIN ({binary}); PATH already includes its directory."
+            f"Run the command through the direct executable \"$SCOPELET_BIN\" ({binary}); do not rely on a login-shell PATH."
         )
+        if task == "task4":
+            method += f" Wrap both checks.py runs with \"$SCOPELET_BIN\" run --mode {mode} -- python3 checks.py."
     elif arm == "shell_control":
         method = "Use a shell control workflow: batch searches and reads up front, then process data locally before printing results. Do not invoke Scopelet."
     else:
@@ -229,6 +301,7 @@ def prompt_for(agent: str, task: str, arm: str, binary: Path) -> str:
         "task1": "Fix the cache expiration behavior so an item expiring at the exact current time is treated as expired. Find the implementation through the application call path and preserve its public interface.",
         "task2": "Use records.jsonl to compute the exact counts, then write answer.json with exactly two keys: failed_count (integer) and failed_by_group (group-name to count mapping).",
         "task3": "Correct normalize_identifier in src/helpers.py for trimming, lowercasing, and collapsing whitespace.",
+        "task4": "Run python3 checks.py once before editing to capture its failing command output. Find the worker implementation through the application call path, fix the explicit-zero versus None behavior, then rerun python3 checks.py.",
     }[task]
     return f"""You are working in the current isolated git workspace.
 {task_text}
@@ -474,6 +547,98 @@ def _shell_tokens(command: str) -> list[str]:
     return tokens
 
 
+def _unwrap_shell_script(command: str) -> str:
+    """Unwrap a leading shell launcher while preserving its script text."""
+    script = command.strip()
+    for _ in range(4):
+        try:
+            tokens = shlex.split(script)
+        except ValueError:
+            return ""
+        if not tokens:
+            return ""
+        executable = Path(tokens[0]).name
+        if executable in ("sh", "bash", "zsh"):
+            try:
+                index = next(index for index, token in enumerate(tokens[1:], 1) if token in ("-c", "-lc", "-ec", "-lec"))
+            except StopIteration:
+                return script
+            if index + 1 >= len(tokens):
+                return ""
+            script = tokens[index + 1]
+            continue
+        return script
+    return script
+
+
+def _split_shell_commands(script: str) -> list[str]:
+    """Split unquoted shell statement operators, excluding heredoc bodies."""
+    segments: list[str] = []
+    current: list[str] = []
+    quote: str | None = None
+    escaped = False
+    heredoc = False
+    index = 0
+    while index < len(script):
+        char = script[index]
+        if escaped:
+            current.append(char)
+            escaped = False
+            index += 1
+            continue
+        if quote == "'":
+            current.append(char)
+            if char == "'":
+                quote = None
+            index += 1
+            continue
+        if quote == '"':
+            current.append(char)
+            if char == '"':
+                quote = None
+            elif char == "\\":
+                escaped = True
+            index += 1
+            continue
+        if char == "\\":
+            current.append(char)
+            escaped = True
+            index += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            current.append(char)
+            index += 1
+            continue
+        if char == "<" and index + 1 < len(script) and script[index + 1] == "<":
+            heredoc = True
+            current.extend((char, char))
+            index += 2
+            continue
+        if char == "\n":
+            if current:
+                segments.append("".join(current).strip())
+                current.clear()
+            if heredoc:
+                break
+            index += 1
+            continue
+        if char == ";" or char == "&" or char == "|":
+            if current:
+                segments.append("".join(current).strip())
+                current.clear()
+            if index + 1 < len(script) and script[index + 1] == char and char in ("&", "|"):
+                index += 2
+            else:
+                index += 1
+            continue
+        current.append(char)
+        index += 1
+    if current:
+        segments.append("".join(current).strip())
+    return [segment for segment in segments if segment]
+
+
 def _command_payload(payload: str) -> str:
     try:
         parsed = json.loads(payload)
@@ -493,21 +658,24 @@ def _command_payload(payload: str) -> str:
 
 def _is_scopelet_invocation(label: str, payload: str) -> bool:
     command = _command_payload(payload)
-    tokens = _shell_tokens(command)
-    if not tokens:
-        return False
     known_subcommands = {"query", "run", "expand", "doctor", "bench", "clean"}
-    executable = Path(tokens[0]).name.lower()
-    if executable in ("scopelet", "scopelet-bin") or tokens[0] in ("$SCOPELET_BIN", "${SCOPELET_BIN}"):
-        args = tokens[1:]
-        if args[:1] == ["--cache-dir"]:
-            args = args[2:]
-        elif args and args[0].startswith("--cache-dir="):
-            args = args[1:]
-        return bool(args) and args[0] in known_subcommands
-    if executable in ("node", "nodejs") and len(tokens) > 2:
-        launcher = Path(tokens[1]).name.lower()
-        return launcher in ("scopelet.mjs", "scopelet.js") and tokens[2] in known_subcommands
+    for segment in _split_shell_commands(_unwrap_shell_script(command)):
+        tokens = _shell_tokens(segment)
+        if not tokens:
+            continue
+        executable = Path(tokens[0]).name.lower()
+        if executable in ("scopelet", "scopelet-bin") or tokens[0] in ("$SCOPELET_BIN", "${SCOPELET_BIN}"):
+            args = tokens[1:]
+            if args[:1] == ["--cache-dir"]:
+                args = args[2:]
+            elif args and args[0].startswith("--cache-dir="):
+                args = args[1:]
+            if bool(args) and args[0] in known_subcommands:
+                return True
+        if executable in ("node", "nodejs") and len(tokens) > 2:
+            launcher = Path(tokens[1]).name.lower()
+            if launcher in ("scopelet.mjs", "scopelet.js") and tokens[2] in known_subcommands:
+                return True
     return False
 
 
@@ -542,11 +710,15 @@ def grade_workspace(
     expected_fixture_hashes: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     started = time.monotonic()
-    if task == "task2":
-        expected_hash = (expected_fixture_hashes or {}).get("records.jsonl")
-        expected_hash = expected_hash or sha256_bytes(records_jsonl().encode("utf-8"))
-        records = workspace / "records.jsonl"
-        if not records.is_file() or sha256_file(records) != expected_hash:
+    readonly_name = {"task2": "records.jsonl", "task4": "checks.py"}.get(task)
+    if readonly_name is not None:
+        expected_hash = (expected_fixture_hashes or {}).get(readonly_name)
+        if expected_hash is None and task == "task2":
+            expected_hash = sha256_bytes(records_jsonl().encode("utf-8"))
+        if expected_hash is None and task == "task4":
+            expected_hash = sha256_bytes(checks_script().encode("utf-8"))
+        readonly_path = workspace / readonly_name
+        if not readonly_path.is_file() or sha256_file(readonly_path) != expected_hash:
             return {
                 "task": task,
                 "grade": "fail",
@@ -554,7 +726,7 @@ def grade_workspace(
                 "exit_code": None,
                 "timed_out": False,
                 "stdout": "",
-                "stderr": "readonly fixture records.jsonl was modified",
+                "stderr": f"readonly fixture {readonly_name} was modified",
                 "duration_seconds": round(time.monotonic() - started, 6),
             }
     with tempfile.TemporaryDirectory(prefix="scopelet-pristine-grader-") as grader_directory:
@@ -831,7 +1003,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.live and args.dry_run:
         parser().error("--live and --dry-run are mutually exclusive")
     agents, arms, tasks = map(csv_values, (args.agents, args.arms, args.tasks))
-    for name, values, allowed in (("agents", agents, AGENTS), ("arms", arms, ARMS), ("tasks", tasks, TASKS)):
+    for name, values, allowed in (("agents", agents, AGENTS), ("arms", arms, ARMS), ("tasks", tasks, ALL_TASKS)):
         unknown = [value for value in values if value not in allowed]
         if unknown:
             parser().error(f"unknown {name}: {', '.join(unknown)}")
@@ -850,6 +1022,12 @@ def main(argv: list[str] | None = None) -> int:
         if not binary.exists():
             parser().error(f"scopelet binary does not exist: {binary}")
         binary = freeze_binary(binary, out)
+    if args.live and skill.is_dir():
+        frozen_skill = out / "skill"
+        if frozen_skill.exists():
+            parser().error("output already has a frozen skill; choose a new campaign directory")
+        shutil.copytree(skill, frozen_skill)
+        skill = frozen_skill
     binary_hash = sha256_file(binary) if binary.is_file() else None
     skill_hashes = fixture_hashes(skill) if skill.is_dir() else {}
     meta = {

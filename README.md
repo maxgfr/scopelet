@@ -97,6 +97,7 @@ cargo run --locked -- bench                      # offline bytes + correctness
 cargo build --release --locked
 python3 bench/run.py --binary target/release/scopelet --dry-run
 python3 bench/run.py --binary target/release/scopelet --live  # calls installed agents
+python3 bench/run.py --binary target/release/scopelet --live --tasks task4 --arms baseline,default,ultra --out bench/runs/commands
 ```
 
 The live harness compares native baseline, the two Scopelet modes and a batched

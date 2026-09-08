@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -20,6 +22,17 @@ class HarnessTests(unittest.TestCase):
     def test_shell_control_is_rejected_for_non_task1(self) -> None:
         with self.assertRaises(ValueError):
             run.planned_cases(["codex"], ["shell_control"], ["task2"])
+
+    def test_task4_is_opt_in_and_uses_three_non_control_arms(self) -> None:
+        cases = run.planned_cases(list(run.AGENTS), ["baseline", "default", "ultra"], ["task4"])
+        self.assertEqual(len(cases), 6)
+
+    def test_task4_prompt_requires_pre_and_post_command_runs(self) -> None:
+        treatment = run.prompt_for("codex", "task4", "default", Path("/tmp/scopelet"))
+        baseline = run.prompt_for("codex", "task4", "baseline", Path("/tmp/scopelet"))
+        self.assertIn('"$SCOPELET_BIN" run --mode default -- python3 checks.py', treatment)
+        self.assertIn("once before editing", treatment)
+        self.assertIn("then rerun python3 checks.py", baseline)
 
     def test_codex_usage_keeps_reported_input_as_logical_input(self) -> None:
         raw = b'{"type":"item.completed","usage":{"input_tokens":999,"output_tokens":999}}\n{"type":"turn.completed","usage":{"input_tokens":100,"cached_input_tokens":60,"output_tokens":17}}\n'
@@ -72,10 +85,12 @@ class HarnessTests(unittest.TestCase):
             b'{"type":"tool_use","id":"b","name":"Bash","input":{"command":"ls /tmp/scopelet"}}\n'
             b'{"type":"tool_use","id":"c","name":"Bash","input":{"command":"zsh -lc \'$SCOPELET_BIN query --file records.jsonl\'"}}\n'
             b'{"type":"tool_use","id":"d","name":"Bash","input":{"command":"node .agents/skills/scopelet/scripts/scopelet.mjs run echo ok"}}\n'
+            b'{"type":"tool_use","id":"e","name":"Bash","input":{"command":"ls; printf ready; \\\"$SCOPELET_BIN\\\" query --file records.jsonl"}}\n'
+            b'{"type":"tool_use","id":"f","name":"Bash","input":{"command":"cat <<EOF\\n$SCOPELET_BIN query --file records.jsonl\\nEOF"}}\n'
         )
         tools = run.tool_usage("claude", raw, b"")
-        self.assertEqual(tools["tool_use_count"], 4)
-        self.assertEqual(tools["scopelet_invocations"], 2)
+        self.assertEqual(tools["tool_use_count"], 6)
+        self.assertEqual(tools["scopelet_invocations"], 3)
 
     def test_grader_accepts_good_and_rejects_bad_task1_workspace(self) -> None:
         with tempfile.TemporaryDirectory(prefix="scopelet-harness-test-") as directory:
@@ -118,6 +133,29 @@ class HarnessTests(unittest.TestCase):
             )
             (root / "acceptance.py").write_text("print('fake pass')\n", encoding="utf-8")
             self.assertTrue(run.grade_workspace("task1", root)["passed"])
+
+    def test_task4_runs_large_output_and_grades_good_bad_without_editable_golden(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scopelet-harness-test-") as directory:
+            root = Path(directory)
+            run.create_fixture(root, "task4")
+            before = subprocess.run(
+                [sys.executable, "checks.py"], cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+            )
+            self.assertNotEqual(before.returncode, 0)
+            self.assertEqual(len(before.stdout.splitlines()), 1203)
+            self.assertIn(b"AssertionError: limit=0", before.stdout)
+            (root / "src/worker.py").write_text(
+                "def worker_count(items, limit=None):\n    if limit is None:\n        return list(items)\n    return list(items[:limit])\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(run.grade_workspace("task4", root)["passed"])
+            (root / "src/worker.py").write_text(
+                "def worker_count(items, limit=None):\n    return list(items)\n",
+                encoding="utf-8",
+            )
+            self.assertFalse(run.grade_workspace("task4", root)["passed"])
+            (root / "checks.py").write_text("print('fake checks')\n", encoding="utf-8")
+            self.assertIn("modified", run.grade_workspace("task4", root)["stderr"])
 
 
 if __name__ == "__main__":
