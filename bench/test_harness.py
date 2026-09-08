@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""Offline tests for the benchmark harness; no agent process is started."""
+
+from __future__ import annotations
+
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+import run
+
+
+class HarnessTests(unittest.TestCase):
+    def test_default_plan_has_twenty_runs_and_shell_control_only_task1(self) -> None:
+        cases = run.planned_cases(list(run.AGENTS), list(run.ARMS), list(run.TASKS))
+        self.assertEqual(len(cases), 20)
+        self.assertTrue(all(case["task"] == "task1" for case in cases if case["arm"] == "shell_control"))
+
+    def test_shell_control_is_rejected_for_non_task1(self) -> None:
+        with self.assertRaises(ValueError):
+            run.planned_cases(["codex"], ["shell_control"], ["task2"])
+
+    def test_codex_usage_keeps_reported_input_as_logical_input(self) -> None:
+        raw = b'{"type":"item.completed","usage":{"input_tokens":999,"output_tokens":999}}\n{"type":"turn.completed","usage":{"input_tokens":100,"cached_input_tokens":60,"output_tokens":17}}\n'
+        usage = run.normalize_usage("codex", raw)
+        self.assertEqual(usage["input_tokens"], 100)
+        self.assertEqual(usage["logical_input_tokens"], 100)
+        self.assertEqual(usage["cache_read_input_tokens"], 60)
+        self.assertEqual(usage["raw_usage"][0]["cached_input_tokens"], 60)
+        self.assertFalse(usage["usage_missing"])
+
+    def test_claude_usage_adds_cache_components_for_logical_input(self) -> None:
+        raw = b'{"type":"result","usage":{"input_tokens":100,"cache_read_input_tokens":60,"cache_creation_input_tokens":20,"output_tokens":17}}\n'
+        usage = run.normalize_usage("claude", raw)
+        self.assertEqual(usage["input_tokens"], 100)
+        self.assertEqual(usage["logical_input_tokens"], 180)
+        self.assertEqual(usage["output_tokens"], 17)
+
+    def test_claude_model_usage_is_fallback_when_result_usage_is_partial(self) -> None:
+        raw = b'{"type":"result","usage":{"output_tokens":17},"modelUsage":{"haiku":{"inputTokens":100,"outputTokens":17,"cacheReadInputTokens":60,"cacheCreationInputTokens":20}}}\n'
+        usage = run.normalize_usage("claude", raw)
+        self.assertEqual(usage["input_tokens"], 100)
+        self.assertEqual(usage["logical_input_tokens"], 180)
+
+    def test_missing_usage_is_null_and_flagged(self) -> None:
+        usage = run.normalize_usage("codex", b'{"type":"message","text":"done"}\n')
+        self.assertIsNone(usage["input_tokens"])
+        self.assertIsNone(usage["output_tokens"])
+        self.assertTrue(usage["usage_missing"])
+
+    def test_tool_usage_deduplicates_lifecycle_events_and_ignores_mentions(self) -> None:
+        raw = (
+            b'{"type":"assistant","text":"Use scopelet for this task"}\n'
+            b'{"type":"item.started","item":{"type":"command_execution","id":"c1","command":"scopelet query --file records.jsonl"}}\n'
+            b'{"type":"item.completed","item":{"type":"command_execution","id":"c1","command":"scopelet query --file records.jsonl"}}\n'
+            b'{"type":"item.started","item":{"type":"command_execution","id":"c2","command":"cat .agents/skills/scopelet/SKILL.md"}}\n'
+        )
+        tools = run.tool_usage("codex", raw, b"stderr mentions scopelet")
+        self.assertEqual(tools["tool_use_count"], 2)
+        self.assertEqual(tools["scopelet_invocations"], 1)
+        self.assertTrue(tools["scopelet_adopted"])
+
+    def test_prose_scopelet_mention_does_not_count_as_adoption(self) -> None:
+        tools = run.tool_usage("claude", b'{"type":"assistant","text":"invoke scopelet"}\n', b"")
+        self.assertEqual(tools["tool_use_count"], 0)
+        self.assertFalse(tools["scopelet_adopted"])
+
+    def test_grader_accepts_good_and_rejects_bad_task1_workspace(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scopelet-harness-test-") as directory:
+            root = Path(directory)
+            run.create_fixture(root, "task1")
+            good = root / "src/cache.py"
+            good.write_text(
+                "def is_expired(expires_at: int, now: int) -> bool:\n    return expires_at <= now\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(run.grade_workspace("task1", root)["passed"])
+            good.write_text(
+                "def is_expired(expires_at: int, now: int) -> bool:\n    return expires_at < now\n",
+                encoding="utf-8",
+            )
+            bad = run.grade_workspace("task1", root)
+            self.assertFalse(bad["passed"])
+            self.assertEqual(bad["grade"], "fail")
+
+    def test_grader_accepts_exact_task2_json(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scopelet-harness-test-") as directory:
+            root = Path(directory)
+            run.create_fixture(root, "task2")
+            expected = {
+                "failed_count": 200,
+                "failed_by_group": {f"group-{i}": 50 for i in range(4)},
+            }
+            (root / "answer.json").write_text(json.dumps(expected), encoding="utf-8")
+            self.assertTrue(run.grade_workspace("task2", root)["passed"])
+            (root / "records.jsonl").write_text("rewritten by agent\n", encoding="utf-8")
+            self.assertFalse(run.grade_workspace("task2", root)["passed"])
+
+    def test_grader_ignores_tampered_visible_acceptance(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scopelet-harness-test-") as directory:
+            root = Path(directory)
+            run.create_fixture(root, "task1")
+            (root / "src/cache.py").write_text(
+                "def is_expired(expires_at: int, now: int) -> bool:\n    return expires_at <= now\n",
+                encoding="utf-8",
+            )
+            (root / "acceptance.py").write_text("print('fake pass')\n", encoding="utf-8")
+            self.assertTrue(run.grade_workspace("task1", root)["passed"])
+
+
+if __name__ == "__main__":
+    unittest.main()

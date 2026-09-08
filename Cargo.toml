@@ -1,0 +1,28 @@
+[package]
+name = "scopelet"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Compute before you send: bounded evidence for coding agents"
+license = "MIT"
+repository = "https://github.com/maxgfr/scopelet"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+ctrlc = { version = "3", features = ["termination"] }
+ignore = "0.4"
+libc = "0.2"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["arbitrary_precision"] }
+sha2 = "0.10"
+tempfile = "3"
+
+[dev-dependencies]
+assert_cmd = "2"
+
+[profile.release]
+lto = "thin"
+strip = true
+

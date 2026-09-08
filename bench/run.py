@@ -1,0 +1,813 @@
+#!/usr/bin/env python3
+"""Run bounded, reproducible Scopelet agent comparisons.
+
+The default mode only writes a campaign plan.  Use --live explicitly to
+start external agent processes.  The harness itself uses only Python's
+standard library so that its measurements do not depend on a Python stack.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Iterable
+
+
+AGENTS = ("codex", "claude")
+ARMS = ("baseline", "default", "ultra", "shell_control")
+TASKS = ("task1", "task2", "task3")
+
+
+def csv_values(value: str) -> list[str]:
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def fixture_hashes(root: Path) -> dict[str, str]:
+    return {
+        str(path.relative_to(root)): sha256_file(path)
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and ".git" not in path.parts
+    }
+
+
+def _write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def records_jsonl() -> str:
+    rows = []
+    for index in range(1000):
+        status = "failed" if index % 10 in (0, 1) else "passed"
+        rows.append(
+            json.dumps(
+                {
+                    "id": index,
+                    "status": status,
+                    "group": f"group-{index % 4}",
+                    "payload": "stable synthetic record",
+                },
+                separators=(",", ":"),
+            )
+        )
+    return "\n".join(rows) + "\n"
+
+
+def _decoys(root: Path) -> None:
+    for index in range(40):
+        _write(
+            root / "decoys" / f"decoy_{index:02d}.py",
+            """# Deliberately similar names keep repository search honest.
+def is_expired(expires_at, now):
+    return expires_at < now
+
+""",
+        )
+
+
+def create_fixture(root: Path, task: str) -> dict[str, Any]:
+    """Create one deterministic task workspace and its independent grader."""
+    (root / "src").mkdir(parents=True, exist_ok=True)
+    if task == "task1":
+        _write(
+            root / "src/cache.py",
+            """def is_expired(expires_at: int, now: int) -> bool:
+    # Boundary behavior is intentionally wrong for this exercise.
+    return expires_at < now
+""",
+        )
+        _decoys(root)
+        _write(
+            root / "README.md",
+            """The cache check used by app.py treats an item expiring exactly at the
+current time as still valid. Correct that boundary behavior while preserving
+the public helper signature and keeping the change small.
+""",
+        )
+        _write(
+            root / "app.py",
+            """from src.cache import is_expired
+
+def should_refresh(expires_at: int, now: int) -> bool:
+    return is_expired(expires_at, now)
+""",
+        )
+        acceptance = """import sys
+sys.path.insert(0, ".")
+from src.cache import is_expired
+
+assert is_expired(9, 10) is True
+assert is_expired(10, 10) is True
+assert is_expired(11, 10) is False
+print("task1 acceptance passed")
+"""
+    elif task == "task2":
+        _write(root / "records.jsonl", records_jsonl())
+        expected = {"failed_count": 200, "failed_by_group": {f"group-{i}": 50 for i in range(4)}}
+        _write(
+            root / "README.md",
+            "Compute exact failed record counts by group from the supplied records.\n"
+            "Write only the required JSON object to answer.json.\n",
+        )
+        acceptance = f"""import json
+expected = {json.dumps(expected, sort_keys=True)}
+with open("answer.json", encoding="utf-8") as stream:
+    actual = json.load(stream)
+assert actual == expected, (actual, expected)
+print("task2 acceptance passed")
+"""
+    elif task == "task3":
+        _write(
+            root / "src/helpers.py",
+            """def normalize_identifier(value: str) -> str:
+    # Correct whitespace handling is the small requested repair.
+    return value.lower().replace(" ", "_")
+""",
+        )
+        _write(
+            root / "README.md",
+            "Correct src/helpers.py so normalize_identifier trims surrounding whitespace,\n"
+            "lowercases, and collapses each run of internal whitespace to one underscore.\n",
+        )
+        acceptance = """import sys
+sys.path.insert(0, ".")
+from src.helpers import normalize_identifier
+
+assert normalize_identifier("  Hello   Scopelet  ") == "hello_scopelet"
+assert normalize_identifier("Already_OK") == "already_ok"
+assert normalize_identifier(" one\\ttwo ") == "one_two"
+print("task3 acceptance passed")
+"""
+    else:
+        raise ValueError(f"unknown task: {task}")
+    if task == "task2":
+        acceptance = 'import json\nwith open("answer.json") as f: answer = json.load(f)\nassert set(answer) == {"failed_count", "failed_by_group"}\nassert isinstance(answer["failed_count"], int)\nprint("shape check passed; exact counts are graded externally")\n'
+    _write(root / "acceptance.py", acceptance)
+    return {"task": task, "expected": "acceptance.py"}
+
+
+def pristine_acceptance_source(task: str) -> str:
+    """Return grader code kept outside the agent workspace."""
+    if task == "task1":
+        return """import sys
+sys.path.insert(0, ".")
+from src.cache import is_expired
+
+assert is_expired(9, 10) is True
+assert is_expired(10, 10) is True
+assert is_expired(11, 10) is False
+print("task1 acceptance passed")
+"""
+    if task == "task2":
+        expected = {"failed_count": 200, "failed_by_group": {f"group-{i}": 50 for i in range(4)}}
+        return f"""import json
+expected = {json.dumps(expected, sort_keys=True)}
+with open("answer.json", encoding="utf-8") as stream:
+    actual = json.load(stream)
+assert actual == expected, (actual, expected)
+print("task2 acceptance passed")
+"""
+    if task == "task3":
+        return """import sys
+sys.path.insert(0, ".")
+from src.helpers import normalize_identifier
+
+assert normalize_identifier("  Hello   Scopelet  ") == "hello_scopelet"
+assert normalize_identifier("Already_OK") == "already_ok"
+assert normalize_identifier(" one\\ttwo ") == "one_two"
+print("task3 acceptance passed")
+"""
+    raise ValueError(f"unknown task: {task}")
+
+
+def skill_copy(root: Path, skill: Path, arm: str) -> None:
+    if arm not in ("default", "ultra"):
+        return
+    for parent in (".agents/skills/scopelet", ".claude/skills/scopelet"):
+        destination = root / parent
+        shutil.copytree(skill, destination, dirs_exist_ok=True)
+
+
+def prompt_for(agent: str, task: str, arm: str, binary: Path) -> str:
+    mode = {
+        "default": "default",
+        "ultra": "ultra",
+    }.get(arm)
+    if arm in ("default", "ultra"):
+        method = (
+            f"Invoke the copied Scopelet skill explicitly and use scopelet mode {mode}. "
+            f"The executable is in SCOPELET_BIN ({binary}); PATH already includes its directory."
+        )
+    elif arm == "shell_control":
+        method = "Use a shell control workflow: batch searches and reads up front, then process data locally before printing results. Do not invoke Scopelet."
+    else:
+        method = "Work directly with the available file and shell tools, inspect the relevant call path, and verify the result. Do not invoke Scopelet."
+    task_text = {
+        "task1": "Fix the cache expiration behavior so an item expiring at the exact current time is treated as expired. Find the implementation through the application call path and preserve its public interface.",
+        "task2": "Use records.jsonl to compute the exact failed count and failed_by_group mapping, then write that JSON object to answer.json.",
+        "task3": "Correct normalize_identifier in src/helpers.py for trimming, lowercasing, and collapsing whitespace.",
+    }[task]
+    return f"""You are working in the current isolated git workspace.
+{task_text}
+{method}
+Inspect only what is needed, make the smallest correct edits, and verify the independent acceptance behavior before finishing.
+Do not ask questions and do not report success until the requested file change is saved.
+"""
+
+
+def command_for(agent: str) -> list[str]:
+    if agent == "codex":
+        return [
+            "codex",
+            "exec",
+            "--ignore-user-config",
+            "--model",
+            "gpt-5.6-luna",
+            "-c",
+            'model_reasoning_effort="low"',
+            "--sandbox",
+            "workspace-write",
+            "--skip-git-repo-check",
+            "--ephemeral",
+            "--json",
+        ]
+    if agent == "claude":
+        return [
+            "claude",
+            "-p",
+            "--model",
+            "claude-haiku-4-5-20251001",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--setting-sources",
+            "",
+            "--strict-mcp-config",
+            "--mcp-config",
+            '{"mcpServers":{}}',
+            "--settings",
+            '{"disableAllHooks":true}',
+            "--permission-mode",
+            "acceptEdits",
+            "--allowedTools",
+            "Read,Write,Edit,Glob,Grep,Bash",
+            "--no-session-persistence",
+        ]
+    raise ValueError(f"unknown agent: {agent}")
+
+
+def _walk_dicts(value: Any) -> Iterable[dict[str, Any]]:
+    if isinstance(value, dict):
+        yield value
+        for child in value.values():
+            yield from _walk_dicts(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _walk_dicts(child)
+
+
+def parse_json_stream(raw: bytes) -> list[dict[str, Any]]:
+    events: list[dict[str, Any]] = []
+    for line in raw.splitlines():
+        try:
+            value = json.loads(line)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if isinstance(value, dict):
+            events.append(value)
+    return events
+
+
+def _number(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _first_number(mapping: dict[str, Any], names: tuple[str, ...]) -> int | None:
+    for name in names:
+        number = _number(mapping.get(name))
+        if number is not None:
+            return number
+    return None
+
+
+def _usage_from(mapping: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "input_tokens": _first_number(mapping, ("input_tokens", "inputTokens", "prompt_tokens")),
+        "output_tokens": _first_number(mapping, ("output_tokens", "outputTokens", "completion_tokens")),
+        "cache_read_input_tokens": _first_number(
+            mapping,
+            ("cache_read_input_tokens", "cache_read_tokens", "cached_input_tokens", "cachedInputTokens", "cacheReadInputTokens"),
+        ),
+        "cache_creation_input_tokens": _first_number(
+            mapping,
+            ("cache_creation_input_tokens", "cache_creation_tokens", "cacheCreationInputTokens"),
+        ),
+        "reasoning_tokens": _first_number(mapping, ("reasoning_tokens", "reasoningTokens", "thinking_tokens")),
+    }
+
+
+def _sum_usages(usages: list[dict[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key in ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "reasoning_tokens"):
+        values = [usage[key] for usage in usages if usage.get(key) is not None]
+        result[key] = sum(values) if values and len(values) == len(usages) else None
+    return result
+
+
+def _outer_usage(event: dict[str, Any]) -> dict[str, Any] | None:
+    candidate = event.get("usage")
+    return candidate if isinstance(candidate, dict) else None
+
+
+def normalize_usage(agent: str, raw: bytes) -> dict[str, Any]:
+    """Normalize the final usage event while preserving absent fields as null.
+
+    Codex's reported input token count already includes cached input. Claude's
+    usage reports cache reads/creation separately, so those are added only to
+    the logical input total for Claude.
+    """
+    events = parse_json_stream(raw)
+    selected_raw: list[dict[str, Any]] = []
+    selected: list[dict[str, Any]] = []
+    if agent == "codex":
+        completed = [
+            _outer_usage(event)
+            for event in events
+            if event.get("type") == "turn.completed" and _outer_usage(event) is not None
+        ]
+        selected_raw = completed
+        selected = [_usage_from(usage) for usage in selected_raw]
+        if selected:
+            usage = _sum_usages(selected)
+        else:
+            fallback = [_outer_usage(event) for event in events if _outer_usage(event) is not None]
+            selected_raw = [fallback[-1]] if fallback else []
+            selected = [_usage_from(selected_raw[0])] if selected_raw else []
+            usage = selected[-1] if selected else _usage_from({})
+    else:
+        result_events = [
+            _outer_usage(event)
+            for event in events
+            if event.get("type") == "result" and _outer_usage(event) is not None
+        ]
+        if result_events:
+            selected_raw = [result_events[-1]]
+            selected = [_usage_from(selected_raw[0])]
+            if selected[0]["input_tokens"] is None or selected[0]["output_tokens"] is None:
+                # Some Claude stream versions put complete accounting in
+                # modelUsage while leaving the outer result partial.
+                models = []
+                for event in events:
+                    model_usage = event.get("modelUsage")
+                    if isinstance(model_usage, dict):
+                        models.extend(candidate for candidate in model_usage.values() if isinstance(candidate, dict))
+                if len(models) == 1:
+                    model_candidate = _usage_from(models[0])
+                    if model_candidate["input_tokens"] is not None and model_candidate["output_tokens"] is not None:
+                        selected_raw = [models[0]]
+                        selected = [model_candidate]
+        else:
+            # Claude can expose modelUsage when the outer result has no usage.
+            models: list[dict[str, Any]] = []
+            for event in events:
+                model_usage = event.get("modelUsage")
+                if isinstance(model_usage, dict):
+                    for candidate in model_usage.values():
+                        if isinstance(candidate, dict):
+                            models.append(candidate)
+            selected_raw = [models[0]] if len(models) == 1 else []
+            selected = [_usage_from(selected_raw[0])] if selected_raw else []
+        usage = selected[-1] if selected else _usage_from({})
+    input_tokens = usage["input_tokens"]
+    output_tokens = usage["output_tokens"]
+    cache_read = usage["cache_read_input_tokens"]
+    cache_creation = usage["cache_creation_input_tokens"]
+    if agent == "claude":
+        parts = [part for part in (input_tokens, cache_read, cache_creation) if part is not None]
+        logical_input = sum(parts) if len(parts) == 3 else None
+    else:
+        logical_input = input_tokens
+    return {
+        "raw_usage": selected_raw,
+        "raw_events_with_usage": len(selected_raw),
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "cache_read_input_tokens": cache_read,
+        "cache_creation_input_tokens": cache_creation,
+        "reasoning_tokens": usage["reasoning_tokens"],
+        "logical_input_tokens": logical_input,
+        "cache_included_in_reported_input": agent == "codex",
+        "usage_missing": not bool(selected_raw) or input_tokens is None or output_tokens is None,
+    }
+
+
+def _tool_invocation(mapping: dict[str, Any]) -> tuple[str, str, str] | None:
+    event_type = mapping.get("type")
+    if not isinstance(event_type, str):
+        return None
+    kind = event_type.lower()
+    if kind == "tool_use":
+        label = str(mapping.get("name") or "tool_use")
+    elif kind == "command_execution":
+        label = "command_execution"
+    elif kind in ("function_call", "function", "tool_call"):
+        label = str(mapping.get("name") or kind)
+    else:
+        return None
+    identifier = mapping.get("id") or mapping.get("tool_use_id") or mapping.get("call_id")
+    payload = mapping.get("input") or mapping.get("arguments") or mapping.get("command") or ""
+    if identifier is None:
+        identifier = sha256_bytes(json.dumps({"label": label, "payload": payload}, sort_keys=True).encode("utf-8"))
+    return str(identifier), label, json.dumps(payload, sort_keys=True) if not isinstance(payload, str) else payload
+
+
+def _is_scopelet_invocation(label: str, payload: str) -> bool:
+    low = f"{label} {payload}".lower()
+    if "cat skill.md" in low or "cat .agents/skills" in low or "cat .claude/skills" in low:
+        return False
+    return (
+        "scopelet_bin" in low
+        or "scopelet" in low.split()
+        or "./scopelet" in low
+        or "/scopelet" in low
+    )
+
+
+def tool_usage(agent: str, stdout: bytes, stderr: bytes) -> dict[str, Any]:
+    del agent, stderr
+    calls: dict[str, tuple[str, str]] = {}
+    for event in parse_json_stream(stdout):
+        for mapping in _walk_dicts(event):
+            invocation = _tool_invocation(mapping)
+            if invocation is None:
+                continue
+            identifier, label, payload = invocation
+            calls.setdefault(identifier, (label, payload))
+    counts: defaultdict[str, int] = defaultdict(int)
+    scopelet_hits = 0
+    for label, payload in calls.values():
+        counts[label] += 1
+        if _is_scopelet_invocation(label, payload):
+            scopelet_hits += 1
+    return {
+        "tool_use_count": len(calls),
+        "tool_counts": dict(sorted(counts.items())),
+        "scopelet_invocations": scopelet_hits,
+        "scopelet_adopted": scopelet_hits > 0,
+    }
+
+
+def grade_workspace(
+    task: str,
+    workspace: Path,
+    timeout: float = 15.0,
+    expected_fixture_hashes: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    started = time.monotonic()
+    if task == "task2":
+        expected_hash = (expected_fixture_hashes or {}).get("records.jsonl")
+        expected_hash = expected_hash or sha256_bytes(records_jsonl().encode("utf-8"))
+        records = workspace / "records.jsonl"
+        if not records.is_file() or sha256_file(records) != expected_hash:
+            return {
+                "task": task,
+                "grade": "fail",
+                "passed": False,
+                "exit_code": None,
+                "timed_out": False,
+                "stdout": "",
+                "stderr": "readonly fixture records.jsonl was modified",
+                "duration_seconds": round(time.monotonic() - started, 6),
+            }
+    with tempfile.TemporaryDirectory(prefix="scopelet-pristine-grader-") as grader_directory:
+        grader = Path(grader_directory) / "acceptance.py"
+        grader.write_text(pristine_acceptance_source(task), encoding="utf-8")
+        try:
+            result = subprocess.run(
+                [sys.executable, str(grader)],
+                cwd=workspace,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=timeout,
+                check=False,
+            )
+            return {
+                "task": task,
+                "grade": "pass" if result.returncode == 0 else "fail",
+                "passed": result.returncode == 0,
+                "exit_code": result.returncode,
+                "timed_out": False,
+                "stdout": result.stdout.decode("utf-8", "replace"),
+                "stderr": result.stderr.decode("utf-8", "replace"),
+                "duration_seconds": round(time.monotonic() - started, 6),
+            }
+        except subprocess.TimeoutExpired as error:
+            return {
+                "task": task,
+                "grade": "timeout",
+                "passed": False,
+                "exit_code": None,
+                "timed_out": True,
+                "stdout": (error.stdout or b"").decode("utf-8", "replace"),
+                "stderr": (error.stderr or b"").decode("utf-8", "replace"),
+                "duration_seconds": round(time.monotonic() - started, 6),
+            }
+
+
+def _kill_process_group(process: subprocess.Popen[bytes]) -> None:
+    try:
+        if os.name == "posix":
+            os.killpg(process.pid, signal.SIGKILL)
+        else:
+            process.kill()
+    except (ProcessLookupError, OSError):
+        pass
+
+
+def run_agent(
+    agent: str,
+    prompt: str,
+    workspace: Path,
+    timeout: float,
+    env: dict[str, str],
+) -> dict[str, Any]:
+    command = command_for(agent)
+    started = time.monotonic()
+    process: subprocess.Popen[bytes] | None = None
+    stdout = b""
+    stderr = b""
+    timed_out = False
+    spawn_error: str | None = None
+    exit_code: int | None = None
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=workspace,
+            env=env,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+        stdout, stderr = process.communicate(prompt.encode("utf-8"), timeout=timeout)
+        exit_code = process.returncode
+    except FileNotFoundError as error:
+        spawn_error = str(error)
+    except subprocess.TimeoutExpired as error:
+        timed_out = True
+        if process is not None:
+            _kill_process_group(process)
+            # A second communicate() returns the complete buffered stream;
+            # concatenating TimeoutExpired.output would duplicate its prefix.
+            stdout, stderr = process.communicate()
+            exit_code = process.returncode
+    except OSError as error:
+        spawn_error = str(error)
+    duration = round(time.monotonic() - started, 6)
+    return {
+        "command": command,
+        "exit_code": exit_code,
+        "timed_out": timed_out,
+        "spawn_error": spawn_error,
+        "duration_seconds": duration,
+        "stdout": stdout,
+        "stderr": stderr,
+    }
+
+
+def cli_version(binary: Path) -> dict[str, Any]:
+    try:
+        result = subprocess.run(
+            [str(binary), "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5, check=False
+        )
+        return {
+            "available": True,
+            "exit_code": result.returncode,
+            "version": result.stdout.decode("utf-8", "replace").strip(),
+            "stderr": result.stderr.decode("utf-8", "replace").strip(),
+        }
+    except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as error:
+        return {"available": False, "error": str(error)}
+
+
+def agent_cli_version(agent: str) -> dict[str, Any]:
+    try:
+        result = subprocess.run(
+            [agent, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10, check=False
+        )
+        return {
+            "available": True,
+            "exit_code": result.returncode,
+            "version": result.stdout.decode("utf-8", "replace").strip(),
+            "stderr": result.stderr.decode("utf-8", "replace").strip(),
+        }
+    except (FileNotFoundError, OSError, subprocess.TimeoutExpired) as error:
+        return {"available": False, "error": str(error)}
+
+
+def planned_cases(agents: list[str], arms: list[str], tasks: list[str]) -> list[dict[str, str]]:
+    if "shell_control" in arms and "task1" not in tasks:
+        raise ValueError("shell_control is supported for task1 only")
+    return [
+        {"agent": agent, "task": task, "arm": arm}
+        for agent in agents
+        for task in tasks
+        for arm in arms
+        if arm != "shell_control" or task == "task1"
+    ]
+
+
+def _git_init(root: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+
+def _copy_tree_after(workspace: Path, destination: Path) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    for path in workspace.iterdir():
+        if path.name == ".git":
+            continue
+        target = destination / path.name
+        if path.is_dir():
+            shutil.copytree(path, target, dirs_exist_ok=True)
+        else:
+            shutil.copy2(path, target)
+
+
+def execute_case(case: dict[str, str], config: argparse.Namespace, binary: Path, skill: Path, out: Path) -> dict[str, Any]:
+    run_id = f"{case['agent']}_{case['task']}_{case['arm']}"
+    run_dir = out / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    started = time.monotonic()
+    with tempfile.TemporaryDirectory(prefix=f"scopelet-{run_id}-") as temporary:
+        workspace = Path(temporary)
+        create_fixture(workspace, case["task"])
+        hashes = fixture_hashes(workspace)
+        skill_copy(workspace, skill, case["arm"])
+        _git_init(workspace)
+        prompt = prompt_for(case["agent"], case["task"], case["arm"], binary)
+        (run_dir / "prompt.txt").write_text(prompt, encoding="utf-8")
+        environment = os.environ.copy()
+        environment["SCOPELET_BIN"] = str(binary)
+        environment["PATH"] = str(binary.parent) + os.pathsep + environment.get("PATH", "")
+        invocation = run_agent(case["agent"], prompt, workspace, config.timeout, environment)
+        stdout = invocation.pop("stdout")
+        stderr = invocation.pop("stderr")
+        (run_dir / "stdout.raw").write_bytes(stdout)
+        (run_dir / "stderr.raw").write_bytes(stderr)
+        grade = grade_workspace(case["task"], workspace, expected_fixture_hashes=hashes)
+        _copy_tree_after(workspace, run_dir / "workspace_after")
+        usage = normalize_usage(case["agent"], stdout)
+        tools = tool_usage(case["agent"], stdout, stderr)
+        result = {
+            **case,
+            "run_id": run_id,
+            "fixture_hashes": hashes,
+            "prompt_file": str((run_dir / "prompt.txt").relative_to(out)),
+            "stdout_file": str((run_dir / "stdout.raw").relative_to(out)),
+            "stderr_file": str((run_dir / "stderr.raw").relative_to(out)),
+            "workspace_after": str((run_dir / "workspace_after").relative_to(out)),
+            "acceptance": grade,
+            "usage": usage,
+            "tools": tools,
+            "started_monotonic": started,
+            "duration_seconds": round(time.monotonic() - started, 6),
+            **invocation,
+        }
+        (run_dir / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
+        return result
+
+
+def make_markdown(report: dict[str, Any]) -> str:
+    lines = [
+        "# Scopelet agent benchmark",
+        "",
+        "This report records isolated runs and acceptance outcomes. It does not estimate cost or combine unlike agents into a global average.",
+        "",
+        f"- Live campaign: `{report['meta']['live']}`",
+        f"- Planned runs: `{report['meta']['planned_runs']}`",
+        f"- Scopelet CLI: `{report['meta']['cli_version'].get('version', 'unavailable')}`",
+        "",
+        "## Per-agent/task comparisons",
+        "",
+    ]
+    groups: defaultdict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for run in report.get("runs", []):
+        groups[(run["agent"], run["task"])].append(run)
+    for (agent, task), runs in sorted(groups.items()):
+        lines.append(f"### {agent} / {task}")
+        lines.append("")
+        lines.append("| Arm | Grade | Agent exit | Timed out | Scopelet uses | Input tokens | Output tokens | Duration (s) |")
+        lines.append("|---|---|---:|---:|---:|---:|---:|---:|")
+        for run in runs:
+            usage = run["usage"]
+            lines.append(
+                f"| {run['arm']} | {run['acceptance']['grade']} | {run.get('exit_code')} | "
+                f"{run.get('timed_out')} | {run['tools']['scopelet_invocations']} | "
+                f"{usage['logical_input_tokens']} | {usage['output_tokens']} | {run['duration_seconds']} |"
+            )
+        lines.append("")
+    if not report.get("runs"):
+        lines.append("No live runs were executed. Inspect report.json for the planned command lines.")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def write_report(out: Path, report: dict[str, Any]) -> None:
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+    (out / "report.md").write_text(make_markdown(report), encoding="utf-8")
+
+
+def parser() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(description=__doc__)
+    result.add_argument("--agents", default=",".join(AGENTS), help="comma-separated agent names")
+    result.add_argument("--arms", default=",".join(ARMS), help="comma-separated arms")
+    result.add_argument("--tasks", default=",".join(TASKS), help="comma-separated tasks")
+    result.add_argument("--out", default="bench/runs/campaign", help="report directory")
+    result.add_argument("--timeout", type=float, default=180.0, help="per-agent timeout in seconds")
+    result.add_argument("--skill", default=None, help="scopelet skill bundle directory")
+    result.add_argument("--binary", default=None, help="scopelet binary path")
+    result.add_argument("--live", action="store_true", help="run external agents")
+    result.add_argument("--dry-run", action="store_true", help="write plan only (default)")
+    return result
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parser().parse_args(argv)
+    if args.live and args.dry_run:
+        parser().error("--live and --dry-run are mutually exclusive")
+    agents, arms, tasks = map(csv_values, (args.agents, args.arms, args.tasks))
+    for name, values, allowed in (("agents", agents, AGENTS), ("arms", arms, ARMS), ("tasks", tasks, TASKS)):
+        unknown = [value for value in values if value not in allowed]
+        if unknown:
+            parser().error(f"unknown {name}: {', '.join(unknown)}")
+    try:
+        cases = planned_cases(agents, arms, tasks)
+    except ValueError as error:
+        parser().error(str(error))
+    if not cases:
+        parser().error("at least one agent, arm, and task must be selected")
+    if args.timeout <= 0:
+        parser().error("--timeout must be positive")
+    out = Path(args.out).resolve()
+    binary = Path(args.binary).resolve() if args.binary else Path(shutil.which("scopelet") or "scopelet")
+    skill = Path(args.skill).resolve() if args.skill else Path(__file__).resolve().parents[1] / "skills/scopelet"
+    binary_hash = sha256_file(binary) if binary.is_file() else None
+    skill_hashes = fixture_hashes(skill) if skill.is_dir() else {}
+    meta = {
+        "live": bool(args.live),
+        "planned_runs": len(cases),
+        "agents": agents,
+        "arms": arms,
+        "tasks": tasks,
+        "timeout_seconds": args.timeout,
+        "binary": str(binary),
+        "binary_sha256": binary_hash,
+        "skill": str(skill),
+        "skill_hashes": skill_hashes,
+        "cli_version": cli_version(binary) if args.live else {"available": None, "reason": "dry_run"},
+        "agent_cli_versions": {agent: agent_cli_version(agent) for agent in agents} if args.live else {
+            agent: {"available": None, "reason": "dry_run"} for agent in agents
+        },
+        "no_cost_estimate": True,
+    }
+    report: dict[str, Any] = {"meta": meta, "plan": [{**case, "command": command_for(case["agent"])} for case in cases], "runs": []}
+    if args.live:
+        if not binary.exists():
+            parser().error(f"scopelet binary does not exist: {binary}")
+        if not skill.is_dir() and any(case["arm"] in ("default", "ultra") for case in cases):
+            parser().error(f"scopelet skill bundle does not exist: {skill}")
+        for case in cases:
+            report["runs"].append(execute_case(case, args, binary, skill, out))
+            write_report(out, report)
+            print(json.dumps({"completed": case, "grade": report["runs"][-1]["acceptance"]["grade"]}), flush=True)
+    write_report(out, report)
+    print(json.dumps({"out": str(out), "live": args.live, "planned_runs": len(cases), "completed_runs": len(report["runs"])}))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
