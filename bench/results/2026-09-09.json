@@ -1,0 +1,3577 @@
+{
+  "campaigns": [
+    {
+      "agent_cli_versions": {
+        "claude": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "2.1.263 (Claude Code)"
+        },
+        "codex": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "codex-cli 0.153.4"
+        }
+      },
+      "binary_sha256": "fff7675a3f73630e350a8e396daf6034d7148430bf44d792ab4a7ade8a8cd722",
+      "cli_version": {
+        "available": true,
+        "exit_code": 0,
+        "stderr": "",
+        "version": "scopelet 0.1.0"
+      },
+      "completed_runs": 20,
+      "models": {
+        "claude": "claude-haiku-4-5-20251001",
+        "codex": "gpt-5.6-luna"
+      },
+      "name": "campaign-1",
+      "planned_runs": 20,
+      "runs": [
+        {
+          "agent": "codex",
+          "arm": "baseline",
+          "binary_sha256": null,
+          "duration_seconds": 40.979548,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task1_baseline",
+          "stderr_sha256": "84363711bb36a95c6c6c621188277ec274cc28311ffafaaff2f4e3c3ac6ae83b",
+          "stdout_sha256": "ace0de1e16343b3f4fb22caca8c942dd68d0ce7d8b2ed93074274e08b6f81a93",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 118784,
+            "input_tokens": 132182,
+            "logical_input_tokens": 132182,
+            "output_tokens": 1681,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 118784,
+                "input_tokens": 132182,
+                "output_tokens": 1681,
+                "reasoning_output_tokens": 222
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "default",
+          "binary_sha256": null,
+          "duration_seconds": 37.685688,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task1_default",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "07af7e178df61aecd4025750bafb7edc064d999dfe8d631fe1d274b66b044f38",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 139264,
+            "input_tokens": 155916,
+            "logical_input_tokens": 155916,
+            "output_tokens": 1545,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 139264,
+                "input_tokens": 155916,
+                "output_tokens": 1545,
+                "reasoning_output_tokens": 201
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ultra",
+          "binary_sha256": null,
+          "duration_seconds": 40.497697,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task1_ultra",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "3e8151645bd03900e8e0392f2f4aa5b4fc1c3b59c24b392f59e2c9bd0d1ba0c8",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 167680,
+            "input_tokens": 186656,
+            "logical_input_tokens": 186656,
+            "output_tokens": 1541,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 167680,
+                "input_tokens": 186656,
+                "output_tokens": 1541,
+                "reasoning_output_tokens": 307
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "shell_control",
+          "binary_sha256": null,
+          "duration_seconds": 41.054058,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task1_shell_control",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "cb8d2ab77d0ecba109b8249aa71636334a681ccc2d6512568cfe958ec02f1681",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 199680,
+            "input_tokens": 230937,
+            "logical_input_tokens": 230937,
+            "output_tokens": 1614,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 199680,
+                "input_tokens": 230937,
+                "output_tokens": 1614,
+                "reasoning_output_tokens": 262
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "baseline",
+          "binary_sha256": null,
+          "duration_seconds": 34.32339,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task2_baseline",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "b5624ff44a665891b66eaf4879f9a5fd82ffd1fee1e44c9aaa8b9468d5fe02ae",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 97792,
+            "input_tokens": 112412,
+            "logical_input_tokens": 112412,
+            "output_tokens": 1313,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 97792,
+                "input_tokens": 112412,
+                "output_tokens": 1313,
+                "reasoning_output_tokens": 143
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "default",
+          "binary_sha256": null,
+          "duration_seconds": 62.264059,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task2_default",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "dc1c4b2b548209ded0a7fcd2ead836ce523ef7d89c0bb1523228d28395893283",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 5,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 9
+            },
+            "tool_use_count": 9
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 237824,
+            "input_tokens": 265797,
+            "logical_input_tokens": 265797,
+            "output_tokens": 2524,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 237824,
+                "input_tokens": 265797,
+                "output_tokens": 2524,
+                "reasoning_output_tokens": 400
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ultra",
+          "binary_sha256": null,
+          "duration_seconds": 56.518625,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task2_ultra",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "16be11593e85b97c24c406d1abfc05dbe9df29b0298c79b1c00fee084f7ccbec",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 7
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 220416,
+            "input_tokens": 244169,
+            "logical_input_tokens": 244169,
+            "output_tokens": 2330,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 220416,
+                "input_tokens": 244169,
+                "output_tokens": 2330,
+                "reasoning_output_tokens": 516
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "baseline",
+          "binary_sha256": null,
+          "duration_seconds": 52.005444,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task3_baseline",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "43d4b61abc3054e6fd5110e12068227c18b1280b24b858f43493a31b683fa5ae",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 15
+            },
+            "tool_use_count": 15
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 144384,
+            "input_tokens": 161874,
+            "logical_input_tokens": 161874,
+            "output_tokens": 2257,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 144384,
+                "input_tokens": 161874,
+                "output_tokens": 2257,
+                "reasoning_output_tokens": 179
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "default",
+          "binary_sha256": null,
+          "duration_seconds": 40.946882,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task3_default",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "14da2976662e082113da212d2df75b83cb811d8141f4fcd5872240fe72f0c9f2",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 160512,
+            "input_tokens": 177160,
+            "logical_input_tokens": 177160,
+            "output_tokens": 1554,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 160512,
+                "input_tokens": 177160,
+                "output_tokens": 1554,
+                "reasoning_output_tokens": 204
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ultra",
+          "binary_sha256": null,
+          "duration_seconds": 44.060121,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task3_ultra",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "23997bb5121975b84e022708e6f0a5eb3010286b1c842d58623a2eb8d193e2ee",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 161536,
+            "input_tokens": 180776,
+            "logical_input_tokens": 180776,
+            "output_tokens": 1570,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 161536,
+                "input_tokens": 180776,
+                "output_tokens": 1570,
+                "reasoning_output_tokens": 284
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": null,
+          "duration_seconds": 28.384189,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task1_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "074c390f327ca399411591e0e9d84d71b3b2b072c51e0ead08e803bdec9f8aa1",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 6,
+              "Edit": 1,
+              "Read": 5
+            },
+            "tool_use_count": 12
+          },
+          "usage": {
+            "cache_creation_input_tokens": 10628,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 253347,
+            "input_tokens": 89,
+            "logical_input_tokens": 264064,
+            "output_tokens": 2275,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 10628,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 10628,
+                "cache_read_input_tokens": 253347,
+                "inference_geo": "not_available",
+                "input_tokens": 89,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 222,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 222,
+                    "cache_read_input_tokens": 25263,
+                    "input_tokens": 8,
+                    "output_tokens": 156,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2275,
+                "output_tokens_details": {
+                  "thinking_tokens": 744
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": null,
+          "duration_seconds": 31.826014,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task1_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6253200a38102019ff1b9190b9f58330048846d9d696c5c4837ba0673ef626f0",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": true,
+            "tool_counts": {
+              "Bash": 4,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 6,
+              "Skill": 1
+            },
+            "tool_use_count": 13
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11040,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 326436,
+            "input_tokens": 113,
+            "logical_input_tokens": 337589,
+            "output_tokens": 2476,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 11040,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 11040,
+                "cache_read_input_tokens": 326436,
+                "inference_geo": "not_available",
+                "input_tokens": 113,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 231,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 231,
+                    "cache_read_input_tokens": 25666,
+                    "input_tokens": 8,
+                    "output_tokens": 152,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2476,
+                "output_tokens_details": {
+                  "thinking_tokens": 875
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": null,
+          "duration_seconds": 27.033037,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task1_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "80d8d7b5c4d8b79527279726e063bbbcec489ad22b792b3cd5df1bc273422d02",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": true,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 4,
+              "Skill": 1
+            },
+            "tool_use_count": 10
+          },
+          "usage": {
+            "cache_creation_input_tokens": 10426,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 204977,
+            "input_tokens": 73,
+            "logical_input_tokens": 215476,
+            "output_tokens": 2104,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 10426,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 10426,
+                "cache_read_input_tokens": 204977,
+                "inference_geo": "not_available",
+                "input_tokens": 73,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 251,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 251,
+                    "cache_read_input_tokens": 25032,
+                    "input_tokens": 8,
+                    "output_tokens": 265,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2104,
+                "output_tokens_details": {
+                  "thinking_tokens": 721
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "shell_control",
+          "binary_sha256": null,
+          "duration_seconds": 16.983446,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task1_shell_control",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "770fc1a23fdc32ea0df1d14702f2169d6aef2acc98274b0eb7d15a44c3fb2555",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 4
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9340,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 154591,
+            "input_tokens": 57,
+            "logical_input_tokens": 163988,
+            "output_tokens": 1592,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 9340,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 9340,
+                "cache_read_input_tokens": 154591,
+                "inference_geo": "not_available",
+                "input_tokens": 57,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 126,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 126,
+                    "cache_read_input_tokens": 24071,
+                    "input_tokens": 8,
+                    "output_tokens": 179,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1592,
+                "output_tokens_details": {
+                  "thinking_tokens": 659
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": null,
+          "duration_seconds": 23.24857,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "a787312f92f2654db57a27e4b486af3971d56ee8bd5921b491803ed3d52000f8",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Read": 2,
+              "Write": 1
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 33814,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 227320,
+            "input_tokens": 49,
+            "logical_input_tokens": 261183,
+            "output_tokens": 2306,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 33814,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 33814,
+                "cache_read_input_tokens": 227320,
+                "inference_geo": "not_available",
+                "input_tokens": 49,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 252,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 252,
+                    "cache_read_input_tokens": 48419,
+                    "input_tokens": 8,
+                    "output_tokens": 188,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2306,
+                "output_tokens_details": {
+                  "thinking_tokens": 1356
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": null,
+          "duration_seconds": 36.031296,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "0273fc286a1a97a37a7a635cb237dbb5404402dd1ef5be0a460bb52501c84e16",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 7,
+              "Edit": 1,
+              "Read": 2,
+              "Write": 1
+            },
+            "tool_use_count": 11
+          },
+          "usage": {
+            "cache_creation_input_tokens": 35362,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 522858,
+            "input_tokens": 97,
+            "logical_input_tokens": 558317,
+            "output_tokens": 2964,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 35362,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 35362,
+                "cache_read_input_tokens": 522858,
+                "inference_geo": "not_available",
+                "input_tokens": 97,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 150,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 150,
+                    "cache_read_input_tokens": 50069,
+                    "input_tokens": 8,
+                    "output_tokens": 151,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2964,
+                "output_tokens_details": {
+                  "thinking_tokens": 1451
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": null,
+          "duration_seconds": 37.470729,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "b064e12d9b503e484977d8a42178e03058bb5c4fc29b3622a6e207ee3b73caa5",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 6,
+              "Read": 2,
+              "Write": 1
+            },
+            "tool_use_count": 9
+          },
+          "usage": {
+            "cache_creation_input_tokens": 35324,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 427832,
+            "input_tokens": 81,
+            "logical_input_tokens": 463237,
+            "output_tokens": 3318,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 35324,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 35324,
+                "cache_read_input_tokens": 427832,
+                "inference_geo": "not_available",
+                "input_tokens": 81,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 189,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 189,
+                    "cache_read_input_tokens": 49992,
+                    "input_tokens": 8,
+                    "output_tokens": 156,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 3318,
+                "output_tokens_details": {
+                  "thinking_tokens": 2153
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": null,
+          "duration_seconds": 22.969657,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task3_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5ccba56b1f7676d226684219022398b50da05e6dbb1ca30929f8123a14f5b574",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 3
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9565,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 154065,
+            "input_tokens": 57,
+            "logical_input_tokens": 163687,
+            "output_tokens": 1914,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 9565,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 9565,
+                "cache_read_input_tokens": 154065,
+                "inference_geo": "not_available",
+                "input_tokens": 57,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 338,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 338,
+                    "cache_read_input_tokens": 24084,
+                    "input_tokens": 8,
+                    "output_tokens": 235,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1914,
+                "output_tokens_details": {
+                  "thinking_tokens": 1076
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": null,
+          "duration_seconds": 23.812096,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task3_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "342190ead4e7a277f7a813ea3c83579dbcba7473323c820b44639c79bbfc0aa4",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9557,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 130549,
+            "input_tokens": 49,
+            "logical_input_tokens": 140155,
+            "output_tokens": 2064,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 9557,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 9557,
+                "cache_read_input_tokens": 130549,
+                "inference_geo": "not_available",
+                "input_tokens": 49,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 261,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 261,
+                    "cache_read_input_tokens": 24153,
+                    "input_tokens": 8,
+                    "output_tokens": 329,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2064,
+                "output_tokens_details": {
+                  "thinking_tokens": 1146
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": null,
+          "duration_seconds": 23.860945,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task3_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "3ec0958ef04a9f948359f7d47b95862247fdb8b6956d4a18eed171693abdb1dd",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": true,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2,
+              "Skill": 1
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9380,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 154041,
+            "input_tokens": 57,
+            "logical_input_tokens": 163478,
+            "output_tokens": 1758,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 9380,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 9380,
+                "cache_read_input_tokens": 154041,
+                "inference_geo": "not_available",
+                "input_tokens": 57,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 154,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 154,
+                    "cache_read_input_tokens": 24083,
+                    "input_tokens": 8,
+                    "output_tokens": 172,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1758,
+                "output_tokens_details": {
+                  "thinking_tokens": 921
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        }
+      ],
+      "skill_hashes": {
+        "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+        "SKILL.md": "2705426f69802262875ab779ad5257ffc7a2623b6b5644fdd56855046b77c7e2",
+        "references/queries.md": "f9ac03ddb635c7367fc091c5594949cc488d47541caceaf8eadeb3e3006499d0",
+        "references/setup.md": "3e2189cb6409e0803014059905fb62b124cc60de2c2ba35985ddc24986b19b55",
+        "scripts/scopelet.mjs": "48b78c51b3417834491d6737d03650e88148d727f00097f7d0ef673933132e18"
+      }
+    },
+    {
+      "agent_cli_versions": {
+        "claude": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "2.1.263 (Claude Code)"
+        },
+        "codex": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "codex-cli 0.153.4"
+        }
+      },
+      "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+      "cli_version": {
+        "available": true,
+        "exit_code": 0,
+        "stderr": "",
+        "version": "scopelet 0.1.0"
+      },
+      "completed_runs": 20,
+      "models": {
+        "claude": "claude-haiku-4-5-20251001",
+        "codex": "gpt-5.6-luna"
+      },
+      "name": "final-20260909",
+      "planned_runs": 20,
+      "runs": [
+        {
+          "agent": "codex",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 35.863981,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task1_baseline",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "6eb88e9dd8b73d21b59f1bdb711ba613036ef8c4b2b76aae0eef5039f5bd7897",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 7
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 129024,
+            "input_tokens": 140017,
+            "logical_input_tokens": 140017,
+            "output_tokens": 1340,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 129024,
+                "input_tokens": 140017,
+                "output_tokens": 1340,
+                "reasoning_output_tokens": 139
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 39.603512,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task1_default",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "8a8d878d811e8c5ad8d9338b7e1bf17c812104f8ccda5c4273497edfebd03d8d",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 143360,
+            "input_tokens": 161852,
+            "logical_input_tokens": 161852,
+            "output_tokens": 1397,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 143360,
+                "input_tokens": 161852,
+                "output_tokens": 1397,
+                "reasoning_output_tokens": 172
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 38.749832,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task1_ultra",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "644a1a3dc5a1a1856676fc7b19e650a25184baa32284a86414cc7e01a2da036b",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 7
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 258560,
+            "input_tokens": 287340,
+            "logical_input_tokens": 287340,
+            "output_tokens": 1360,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 258560,
+                "input_tokens": 287340,
+                "output_tokens": 1360,
+                "reasoning_output_tokens": 160
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "shell_control",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 48.299519,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task1_shell_control",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "2d9abb70acf7decdea595b43427a109b9736c5f6412c62303d3a5cf1d08105ba",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 179200,
+            "input_tokens": 202403,
+            "logical_input_tokens": 202403,
+            "output_tokens": 1487,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 179200,
+                "input_tokens": 202403,
+                "output_tokens": 1487,
+                "reasoning_output_tokens": 246
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 35.969343,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task2_baseline",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "2f48db02898b62bc8deb234e38b3dd34016d7556a8248c69cb60ecc3c8c16780",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 133376,
+            "input_tokens": 150550,
+            "logical_input_tokens": 150550,
+            "output_tokens": 1398,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 133376,
+                "input_tokens": 150550,
+                "output_tokens": 1398,
+                "reasoning_output_tokens": 132
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 27.004851,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task2_default",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "bac2047942e8a804b02feca9be396e111b385649feb250c94a9b061b00a7c879",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 60416,
+            "input_tokens": 73863,
+            "logical_input_tokens": 73863,
+            "output_tokens": 1078,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 60416,
+                "input_tokens": 73863,
+                "output_tokens": 1078,
+                "reasoning_output_tokens": 128
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 36.361073,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task2_ultra",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "043d6b29d83aa3c4a4679607b2ca78e499f53c311f147271bfe57d5c725e00d9",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 100864,
+            "input_tokens": 115648,
+            "logical_input_tokens": 115648,
+            "output_tokens": 1528,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 100864,
+                "input_tokens": 115648,
+                "output_tokens": 1528,
+                "reasoning_output_tokens": 184
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 35.550585,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task3_baseline",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "769c9923dec3824702c7df15c44cdae1a0eebbd0521ba36914ed28f6b795cb8b",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 118784,
+            "input_tokens": 126891,
+            "logical_input_tokens": 126891,
+            "output_tokens": 1321,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 118784,
+                "input_tokens": 126891,
+                "output_tokens": 1321,
+                "reasoning_output_tokens": 131
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 48.154768,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task3_default",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "6717e6d48087937369b8a60b60f059de43205849db532b247e2bda16ac3c46a7",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 3,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 7
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 248320,
+            "input_tokens": 281063,
+            "logical_input_tokens": 281063,
+            "output_tokens": 1822,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 248320,
+                "input_tokens": 281063,
+                "output_tokens": 1822,
+                "reasoning_output_tokens": 473
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 26.9749,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task3_ultra",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "1d788cce61b37e9f55616cce6f87a1885f4a5ea60187d086723ef0f3f4d93bd9",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 115968,
+            "input_tokens": 131829,
+            "logical_input_tokens": 131829,
+            "output_tokens": 972,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 115968,
+                "input_tokens": 131829,
+                "output_tokens": 972,
+                "reasoning_output_tokens": 141
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 32.433576,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task1_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "8384c9259318c8aebdaa2640b6971d970e25904344f584bbc573a7f890d47fb0",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 5,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 4
+            },
+            "tool_use_count": 11
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11284,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 280090,
+            "input_tokens": 97,
+            "logical_input_tokens": 291471,
+            "output_tokens": 2636,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 11284,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 11284,
+                "cache_read_input_tokens": 280090,
+                "inference_geo": "not_available",
+                "input_tokens": 97,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 220,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 220,
+                    "cache_read_input_tokens": 25921,
+                    "input_tokens": 8,
+                    "output_tokens": 159,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2636,
+                "output_tokens_details": {
+                  "thinking_tokens": 1310
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 20.851837,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task1_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "c4009c814bf77cb49b3ee55b4e647ebefddf8b51238605ebc3dfd00bd242f558",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 5
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9662,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 155283,
+            "input_tokens": 57,
+            "logical_input_tokens": 165002,
+            "output_tokens": 1751,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 9662,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 9662,
+                "cache_read_input_tokens": 155283,
+                "inference_geo": "not_available",
+                "input_tokens": 57,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 125,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 125,
+                    "cache_read_input_tokens": 24394,
+                    "input_tokens": 8,
+                    "output_tokens": 201,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1751,
+                "output_tokens_details": {
+                  "thinking_tokens": 735
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 28.980215,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task1_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "959a3d5783a58955c6b5486bfc845c3a8ffb5664991302b221f44ccab95896e3",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 5
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 10078,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 202888,
+            "input_tokens": 73,
+            "logical_input_tokens": 213039,
+            "output_tokens": 2360,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 10078,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 10078,
+                "cache_read_input_tokens": 202888,
+                "inference_geo": "not_available",
+                "input_tokens": 73,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 222,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 222,
+                    "cache_read_input_tokens": 24713,
+                    "input_tokens": 8,
+                    "output_tokens": 358,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2360,
+                "output_tokens_details": {
+                  "thinking_tokens": 1220
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "shell_control",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 25.244091,
+          "exit_code": 0,
+          "fixture_sha256": "f1825c87949d6829974964ebdc62529dd95dd6415ad147ba40eab835026f1ccc",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task1_shell_control",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e1f0ce83bfc2a9d42788e7ba8ccb3666a1ba8347ab4eef15391b69228a6e8afc",
+          "task": "task1",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 4
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9821,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 155870,
+            "input_tokens": 57,
+            "logical_input_tokens": 165748,
+            "output_tokens": 2016,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 9821,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 9821,
+                "cache_read_input_tokens": 155870,
+                "inference_geo": "not_available",
+                "input_tokens": 57,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 227,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 227,
+                    "cache_read_input_tokens": 24451,
+                    "input_tokens": 8,
+                    "output_tokens": 202,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2016,
+                "output_tokens_details": {
+                  "thinking_tokens": 1031
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 20.329067,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5a175b45c03902a6857f4fef0878fdd0fcccf2082621b258fed2e28b5ad6c616",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Read": 3
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 33088,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 178775,
+            "input_tokens": 41,
+            "logical_input_tokens": 211904,
+            "output_tokens": 1567,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 33088,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 33088,
+                "cache_read_input_tokens": 178775,
+                "inference_geo": "not_available",
+                "input_tokens": 41,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 244,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 244,
+                    "cache_read_input_tokens": 47701,
+                    "input_tokens": 8,
+                    "output_tokens": 157,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1567,
+                "output_tokens_details": {
+                  "thinking_tokens": 760
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 38.255976,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "18dc152fe880c41c5bf98bf3aaa88c884e649835cd6b3f237d0bbc55a49a90ae",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 5,
+              "Read": 2,
+              "Write": 1
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 36393,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 384072,
+            "input_tokens": 73,
+            "logical_input_tokens": 420538,
+            "output_tokens": 4494,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 36393,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 36393,
+                "cache_read_input_tokens": 384072,
+                "inference_geo": "not_available",
+                "input_tokens": 73,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 189,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 189,
+                    "cache_read_input_tokens": 51061,
+                    "input_tokens": 8,
+                    "output_tokens": 436,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 4494,
+                "output_tokens_details": {
+                  "thinking_tokens": 3296
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 34.839327,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e92a6a0ce8a9f3098912b435abc042290d49c8ca6ff9f3680131d415b933e3cb",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 7,
+              "Read": 3,
+              "Skill": 1
+            },
+            "tool_use_count": 11
+          },
+          "usage": {
+            "cache_creation_input_tokens": 36089,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 528165,
+            "input_tokens": 97,
+            "logical_input_tokens": 564351,
+            "output_tokens": 3609,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 36089,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 36089,
+                "cache_read_input_tokens": 528165,
+                "inference_geo": "not_available",
+                "input_tokens": 97,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 447,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 447,
+                    "cache_read_input_tokens": 50499,
+                    "input_tokens": 8,
+                    "output_tokens": 263,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 3609,
+                "output_tokens_details": {
+                  "thinking_tokens": 2391
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 29.403477,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task3_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "0670bb5705de750b6976974ca1ada90fdb27207ab5a8707e3eac76ed08ec4220",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 5,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 5
+            },
+            "tool_use_count": 12
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11070,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 253431,
+            "input_tokens": 89,
+            "logical_input_tokens": 264590,
+            "output_tokens": 2631,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 11070,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 11070,
+                "cache_read_input_tokens": 253431,
+                "inference_geo": "not_available",
+                "input_tokens": 89,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 232,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 232,
+                    "cache_read_input_tokens": 25695,
+                    "input_tokens": 8,
+                    "output_tokens": 168,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2631,
+                "output_tokens_details": {
+                  "thinking_tokens": 1048
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 24.291819,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task3_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "961675213e71f03edc590b4317209e8f85d5d0b8e60555c5a702c1beb3fec169",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9554,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 130761,
+            "input_tokens": 49,
+            "logical_input_tokens": 140364,
+            "output_tokens": 1928,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 9554,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 9554,
+                "cache_read_input_tokens": 130761,
+                "inference_geo": "not_available",
+                "input_tokens": 49,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 131,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 131,
+                    "cache_read_input_tokens": 24280,
+                    "input_tokens": 8,
+                    "output_tokens": 103,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1928,
+                "output_tokens_details": {
+                  "thinking_tokens": 1168
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 34.790348,
+          "exit_code": 0,
+          "fixture_sha256": "8b21add250c551c024c7bf482578efe75c6ea29e86c2e06d043a3c08b4757361",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task3_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "0b3c3a08e70510c4689d883e40820bd6d48b070b1544717ebd857ccb8d881c1b",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_discovered": false,
+            "skill_tool_invoked": true,
+            "tool_counts": {
+              "Bash": 7,
+              "Edit": 1,
+              "Read": 3,
+              "Skill": 1
+            },
+            "tool_use_count": 12
+          },
+          "usage": {
+            "cache_creation_input_tokens": 10892,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 301436,
+            "input_tokens": 105,
+            "logical_input_tokens": 312433,
+            "output_tokens": 2367,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 10892,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 10892,
+                "cache_read_input_tokens": 301436,
+                "inference_geo": "not_available",
+                "input_tokens": 105,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 242,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 242,
+                    "cache_read_input_tokens": 25507,
+                    "input_tokens": 8,
+                    "output_tokens": 210,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2367,
+                "output_tokens_details": {
+                  "thinking_tokens": 923
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        }
+      ],
+      "skill_hashes": {
+        "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+        "SKILL.md": "6fca028449ee16b6fef42a1468055c69aebf14ffdae8fb19788db8aab550a6ec",
+        "references/queries.md": "bf5ea2db26ea5d7253ae67c1b4ff14a83696b770beac72db309e2d43ba2cc784",
+        "references/setup.md": "d583e3996b07db802adaa86d694b985804f50c33007574352265d928f929db3d",
+        "scripts/scopelet.mjs": "48b78c51b3417834491d6737d03650e88148d727f00097f7d0ef673933132e18"
+      }
+    },
+    {
+      "agent_cli_versions": {
+        "claude": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "2.1.263 (Claude Code)"
+        },
+        "codex": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "codex-cli 0.153.4"
+        }
+      },
+      "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+      "cli_version": {
+        "available": true,
+        "exit_code": 0,
+        "stderr": "",
+        "version": "scopelet 0.1.0"
+      },
+      "completed_runs": 6,
+      "models": {
+        "claude": "claude-haiku-4-5-20251001",
+        "codex": "gpt-5.6-luna"
+      },
+      "name": "commands-20260909",
+      "planned_runs": 6,
+      "runs": [
+        {
+          "agent": "codex",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 27.074042,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task4_baseline",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "47b1331a4679a7f9de9bf5444935d61de2b60268a8de09d4363d21bcb1a320e3",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 134656,
+            "input_tokens": 159544,
+            "logical_input_tokens": 159544,
+            "output_tokens": 1050,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 134656,
+                "input_tokens": 159544,
+                "output_tokens": 1050,
+                "reasoning_output_tokens": 123
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 38.221486,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task4_default",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "865256988310338fd4bc01812fef82f4d4cc1a92d8f419d66ac9d802b50d15e8",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 216064,
+            "input_tokens": 251515,
+            "logical_input_tokens": 251515,
+            "output_tokens": 1376,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 216064,
+                "input_tokens": 251515,
+                "output_tokens": 1376,
+                "reasoning_output_tokens": 231
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 34.965769,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task4_ultra",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "2ea6917ad1d78e1ffddbc4e26971fe57430533bf03520ab67c17394d73fc73e7",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": null,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 98816,
+            "input_tokens": 120863,
+            "logical_input_tokens": 120863,
+            "output_tokens": 1331,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 98816,
+                "input_tokens": 120863,
+                "output_tokens": 1331,
+                "reasoning_output_tokens": 338
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 23.950442,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task4_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "8180000934d96ab3d872cdf726420ebfccfc7851491fbd4b2783c049325781b7",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 3
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": 18468,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 219635,
+            "input_tokens": 65,
+            "logical_input_tokens": 238168,
+            "output_tokens": 1888,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 18468,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 18468,
+                "cache_read_input_tokens": 219635,
+                "inference_geo": "not_available",
+                "input_tokens": 65,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 949,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 949,
+                    "cache_read_input_tokens": 32376,
+                    "input_tokens": 8,
+                    "output_tokens": 191,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1888,
+                "output_tokens_details": {
+                  "thinking_tokens": 811
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 31.011972,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task4_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "972d46fdabe3fac5ac9240a1fa3b5f6f0de40a3e3fc7aba6c8eb2e800ea6dc2b",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 4
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 19413,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 240888,
+            "input_tokens": 73,
+            "logical_input_tokens": 260374,
+            "output_tokens": 2442,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 19413,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 19413,
+                "cache_read_input_tokens": 240888,
+                "inference_geo": "not_available",
+                "input_tokens": 73,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 267,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 267,
+                    "cache_read_input_tokens": 34003,
+                    "input_tokens": 8,
+                    "output_tokens": 306,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2442,
+                "output_tokens_details": {
+                  "thinking_tokens": 1182
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 29.630285,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task4_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "66f390e19ad9d5b0d58f388792ee97ae1153250a8d34c822016d47598fd17c6a",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 12096,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 136680,
+            "input_tokens": 49,
+            "logical_input_tokens": 148825,
+            "output_tokens": 2015,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 12096,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 12096,
+                "cache_read_input_tokens": 136680,
+                "inference_geo": "not_available",
+                "input_tokens": 49,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 416,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 416,
+                    "cache_read_input_tokens": 26537,
+                    "input_tokens": 8,
+                    "output_tokens": 248,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2015,
+                "output_tokens_details": {
+                  "thinking_tokens": 1118
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        }
+      ],
+      "skill_hashes": {
+        "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+        "SKILL.md": "6fca028449ee16b6fef42a1468055c69aebf14ffdae8fb19788db8aab550a6ec",
+        "references/queries.md": "bf5ea2db26ea5d7253ae67c1b4ff14a83696b770beac72db309e2d43ba2cc784",
+        "references/setup.md": "d583e3996b07db802adaa86d694b985804f50c33007574352265d928f929db3d",
+        "scripts/scopelet.mjs": "48b78c51b3417834491d6737d03650e88148d727f00097f7d0ef673933132e18"
+      }
+    },
+    {
+      "agent_cli_versions": {
+        "claude": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "2.1.263 (Claude Code)"
+        }
+      },
+      "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+      "cli_version": {
+        "available": true,
+        "exit_code": 0,
+        "stderr": "",
+        "version": "scopelet 0.1.0"
+      },
+      "completed_runs": 6,
+      "models": {
+        "claude": "claude-haiku-4-5-20251001",
+        "codex": "gpt-5.6-luna"
+      },
+      "name": "claude-skill-20260909",
+      "planned_runs": 6,
+      "runs": [
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 26.305751,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ebfc9b5ef0bf3ed2077343454d15cecd7ba0124b3c327a8725b43424f99f4101",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Read": 3
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 33859,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 180363,
+            "input_tokens": 41,
+            "logical_input_tokens": 214263,
+            "output_tokens": 2390,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 33859,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 33859,
+                "cache_read_input_tokens": 180363,
+                "inference_geo": "not_available",
+                "input_tokens": 41,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 247,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 247,
+                    "cache_read_input_tokens": 48469,
+                    "input_tokens": 8,
+                    "output_tokens": 151,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2390,
+                "output_tokens_details": {
+                  "thinking_tokens": 1574
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 35.007921,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "d5a2c4f4dba186002f79579eefcc9fd6b9ecc5238933c66a2ed0790154f7ecd4",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": true,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 5,
+              "Read": 3,
+              "Write": 1
+            },
+            "tool_use_count": 9
+          },
+          "usage": {
+            "cache_creation_input_tokens": 35022,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 424900,
+            "input_tokens": 81,
+            "logical_input_tokens": 460003,
+            "output_tokens": 3076,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 35022,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 35022,
+                "cache_read_input_tokens": 424900,
+                "inference_geo": "not_available",
+                "input_tokens": 81,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 199,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 199,
+                    "cache_read_input_tokens": 49680,
+                    "input_tokens": 8,
+                    "output_tokens": 163,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 3076,
+                "output_tokens_details": {
+                  "thinking_tokens": 1372
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 23.147278,
+          "exit_code": 0,
+          "fixture_sha256": "020044365cefd4b62963755e3c968dac380d97cf7702a7064ead55844b9fb111",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task2_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ade98148d13423e969c5f601b130da15e37ce405dd98a3ec7cf51e90d7ce222a",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": true,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Read": 3
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 10517,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 159626,
+            "input_tokens": 57,
+            "logical_input_tokens": 170200,
+            "output_tokens": 1654,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 10517,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 10517,
+                "cache_read_input_tokens": 159626,
+                "inference_geo": "not_available",
+                "input_tokens": 57,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 183,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 183,
+                    "cache_read_input_tokens": 25191,
+                    "input_tokens": 8,
+                    "output_tokens": 139,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1654,
+                "output_tokens_details": {
+                  "thinking_tokens": 637
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 30.137594,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task4_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "b339718b4d6e1e4a5301b69d7fa99016d31814a9e6b0b0b27aef4811c12bde9c",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 4,
+              "Edit": 1,
+              "Read": 4
+            },
+            "tool_use_count": 9
+          },
+          "usage": {
+            "cache_creation_input_tokens": 16862,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 268218,
+            "input_tokens": 81,
+            "logical_input_tokens": 285161,
+            "output_tokens": 2297,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 16862,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 16862,
+                "cache_read_input_tokens": 268218,
+                "inference_geo": "not_available",
+                "input_tokens": 81,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 375,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 375,
+                    "cache_read_input_tokens": 31344,
+                    "input_tokens": 8,
+                    "output_tokens": 318,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2297,
+                "output_tokens_details": {
+                  "thinking_tokens": 1033
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 19.149941,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task4_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "48cb37fa51f3720e2dcb826b3648fa3ec2039598f0cf2f721183542681aac570",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": true,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 18171,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 117665,
+            "input_tokens": 41,
+            "logical_input_tokens": 135877,
+            "output_tokens": 1438,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 18171,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 18171,
+                "cache_read_input_tokens": 117665,
+                "inference_geo": "not_available",
+                "input_tokens": 41,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 5593,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 5593,
+                    "cache_read_input_tokens": 27435,
+                    "input_tokens": 8,
+                    "output_tokens": 156,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1438,
+                "output_tokens_details": {
+                  "thinking_tokens": 681
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 17.605878,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task4_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "1c660232cd3b1e643d003930d79b697f898935b59d5fe5a56b54f9daa292ea56",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": true,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11315,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 109516,
+            "input_tokens": 41,
+            "logical_input_tokens": 120872,
+            "output_tokens": 1263,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 11315,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 11315,
+                "cache_read_input_tokens": 109516,
+                "inference_geo": "not_available",
+                "input_tokens": 41,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 1567,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 1567,
+                    "cache_read_input_tokens": 24605,
+                    "input_tokens": 8,
+                    "output_tokens": 173,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1263,
+                "output_tokens_details": {
+                  "thinking_tokens": 581
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        }
+      ],
+      "skill_hashes": {
+        "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+        "SKILL.md": "6fca028449ee16b6fef42a1468055c69aebf14ffdae8fb19788db8aab550a6ec",
+        "references/queries.md": "bf5ea2db26ea5d7253ae67c1b4ff14a83696b770beac72db309e2d43ba2cc784",
+        "references/setup.md": "d583e3996b07db802adaa86d694b985804f50c33007574352265d928f929db3d",
+        "scripts/scopelet.mjs": "48b78c51b3417834491d6737d03650e88148d727f00097f7d0ef673933132e18"
+      }
+    },
+    {
+      "agent_cli_versions": {
+        "claude": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "2.1.263 (Claude Code)"
+        }
+      },
+      "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+      "cli_version": {
+        "available": true,
+        "exit_code": 0,
+        "stderr": "",
+        "version": "scopelet 0.1.0"
+      },
+      "completed_runs": 3,
+      "models": {
+        "claude": "claude-haiku-4-5-20251001",
+        "codex": "gpt-5.6-luna"
+      },
+      "name": "claude-native-skill-20260909",
+      "planned_runs": 3,
+      "runs": [
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 18.831066,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task4_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "7ce7c7e86cb69e168e17727eb0df19628a4776fe804f61da7fa3c55da8b9fa68",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 17454,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 155276,
+            "input_tokens": 49,
+            "logical_input_tokens": 172779,
+            "output_tokens": 1389,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 17454,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 17454,
+                "cache_read_input_tokens": 155276,
+                "inference_geo": "not_available",
+                "input_tokens": 49,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 1043,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 1043,
+                    "cache_read_input_tokens": 31268,
+                    "input_tokens": 8,
+                    "output_tokens": 227,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1389,
+                "output_tokens_details": {
+                  "thinking_tokens": 592
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "default",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 17.297195,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": true,
+          "passed": true,
+          "run_id": "claude_task4_default",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "21301f9c0d6721a3ee23ab3058c2f4ab3512f4f083671e4414ff5f3ae4a357f8",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": true,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 18890,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 120869,
+            "input_tokens": 42,
+            "logical_input_tokens": 139801,
+            "output_tokens": 1285,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 18890,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 18890,
+                "cache_read_input_tokens": 120869,
+                "inference_geo": "not_available",
+                "input_tokens": 42,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 5594,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 5594,
+                    "cache_read_input_tokens": 28153,
+                    "input_tokens": 8,
+                    "output_tokens": 147,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1285,
+                "output_tokens_details": {
+                  "thinking_tokens": 503
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": "7d0f4d79f5a8998e6c4c85cab9211a1c2c751a70edc91da2e7fc974a33ac0b46",
+          "duration_seconds": 18.983095,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": true,
+          "passed": true,
+          "run_id": "claude_task4_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6bb19c5eea434f0351279c66b9b2a1f12f7cd9cbeac94c43ba3f52d0b46810bf",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": true,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 12425,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 113441,
+            "input_tokens": 42,
+            "logical_input_tokens": 125908,
+            "output_tokens": 1531,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 12425,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 12425,
+                "cache_read_input_tokens": 113441,
+                "inference_geo": "not_available",
+                "input_tokens": 42,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 1587,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 1587,
+                    "cache_read_input_tokens": 25695,
+                    "input_tokens": 8,
+                    "output_tokens": 248,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1531,
+                "output_tokens_details": {
+                  "thinking_tokens": 754
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": null,
+            "usage_missing": false
+          }
+        }
+      ],
+      "skill_hashes": {
+        "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+        "SKILL.md": "64899e4ded9f68e3dba88ef15147ae8f39b210c0d25c0007d5a3ca3ff949680a",
+        "references/queries.md": "bf5ea2db26ea5d7253ae67c1b4ff14a83696b770beac72db309e2d43ba2cc784",
+        "references/setup.md": "d583e3996b07db802adaa86d694b985804f50c33007574352265d928f929db3d",
+        "scripts/scopelet.mjs": "48b78c51b3417834491d6737d03650e88148d727f00097f7d0ef673933132e18"
+      }
+    }
+  ],
+  "export_harness_sha256": "31d8df6e29570a6e1bff33e39876f471feda154fc138e7fb00882d70859eae8d",
+  "limitations": [
+    "One run per cell, fixed arm order, synthetic tasks; no statistical significance claim.",
+    "Installed global skill context may be discovered despite user settings overrides.",
+    "Adoption counts recognize a conservative subset of shell syntax; raw commands were inspected for highlighted comparisons.",
+    "campaign-1 is exploratory: binary and skill were edited during that campaign; it is not an immutable release comparison.",
+    "campaign-1, final-20260909 and commands-20260909 used Claude setting-sources empty: project skill discovery was disabled. Claude skill trials are in claude-skill-20260909.",
+    "Raw transcripts stay local; published hashes permit checking retained originals."
+  ],
+  "metric": "logical input plus reported output; cached input included; not dollars",
+  "schema_version": 1
+}

@@ -82,7 +82,9 @@ runtime dependencies. There is no additional LLM call in Scopelet's runtime.
 Token savings are workload-dependent. Installation instructions, extra commands
 and recovery can cost more than the context they save. The
 [verification report](docs/verification.md) records actual agent outcomes and
-limitations; no universal percentage is promised.
+limitations; no universal percentage is promised. On one noisy-command task,
+ultra used **24% fewer session tokens in Codex** and **27% fewer in Claude** with
+correct outcomes. Several small code tasks became more expensive.
 
 To reproduce checks and the small agent experiment:
 

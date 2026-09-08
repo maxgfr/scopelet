@@ -23,6 +23,14 @@ async function bytes(url, limit) {
   return Buffer.concat(chunks);
 }
 
+async function saveChecksum(path, expected) {
+  const temporary = `${path}.${process.pid}.tmp.sha256`;
+  try {
+    await writeFile(temporary, expected, { flag: 'wx', mode: 0o600 });
+    await rename(temporary, `${path}.sha256`);
+  } finally { await rm(temporary, { force: true }); }
+}
+
 async function binary() {
   // Explicit override is useful for offline installs and independent tests.
   const override = process.env.SCOPELET_BIN;
@@ -45,7 +53,12 @@ async function binary() {
   if (!line) throw new Error(`Release checksum missing for ${name}`);
   const expected = line.split(/\s+/)[0];
   if (!/^[a-f0-9]{64}$/.test(expected)) throw new Error('Invalid release checksum');
-  try { if (hash(await readFile(path)) === expected) return path; } catch {}
+  let existingHash;
+  try { existingHash = hash(await readFile(path)); } catch {}
+  if (existingHash === expected) {
+    await saveChecksum(path, expected);
+    return path;
+  }
   process.stderr.write(`Installing Scopelet ${version} (${target}) in user cache...\n`);
   const content = await bytes(`${base}/${name}`, 32 * 1024 * 1024);
   if (hash(content) !== expected) throw new Error('Release checksum mismatch');
@@ -54,9 +67,8 @@ async function binary() {
     await writeFile(temporary, content, { flag: 'wx', mode: 0o700 });
     await chmod(temporary, 0o700);
     await rename(temporary, path);
-    await writeFile(`${temporary}.sha256`, expected, { flag: 'wx', mode: 0o600 });
-    await rename(`${temporary}.sha256`, `${path}.sha256`);
-  } finally { await rm(temporary, { force: true }); await rm(`${temporary}.sha256`, { force: true }); }
+    await saveChecksum(path, expected);
+  } finally { await rm(temporary, { force: true }); }
   return path;
 }
 
