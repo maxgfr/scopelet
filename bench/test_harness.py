@@ -66,6 +66,17 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(tools["tool_use_count"], 0)
         self.assertFalse(tools["scopelet_adopted"])
 
+    def test_adoption_requires_command_position_and_known_subcommand(self) -> None:
+        raw = (
+            b'{"type":"tool_use","id":"a","name":"Bash","input":{"command":"sed -n \'1,240p\' /tmp/.agents/skills/scopelet/SKILL.md"}}\n'
+            b'{"type":"tool_use","id":"b","name":"Bash","input":{"command":"ls /tmp/scopelet"}}\n'
+            b'{"type":"tool_use","id":"c","name":"Bash","input":{"command":"zsh -lc \'$SCOPELET_BIN query --file records.jsonl\'"}}\n'
+            b'{"type":"tool_use","id":"d","name":"Bash","input":{"command":"node .agents/skills/scopelet/scripts/scopelet.mjs run echo ok"}}\n'
+        )
+        tools = run.tool_usage("claude", raw, b"")
+        self.assertEqual(tools["tool_use_count"], 4)
+        self.assertEqual(tools["scopelet_invocations"], 2)
+
     def test_grader_accepts_good_and_rejects_bad_task1_workspace(self) -> None:
         with tempfile.TemporaryDirectory(prefix="scopelet-harness-test-") as directory:
             root = Path(directory)

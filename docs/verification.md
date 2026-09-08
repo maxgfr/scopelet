@@ -9,7 +9,7 @@ JSONL ingestion, multiline search, process drainage, capture limits, oversized
 pagination, output envelope budgets, cache cleanup, adapter spans and document
 freshness. Reviews are fallible; the regression tests record the concrete claims.
 
-There are 42 Rust integration tests, 11 offline benchmark-harness tests and 3
+There are 42 Rust integration tests, 12 offline benchmark-harness tests and 3
 Node launcher tests. Actual codeindex and webindex adapter smoke tests are also
 provided in `scripts/check_adapters.py`. The standalone skill validator checks
 bundle structure, links, version agreement and the included MIT license.

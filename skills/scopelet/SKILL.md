@@ -15,13 +15,25 @@ downloads its pinned release once. For a small known file, read it directly.
 
 Choose the result needed: matching passages, selected fields, counts or groups.
 Compose those operations in one query instead of printing bulk data to compute
-over it yourself. Read [queries.md](references/queries.md) before composing JSON
-operations or using codeindex/webindex. Example:
+over it yourself. Start with these recipes; read [queries.md](references/queries.md)
+only for other operations or codeindex/webindex.
 
 ```sh
 scopelet query --repo . --find validateToken --context 5
 scopelet run -- npm test
 ```
+
+For JSONL counts by a known field, filter then group in one call:
+
+```sh
+scopelet query --spec - <<'JSON'
+{"version":1,"source":{"type":"file","path":"events.jsonl","format":"jsonl"},"operations":[{"op":"filter","pointer":"/status","equals":"failed"},{"op":"group","pointer":"/suite"}]}
+JSON
+```
+
+Group rows contain `value.key` and `value.count`; sum counts locally for a total.
+Operations are sequential: `count` replaces the records, so never put it before
+`group`. Use native tools for edits and short test output.
 
 Default preserves exact selected passages; `--mode ultra` also abridges large
 text units. Keep the selected mode for this conversation; `off` resumes native
@@ -32,7 +44,8 @@ conclusions. A partial view cannot establish absence or exhaustiveness. Expand
 the artifact to page results, or its blob to read exact lines before editing.
 Originals remain local; expansion does not assert the source is still current.
 
-Answer concisely in the user's language, preserving qualifications, exact code,
+Keep progress brief and avoid repeating tool results in the final answer.
+Answer in the user's language, preserving qualifications, exact code,
 errors and requested explanations. Before delivery, check these coverage rules
 and the task's acceptance tests. Tool byte reductions are not session savings.
 

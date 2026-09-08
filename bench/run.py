@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import shlex
 import shutil
 import signal
 import subprocess
@@ -226,7 +227,7 @@ def prompt_for(agent: str, task: str, arm: str, binary: Path) -> str:
         method = "Work directly with the available file and shell tools, inspect the relevant call path, and verify the result. Do not invoke Scopelet."
     task_text = {
         "task1": "Fix the cache expiration behavior so an item expiring at the exact current time is treated as expired. Find the implementation through the application call path and preserve its public interface.",
-        "task2": "Use records.jsonl to compute the exact failed count and failed_by_group mapping, then write that JSON object to answer.json.",
+        "task2": "Use records.jsonl to compute the exact counts, then write answer.json with exactly two keys: failed_count (integer) and failed_by_group (group-name to count mapping).",
         "task3": "Correct normalize_identifier in src/helpers.py for trimming, lowercasing, and collapsing whitespace.",
     }[task]
     return f"""You are working in the current isolated git workspace.
@@ -443,16 +444,71 @@ def _tool_invocation(mapping: dict[str, Any]) -> tuple[str, str, str] | None:
     return str(identifier), label, json.dumps(payload, sort_keys=True) if not isinstance(payload, str) else payload
 
 
+def _shell_tokens(command: str) -> list[str]:
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        return []
+    while tokens:
+        # Environment assignments and the env/command wrappers do not change
+        # which executable is actually invoked.
+        if "=" in tokens[0] and not tokens[0].startswith("="):
+            tokens.pop(0)
+            continue
+        if tokens[0] in ("env", "/usr/bin/env", "command", "/usr/bin/command", "exec"):
+            tokens.pop(0)
+            continue
+        if tokens[0] in ("sh", "bash", "zsh", "/bin/sh", "/bin/bash", "/bin/zsh"):
+            try:
+                index = next(index for index, token in enumerate(tokens[1:], 1) if token in ("-c", "-lc", "-ec", "-lec"))
+            except StopIteration:
+                return []
+            if index + 1 >= len(tokens):
+                return []
+            try:
+                tokens = shlex.split(tokens[index + 1])
+            except ValueError:
+                return []
+            continue
+        break
+    return tokens
+
+
+def _command_payload(payload: str) -> str:
+    try:
+        parsed = json.loads(payload)
+    except json.JSONDecodeError:
+        return payload
+    if isinstance(parsed, list) and all(isinstance(item, str) for item in parsed):
+        return shlex.join(parsed)
+    if isinstance(parsed, dict):
+        for key in ("command", "cmd", "script", "shell_command"):
+            value = parsed.get(key)
+            if isinstance(value, str):
+                return value
+            if isinstance(value, list) and all(isinstance(item, str) for item in value):
+                return shlex.join(value)
+    return payload
+
+
 def _is_scopelet_invocation(label: str, payload: str) -> bool:
-    low = f"{label} {payload}".lower()
-    if "cat skill.md" in low or "cat .agents/skills" in low or "cat .claude/skills" in low:
+    command = _command_payload(payload)
+    tokens = _shell_tokens(command)
+    if not tokens:
         return False
-    return (
-        "scopelet_bin" in low
-        or "scopelet" in low.split()
-        or "./scopelet" in low
-        or "/scopelet" in low
-    )
+    known_subcommands = {"query", "run", "expand", "doctor", "bench", "clean"}
+    executable = Path(tokens[0]).name.lower()
+    if executable in ("scopelet", "scopelet-bin") or tokens[0] in ("$SCOPELET_BIN", "${SCOPELET_BIN}"):
+        args = tokens[1:]
+        if args[:1] == ["--cache-dir"]:
+            args = args[2:]
+        elif args and args[0].startswith("--cache-dir="):
+            args = args[1:]
+        return bool(args) and args[0] in known_subcommands
+    if executable in ("node", "nodejs") and len(tokens) > 2:
+        launcher = Path(tokens[1]).name.lower()
+        return launcher in ("scopelet.mjs", "scopelet.js") and tokens[2] in known_subcommands
+    return False
 
 
 def tool_usage(agent: str, stdout: bytes, stderr: bytes) -> dict[str, Any]:
@@ -613,6 +669,15 @@ def cli_version(binary: Path) -> dict[str, Any]:
         return {"available": False, "error": str(error)}
 
 
+def freeze_binary(binary: Path, out: Path) -> Path:
+    """Copy one immutable executable into the campaign directory."""
+    frozen = out / "bin" / binary.name
+    frozen.parent.mkdir(parents=True, exist_ok=True)
+    if binary.resolve() != frozen.resolve():
+        shutil.copy2(binary, frozen)
+    return frozen
+
+
 def agent_cli_version(agent: str) -> dict[str, Any]:
     try:
         result = subprocess.run(
@@ -671,6 +736,9 @@ def execute_case(case: dict[str, str], config: argparse.Namespace, binary: Path,
         (run_dir / "prompt.txt").write_text(prompt, encoding="utf-8")
         environment = os.environ.copy()
         environment["SCOPELET_BIN"] = str(binary)
+        cache = workspace / "scopelet-cache"
+        cache.mkdir(parents=True, exist_ok=True)
+        environment["SCOPELET_CACHE_DIR"] = str(cache)
         environment["PATH"] = str(binary.parent) + os.pathsep + environment.get("PATH", "")
         invocation = run_agent(case["agent"], prompt, workspace, config.timeout, environment)
         stdout = invocation.pop("stdout")
@@ -684,11 +752,14 @@ def execute_case(case: dict[str, str], config: argparse.Namespace, binary: Path,
         result = {
             **case,
             "run_id": run_id,
+            "binary": str(binary),
+            "binary_sha256": sha256_file(binary) if binary.is_file() else None,
             "fixture_hashes": hashes,
             "prompt_file": str((run_dir / "prompt.txt").relative_to(out)),
             "stdout_file": str((run_dir / "stdout.raw").relative_to(out)),
             "stderr_file": str((run_dir / "stderr.raw").relative_to(out)),
             "workspace_after": str((run_dir / "workspace_after").relative_to(out)),
+            "cache_dir": str((run_dir / "workspace_after/scopelet-cache").relative_to(out)),
             "acceptance": grade,
             "usage": usage,
             "tools": tools,
@@ -775,6 +846,10 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out).resolve()
     binary = Path(args.binary).resolve() if args.binary else Path(shutil.which("scopelet") or "scopelet")
     skill = Path(args.skill).resolve() if args.skill else Path(__file__).resolve().parents[1] / "skills/scopelet"
+    if args.live:
+        if not binary.exists():
+            parser().error(f"scopelet binary does not exist: {binary}")
+        binary = freeze_binary(binary, out)
     binary_hash = sha256_file(binary) if binary.is_file() else None
     skill_hashes = fixture_hashes(skill) if skill.is_dir() else {}
     meta = {
@@ -796,8 +871,6 @@ def main(argv: list[str] | None = None) -> int:
     }
     report: dict[str, Any] = {"meta": meta, "plan": [{**case, "command": command_for(case["agent"])} for case in cases], "runs": []}
     if args.live:
-        if not binary.exists():
-            parser().error(f"scopelet binary does not exist: {binary}")
         if not skill.is_dir() and any(case["arm"] in ("default", "ultra") for case in cases):
             parser().error(f"scopelet skill bundle does not exist: {skill}")
         for case in cases:

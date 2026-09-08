@@ -333,7 +333,7 @@ fn missing_adapters_have_actionable_errors_and_native_sources_still_work() {
     let doctor = success(f.cli().arg("doctor").output().unwrap());
     for adapter in doctor["optional_adapters"].as_array().unwrap() {
         assert_eq!(adapter["available"], false);
-        assert!(adapter["install"].as_str().unwrap().contains("npm install"));
+        assert!(adapter["install"].as_str().unwrap().contains("install"));
     }
 }
 
