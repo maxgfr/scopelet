@@ -60,7 +60,8 @@ with `scopelet clean --older-days 7`.
 Optional adapters reuse existing tools:
 
 ```sh
-npm install -g @maxgfr/codeindex@2.30.0 webindex@1.19.4
+npm install -g @maxgfr/codeindex@2.30.0
+brew install maxgfr/tap/webindex
 ```
 
 **codeindex** supplies definitions, callers and impact; **webindex** extracts

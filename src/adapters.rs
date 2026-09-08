@@ -216,7 +216,7 @@ pub fn load(source: &Source, store: &Store, cancel: Arc<AtomicBool>) -> Result<D
 pub fn doctor(cancel: Arc<AtomicBool>) -> Value {
     let checks: Vec<Value> = [
         ("codeindex", "2.29.1", "npm install -g @maxgfr/codeindex@2.30.0"),
-        ("webindex", "1.18.10", "npm install -g webindex@1.19.4"),
+        ("webindex", "1.18.10", "brew install maxgfr/tap/webindex"),
     ].into_iter().map(|(name, tested, install)| {
         let result = process::capture(Command::new(name).arg("version"), Duration::from_secs(5), 4096, cancel.clone());
         match result {

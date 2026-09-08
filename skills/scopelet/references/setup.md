@@ -20,7 +20,8 @@ cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.0 --locked
 Optional adapters are external dependencies, not bundled copies:
 
 ```sh
-npm install -g @maxgfr/codeindex@2.30.0 webindex@1.19.4
+npm install -g @maxgfr/codeindex@2.30.0
+brew install maxgfr/tap/webindex
 scopelet doctor
 ```
 

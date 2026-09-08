@@ -5,6 +5,7 @@ permissions:
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-14]
     runs-on: ${{ matrix.os }}
@@ -26,11 +27,13 @@ jobs:
       - run: python3 scripts/check_skill.py --pack
       - run: python3 -m unittest discover -s bench -p 'test_*.py'
       - run: node --test scripts/launcher.test.mjs
-      - run: npm install -g @maxgfr/codeindex@2.30.0 webindex@1.19.4
+      - run: npm install -g @maxgfr/codeindex@2.30.0
+      - run: python3 scripts/install_ci_webindex.py "$RUNNER_TEMP/scopelet-adapters"
+      - run: echo "$RUNNER_TEMP/scopelet-adapters" >> "$GITHUB_PATH"
       - run: python3 scripts/check_adapters.py target/debug/scopelet
   msrv:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.85.0
+      - uses: dtolnay/rust-toolchain@1.88.0
       - run: cargo check --locked

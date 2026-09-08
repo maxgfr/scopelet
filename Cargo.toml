@@ -2,7 +2,7 @@
 name = "scopelet"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 description = "Compute before you send: bounded evidence for coding agents"
 license = "MIT"
 repository = "https://github.com/maxgfr/scopelet"
