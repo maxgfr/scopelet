@@ -55,7 +55,7 @@
             "tool_use_count": 5
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 118784,
             "input_tokens": 132182,
@@ -71,7 +71,7 @@
                 "reasoning_output_tokens": 222
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 222,
             "usage_missing": false
           }
         },
@@ -100,7 +100,7 @@
             "tool_use_count": 5
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 139264,
             "input_tokens": 155916,
@@ -116,7 +116,7 @@
                 "reasoning_output_tokens": 201
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 201,
             "usage_missing": false
           }
         },
@@ -145,7 +145,7 @@
             "tool_use_count": 5
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 167680,
             "input_tokens": 186656,
@@ -161,7 +161,7 @@
                 "reasoning_output_tokens": 307
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 307,
             "usage_missing": false
           }
         },
@@ -190,7 +190,7 @@
             "tool_use_count": 5
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 199680,
             "input_tokens": 230937,
@@ -206,7 +206,7 @@
                 "reasoning_output_tokens": 262
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 262,
             "usage_missing": false
           }
         },
@@ -235,7 +235,7 @@
             "tool_use_count": 4
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 97792,
             "input_tokens": 112412,
@@ -251,7 +251,7 @@
                 "reasoning_output_tokens": 143
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 143,
             "usage_missing": false
           }
         },
@@ -280,7 +280,7 @@
             "tool_use_count": 9
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 237824,
             "input_tokens": 265797,
@@ -296,7 +296,7 @@
                 "reasoning_output_tokens": 400
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 400,
             "usage_missing": false
           }
         },
@@ -325,7 +325,7 @@
             "tool_use_count": 7
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 220416,
             "input_tokens": 244169,
@@ -341,7 +341,7 @@
                 "reasoning_output_tokens": 516
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 516,
             "usage_missing": false
           }
         },
@@ -370,7 +370,7 @@
             "tool_use_count": 15
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 144384,
             "input_tokens": 161874,
@@ -386,7 +386,7 @@
                 "reasoning_output_tokens": 179
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 179,
             "usage_missing": false
           }
         },
@@ -415,7 +415,7 @@
             "tool_use_count": 6
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 160512,
             "input_tokens": 177160,
@@ -431,7 +431,7 @@
                 "reasoning_output_tokens": 204
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 204,
             "usage_missing": false
           }
         },
@@ -460,7 +460,7 @@
             "tool_use_count": 3
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 161536,
             "input_tokens": 180776,
@@ -476,7 +476,7 @@
                 "reasoning_output_tokens": 284
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 284,
             "usage_missing": false
           }
         },
@@ -549,7 +549,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 744,
             "usage_missing": false
           }
         },
@@ -624,7 +624,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 875,
             "usage_missing": false
           }
         },
@@ -699,7 +699,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 721,
             "usage_missing": false
           }
         },
@@ -773,7 +773,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 659,
             "usage_missing": false
           }
         },
@@ -846,7 +846,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1356,
             "usage_missing": false
           }
         },
@@ -920,7 +920,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1451,
             "usage_missing": false
           }
         },
@@ -993,7 +993,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 2153,
             "usage_missing": false
           }
         },
@@ -1066,7 +1066,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1076,
             "usage_missing": false
           }
         },
@@ -1139,7 +1139,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1146,
             "usage_missing": false
           }
         },
@@ -1213,7 +1213,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 921,
             "usage_missing": false
           }
         }
@@ -1281,7 +1281,7 @@
             "tool_use_count": 7
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 129024,
             "input_tokens": 140017,
@@ -1297,7 +1297,7 @@
                 "reasoning_output_tokens": 139
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 139,
             "usage_missing": false
           }
         },
@@ -1326,7 +1326,7 @@
             "tool_use_count": 6
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 143360,
             "input_tokens": 161852,
@@ -1342,7 +1342,7 @@
                 "reasoning_output_tokens": 172
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 172,
             "usage_missing": false
           }
         },
@@ -1371,7 +1371,7 @@
             "tool_use_count": 7
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 258560,
             "input_tokens": 287340,
@@ -1387,7 +1387,7 @@
                 "reasoning_output_tokens": 160
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 160,
             "usage_missing": false
           }
         },
@@ -1416,7 +1416,7 @@
             "tool_use_count": 5
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 179200,
             "input_tokens": 202403,
@@ -1432,7 +1432,7 @@
                 "reasoning_output_tokens": 246
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 246,
             "usage_missing": false
           }
         },
@@ -1461,7 +1461,7 @@
             "tool_use_count": 5
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 133376,
             "input_tokens": 150550,
@@ -1477,7 +1477,7 @@
                 "reasoning_output_tokens": 132
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 132,
             "usage_missing": false
           }
         },
@@ -1506,7 +1506,7 @@
             "tool_use_count": 3
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 60416,
             "input_tokens": 73863,
@@ -1522,7 +1522,7 @@
                 "reasoning_output_tokens": 128
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 128,
             "usage_missing": false
           }
         },
@@ -1551,7 +1551,7 @@
             "tool_use_count": 4
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 100864,
             "input_tokens": 115648,
@@ -1567,7 +1567,7 @@
                 "reasoning_output_tokens": 184
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 184,
             "usage_missing": false
           }
         },
@@ -1596,7 +1596,7 @@
             "tool_use_count": 6
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 118784,
             "input_tokens": 126891,
@@ -1612,7 +1612,7 @@
                 "reasoning_output_tokens": 131
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 131,
             "usage_missing": false
           }
         },
@@ -1641,7 +1641,7 @@
             "tool_use_count": 7
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 248320,
             "input_tokens": 281063,
@@ -1657,7 +1657,7 @@
                 "reasoning_output_tokens": 473
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 473,
             "usage_missing": false
           }
         },
@@ -1686,7 +1686,7 @@
             "tool_use_count": 4
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 115968,
             "input_tokens": 131829,
@@ -1702,7 +1702,7 @@
                 "reasoning_output_tokens": 141
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 141,
             "usage_missing": false
           }
         },
@@ -1776,7 +1776,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1310,
             "usage_missing": false
           }
         },
@@ -1849,7 +1849,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 735,
             "usage_missing": false
           }
         },
@@ -1922,7 +1922,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1220,
             "usage_missing": false
           }
         },
@@ -1996,7 +1996,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1031,
             "usage_missing": false
           }
         },
@@ -2068,7 +2068,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 760,
             "usage_missing": false
           }
         },
@@ -2141,7 +2141,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 3296,
             "usage_missing": false
           }
         },
@@ -2214,7 +2214,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 2391,
             "usage_missing": false
           }
         },
@@ -2288,7 +2288,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1048,
             "usage_missing": false
           }
         },
@@ -2361,7 +2361,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1168,
             "usage_missing": false
           }
         },
@@ -2435,7 +2435,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 923,
             "usage_missing": false
           }
         }
@@ -2503,7 +2503,7 @@
             "tool_use_count": 5
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 134656,
             "input_tokens": 159544,
@@ -2519,7 +2519,7 @@
                 "reasoning_output_tokens": 123
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 123,
             "usage_missing": false
           }
         },
@@ -2548,7 +2548,7 @@
             "tool_use_count": 5
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 216064,
             "input_tokens": 251515,
@@ -2564,7 +2564,7 @@
                 "reasoning_output_tokens": 231
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 231,
             "usage_missing": false
           }
         },
@@ -2593,7 +2593,7 @@
             "tool_use_count": 4
           },
           "usage": {
-            "cache_creation_input_tokens": null,
+            "cache_creation_input_tokens": 0,
             "cache_included_in_reported_input": true,
             "cache_read_input_tokens": 98816,
             "input_tokens": 120863,
@@ -2609,7 +2609,7 @@
                 "reasoning_output_tokens": 338
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 338,
             "usage_missing": false
           }
         },
@@ -2682,7 +2682,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 811,
             "usage_missing": false
           }
         },
@@ -2755,7 +2755,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1182,
             "usage_missing": false
           }
         },
@@ -2828,7 +2828,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1118,
             "usage_missing": false
           }
         }
@@ -2933,7 +2933,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1574,
             "usage_missing": false
           }
         },
@@ -3006,7 +3006,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1372,
             "usage_missing": false
           }
         },
@@ -3078,7 +3078,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 637,
             "usage_missing": false
           }
         },
@@ -3151,7 +3151,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 1033,
             "usage_missing": false
           }
         },
@@ -3224,7 +3224,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 681,
             "usage_missing": false
           }
         },
@@ -3297,7 +3297,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 581,
             "usage_missing": false
           }
         }
@@ -3403,7 +3403,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 592,
             "usage_missing": false
           }
         },
@@ -3476,7 +3476,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 503,
             "usage_missing": false
           }
         },
@@ -3549,7 +3549,7 @@
                 "speed": "standard"
               }
             ],
-            "reasoning_tokens": null,
+            "reasoning_tokens": 754,
             "usage_missing": false
           }
         }
@@ -3563,7 +3563,7 @@
       }
     }
   ],
-  "export_harness_sha256": "31d8df6e29570a6e1bff33e39876f471feda154fc138e7fb00882d70859eae8d",
+  "export_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
   "limitations": [
     "One run per cell, fixed arm order, synthetic tasks; no statistical significance claim.",
     "Installed global skill context may be discovered despite user settings overrides.",

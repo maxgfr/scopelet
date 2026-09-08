@@ -9,7 +9,7 @@ visible detail and requires recovery when that detail matters.
 
 - 43 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup and process behavior.
-- 17 offline benchmark-harness tests, including independent grading, cache usage,
+- 18 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
 - 4 launcher tests, passing on Node 18.20.8 and the local Node 26.8.1 runtime.
 - Real codeindex 2.29.1/2.30.0 and webindex 1.18.10/1.19.4 adapter checks.
@@ -118,3 +118,15 @@ arm order. Model variation, instruction overhead, cache behavior and instruction
 adherence can dominate small tasks. No significance, general quality equivalence,
 quota reduction or universal saving is established. The project includes the
 harness so these claims can be tested on other workloads and repeated sessions.
+
+## Published-release installation
+
+[Version 0.1.0](https://github.com/maxgfr/scopelet/releases/tag/v0.1.0) was published
+by the gated release workflow. Fresh launcher setup downloaded the macOS ARM64
+release and verified its checksum. The globally installed Codex and Claude skills
+then each executed that published binary through their Node launcher and saved
+the independently checked answer `{"count":3}`. Both exited 0. These are two
+additional installation smoke sessions, separate from the 55 measurement runs.
+[Their accounting and binary hash](../bench/results/release-smoke-2026-09-09.json)
+are retained. The agent subprocesses used a workspace-local `SCOPELET_CACHE_DIR`
+for sandbox-compatible result storage and the default verified binary cache.

@@ -14,6 +14,15 @@ import run
 
 
 class HarnessTests(unittest.TestCase):
+    def test_observed_reasoning_aliases_do_not_inflate_output(self):
+        codex = run.normalize_usage("codex", json.dumps({"type":"turn.completed", "usage":{"input_tokens":100,"output_tokens":20,"reasoning_output_tokens":7,"cache_write_input_tokens":0}}).encode())
+        self.assertEqual(codex["reasoning_tokens"], 7)
+        self.assertEqual(codex["output_tokens"], 20)
+        self.assertEqual(codex["cache_creation_input_tokens"], 0)
+        claude = run.normalize_usage("claude", json.dumps({"type":"result", "usage":{"input_tokens":10,"output_tokens":20,"output_tokens_details":{"thinking_tokens":8}}}).encode())
+        self.assertEqual(claude["reasoning_tokens"], 8)
+        self.assertEqual(claude["output_tokens"], 20)
+
     def test_help_is_not_evidence_adoption(self):
         self.assertFalse(run._is_scopelet_invocation("Bash", "scopelet run --help"))
         self.assertFalse(run._is_scopelet_invocation("Bash", "scopelet bench"))

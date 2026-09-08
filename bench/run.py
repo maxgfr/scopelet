@@ -388,6 +388,10 @@ def _first_number(mapping: dict[str, Any], names: tuple[str, ...]) -> int | None
 
 
 def _usage_from(mapping: dict[str, Any]) -> dict[str, Any]:
+    reasoning = _first_number(mapping, ("reasoning_tokens", "reasoningTokens", "thinking_tokens", "reasoning_output_tokens"))
+    details = mapping.get("output_tokens_details")
+    if reasoning is None and isinstance(details, dict):
+        reasoning = _first_number(details, ("thinking_tokens", "reasoning_tokens"))
     return {
         "input_tokens": _first_number(mapping, ("input_tokens", "inputTokens", "prompt_tokens")),
         "output_tokens": _first_number(mapping, ("output_tokens", "outputTokens", "completion_tokens")),
@@ -397,9 +401,9 @@ def _usage_from(mapping: dict[str, Any]) -> dict[str, Any]:
         ),
         "cache_creation_input_tokens": _first_number(
             mapping,
-            ("cache_creation_input_tokens", "cache_creation_tokens", "cacheCreationInputTokens"),
+            ("cache_creation_input_tokens", "cache_creation_tokens", "cacheCreationInputTokens", "cache_write_input_tokens"),
         ),
-        "reasoning_tokens": _first_number(mapping, ("reasoning_tokens", "reasoningTokens", "thinking_tokens")),
+        "reasoning_tokens": reasoning,
     }
 
 
