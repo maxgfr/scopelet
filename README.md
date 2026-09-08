@@ -9,10 +9,10 @@ npx skills add maxgfr/scopelet -a codex claude-code -y
 
 Ask your agent: **“Use scopelet to investigate this repository”**, or
 **“Use scopelet ultra for this session.”** The skill's Node 18+ launcher downloads
-a pinned, SHA-256 checked release for macOS/Linux, Intel or ARM. Native Windows
+a pinned, SHA-256 checked release for macOS/Linux, Intel or ARM. Linux releases target Ubuntu 24.04 or compatible glibc environments. Native Windows
 is not currently supported. No proxy, model API key or agent hook is needed.
 
-For a standalone CLI:
+For a standalone CLI (Rust 1.88+):
 
 ```sh
 cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.0 --locked
