@@ -14,6 +14,10 @@ import run
 
 
 class HarnessTests(unittest.TestCase):
+    def test_commented_commands_do_not_count_as_adoption(self):
+        self.assertFalse(run._is_scopelet_invocation("Bash", "echo note # ignore; scopelet query --file x"))
+        self.assertTrue(run._is_scopelet_invocation("Bash", "echo note # ignore; fake\n\"$SCOPELET_BIN\" query --file x"))
+
     def test_default_plan_has_twenty_runs_and_shell_control_only_task1(self) -> None:
         cases = run.planned_cases(list(run.AGENTS), list(run.ARMS), list(run.TASKS))
         self.assertEqual(len(cases), 20)

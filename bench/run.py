@@ -610,6 +610,10 @@ def _split_shell_commands(script: str) -> list[str]:
             current.append(char)
             index += 1
             continue
+        if char == "#" and (not current or current[-1].isspace()):
+            while index < len(script) and script[index] != "\n":
+                index += 1
+            continue
         if char == "<" and index + 1 < len(script) and script[index + 1] == "<":
             heredoc = True
             current.extend((char, char))
