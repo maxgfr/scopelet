@@ -309,3 +309,32 @@ fn run_parse_failure_preserves_successful_command_status_and_raw_bytes() {
         b"invalid-json"
     );
 }
+
+#[test]
+fn newline_heavy_command_has_bounded_record_overhead_and_exact_original() {
+    let dir = tempfile::tempdir().unwrap();
+    let out = cli()
+        .args([
+            "--cache-dir",
+            dir.path().to_str().unwrap(),
+            "run",
+            "--",
+            "sh",
+            "-c",
+            "head -c 240000 /dev/zero | tr '\\000' '\\n'",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let view: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(view["result"]["total_records"].as_u64().unwrap() <= 10_000);
+    let store = Store::open(Some(dir.path().to_path_buf())).unwrap();
+    assert_eq!(
+        store.get(view["stdout"].as_str().unwrap()).unwrap(),
+        vec![b'\n'; 240000]
+    );
+}

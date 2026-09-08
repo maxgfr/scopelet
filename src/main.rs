@@ -260,14 +260,24 @@ fn execute(cli: Cli) -> Result<i32> {
                     continue;
                 }
                 let text = std::mem::take(&mut record.text);
-                let lines: Vec<&str> = text.split_inclusive('\n').collect();
-                for (index, lines) in lines.chunks(20).enumerate() {
+                // Adapt block size so newline-heavy captures cannot create millions of records.
+                let block_lines = text.split_inclusive('\n').count().div_ceil(10_000).max(20);
+                let mut lines = text.split_inclusive('\n').peekable();
+                let mut start = 1;
+                while lines.peek().is_some() {
+                    let mut text = String::new();
+                    let mut count = 0;
+                    for line in lines.by_ref().take(block_lines) {
+                        text.push_str(line);
+                        count += 1;
+                    }
                     chunks.push(Record {
-                        text: lines.concat(),
-                        start_line: Some(index * 20 + 1),
-                        end_line: Some(index * 20 + lines.len()),
+                        text,
+                        start_line: Some(start),
+                        end_line: Some(start + count - 1),
                         ..record.clone()
                     });
+                    start += count;
                 }
             }
             data.records = chunks;

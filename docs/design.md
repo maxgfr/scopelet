@@ -51,7 +51,11 @@ preserved, with 124/130 for timeout/interruption. Capture overflow discards exce
 bytes while draining the command; its exit status is preserved and completeness
 is false. Parse errors return raw references and the original command exit code. This is not a
 sandbox; use the host agent's permission boundaries. Stdout/stderr retain
-separate originals; their real-time interleaving is not reconstructed.
+separate originals; their real-time interleaving is not reconstructed. Text capture
+uses adaptive blocks, at most 10,000 per stream, to bound record overhead on
+newline-heavy output. Descendants that retain pipes after their parent exits
+receive bounded cleanup; escaped process groups may survive, but cannot hold
+capture open indefinitely and the result reports incomplete drainage.
 
 The adapters are external executable contracts. Codeindex's symbols schema 5
 is checked before use; invalid spans or paths outside the repository fail.
