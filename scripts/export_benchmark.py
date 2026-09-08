@@ -27,6 +27,7 @@ def export(directory):
         row = {key: run[key] for key in ('run_id', 'agent', 'task', 'arm', 'exit_code', 'timed_out', 'duration_seconds')}
         row.update({
             'passed': run['acceptance']['passed'],
+            'native_skill_requested': (directory / run['prompt_file']).read_text().startswith('/scopelet '),
             'usage': usage,
             'tools': harness.tool_usage(run['agent'], stdout, stderr),
             'fixture_sha256': digest(json.dumps(run['fixture_hashes'], sort_keys=True).encode()),
@@ -62,6 +63,7 @@ def main():
             'Installed global skill context may be discovered despite user settings overrides.',
             'Adoption counts recognize a conservative subset of shell syntax; raw commands were inspected for highlighted comparisons.',
             'campaign-1 is exploratory: binary and skill were edited during that campaign; it is not an immutable release comparison.',
+            'campaign-1, final-20260909 and commands-20260909 used Claude setting-sources empty: project skill discovery was disabled. Claude skill trials are in claude-skill-20260909.',
             'Raw transcripts stay local; published hashes permit checking retained originals.',
         ],
         'campaigns': [export(directory) for directory in args.directories],

@@ -6,6 +6,8 @@ Install the skill for both agents:
 npx skills add maxgfr/scopelet -a codex claude-code
 ```
 
+Invoke `/scopelet <task>` in Claude Code or `$scopelet <task>` in Codex.
+Explicit invocation is more reliable than expecting automatic selection.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
 The launcher installs Scopelet **0.1.0** into the user's cache, downloading the
 matching macOS/Linux release from github.com and verifying its SHA-256. Node 18+

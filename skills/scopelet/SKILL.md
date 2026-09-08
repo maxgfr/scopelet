@@ -9,8 +9,9 @@ metadata:
 
 # Scopelet
 
-Compute before reading. Use the bundled `scripts/scopelet.mjs` through Node as
-the CLI; an existing compatible `scopelet` binary also works. The launcher
+Compute before reading. If `SCOPELET_BIN` is set, execute `"$SCOPELET_BIN"` directly.
+Otherwise use `node <this-skill>/scripts/scopelet.mjs`; an existing compatible
+`scopelet` binary on PATH also works. The launcher
 downloads its pinned release once. For a small known file, read it directly.
 
 Choose the result needed: matching passages, selected fields, counts or groups.

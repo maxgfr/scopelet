@@ -303,7 +303,8 @@ def prompt_for(agent: str, task: str, arm: str, binary: Path) -> str:
         "task3": "Correct normalize_identifier in src/helpers.py for trimming, lowercasing, and collapsing whitespace.",
         "task4": "Run python3 checks.py once before editing to capture its failing command output. Find the worker implementation through the application call path, fix the explicit-zero versus None behavior, then rerun python3 checks.py.",
     }[task]
-    return f"""You are working in the current isolated git workspace.
+    activation = "/scopelet " if agent == "claude" and arm in ("default", "ultra") else ""
+    return activation + f"""You are working in the current isolated git workspace.
 {task_text}
 {method}
 Inspect only what is needed, make the smallest correct edits, and verify the independent acceptance behavior before finishing.
@@ -337,7 +338,7 @@ def command_for(agent: str) -> list[str]:
             "stream-json",
             "--verbose",
             "--setting-sources",
-            "",
+            "project",
             "--strict-mcp-config",
             "--mcp-config",
             '{"mcpServers":{}}',
@@ -346,7 +347,7 @@ def command_for(agent: str) -> list[str]:
             "--permission-mode",
             "acceptEdits",
             "--allowedTools",
-            "Read,Write,Edit,Glob,Grep,Bash",
+            "Read,Write,Edit,Glob,Grep,Bash,Skill",
             "--no-session-persistence",
         ]
     raise ValueError(f"unknown agent: {agent}")
@@ -662,10 +663,12 @@ def _command_payload(payload: str) -> str:
 
 def _is_scopelet_invocation(label: str, payload: str) -> bool:
     command = _command_payload(payload)
-    known_subcommands = {"query", "run", "expand", "doctor", "bench", "clean"}
+    known_subcommands = {"query", "run", "expand"}
     for segment in _split_shell_commands(_unwrap_shell_script(command)):
         tokens = _shell_tokens(segment)
         if not tokens:
+            continue
+        if any(token in ("--help", "-h", "--version", "-V") for token in tokens):
             continue
         executable = Path(tokens[0]).name.lower()
         if executable in ("scopelet", "scopelet-bin") or tokens[0] in ("$SCOPELET_BIN", "${SCOPELET_BIN}"):
@@ -684,7 +687,7 @@ def _is_scopelet_invocation(label: str, payload: str) -> bool:
 
 
 def tool_usage(agent: str, stdout: bytes, stderr: bytes) -> dict[str, Any]:
-    del agent, stderr
+    del stderr
     calls: dict[str, tuple[str, str]] = {}
     for event in parse_json_stream(stdout):
         for mapping in _walk_dicts(event):
@@ -704,6 +707,8 @@ def tool_usage(agent: str, stdout: bytes, stderr: bytes) -> dict[str, Any]:
         "tool_counts": dict(sorted(counts.items())),
         "scopelet_invocations": scopelet_hits,
         "scopelet_adopted": scopelet_hits > 0,
+        "skill_discovered": next((any("scopelet" in str(skill) for skill in event.get("skills", [])) for event in parse_json_stream(stdout) if agent == "claude" and event.get("subtype") == "init"), None),
+        "skill_tool_invoked": any(label == "Skill" and "scopelet" in payload for label, payload in calls.values()) if agent == "claude" else None,
     }
 
 

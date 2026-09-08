@@ -14,6 +14,10 @@ import run
 
 
 class HarnessTests(unittest.TestCase):
+    def test_help_is_not_evidence_adoption(self):
+        self.assertFalse(run._is_scopelet_invocation("Bash", "scopelet run --help"))
+        self.assertFalse(run._is_scopelet_invocation("Bash", "scopelet bench"))
+
     def test_commented_commands_do_not_count_as_adoption(self):
         self.assertFalse(run._is_scopelet_invocation("Bash", "echo note # ignore; scopelet query --file x"))
         self.assertTrue(run._is_scopelet_invocation("Bash", "echo note # ignore; fake\n\"$SCOPELET_BIN\" query --file x"))
