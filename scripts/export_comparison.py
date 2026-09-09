@@ -5,12 +5,15 @@ import hashlib
 import importlib.util
 import json
 import re
+import sys
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location(
     "scopelet_comparison_harness", Path(__file__).resolve().parents[1] / "bench/run.py")
 harness = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(harness)
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "bench"))
+import compare as comparison  # noqa: E402
 
 MODE_EVIDENCE = (
     "Views in completed tool returns correlated with Scopelet command invocations. "
@@ -109,6 +112,9 @@ def export(directory):
     result["meta"]["executable_versions"] = {
         name: data.get("version") for name, data in meta.get("executable_versions", {}).items()}
     result["meta"]["scopelet_view_mode_evidence"] = MODE_EVIDENCE
+    result["meta"]["analyzer_sha256"] = {
+        "compare.py": hashlib.sha256(Path(comparison.__file__).read_bytes()).hexdigest(),
+        "export_comparison.py": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
     result["meta"]["cost_note"] = COST_NOTE
     result["meta"]["agent_versions"] = {
         name: data.get("version") for name, data in meta.get("agent_versions", {}).items()}
@@ -136,6 +142,14 @@ def export(directory):
         row["tools"] = run.get("tools", {})
         row["fixture_hashes"] = run.get("fixture_hashes", {})
         raw = directory / run.get("raw_directory", "missing")
+        if (raw / "stdout.raw").is_file() and run.get("agent"):
+            # Adoption counters are derived from the raw trace by the current
+            # analyzer (recorded by hash) so that analyzer fixes apply uniformly.
+            audit = raw / "rtk-audit/hook-audit.log"
+            row["tools"] = comparison.adoption(run["agent"], (raw / "stdout.raw").read_bytes(), run.get("task"),
+                                               audit.read_text() if audit.is_file() else None)
+            row["usage"] = {key: harness.normalize_usage(run["agent"], (raw / "stdout.raw").read_bytes(), run.get("model_requested")).get(key)
+                            for key in USAGE_FIELDS}
         row["stdout_sha256"] = digest(raw / "stdout.raw")
         row["stderr_sha256"] = digest(raw / "stderr.raw")
         row["prompt_sha256"] = digest(raw / "prompt.txt")

@@ -47,6 +47,11 @@ SHELL_LABELS = ("bash", "command_execution", "exec_command", "shell", "shell_com
 CACHE_PATTERN = re.compile(r"scopelet-cache/(?:blobs|artifacts)/")
 CHECKS_FAILURE_PATTERNS = ("AssertionError", "Exit code 1", '"exit_code":1', '"exit_code": 1', "limit=0 must select")
 CHECKS_SUCCESS_PATTERNS = ("checks complete", '"exit_code":0', '"exit_code": 0')
+# Agents often echo the status themselves: `exit=1`, `EXIT=1`, `checks exit=0`.
+CHECKS_EXIT_PATTERN = re.compile(r"(?i)\bexit(?: code)?\s*[=:]\s*(\d+)\b")
+# Claude Code persists large tool outputs and shows a bounded preview; the
+# evidence then lives in the next call that reads the persisted file.
+PERSISTED_MARKER = "<persisted-output>"
 
 
 def cases(agents: list[str], arms: list[str], tasks: list[str], repetitions: int, seed: int) -> list[dict[str, Any]]:
@@ -202,21 +207,48 @@ def _is_rtk_tokens(tokens: list[str]) -> bool:
     return bool(tokens) and (Path(tokens[0]).name == "rtk" or tokens[0] in ("$RTK_BIN", "${RTK_BIN}")) and len(tokens) > 1
 
 
-def checks_sequence(agent: str, raw: bytes) -> dict[str, Any]:
-    """Task4 evidence: the first checks run must fail and the last must pass.
+def _checks_evidence(text: str, is_error: bool) -> tuple[bool, bool]:
+    """(failure, success) evidence in one returned text; both False when unknown."""
+    failure = is_error or any(pattern in text for pattern in CHECKS_FAILURE_PATTERNS)
+    success = any(pattern in text for pattern in CHECKS_SUCCESS_PATTERNS)
+    for match in CHECKS_EXIT_PATTERN.finditer(text):
+        if match.group(1) == "0":
+            success = True
+        else:
+            failure = True
+    return failure, success and not failure
 
-    Text patterns cover native output, Claude's `Exit code N` wrapper, RTK
-    summaries and Scopelet run views. This is trace evidence, not a proof of
+
+def checks_sequence(agent: str, raw: bytes) -> dict[str, Any]:
+    """Task4 evidence: a failing checks run must precede the final passing one.
+
+    Text patterns cover native output, Claude's `Exit code N` wrapper, echoed
+    exit statuses, RTK summaries and Scopelet run views. When Claude Code
+    persists a large output and returns only a preview, the evidence is taken
+    from the following calls that read the persisted file (paths containing
+    `tool-results/`), up to the next checks run. Runs without any evidence are
+    recorded as unknown and skipped. This is trace evidence, not a proof of
     semantic fidelity.
     """
+    calls = ordered_tool_calls(agent, raw)
+    indices = [index for index, call in enumerate(calls)
+               if any(_is_checks_invocation(tokens) for tokens in _shell_segments(call["label"], call["payload"]))]
     runs = []
-    for call in ordered_tool_calls(agent, raw):
-        if any(_is_checks_invocation(tokens) for tokens in _shell_segments(call["label"], call["payload"])):
-            text = call["text"]
-            failure = call["is_error"] or any(pattern in text for pattern in CHECKS_FAILURE_PATTERNS)
-            success = (not failure) and (any(pattern in text for pattern in CHECKS_SUCCESS_PATTERNS) or (call.get("returned", True) and not call["is_error"]))
-            runs.append({"failure_evidence": failure, "success_evidence": success})
-    verified = len(runs) >= 2 and runs[0]["failure_evidence"] and runs[-1]["success_evidence"]
+    for position, index in enumerate(indices):
+        call = calls[index]
+        failure, success = _checks_evidence(call["text"], call["is_error"])
+        truncated = PERSISTED_MARKER in call["text"]
+        if truncated and not (failure or success):
+            following = calls[index + 1: indices[position + 1] if position + 1 < len(indices) else len(calls)]
+            for later in following:
+                if "tool-results/" in later["payload"]:
+                    failure, success = _checks_evidence(later["text"], False)
+                    if failure or success:
+                        break
+        runs.append({"failure_evidence": failure, "success_evidence": success, "truncated": truncated})
+    evidenced = [run for run in runs if run["failure_evidence"] or run["success_evidence"]]
+    verified = (len(evidenced) >= 2 and evidenced[0]["failure_evidence"] and evidenced[-1]["success_evidence"]
+                and not runs[-1]["failure_evidence"])
     return {"checks_runs": runs, "verified": verified}
 
 

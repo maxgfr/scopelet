@@ -121,6 +121,22 @@ class CompareTests(unittest.TestCase):
         self.assertTrue(compare.adoption("claude", wrapped, "task4")["checks_sequence_verified"])
         self.assertIsNone(compare.adoption("claude", wrapped, "task3")["checks_sequence_verified"])
 
+    def test_checks_sequence_reads_persisted_output_and_echoed_exit_status(self):
+        preview = "<persisted-output>\nOutput too large (127.1KB). Full output saved to: /x/tool-results/abc.txt\n\nPreview (first 2KB):\n[0001/1200] ... ok\n</persisted-output>"
+        raw = (claude_call('python3 checks.py; echo "EXIT=$?"', preview, False, "a")
+               + claude_call("grep -v ' ok ' /x/tool-results/abc.txt", "Traceback\nAssertionError: limit=0 must select zero workers\nEXIT=1", False, "b")
+               + claude_call("cat src/worker.py", "def worker_count", False, "c")
+               + claude_call('python3 checks.py | tail -3; echo "checks exit=${PIPESTATUS[0]}"', "[1201/1200] checks complete ... passed\nchecks exit=0", False, "d"))
+        tools = compare.adoption("claude", raw, "task4")
+        self.assertTrue(tools["checks_sequence_verified"])
+        self.assertEqual([run["truncated"] for run in tools["checks_runs"]], [True, False])
+        self.assertTrue(tools["checks_runs"][0]["failure_evidence"])
+        unknown_then_pass = (claude_call('python3 checks.py', preview, False, "a")
+                             + claude_call('python3 checks.py >/dev/null; echo "checks exit=$?"', "checks exit=0", False, "b"))
+        self.assertFalse(compare.adoption("claude", unknown_then_pass, "task4")["checks_sequence_verified"])
+        exit_ten = claude_call('python3 checks.py; echo "exit=$?"', "exit=10", False, "a") + claude_call('python3 checks.py; echo "exit=$?"', "exit=0", False, "b")
+        self.assertTrue(compare.adoption("claude", exit_ten, "task4")["checks_sequence_verified"])
+
     def test_cache_reingestion_counts_only_returned_cache_paths(self):
         hit = "scopelet-cache/blobs/abc:1:cached line\n"
         raw = claude_call("rg --hidden limit", "src/worker.py:3:limit\n" + hit + "scopelet-cache/artifacts/def:1:more\n")
