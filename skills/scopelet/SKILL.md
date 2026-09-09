@@ -1,10 +1,12 @@
 ---
 name: scopelet
-description: Query large files or repositories, recover compressed evidence, or configure Scopelet automatic compression and response modes.
+description: Query files and repositories, recover compressed evidence, and configure Scopelet.
 license: MIT
 metadata:
   author: maxgfr
   version: "0.2.3"
+  opencode/autoinvoke: 'false'
+disable-model-invocation: true
 ---
 
 # Scopelet
@@ -14,7 +16,7 @@ Use `"$SCOPELET_BIN"` when set; otherwise `scopelet` or
 Small known files and edits use native tools. Installed hooks work without this
 skill; avoid stacking Scopelet with another output wrapper.
 
-Compute the result needed before reading bulk data:
+Compute the result before reading bulk data:
 
 ```sh
 scopelet query --repo . --find validateToken --context 5
