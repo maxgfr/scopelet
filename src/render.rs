@@ -28,6 +28,29 @@ pub fn render(
     budget: usize,
     offset: usize,
 ) -> Result<View> {
+    let artifact = store.put("artifact", &serde_json::to_vec(data)?)?;
+    paginate(data, artifact, mode, budget, offset)
+}
+
+/// Page a dataset already stored under `artifact`, without re-serializing and
+/// re-hashing the whole dataset for every page.
+pub fn render_stored(
+    data: &Dataset,
+    artifact: String,
+    mode: Mode,
+    budget: usize,
+    offset: usize,
+) -> Result<View> {
+    paginate(data, artifact, mode, budget, offset)
+}
+
+fn paginate(
+    data: &Dataset,
+    artifact: String,
+    mode: Mode,
+    budget: usize,
+    offset: usize,
+) -> Result<View> {
     ensure!(
         (512..=1024 * 1024).contains(&budget),
         "internal view budget must be 512..1048576"
@@ -36,7 +59,6 @@ pub fn render(
         offset <= data.records.len(),
         "offset is past the result set"
     );
-    let artifact = store.put("artifact", &serde_json::to_vec(data)?)?;
     let mut view = View {
         schema_version: 1,
         artifact,
@@ -65,16 +87,28 @@ pub fn render(
             let total = lines.len();
             let mut text = String::new();
             let mut kept = 0;
-            for line in lines.into_iter().take(8) {
+            for line in lines.iter().take(8) {
                 if text.len() + line.len() > 1024 {
                     break;
                 }
                 text.push_str(line);
                 kept += 1;
             }
+            if kept == 0 {
+                // One line longer than the ultra limit: ship its head rather than an
+                // empty record. The exact bytes stay recoverable through the blob.
+                let line = lines[0];
+                let cut = (0..=1024)
+                    .rev()
+                    .find(|&i| line.is_char_boundary(i))
+                    .unwrap();
+                text.push_str(&line[..cut]);
+                kept = 1;
+                record.text_truncated = true;
+            }
             record.omitted_lines = Some(total - kept);
             record.text = text;
-            record.end_line = (kept > 0).then(|| record.start_line.unwrap_or(1) + kept - 1);
+            record.end_line = Some(record.start_line.unwrap_or(1) + kept - 1);
         }
         let record_size = serde_json::to_vec(&record)?.len() + 1;
         // Serialize each record once; reserve final counts and recovery instructions.
@@ -95,6 +129,12 @@ pub fn render(
     if view.blocked_record.is_some() {
         view.next_offset = None;
         view.notes.push("Record exceeds budget. Increase max_bytes or expand --raw to a local file and select the record locally.".into());
+    }
+    if view.records.iter().any(|record| record.text_truncated) {
+        view.notes.push(
+            "Ultra cut a line longer than its limit; expand that record's blob for exact bytes."
+                .into(),
+        );
     }
     view.display_complete = offset == 0 && view.shown_records == view.total_records && !abridged;
     if !view.display_complete {

@@ -77,7 +77,8 @@ the requested host; use local documents when network access is unavailable.
 Add `"mode":"ultra"` to a request, or pass `--mode ultra`. `max_bytes` bounds
 the serialized view in UTF-8 bytes (default 16384; ultra 4096). This is not a
 token count. Default keeps selected units exact; ultra can show the first eight
-lines of a large text unit, with `omitted_lines`. Neither alters saved originals.
+lines of a large text unit, with `omitted_lines`. A line longer than that limit
+is cut and marked `text_truncated`. Neither alters saved originals.
 
 Every result links an `artifact:<sha256>` containing the entire dataset, sources,
 exclusion counts and notes. A record's `blob:<sha256>` holds its source bytes.
@@ -91,7 +92,9 @@ scopelet expand blob:HASH --raw > original.bin
 
 Use the returned `next_offset`, not an inferred page size. If the next record
 does not fit, increase `--max-bytes` (up to 1 MiB) or expand its blob by lines;
-`--manifest` lists source blobs even when no record fits. `--raw` deliberately
+`--manifest` lists source blobs even when no record fits, within the same
+`--max-bytes` budget: compare `shown_snapshots` with `total_snapshots`, and raise
+the budget when the list is cut. `--raw` deliberately
 removes the output limit and should be redirected to disk for large originals.
 
 A new query can use `{"type":"artifact","id":"artifact:HASH"}` to operate on

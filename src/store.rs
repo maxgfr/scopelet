@@ -12,6 +12,25 @@ pub fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
+/// Cache items are named by their content hash; anything else is not ours to read.
+fn content_hash_name(name: &str) -> bool {
+    name.len() == 64 && name.bytes().all(|c| c.is_ascii_hexdigit())
+}
+
+/// Discard an aged leftover from a write that was killed before it persisted.
+fn reap_temporary(item: &fs::DirEntry, name: &str, now: SystemTime, age: Duration) -> Result<bool> {
+    if !name.starts_with(".tmp")
+        || now
+            .duration_since(item.metadata()?.modified()?)
+            .unwrap_or_default()
+            < age
+    {
+        return Ok(false);
+    }
+    fs::remove_file(item.path())?;
+    Ok(true)
+}
+
 pub fn read_bounded(path: &Path, limit: usize) -> Result<Vec<u8>> {
     let file = fs::File::open(path).with_context(|| format!("read {}", path.display()))?;
     ensure!(
@@ -68,10 +87,7 @@ impl Store {
         let (kind, hash) = id
             .split_once(':')
             .context("expected blob:<sha256> or artifact:<sha256>")?;
-        ensure!(
-            hash.len() == 64 && hash.bytes().all(|c| c.is_ascii_hexdigit()),
-            "invalid content hash"
-        );
+        ensure!(content_hash_name(hash), "invalid content hash");
         let folder = match kind {
             "blob" => "blobs",
             "artifact" => "artifacts",
@@ -121,6 +137,12 @@ impl Store {
         Ok(bytes)
     }
 
+    /// Mark an item as used so age-based cleanup does not drop it mid-session.
+    pub fn touch(&self, id: &str) -> Result<()> {
+        fs::File::open(self.location(id)?)?.set_modified(SystemTime::now())?;
+        Ok(())
+    }
+
     pub fn clean(&self, older_days: u64) -> Result<usize> {
         let age = Duration::from_secs(older_days.saturating_mul(86400));
         let now = SystemTime::now();
@@ -129,6 +151,12 @@ impl Store {
         for item in fs::read_dir(self.root.join("artifacts"))? {
             let item = item?;
             if !item.file_type()?.is_file() {
+                continue;
+            }
+            let name = item.file_name().to_string_lossy().into_owned();
+            if !content_hash_name(&name) {
+                // Foreign files are never cache items: leave them where they are.
+                removed += usize::from(reap_temporary(&item, &name, now, age)?);
                 continue;
             }
             if now
@@ -140,8 +168,7 @@ impl Store {
                 removed += 1;
             } else {
                 // Fail closed on malformed surviving artifacts: do not discard their originals.
-                let bytes =
-                    self.get(&format!("artifact:{}", item.file_name().to_string_lossy()))?;
+                let bytes = self.get(&format!("artifact:{name}"))?;
                 let data: crate::model::Dataset = serde_json::from_slice(&bytes)?;
                 for snapshot in data.snapshots {
                     referenced.insert(snapshot.blob);
@@ -155,9 +182,16 @@ impl Store {
         }
         for item in fs::read_dir(self.root.join("blobs"))? {
             let item = item?;
-            let id = format!("blob:{}", item.file_name().to_string_lossy());
-            if item.file_type()?.is_file()
-                && !referenced.contains(&id)
+            let name = item.file_name().to_string_lossy().into_owned();
+            if !item.file_type()?.is_file() {
+                continue;
+            }
+            if !content_hash_name(&name) {
+                removed += usize::from(reap_temporary(&item, &name, now, age)?);
+                continue;
+            }
+            let id = format!("blob:{name}");
+            if !referenced.contains(&id)
                 && now
                     .duration_since(item.metadata()?.modified()?)
                     .unwrap_or_default()

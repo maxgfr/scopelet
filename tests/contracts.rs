@@ -338,3 +338,173 @@ fn newline_heavy_command_has_bounded_record_overhead_and_exact_original() {
         vec![b'\n'; 240000]
     );
 }
+
+#[test]
+fn expand_manifest_stays_inside_its_byte_budget() {
+    let dir = tempfile::tempdir().unwrap();
+    let repo = dir.path().join("repo");
+    fs::create_dir(&repo).unwrap();
+    for i in 0..80 {
+        fs::write(
+            repo.join(format!("module_with_a_fairly_long_name_{i:03}.txt")),
+            format!("value {i}\n"),
+        )
+        .unwrap();
+    }
+    let cache = dir.path().join("cache");
+    let out = cli()
+        .args([
+            "--cache-dir",
+            cache.to_str().unwrap(),
+            "query",
+            "--repo",
+            repo.to_str().unwrap(),
+            "--count",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let artifact = serde_json::from_slice::<Value>(&out).unwrap()["artifact"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let manifest = cli()
+        .args([
+            "--cache-dir",
+            cache.to_str().unwrap(),
+            "expand",
+            &artifact,
+            "--manifest",
+            "--max-bytes",
+            "2048",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    assert!(
+        manifest.len() <= 2048,
+        "manifest emitted {} bytes over a 2048 byte budget",
+        manifest.len()
+    );
+    let value: Value = serde_json::from_slice(&manifest).unwrap();
+    assert_eq!(value["total_snapshots"], json!(80));
+    assert!(value["shown_snapshots"].as_u64().unwrap() < 80);
+    assert!(value.get("records").is_none());
+    assert!(
+        value["notes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|note| note.as_str().unwrap().contains("Manifest truncated"))
+    );
+}
+
+#[test]
+fn spec_query_rejects_flags_it_would_ignore() {
+    let dir = tempfile::tempdir().unwrap();
+    let spec = dir.path().join("spec.json");
+    let target = dir.path().join("data.txt");
+    fs::write(&target, "one\ntwo\n").unwrap();
+    fs::write(
+        &spec,
+        json!({
+            "version": 1,
+            "source": {"type": "file", "path": target.to_str().unwrap()},
+            "operations": [{"op": "count"}]
+        })
+        .to_string(),
+    )
+    .unwrap();
+    let cache = dir.path().join("cache");
+    let base = [
+        "--cache-dir",
+        cache.to_str().unwrap(),
+        "query",
+        "--spec",
+        spec.to_str().unwrap(),
+    ];
+
+    cli().args(base).assert().success();
+    for ignored in [
+        vec!["--count"],
+        vec!["--context", "9"],
+        vec!["--format", "json"],
+    ] {
+        let output = cli()
+            .args(base)
+            .args(&ignored)
+            .assert()
+            .failure()
+            .get_output()
+            .clone();
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("cannot be used with"),
+            "{ignored:?} should be rejected next to --spec"
+        );
+    }
+}
+
+#[test]
+fn expanding_an_artifact_keeps_it_out_of_age_based_cleanup() {
+    let dir = tempfile::tempdir().unwrap();
+    let target = dir.path().join("data.txt");
+    fs::write(&target, "alpha\nbeta\n").unwrap();
+    let cache = dir.path().join("cache");
+    let out = cli()
+        .args([
+            "--cache-dir",
+            cache.to_str().unwrap(),
+            "query",
+            "--file",
+            target.to_str().unwrap(),
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let artifact = serde_json::from_slice::<Value>(&out).unwrap()["artifact"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let stored = cache
+        .join("artifacts")
+        .join(artifact.split_once(':').unwrap().1);
+    let stale = std::time::SystemTime::now() - std::time::Duration::from_secs(10 * 86400);
+    fs::File::options()
+        .write(true)
+        .open(&stored)
+        .unwrap()
+        .set_modified(stale)
+        .unwrap();
+
+    cli()
+        .args(["--cache-dir", cache.to_str().unwrap(), "expand", &artifact])
+        .assert()
+        .success();
+
+    let removed = cli()
+        .args([
+            "--cache-dir",
+            cache.to_str().unwrap(),
+            "clean",
+            "--older-days",
+            "7",
+        ])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    assert_eq!(
+        serde_json::from_slice::<Value>(&removed).unwrap()["removed"],
+        json!(0),
+        "a just-expanded artifact must survive cleanup"
+    );
+}

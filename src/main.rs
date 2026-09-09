@@ -35,13 +35,14 @@ enum Cmd {
         repo: Option<String>,
         #[arg(long, conflicts_with_all = ["spec", "repo"])]
         file: Option<String>,
-        #[arg(long, value_enum, default_value = "text")]
+        #[arg(long, value_enum, default_value = "text", conflicts_with = "spec")]
         format: Format,
         #[arg(long, conflicts_with = "spec")]
         find: Vec<String>,
-        #[arg(long, default_value_t = 3)]
+        // A spec carries its own operations: never accept flags it will ignore.
+        #[arg(long, default_value_t = 3, conflicts_with = "spec")]
         context: usize,
-        #[arg(long)]
+        #[arg(long, conflicts_with = "spec")]
         count: bool,
         #[arg(long, value_enum)]
         mode: Option<Mode>,
@@ -106,6 +107,46 @@ fn print(value: &impl serde::Serialize) -> Result<()> {
     serde_json::to_writer(&mut lock, value)?;
     writeln!(lock)?;
     Ok(())
+}
+
+/// Dataset metadata without records, kept inside the same byte budget as a view.
+/// A wide scan can hold thousands of snapshots, so the list is paged by budget.
+fn manifest_view(data: &Dataset, max_bytes: usize) -> Result<serde_json::Value> {
+    const NOTE: &str = "Manifest truncated: snapshots listed are the first of total_snapshots. Raise --max-bytes, or expand --raw for the whole artifact.";
+    let mut meta = Dataset {
+        schema_version: data.schema_version,
+        scan_complete: data.scan_complete,
+        examined: data.examined,
+        skipped: data.skipped.clone(),
+        notes: data.notes.clone(),
+        snapshots: Vec::new(),
+        records: Vec::new(),
+    };
+    // Reserve the truncation note and the counts appended below.
+    let mut size = serde_json::to_vec(&meta)?.len() + NOTE.len() + 128;
+    for snapshot in &data.snapshots {
+        let entry = serde_json::to_vec(snapshot)?.len() + 1;
+        if size + entry > max_bytes {
+            break;
+        }
+        size += entry;
+        meta.snapshots.push(snapshot.clone());
+    }
+    if meta.snapshots.len() < data.snapshots.len() {
+        meta.notes.push(NOTE.into());
+    }
+    let shown = meta.snapshots.len();
+    let mut value = serde_json::to_value(&meta)?;
+    let object = value.as_object_mut().unwrap();
+    object.remove("records");
+    object.insert("total_records".into(), json!(data.records.len()));
+    object.insert("total_snapshots".into(), json!(data.snapshots.len()));
+    object.insert("shown_snapshots".into(), json!(shown));
+    ensure!(
+        serde_json::to_vec(&value)?.len() <= max_bytes,
+        "manifest metadata exceeds output budget; increase max_bytes"
+    );
+    Ok(value)
 }
 
 fn execute(cli: Cli) -> Result<i32> {
@@ -286,7 +327,8 @@ fn execute(cli: Cli) -> Result<i32> {
             } else if code != 0 {
                 // Failed command: last stderr/stdout blocks first. Everything stays recoverable.
                 data.records.reverse();
-                data.notes.push("Failed command: blocks displayed from the end of stderr, then stdout; line numbers preserve source order.".into());
+                // JSON records carry no line numbers, so do not promise them here.
+                data.notes.push("Failed command: blocks displayed from the end of stderr, then stdout; each record keeps its source label, and line numbers where it has them.".into());
             }
             data.examined = 2;
             let envelope_bytes = serde_json::to_vec(
@@ -313,6 +355,8 @@ fn execute(cli: Cli) -> Result<i32> {
                 "max_bytes must be 1024..1048576"
             );
             let bytes = store.get(&id)?;
+            // Expansion is use: keep the item out of the next age-based cleanup.
+            store.touch(&id)?;
             if raw {
                 std::io::stdout().write_all(&bytes)?;
                 return Ok(0);
@@ -320,17 +364,16 @@ fn execute(cli: Cli) -> Result<i32> {
             if id.starts_with("artifact:") {
                 let data: Dataset = serde_json::from_slice(&bytes)?;
                 if manifest {
-                    let mut meta = serde_json::to_value(&data)?;
-                    meta.as_object_mut().unwrap().remove("records");
-                    print(&meta)?;
+                    print(&manifest_view(&data, max_bytes)?)?;
                 } else {
                     ensure!(
                         start.is_none() && end.is_none(),
                         "line ranges require a blob reference"
                     );
-                    print(&render::render(
+                    // The dataset is already stored under this id; do not write it again.
+                    print(&render::render_stored(
                         &data,
-                        &store,
+                        id,
                         Mode::Default,
                         max_bytes,
                         offset,

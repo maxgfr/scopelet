@@ -146,3 +146,23 @@ fn parent_exit_with_inherited_pipes_keeps_parent_status() {
 fn detached_pipe_holder_cannot_hang_reader_join() {
     pipe_holder(true);
 }
+
+#[test]
+fn large_output_is_captured_at_pipe_speed() {
+    // Sleeping on every empty pipe capped a stream at one buffer per poll, which
+    // turned megabytes of ordinary command output into tens of seconds.
+    let started = Instant::now();
+    let result = capture(
+        shell("head -c 4000000 /dev/zero | tr '\\0' 'a'"),
+        Duration::from_secs(30),
+        16 * 1024 * 1024,
+    );
+
+    assert_eq!(result.stdout.len(), 4_000_000);
+    assert!(!result.capped && !result.timed_out);
+    assert!(
+        started.elapsed() < Duration::from_secs(3),
+        "4 MB took {:?}; capture is throttled again",
+        started.elapsed()
+    );
+}

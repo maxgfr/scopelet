@@ -148,6 +148,7 @@ pub fn ingest(
         text: String::new(),
         value: None,
         omitted_lines: None,
+        text_truncated: false,
     };
     let mut records = Vec::new();
     match format {

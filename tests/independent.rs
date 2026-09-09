@@ -219,6 +219,7 @@ fn ultra_mode_marks_long_text_as_abridged() {
             .collect(),
         value: None,
         omitted_lines: None,
+        text_truncated: false,
     });
 
     let view = render::render(&data, &store, Mode::Ultra, 4096, 0).expect("ultra view");
@@ -291,5 +292,137 @@ fn timed_out_command_is_killed_and_gets_timeout_exit_code() {
     assert!(
         result.stdout.is_empty(),
         "timed-out child output should be bounded"
+    );
+}
+
+#[test]
+fn clean_tolerates_foreign_files_and_reaps_stale_temporaries() {
+    let (_dir, store) = test_store();
+    let blob = store.put("blob", b"kept original\n").expect("blob");
+    let artifacts = store.root.join("artifacts");
+    // A desktop indexer file and a temporary from a write that was killed.
+    std::fs::write(artifacts.join(".DS_Store"), b"finder").expect("foreign file");
+    std::fs::write(store.root.join("blobs").join(".tmpABCDEF"), b"partial").expect("temporary");
+
+    let removed = store
+        .clean(0)
+        .expect("clean must not fail on foreign names");
+
+    assert_eq!(removed, 2, "the orphan blob and the stale temporary");
+    assert!(
+        artifacts.join(".DS_Store").exists(),
+        "files that are not cache items are left alone"
+    );
+    assert!(store.get(&blob).is_err(), "unreferenced blob was removed");
+    assert_eq!(store.clean(0).expect("second clean"), 0);
+}
+
+#[test]
+fn clean_keeps_originals_of_a_surviving_artifact_next_to_foreign_files() {
+    let (_dir, store) = test_store();
+    let mut data = Dataset::default();
+    sources::ingest(
+        &mut data,
+        &store,
+        "f",
+        b"keep me\n".to_vec(),
+        None,
+        Format::Text,
+    )
+    .expect("ingest");
+    let view = render::render(&data, &store, Mode::Default, 4096, 0).expect("render");
+    std::fs::write(store.root.join("artifacts").join("notes.txt"), b"note").expect("foreign file");
+
+    assert_eq!(store.clean(7).expect("clean"), 0);
+    assert!(store.get(&view.artifact).is_ok());
+    assert!(store.get(data.records[0].blob.as_ref().unwrap()).is_ok());
+}
+
+#[test]
+fn ultra_never_ships_an_empty_record_for_an_oversized_line() {
+    let (_dir, store) = test_store();
+    let mut data = Dataset::default();
+    data.records.push(Record {
+        source: "minified.js".into(),
+        blob: None,
+        start_line: Some(1),
+        end_line: Some(2),
+        text: format!("{}\ntail\n", "y".repeat(4096)),
+        value: None,
+        omitted_lines: None,
+        text_truncated: false,
+    });
+
+    let view = render::render(&data, &store, Mode::Ultra, 4096, 0).expect("ultra view");
+
+    assert_eq!(view.shown_records, 1);
+    let record = &view.records[0];
+    assert!(!record.text.is_empty(), "a counted record must carry text");
+    assert!(record.text_truncated, "the cut inside a line is reported");
+    assert_eq!(record.text.len(), 1024);
+    assert_eq!(record.end_line, Some(1));
+    assert_eq!(record.omitted_lines, Some(1));
+    assert!(!view.display_complete);
+    assert!(
+        view.notes
+            .iter()
+            .any(|note| note.contains("Ultra cut a line"))
+    );
+}
+
+#[test]
+fn ultra_cuts_an_oversized_line_on_a_character_boundary() {
+    let (_dir, store) = test_store();
+    let mut data = Dataset::default();
+    data.records.push(Record {
+        source: "wide.txt".into(),
+        blob: None,
+        start_line: Some(1),
+        end_line: Some(1),
+        text: format!("{}\n", "é".repeat(1000)),
+        value: None,
+        omitted_lines: None,
+        text_truncated: false,
+    });
+
+    let view = render::render(&data, &store, Mode::Ultra, 4096, 0).expect("ultra view");
+
+    let text = &view.records[0].text;
+    assert!(text.chars().all(|c| c == 'é'));
+    assert_eq!(text.len(), 1024);
+    assert_eq!(view.records[0].omitted_lines, Some(0));
+}
+
+#[test]
+fn paging_a_stored_artifact_writes_no_new_cache_items() {
+    let (_dir, store) = test_store();
+    let mut data = Dataset::default();
+    let text: String = (1..=200).map(|i| format!("{{\"id\":{i}}}\n")).collect();
+    sources::ingest(
+        &mut data,
+        &store,
+        "f",
+        text.into_bytes(),
+        None,
+        Format::Jsonl,
+    )
+    .expect("ingest");
+    let first = render::render(&data, &store, Mode::Default, 1024, 0).expect("first page");
+    let before = std::fs::read_dir(store.root.join("artifacts"))
+        .expect("artifacts")
+        .count();
+
+    let next = first.next_offset.expect("more records");
+    let second = render::render_stored(&data, first.artifact.clone(), Mode::Default, 1024, next)
+        .expect("second page");
+
+    assert_eq!(second.artifact, first.artifact);
+    assert_eq!(second.offset, next);
+    assert_eq!(
+        std::fs::read_dir(store.root.join("artifacts"))
+            .expect("artifacts")
+            .count(),
+        before,
+        "paging must not persist another copy of the dataset"
     );
 }

@@ -7,8 +7,9 @@ visible detail and requires recovery when that detail matters.
 
 ## Correctness and distribution
 
-- 43 Rust integration tests: queries, exact byte recovery, freshness, malformed
-  input, path/span validation, budgets, cache cleanup and process behavior.
+- 52 Rust integration tests: queries, exact byte recovery, freshness, malformed
+  input, path/span validation, budgets, cache cleanup, capture throughput and
+  process behavior.
 - 18 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
 - 4 launcher tests, passing on Node 18.20.8 and the local Node 26.8.1 runtime.
@@ -31,7 +32,10 @@ and separate Codex agents including GPT-5.6-Luna. Reproductions led to fixes for
 transactional JSONL ingestion, multiline search, process drainage, capture limits,
 quadratic text copies, oversized pagination, output budgets, cache cleanup,
 adapter spans and document freshness. An additional final Opus review timed out
-without a result; it is not counted as a successful review.
+without a result; it is not counted as a successful review. A later Fable/Opus
+round led to the capture-throughput, cleanup, ultra-abridgement and manifest
+budget fixes recorded in [the 2026-09-09 follow-up](followup-2026-09-09.md),
+together with two more live campaigns whose spread is reported there.
 
 ## Live agent measurements
 

@@ -28,7 +28,10 @@ page, including previous pages. `next_offset` advances through the full result. 
 `blocked_record` identifies it and `next_offset` is null to prevent a retry loop.
 An oversized record is not split in default: expand its blob by lines or raise
 the budget. Ultra can abbreviate large text units and records omitted line
-counts. Its information loss is intentional and recoverable, not assumed safe.
+counts. A single line longer than its limit is cut on a character boundary and
+marked `text_truncated`; a displayed record is never empty. Its information loss
+is intentional and recoverable, not assumed safe. `expand --manifest` obeys the
+same budget: it lists the first snapshots that fit and reports how many exist.
 
 The artifact ID hashes the complete serialized dataset. Source blob IDs hash
 original bytes. `expand` retrieves an immutable snapshot; an artifact used as a
@@ -42,7 +45,10 @@ files/128 MiB, stored item 256 MiB, command capture 32 MiB per stream, default
 command timeout 120 seconds (maximum 3600). New store directories are private on
 Unix; existing directory permissions are preserved; writes are atomic and content hashes are checked on reads. Storage grows
 with distinct observations until explicit cleanup; no silent eviction expires
-active references. Cleanup retains blobs referenced by surviving artifacts. Run cleanup outside active operations.
+active references. Cleanup retains blobs referenced by surviving artifacts, and
+paging an artifact does not store it again. Only content-hash-named files are
+cache items: cleanup leaves anything else in the directory alone, apart from its
+own aged temporaries. Run cleanup outside active operations.
 
 Commands use argument vectors rather than shell interpolation, inherit the
 caller's working directory/environment, and execute once. Stdin is closed.

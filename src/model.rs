@@ -134,6 +134,13 @@ pub struct Record {
     pub value: Option<Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub omitted_lines: Option<usize>,
+    /// The displayed text stops inside a line; exact bytes stay in `blob`.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub text_truncated: bool,
+}
+
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 impl Record {
@@ -146,6 +153,7 @@ impl Record {
             text: String::new(),
             value: Some(value),
             omitted_lines: None,
+            text_truncated: false,
         }
     }
 

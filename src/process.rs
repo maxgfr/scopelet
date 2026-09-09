@@ -22,13 +22,27 @@ pub struct Captured {
     pub drain_incomplete: bool,
 }
 
+#[cfg(unix)]
 struct Drained {
     saved: Vec<u8>,
     incomplete: bool,
 }
 
+/// Wait until the pipe has bytes, or POLL elapses so cancellation stays responsive.
+/// Sleeping instead would cap a stream at one pipe buffer per poll interval.
+#[cfg(unix)]
+fn wait_readable(fd: std::os::fd::RawFd) {
+    let mut watch = libc::pollfd {
+        fd,
+        events: libc::POLLIN,
+        revents: 0,
+    };
+    unsafe { libc::poll(&mut watch, 1, POLL.as_millis() as libc::c_int) };
+}
+
+#[cfg(unix)]
 fn drain(
-    mut reader: impl Read,
+    mut reader: impl Read + std::os::fd::AsRawFd,
     limit: usize,
     overflow: Arc<AtomicBool>,
     stop: Arc<AtomicBool>,
@@ -50,7 +64,9 @@ fn drain(
                 }
             }
             Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
-            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => thread::sleep(POLL),
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                wait_readable(reader.as_raw_fd())
+            }
             Err(_) => break true,
         }
     };

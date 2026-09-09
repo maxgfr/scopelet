@@ -124,6 +124,7 @@ pub fn load(source: &Source, store: &Store, cancel: Arc<AtomicBool>) -> Result<D
                             text: lines[start - 1..end].concat(),
                             value: None,
                             omitted_lines: None,
+                            text_truncated: false,
                         });
                     }
                 }
