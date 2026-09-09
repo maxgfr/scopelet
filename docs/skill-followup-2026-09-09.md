@@ -84,3 +84,8 @@ The v0.1.2 tag was not released: Linux CI caught a benchmark-test assertion
 that assumed `/bin` was not a symlink. The test now accepts the resolved path.
 The tag remains unchanged; 0.1.3 carries the portability correction and the same
 cache fix. The measured candidate remains identified by its frozen 0.1.2 hash.
+
+The [final 0.1.3 installed-agent checks](verification.md#published-013-installation-check)
+passed in both Codex and Claude Code, including actual ultra output, final code
+behavior and exclusion of cached evidence from native searches. They validate
+the published release separately from the candidate's comparative measurements.

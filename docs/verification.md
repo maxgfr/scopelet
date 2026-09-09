@@ -7,10 +7,10 @@ visible detail and requires recovery when that detail matters.
 
 ## Correctness and distribution
 
-- 53 Rust integration tests: queries, exact byte recovery, freshness, malformed
+- 57 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup, capture throughput and
   process behavior.
-- 18 offline benchmark-harness tests, including independent grading, cache usage,
+- 37 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
 - 4 launcher tests, passing on Node 18.20.8 and the local Node 26.8.1 runtime.
 - Real codeindex 2.29.1/2.30.0 and webindex 1.18.10/1.19.4 adapter checks.
@@ -37,7 +37,18 @@ round led to the capture-throughput, cleanup, ultra-abridgement and manifest
 budget fixes recorded in [the 2026-09-09 follow-up](followup-2026-09-09.md),
 together with two more live campaigns whose spread is reported there.
 
-## Live agent measurements
+## Direct comparison and repeated skill follow-up
+
+The [direct competitor pilot](direct-comparison-2026-09-09.md) records 51 completed
+cells across native/concise controls, Scopelet, Caveman, Ponytail, RTK and Headroom.
+The [24-run skill follow-up](skill-followup-2026-09-09.md) records two repetitions
+per cell and a subsequent cache-search correction. All 75 comparative runs
+passed their external functional graders; this is not a broad quality guarantee.
+Codex/Headroom routing was unverified and its three planned cells are unmeasured.
+The old and new campaigns have different host-context controls and are reported
+separately. The final cache fix is validated separately from those frozen runs.
+
+## Earlier live agent measurements
 
 The [machine-readable results](../bench/results/2026-09-09.json) retain every
 campaign, including exploratory and unfavorable runs. They contain fixture,
@@ -176,3 +187,21 @@ new real-agent installation smokes each ran the downloaded 0.1.1 launcher,
 queried JSONL and saved the correct count. Its macOS ARM64 SHA-256 matched the
 published release manifest. [Smoke accounting](../bench/results/release-smoke-0.1.1.json)
 is separate from the 67 measurement sessions above.
+
+## Published 0.1.3 installation check
+
+[Release 0.1.3](https://github.com/maxgfr/scopelet/releases/tag/v0.1.3) passed
+[all four platform builds and packaging](https://github.com/maxgfr/scopelet/actions/runs/34319902344)
+and [main CI](https://github.com/maxgfr/scopelet/actions/runs/34319900274).
+Both globally installed skill bundles matched all five source files. Their
+launchers downloaded/ran 0.1.3; the macOS ARM64 binary matched published SHA-256
+`0d2e57b5a9545ea195190e22bfd015cad398988aa970532df8ee3ed180d5a432`.
+
+[Two final installed-agent smokes](../bench/results/release-smoke-0.1.3.json)
+used the real installed Codex and Claude Code skills, without copying a project
+skill or setting SCOPELET_BIN. Both wrapped the failing and successful checks in
+ultra, fixed the worker behavior and passed the immutable external grader.
+Cache exclusion markers existed and native `rg --hidden` did not re-ingest cached
+evidence. These are final-release functional checks, not a token-saving comparison.
+The unreleased 0.1.2 tag remains unchanged after a Linux-only benchmark-test path
+assertion failed; 0.1.3 corrects that assertion.
