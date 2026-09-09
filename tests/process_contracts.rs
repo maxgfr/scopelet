@@ -118,12 +118,14 @@ impl Drop for Descendant {
 }
 
 fn pipe_holder(detached: bool) {
+    // Publish readiness only after stdout is written and the PID file is closed.
+    // File existence before the write races the bounded post-exit drain on CI.
     let dir = tempfile::tempdir().unwrap();
     let guard = Descendant(dir.path().join("descendant.pid"));
     let mut command = Command::new("python3");
     command.args([
         "-c",
-        "import os,sys,time\npid=os.fork()\nif pid==0:\n if sys.argv[2]=='yes': os.setsid()\n open(sys.argv[1],'w').write(str(os.getpid()))\n os.write(1,b'grandchild')\n time.sleep(30)\n os._exit(0)\nwhile not os.path.exists(sys.argv[1]): time.sleep(.001)\nos._exit(7)",
+        "import os,sys,time\npid=os.fork()\nif pid==0:\n if sys.argv[2]=='yes': os.setsid()\n os.write(1,b'grandchild')\n with open(sys.argv[1]+'.tmp','w') as marker: marker.write(str(os.getpid()))\n os.replace(sys.argv[1]+'.tmp',sys.argv[1])\n time.sleep(30)\n os._exit(0)\nwhile not os.path.exists(sys.argv[1]): time.sleep(.001)\nos._exit(7)",
         guard.0.to_str().unwrap(),
         if detached { "yes" } else { "no" },
     ]);
