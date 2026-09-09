@@ -15,7 +15,7 @@ is not currently supported. No proxy, model API key or agent hook is needed.
 For a standalone CLI (Rust 1.88+):
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.0 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.1 --locked
 scopelet doctor
 scopelet query --repo . --find validateToken --context 5
 scopelet run -- npm test
@@ -75,16 +75,20 @@ The design draws from [Headroom](https://github.com/headroomlabs-ai/headroom),
 [Ponytail](https://github.com/dietrichgebert/ponytail) and
 [RTK](https://github.com/rtk-ai/rtk). Recoverable compression already exists;
 Scopelet's focus is composing local operations and making coverage explicit.
-See the [comparison](docs/comparison.md), [paper review](docs/research.md) and
+See the [pinned four-tool comparison](docs/competitive-review-2026-09-09.md),
+[scientific review](docs/scientific-review-2026-09-09.md) and
 [design contracts](docs/design.md). These projects are references, not bundled
 runtime dependencies. There is no additional LLM call in Scopelet's runtime.
 
 Token savings are workload-dependent. Installation instructions, extra commands
 and recovery can cost more than the context they save. The
 [verification report](docs/verification.md) records actual agent outcomes and
-limitations; no universal percentage is promised. On one noisy-command task,
-ultra used **24% fewer session tokens in Codex** and **27% fewer in Claude** with
-correct outcomes. Several small code tasks became more expensive.
+limitations; no universal percentage is promised. On the latest noisy-command
+repeat, ultra used **19% more session tokens in Codex** and **51% fewer in Claude**,
+with correct outcomes in both. Earlier repeats saved tokens in both agents;
+the direction is unstable for Codex. Several small code tasks also became more
+expensive. See [all repeated outcomes](docs/verification.md#repeated-noisy-command-task).
+These are pilot measurements, not a measured ranking against the four projects.
 
 To reproduce checks and the small agent experiment:
 

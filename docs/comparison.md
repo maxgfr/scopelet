@@ -1,5 +1,9 @@
 # What is reused, and what differs
 
+See the [fresh review with pinned upstream commits](competitive-review-2026-09-09.md)
+for the feature/test matrix and the [scientific assessment](scientific-review-2026-09-09.md)
+for evidence, transfer limits and the next evaluation design.
+
 Inspected on 2026-09-09. These projects evolve; links identify the implementation
 surfaces examined, not an exhaustive feature or performance ranking.
 

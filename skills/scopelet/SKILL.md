@@ -4,7 +4,7 @@ description: Reduce context when exploring repositories, querying large JSON/log
 license: MIT
 metadata:
   author: maxgfr
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # Scopelet
@@ -23,6 +23,8 @@ only for other operations or codeindex/webindex.
 scopelet query --repo . --find validateToken --context 5
 scopelet run -- npm test
 ```
+
+`--find` matches literal text. Repeat it for alternatives; regex needs a spec.
 
 For JSONL counts by a known field, filter then group in one call:
 
@@ -47,7 +49,9 @@ Originals remain local; expansion does not assert the source is still current.
 
 Keep progress brief and avoid repeating tool results in the final answer.
 Answer in the user's language, preserving qualifications, exact code,
-errors and requested explanations. Before delivery, check these coverage rules
+errors, negations, exceptions, numbers and units. Use familiar words; keep
+ordered steps clear. Requested explanations and saved documentation use normal
+prose. Before delivery, check these coverage rules
 and the task's acceptance tests. Tool byte reductions are not session savings.
 
 Reference files: [queries.md](references/queries.md) covers operations and

@@ -7,7 +7,7 @@ visible detail and requires recovery when that detail matters.
 
 ## Correctness and distribution
 
-- 52 Rust integration tests: queries, exact byte recovery, freshness, malformed
+- 53 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup, capture throughput and
   process behavior.
 - 18 offline benchmark-harness tests, including independent grading, cache usage,
@@ -134,3 +134,37 @@ additional installation smoke sessions, separate from the 55 measurement runs.
 [Their accounting and binary hash](../bench/results/release-smoke-2026-09-09.json)
 are retained. The agent subprocesses used a workspace-local `SCOPELET_CACHE_DIR`
 for sandbox-compatible result storage and the default verified binary cache.
+
+## Repeated noisy-command task
+
+The later four runs also passed external grading. Together with the eight
+scheduled runs, there are 67 retained measurement sessions across these and the
+original campaigns; they are not 67 identical or statistically independent trials.
+
+| Campaign | Codex native | Codex ultra | Change | Claude native | Claude ultra | Change |
+|---|---:|---:|---:|---:|---:|---:|
+| Original noisy task / native Claude skill | 160,594 | 122,194 | −23.9% | 174,168 | 127,439 | −26.8% |
+| Scheduled A | 165,718 | 141,153 | −14.8% | 257,009 | 126,993 | −50.6% |
+| Scheduled B | 229,885 | 222,757 | −3.1% | 258,265 | 155,259 | −39.9% |
+| Morning recheck | 210,159 | 250,219 | **+19.1%** | 259,153 | 127,668 | **−50.7%** |
+
+Rows span different frozen binaries and skill revisions; the original Codex and
+Claude results came from separate campaigns. Do not pool them as estimates from
+one fixed configuration. The direction changes for Codex, so a reliable saving
+has not been demonstrated there. Claude improved on this fixture in these trials;
+that does not establish gains on other workloads or universal noninferiority.
+
+[Scheduled accounting](../bench/results/followup-2026-09-09.json) and
+[morning accounting](../bench/results/recheck-2026-09-09.json) preserve every run,
+model-reported usage, adoption and frozen-input hashes. All treatment sessions
+used the CLI. The latest Codex run invoked Scopelet three times, including a
+literal search for `worker_count|limit` that found no match and led to a native
+`rg` retry. The two command captures were used correctly. The skill and CLI help
+now explicitly say that `--find` is literal and can be repeated for alternatives;
+this instruction clarification has not been evaluated for a token-saving effect.
+
+The morning binary (`79a34ca2…`) was frozen before the final reserved-temp cleanup
+fix; the skill was frozen before that literal-search clarification. Both differences
+are independently verified locally, and neither is represented as having been
+live-benchmarked by this campaign. Host-global skills were still visible to Codex
+and loaded in the treatment; this remains an attribution limitation.

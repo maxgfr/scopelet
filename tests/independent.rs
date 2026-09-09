@@ -302,7 +302,14 @@ fn clean_tolerates_foreign_files_and_reaps_stale_temporaries() {
     let artifacts = store.root.join("artifacts");
     // A desktop indexer file and a temporary from a write that was killed.
     std::fs::write(artifacts.join(".DS_Store"), b"finder").expect("foreign file");
-    std::fs::write(store.root.join("blobs").join(".tmpABCDEF"), b"partial").expect("temporary");
+    std::fs::write(
+        store
+            .root
+            .join("blobs")
+            .join(".scopelet-write-ABCDEF123456"),
+        b"partial",
+    )
+    .expect("temporary");
 
     let removed = store
         .clean(0)
@@ -315,6 +322,26 @@ fn clean_tolerates_foreign_files_and_reaps_stale_temporaries() {
     );
     assert!(store.get(&blob).is_err(), "unreferenced blob was removed");
     assert_eq!(store.clean(0).expect("second clean"), 0);
+}
+
+#[test]
+fn clean_preserves_unrecognized_temporary_names_in_both_directories() {
+    let (_dir, store) = test_store();
+    let names = [".tmp-user-notes", ".tmpABCDEF", ".scopelet-write-notes"];
+    for kind in ["blobs", "artifacts"] {
+        for name in names {
+            std::fs::write(store.root.join(kind).join(name), b"foreign data").unwrap();
+        }
+    }
+    assert_eq!(store.clean(0).unwrap(), 0);
+    for kind in ["blobs", "artifacts"] {
+        for name in names {
+            assert_eq!(
+                std::fs::read(store.root.join(kind).join(name)).unwrap(),
+                b"foreign data"
+            );
+        }
+    }
 }
 
 #[test]

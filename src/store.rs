@@ -7,6 +7,7 @@ use std::time::{Duration, SystemTime};
 
 pub const MAX_INPUT: usize = 32 * 1024 * 1024;
 pub const MAX_STORE_FILE: usize = 256 * 1024 * 1024;
+const TEMP_PREFIX: &str = ".scopelet-write-";
 
 pub fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
@@ -19,7 +20,9 @@ fn content_hash_name(name: &str) -> bool {
 
 /// Discard an aged leftover from a write that was killed before it persisted.
 fn reap_temporary(item: &fs::DirEntry, name: &str, now: SystemTime, age: Duration) -> Result<bool> {
-    if !name.starts_with(".tmp")
+    let suffix = name.strip_prefix(TEMP_PREFIX).unwrap_or("");
+    if suffix.len() != 12
+        || !suffix.bytes().all(|c| c.is_ascii_alphanumeric())
         || now
             .duration_since(item.metadata()?.modified()?)
             .unwrap_or_default()
@@ -108,7 +111,10 @@ impl Store {
             fs::File::open(&path)?.set_modified(SystemTime::now())?;
             return Ok(id);
         }
-        let mut temp = tempfile::NamedTempFile::new_in(path.parent().unwrap())?;
+        let mut temp = tempfile::Builder::new()
+            .prefix(TEMP_PREFIX)
+            .rand_bytes(12)
+            .tempfile_in(path.parent().unwrap())?;
         temp.write_all(bytes)?;
         temp.as_file().sync_all()?;
         if let Err(error) = temp.persist_noclobber(&path) {

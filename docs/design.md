@@ -48,7 +48,9 @@ with distinct observations until explicit cleanup; no silent eviction expires
 active references. Cleanup retains blobs referenced by surviving artifacts, and
 paging an artifact does not store it again. Only content-hash-named files are
 cache items: cleanup leaves anything else in the directory alone, apart from its
-own aged temporaries. Run cleanup outside active operations.
+aged temporaries in the reserved `.scopelet-write-` namespace (12 alphanumeric
+suffix characters). Legacy `.tmp*` files are left alone because their owner
+cannot be established from the name. Run cleanup outside active operations.
 
 Commands use argument vectors rather than shell interpolation, inherit the
 caller's working directory/environment, and execute once. Stdin is closed.

@@ -1,0 +1,290 @@
+{
+  "campaigns": [
+    {
+      "agent_cli_versions": {
+        "claude": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "2.1.263 (Claude Code)"
+        },
+        "codex": {
+          "available": true,
+          "exit_code": 0,
+          "stderr": "",
+          "version": "codex-cli 0.153.4"
+        }
+      },
+      "binary_sha256": "79a34ca209f7962ce618b34fd6061583dd968df29949fdc0cf65ed4bb5d3dee9",
+      "cli_version": {
+        "available": true,
+        "exit_code": 0,
+        "stderr": "",
+        "version": "scopelet 0.1.1"
+      },
+      "completed_runs": 4,
+      "models": {
+        "claude": "claude-haiku-4-5-20251001",
+        "codex": "gpt-5.6-luna"
+      },
+      "name": "recheck-20260909",
+      "planned_runs": 4,
+      "runs": [
+        {
+          "agent": "codex",
+          "arm": "baseline",
+          "binary_sha256": "79a34ca209f7962ce618b34fd6061583dd968df29949fdc0cf65ed4bb5d3dee9",
+          "duration_seconds": 42.13676,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task4_baseline",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "5fd31c01b32d9e2daf3e7c438ad247caff57e40a4744bd157a757ab1e3913b12",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 183296,
+            "input_tokens": 208528,
+            "logical_input_tokens": 208528,
+            "output_tokens": 1631,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 183296,
+                "input_tokens": 208528,
+                "output_tokens": 1631,
+                "reasoning_output_tokens": 249
+              }
+            ],
+            "reasoning_tokens": 249,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ultra",
+          "binary_sha256": "79a34ca209f7962ce618b34fd6061583dd968df29949fdc0cf65ed4bb5d3dee9",
+          "duration_seconds": 42.424324,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "codex_task4_ultra",
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "ea10388a836e9a633903c75cf5435dfcf1ed6410305041bca43ab10a17696d97",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 3,
+            "skill_discovered": null,
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 219904,
+            "input_tokens": 248686,
+            "logical_input_tokens": 248686,
+            "output_tokens": 1533,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_write_input_tokens": 0,
+                "cached_input_tokens": 219904,
+                "input_tokens": 248686,
+                "output_tokens": 1533,
+                "reasoning_output_tokens": 232
+              }
+            ],
+            "reasoning_tokens": 232,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "baseline",
+          "binary_sha256": "79a34ca209f7962ce618b34fd6061583dd968df29949fdc0cf65ed4bb5d3dee9",
+          "duration_seconds": 30.820743,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": false,
+          "passed": true,
+          "run_id": "claude_task4_baseline",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "25ca12347cac031d7396557116d99875a7fda73c3000b0844d4689a96fc50091",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_discovered": false,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 4,
+              "Edit": 1,
+              "Read": 3
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 16540,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 240323,
+            "input_tokens": 73,
+            "logical_input_tokens": 256936,
+            "output_tokens": 2217,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 16540,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 16540,
+                "cache_read_input_tokens": 240323,
+                "inference_geo": "not_available",
+                "input_tokens": 73,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 154,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 154,
+                    "cache_read_input_tokens": 31243,
+                    "input_tokens": 8,
+                    "output_tokens": 191,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 2217,
+                "output_tokens_details": {
+                  "thinking_tokens": 1095
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": 1095,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ultra",
+          "binary_sha256": "79a34ca209f7962ce618b34fd6061583dd968df29949fdc0cf65ed4bb5d3dee9",
+          "duration_seconds": 20.53126,
+          "exit_code": 0,
+          "fixture_sha256": "cc0418bbfcd23c90875eff7d09eb9c0496e5c3d3bee7d185fb09e8d561edf73e",
+          "native_skill_requested": true,
+          "passed": true,
+          "run_id": "claude_task4_ultra",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "91bcc85a68e53e1c580f5d71b2b8a45fe33bf20a055aa4cbd68263ae2e6907df",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_discovered": true,
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 12499,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 113456,
+            "input_tokens": 42,
+            "logical_input_tokens": 125997,
+            "output_tokens": 1671,
+            "raw_events_with_usage": 1,
+            "raw_usage": [
+              {
+                "cache_creation": {
+                  "ephemeral_1h_input_tokens": 12499,
+                  "ephemeral_5m_input_tokens": 0
+                },
+                "cache_creation_input_tokens": 12499,
+                "cache_read_input_tokens": 113456,
+                "inference_geo": "not_available",
+                "input_tokens": 42,
+                "iterations": [
+                  {
+                    "cache_creation": {
+                      "ephemeral_1h_input_tokens": 1586,
+                      "ephemeral_5m_input_tokens": 0
+                    },
+                    "cache_creation_input_tokens": 1586,
+                    "cache_read_input_tokens": 25770,
+                    "input_tokens": 8,
+                    "output_tokens": 333,
+                    "type": "message"
+                  }
+                ],
+                "output_tokens": 1671,
+                "output_tokens_details": {
+                  "thinking_tokens": 795
+                },
+                "server_tool_use": {
+                  "web_fetch_requests": 0,
+                  "web_search_requests": 0
+                },
+                "service_tier": "standard",
+                "speed": "standard"
+              }
+            ],
+            "reasoning_tokens": 795,
+            "usage_missing": false
+          }
+        }
+      ],
+      "skill_hashes": {
+        "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+        "SKILL.md": "4178e314b5e9eee9549a879c95933c77425ebff280d66eb789a2aad8a1ff8b4d",
+        "references/queries.md": "24cffe4855f2674ac9be803b1b99dbb20823da8a0ce3fc4ae6487d26298b0c34",
+        "references/setup.md": "b966853ab2d0532cd783de52df3e59e09f3f568e38e13b8eaf77d8353583abe3",
+        "scripts/scopelet.mjs": "364d004f5f34a030f33ae5f761c97cb3c2e1780641aeb417f546443438191928"
+      }
+    }
+  ],
+  "export_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
+  "limitations": [
+    "One run per cell, fixed arm order, synthetic tasks; no statistical significance claim.",
+    "Installed global skill context may be discovered despite user settings overrides.",
+    "Adoption counts recognize a conservative subset of shell syntax; raw commands were inspected for highlighted comparisons.",
+    "campaign-1 is exploratory: binary and skill were edited during that campaign; it is not an immutable release comparison.",
+    "campaign-1, final-20260909 and commands-20260909 used Claude setting-sources empty: project skill discovery was disabled. Claude skill trials are in claude-skill-20260909.",
+    "Raw transcripts stay local; published hashes permit checking retained originals."
+  ],
+  "metric": "logical input plus reported output; cached input included; not dollars",
+  "schema_version": 1
+}

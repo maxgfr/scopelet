@@ -37,6 +37,7 @@ enum Cmd {
         file: Option<String>,
         #[arg(long, value_enum, default_value = "text", conflicts_with = "spec")]
         format: Format,
+        /// Literal text; repeat --find for alternatives. Regex is available in a spec.
         #[arg(long, conflicts_with = "spec")]
         find: Vec<String>,
         // A spec carries its own operations: never accept flags it will ignore.
