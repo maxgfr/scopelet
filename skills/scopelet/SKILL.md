@@ -4,7 +4,7 @@ description: Reduce context when exploring repositories, querying large JSON/log
 license: MIT
 metadata:
   author: maxgfr
-  version: "0.1.2"
+  version: "0.1.3"
 ---
 
 # Scopelet

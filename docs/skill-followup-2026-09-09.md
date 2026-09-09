@@ -50,7 +50,7 @@ Two retained failures of efficiency/compliance:
 ## Final release cache fix (after these measurements)
 
 The instruction campaign used the old runtime with a version-only 0.1.2 bump.
-The final 0.1.2 binary additionally creates atomic `.ignore` and `.gitignore`
+The final 0.1.3 binary additionally creates atomic `.ignore` and `.gitignore`
 markers inside blobs/artifacts. They keep cached evidence out of ordinary
 ignore-respecting searches and Git staging, without changing repository-root
 rules. Existing marker files/symlinks remain untouched. Old read-only caches
@@ -79,3 +79,8 @@ was to retain the adherence fix, expose run-to-run spread and avoid stacking
 dependencies without evidence. We did not adopt its unsupported numerical noise
 thresholds or an arbitrary three-command routing rule. Passing finite graders
 does not establish broad semantic fidelity or a production quality guarantee.
+
+The v0.1.2 tag was not released: Linux CI caught a benchmark-test assertion
+that assumed `/bin` was not a symlink. The test now accepts the resolved path.
+The tag remains unchanged; 0.1.3 carries the portability correction and the same
+cache fix. The measured candidate remains identified by its frozen 0.1.2 hash.

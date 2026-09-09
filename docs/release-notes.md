@@ -1,4 +1,4 @@
-Scopelet 0.1.2: a tighter skill, tested against competitors.
+Scopelet 0.1.3: a tighter skill, cache search exclusion and comparative evidence.
 
 - Bound unknown-schema previews to 2 KiB before exact local aggregation.
 - Explicit ultra mode on every query/run; avoid repeated context flags and unnecessary wrappers.
@@ -9,3 +9,5 @@ Scopelet 0.1.2: a tighter skill, tested against competitors.
 
 Install: `npx skills add maxgfr/scopelet -a codex claude-code`.
 See the README and benchmark reports for tested versions, repeated follow-up results and limits. No universal token-saving or production-quality guarantee is claimed.
+
+The unreleased v0.1.2 tag is retained. Linux CI caught a benchmark-test path assertion; this patch corrects it without rewriting the tag.

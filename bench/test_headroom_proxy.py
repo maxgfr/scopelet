@@ -35,7 +35,7 @@ class ProxyTests(unittest.TestCase):
                 self.assertFalse(call.kwargs.get('start_new_session', False))
             agent_argv = calls[1].args[0]
             server = json.loads(agent_argv[agent_argv.index('--mcp-config') + 1])['mcpServers']['headroom']
-            self.assertEqual(server['command'], '/bin/headroom')
+            self.assertEqual(server['command'], str(Path('/bin/headroom').resolve()))
             self.assertIn('mcp__headroom__*', agent_argv[agent_argv.index('--allowedTools') + 1])
             self.assertTrue(calls[1].kwargs['env']['ANTHROPIC_BASE_URL'].startswith('http://127.0.0.1:'))
             return code, result

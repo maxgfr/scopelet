@@ -9,14 +9,14 @@ npx skills add maxgfr/scopelet -a codex claude-code
 Invoke `/scopelet <task>` in Claude Code or `$scopelet <task>` in Codex.
 Explicit invocation is more reliable than expecting automatic selection.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
-The launcher installs Scopelet **0.1.2** into the user's cache, downloading the
+The launcher installs Scopelet **0.1.3** into the user's cache, downloading the
 matching macOS/Linux release from github.com and verifying its SHA-256. Node 18+
 is needed for the launcher. No global agent settings are changed.
 
 An independently installed binary is also supported:
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.2 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.3 --locked
 ```
 
 Optional adapters are external dependencies, not bundled copies:

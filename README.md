@@ -16,7 +16,7 @@ is not currently supported. No proxy, model API key or agent hook is needed.
 For a standalone CLI (Rust 1.88+):
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.2 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.3 --locked
 scopelet doctor
 scopelet query --repo . --find validateToken --context 5
 scopelet run -- npm test

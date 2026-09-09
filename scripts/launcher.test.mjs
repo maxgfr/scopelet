@@ -12,7 +12,7 @@ test('explicit compatible offline binary preserves arguments and exit status', (
   const dir = mkdtempSync(join(tmpdir(), 'scopelet-launcher-'));
   try {
     const binary = join(dir, 'scopelet');
-    writeFileSync(binary, '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "scopelet 0.1.2"; else printf "%s\\n" "$@"; exit 7; fi\n', { mode: 0o700 });
+    writeFileSync(binary, '#!/bin/sh\nif [ "$1" = "--version" ]; then echo "scopelet 0.1.3"; else printf "%s\\n" "$@"; exit 7; fi\n', { mode: 0o700 });
     const result = spawnSync(process.execPath, [launcher, 'one argument', '$(not-executed)'], { encoding: 'utf8', env: { ...process.env, SCOPELET_BIN: binary } });
     assert.equal(result.status, 7);
     assert.equal(result.stdout, 'one argument\n$(not-executed)\n');
@@ -28,7 +28,7 @@ test('explicit wrong-version binary fails without fetching a replacement', () =>
 test('verified cached release runs offline', () => {
   const dir = mkdtempSync(join(tmpdir(), 'scopelet-cached-'));
   try {
-    const cache = join(dir, 'scopelet', 'bin', '0.1.2');
+    const cache = join(dir, 'scopelet', 'bin', '0.1.3');
     mkdirSync(cache, { recursive: true });
     const content = '#!/bin/sh\necho "cached release"\n';
     writeFileSync(join(cache, 'scopelet'), content, { mode: 0o700 });
@@ -45,7 +45,7 @@ test('verified cached release runs offline', () => {
 test('interrupted install repairs its checksum sidecar without downloading the binary', () => {
   const dir = mkdtempSync(join(tmpdir(), 'scopelet-repair-'));
   try {
-    const cache = join(dir, 'scopelet', 'bin', '0.1.2');
+    const cache = join(dir, 'scopelet', 'bin', '0.1.3');
     mkdirSync(cache, { recursive: true });
     const content = '#!/bin/sh\necho "recovered release"\n';
     const expected = createHash('sha256').update(content).digest('hex');
@@ -60,7 +60,7 @@ test('interrupted install repairs its checksum sidecar without downloading the b
       import { appendFileSync } from 'node:fs';
       globalThis.fetch = async url => {
         appendFileSync(${JSON.stringify(calls)}, String(url) + '\\n');
-        if (String(url) !== 'https://github.com/maxgfr/scopelet/releases/download/v0.1.2/SHA256SUMS') {
+        if (String(url) !== 'https://github.com/maxgfr/scopelet/releases/download/v0.1.3/SHA256SUMS') {
           throw new Error('Binary download must not happen');
         }
         return new Response(${JSON.stringify(expected + '  scopelet-' + target + '\n')});
@@ -76,7 +76,7 @@ test('interrupted install repairs its checksum sidecar without downloading the b
     assert.equal(repaired.status, 0, repaired.stderr);
     assert.equal(repaired.stdout, 'recovered release\n');
     assert.equal(readFileSync(join(cache, 'scopelet.sha256'), 'utf8'), expected);
-    assert.equal(readFileSync(calls, 'utf8'), 'https://github.com/maxgfr/scopelet/releases/download/v0.1.2/SHA256SUMS\n');
+    assert.equal(readFileSync(calls, 'utf8'), 'https://github.com/maxgfr/scopelet/releases/download/v0.1.3/SHA256SUMS\n');
     assert.deepEqual(readdirSync(cache).sort(), ['scopelet', 'scopelet.sha256']);
     const cached = spawnSync(process.execPath, ['--import', offline, launcher, 'doctor'], {
       encoding: 'utf8', env, timeout: 5000,
