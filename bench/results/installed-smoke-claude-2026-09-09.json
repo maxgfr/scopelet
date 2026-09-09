@@ -1,0 +1,119 @@
+{
+  "agent": "claude",
+  "cache_excluded_from_native_search": true,
+  "checks_sequence_verified": true,
+  "claude_code_version": "2.1.266 (Claude Code)",
+  "duration_seconds": 60.331796,
+  "exit_code": 0,
+  "external_grade_passed": true,
+  "fixture_hashes": {
+    "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+    "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+    "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+    "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+    "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+  },
+  "hook_events": {
+    "responses": {
+      "PostToolUse:Bash": 10,
+      "PostToolUse:Edit": 2,
+      "PostToolUse:Read": 5,
+      "PostToolUse:Skill": 1,
+      "PreToolUse:Bash": 12,
+      "PreToolUse:Edit": 1,
+      "PreToolUse:Read": 6,
+      "SessionStart:startup": 2,
+      "Stop": 1,
+      "UserPromptSubmit": 1
+    },
+    "responses_with_output": {
+      "PostToolUse:Edit": 1,
+      "PreToolUse:Bash": 12,
+      "PreToolUse:Edit": 1,
+      "PreToolUse:Read": 6,
+      "SessionStart:startup": 2,
+      "Stop": 1
+    },
+    "started": {
+      "PostToolUse:Bash": 10,
+      "PostToolUse:Edit": 2,
+      "PostToolUse:Read": 5,
+      "PostToolUse:Skill": 1,
+      "PreToolUse:Bash": 12,
+      "PreToolUse:Edit": 1,
+      "PreToolUse:Read": 6,
+      "SessionStart:startup": 2,
+      "Stop": 1,
+      "UserPromptSubmit": 1
+    }
+  },
+  "installed_markers_verified": true,
+  "launcher_sha256": "b5e55699b2c2c52a2ee714608712005bf48f0205e660a8aaa60cea87a3c04356",
+  "model_init": "claude-haiku-4-5-20251001",
+  "note": "The three tool errors are the operator's global CLAUDE.md task-observer protocol probing its own paths under real user settings; none involves Scopelet.",
+  "observed_scopelet_view_modes": [
+    "ultra"
+  ],
+  "passed": true,
+  "scope": "Installed-skill functional smoke after the 2026-09-09 comparison; real user settings and hooks; not a token comparison",
+  "skill_sha256": "08972c1f0efe89e10379e16836148bbf6d7a3471fdf4933d276121cd8e0cb14c",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "38cc4c9f2af5bdf6f38b0ad054a055be80bf9417ffd9a9ffec3f7ce124cf29e2",
+  "timed_out": false,
+  "tools": {
+    "checks_command_invocations": 2,
+    "scopelet_adopted": true,
+    "scopelet_cache_reingested_bytes": 0,
+    "scopelet_invocations": 3,
+    "tool_counts": {
+      "Bash": 12,
+      "Edit": 1,
+      "Read": 6,
+      "Skill": 1
+    },
+    "tool_error_count": 3,
+    "tool_use_count": 20
+  },
+  "usage": {
+    "api_error_status": null,
+    "cache_creation_input_tokens": 29655,
+    "cache_included_in_reported_input": false,
+    "cache_read_input_tokens": 543924,
+    "duration_api_ms": 58362,
+    "duration_ms": 59490,
+    "fast_mode_state": "off",
+    "input_tokens": 124,
+    "logical_input_tokens": 573703,
+    "model_init": "claude-haiku-4-5-20251001",
+    "model_mismatch": false,
+    "model_usage": {
+      "claude-haiku-4-5-20251001": {
+        "cacheCreationInputTokens": 29655,
+        "cacheReadInputTokens": 543924,
+        "canonicalModel": "claude-haiku-4-5",
+        "contextWindow": 200000,
+        "costBasis": "list",
+        "costUSD": 0.1378414,
+        "inputTokens": 124,
+        "maxOutputTokens": 32000,
+        "outputTokens": 4803,
+        "provider": "firstParty",
+        "thinkingTokens": 2131,
+        "webSearchRequests": 0
+      }
+    },
+    "models_observed": [
+      "claude-haiku-4-5-20251001"
+    ],
+    "num_turns": 22,
+    "output_tokens": 4803,
+    "permission_denials": [],
+    "permission_denials_count": 0,
+    "reasoning_tokens": 2131,
+    "result_is_error": false,
+    "result_subtype": "success",
+    "thinking_tokens": 2131,
+    "total_cost_usd_reported": 0.1378414,
+    "usage_missing": false
+  }
+}

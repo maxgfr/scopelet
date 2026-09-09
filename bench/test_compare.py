@@ -142,6 +142,12 @@ class CompareTests(unittest.TestCase):
         tools = compare.adoption("claude", by_path, "task4")
         self.assertTrue(tools["checks_sequence_verified"])
         self.assertEqual((tools["scopelet_invocations"], tools["checks_command_invocations"]), (2, 2))
+        launcher = "node /home/u/.claude/skills/scopelet/scripts/scopelet.mjs run --mode ultra -- python3 checks.py 2>&1 | head -50"
+        via_launcher = (claude_call(launcher, '{"exit_code":1,"result":{}}', False, "a")
+                        + claude_call(launcher.replace("head -50", "tail -10"), '{"exit_code":0,"result":{}}', False, "b"))
+        tools = compare.adoption("claude", via_launcher, "task4")
+        self.assertTrue(tools["checks_sequence_verified"])
+        self.assertEqual(tools["checks_command_invocations"], 2)
 
     def test_cache_reingestion_counts_only_returned_cache_paths(self):
         hit = "scopelet-cache/blobs/abc:1:cached line\n"

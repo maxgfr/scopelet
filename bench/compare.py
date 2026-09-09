@@ -199,8 +199,13 @@ def _shell_segments(label: str, payload: str) -> list[list[str]]:
 
 
 def _is_checks_invocation(tokens: list[str]) -> bool:
+    """`checks.py` run directly, through RTK, or through the Scopelet binary or launcher."""
+    if not tokens or "checks.py" not in tokens[1:]:
+        return False
     runners = ("python", "python3", "rtk")
-    return bool(tokens) and (Path(tokens[0]).name in runners or base._is_scopelet_executable(tokens[0]) or tokens[0] in ("$RTK_BIN", "${RTK_BIN}")) and "checks.py" in tokens[1:]
+    if Path(tokens[0]).name in runners or base._is_scopelet_executable(tokens[0]) or tokens[0] in ("$RTK_BIN", "${RTK_BIN}"):
+        return True
+    return Path(tokens[0]).name in ("node", "nodejs") and len(tokens) > 2 and Path(tokens[1]).name.lower() in ("scopelet.mjs", "scopelet.js")
 
 
 def _is_rtk_tokens(tokens: list[str]) -> bool:

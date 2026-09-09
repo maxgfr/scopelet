@@ -10,7 +10,7 @@ visible detail and requires recovery when that detail matters.
 - 57 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup, capture throughput and
   process behavior.
-- 37 offline benchmark-harness tests, including independent grading, cache usage,
+- 56 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
 - 4 launcher tests, passing on Node 18.20.8 and the local Node 26.8.1 runtime.
 - Real codeindex 2.29.1/2.30.0 and webindex 1.18.10/1.19.4 adapter checks.
@@ -60,6 +60,15 @@ the noisy command by 51% to 56% and JSONL aggregation by 19% on Haiku, cost
 2.1.266 already persists large outputs. The cache markers held in every run.
 The decision is to specialize Scopelet rather than present it as a general
 saver; Headroom was the stronger general competitor.
+
+After the comparison, a [fresh installed-skill smoke](../bench/results/installed-smoke-claude-2026-09-09.json)
+in real Claude Code 2.1.266 (user settings and hooks loaded, Haiku 4.5, high
+effort) used the installed `~/.claude/skills/scopelet` launcher, wrapped both
+check runs in ultra, fixed the worker behavior, passed the immutable grader,
+kept the cache markers and left cached evidence out of a native `rg --hidden`
+search. The local CI-equivalent (format, Clippy, 57 Rust tests, offline bench,
+skill check, 56 harness tests, 4 launcher tests, adapter checks) passed on the
+merged tree.
 
 ## Earlier live agent measurements
 

@@ -91,10 +91,21 @@ measurements, including cached input, not reliable savings guarantees.
 Stacking full Caveman with Scopelet did not consistently help. Codex/Headroom
 routing was unverified and its three cells are explicitly unmeasured.
 
-Use Scopelet for exact local queries, explicit coverage and recoverable originals
-without a proxy. Keep direct tools for tiny files and existing RTK wrappers for
-commands they already handle. Read the [earlier repeated outcomes](docs/verification.md)
-and [full reproduction instructions](bench/README.md): instructions, extra calls
+The [2026-09-09 comparison with the released 0.1.3](docs/fable-comparison-2026-09-09.md)
+repeats the matrix with the competitors in their documented integration modes
+(plugin hooks, RTK's PreToolUse hook, the Headroom proxy): **54 runs on Haiku 4.5
+at high effort plus 40 completed runs on Fable 5.1, all passing the external
+grader**. On Haiku, Scopelet cut the noisy-command session by 51% (default) and
+56% (ultra) and JSONL aggregation by 19%, but cost 35% more on the tiny edit.
+On Fable it saved nothing, because Claude Code 2.1.266 now persists large tool
+outputs itself. Headroom was the stronger general competitor. The decision is
+to specialize Scopelet, not to present it as a general token saver.
+
+Use Scopelet for noisy commands whose output the host does not truncate and for
+exact aggregation of large structured files. Keep direct tools for tiny files
+and existing RTK wrappers for commands they already handle. Read the
+[verification summary](docs/verification.md) and
+[full reproduction instructions](bench/README.md): instructions, extra calls
 and recovery can cost more tokens than they save. The [24-run skill follow-up](docs/skill-followup-2026-09-09.md)
 records both repetitions and the final cache-exclusion fix.
 
