@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shlex
 import shutil
 import signal
@@ -750,6 +751,15 @@ def _command_payload(payload: str) -> str:
     return payload
 
 
+def _is_scopelet_executable(token: str) -> bool:
+    """Command position names Scopelet: the variable, the bare name, or a
+    release binary such as `scopelet-0.1.3-aarch64-apple-darwin` invoked by path."""
+    if token in ("$SCOPELET_BIN", "${SCOPELET_BIN}"):
+        return True
+    name = Path(token).name.lower()
+    return re.fullmatch(r"scopelet(?:-bin|-\d[\w.-]*|-(?:x86_64|aarch64)-[\w.-]+)?(?:\.exe)?", name) is not None
+
+
 def _is_scopelet_invocation(label: str, payload: str) -> bool:
     command = _command_payload(payload)
     known_subcommands = {"query", "run", "expand"}
@@ -760,7 +770,7 @@ def _is_scopelet_invocation(label: str, payload: str) -> bool:
         if any(token in ("--help", "-h", "--version", "-V") for token in tokens):
             continue
         executable = Path(tokens[0]).name.lower()
-        if executable in ("scopelet", "scopelet-bin") or tokens[0] in ("$SCOPELET_BIN", "${SCOPELET_BIN}"):
+        if _is_scopelet_executable(tokens[0]):
             args = tokens[1:]
             if args[:1] == ["--cache-dir"]:
                 args = args[2:]

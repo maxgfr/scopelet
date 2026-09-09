@@ -27,6 +27,13 @@ class HarnessTests(unittest.TestCase):
         self.assertFalse(run._is_scopelet_invocation("Bash", "scopelet run --help"))
         self.assertFalse(run._is_scopelet_invocation("Bash", "scopelet bench"))
 
+    def test_release_binary_invoked_by_absolute_path_counts_as_adoption(self):
+        binary = "/campaign/frozen/scopelet/bin/scopelet-0.1.3-aarch64-apple-darwin"
+        self.assertTrue(run._is_scopelet_invocation("Bash", f"{binary} run --mode ultra -- python3 checks.py"))
+        self.assertTrue(run._is_scopelet_invocation("Bash", f"SCOPELET_BIN={binary} {binary} query --mode ultra --spec -"))
+        self.assertFalse(run._is_scopelet_invocation("Bash", "/usr/bin/scopelet-unrelated-tool query"))
+        self.assertFalse(run._is_scopelet_invocation("Bash", f"{binary} --version"))
+
     def test_commented_commands_do_not_count_as_adoption(self):
         self.assertFalse(run._is_scopelet_invocation("Bash", "echo note # ignore; scopelet query --file x"))
         self.assertTrue(run._is_scopelet_invocation("Bash", "echo note # ignore; fake\n\"$SCOPELET_BIN\" query --file x"))

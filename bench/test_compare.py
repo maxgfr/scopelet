@@ -136,6 +136,12 @@ class CompareTests(unittest.TestCase):
         self.assertFalse(compare.adoption("claude", unknown_then_pass, "task4")["checks_sequence_verified"])
         exit_ten = claude_call('python3 checks.py; echo "exit=$?"', "exit=10", False, "a") + claude_call('python3 checks.py; echo "exit=$?"', "exit=0", False, "b")
         self.assertTrue(compare.adoption("claude", exit_ten, "task4")["checks_sequence_verified"])
+        binary = "/campaign/frozen/scopelet/bin/scopelet-0.1.3-aarch64-apple-darwin"
+        by_path = (claude_call(f"{binary} run -- python3 checks.py", '{"exit_code":1,"result":{}}', True, "a")
+                   + claude_call(f"{binary} run -- python3 checks.py", '{"exit_code":0,"result":{}}', False, "b"))
+        tools = compare.adoption("claude", by_path, "task4")
+        self.assertTrue(tools["checks_sequence_verified"])
+        self.assertEqual((tools["scopelet_invocations"], tools["checks_command_invocations"]), (2, 2))
 
     def test_cache_reingestion_counts_only_returned_cache_paths(self):
         hit = "scopelet-cache/blobs/abc:1:cached line\n"

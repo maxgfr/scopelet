@@ -199,8 +199,8 @@ def _shell_segments(label: str, payload: str) -> list[list[str]]:
 
 
 def _is_checks_invocation(tokens: list[str]) -> bool:
-    runners = ("python", "python3", "scopelet", "rtk")
-    return bool(tokens) and (Path(tokens[0]).name in runners or tokens[0] in ("$SCOPELET_BIN", "${SCOPELET_BIN}", "$RTK_BIN", "${RTK_BIN}")) and "checks.py" in tokens[1:]
+    runners = ("python", "python3", "rtk")
+    return bool(tokens) and (Path(tokens[0]).name in runners or base._is_scopelet_executable(tokens[0]) or tokens[0] in ("$RTK_BIN", "${RTK_BIN}")) and "checks.py" in tokens[1:]
 
 
 def _is_rtk_tokens(tokens: list[str]) -> bool:

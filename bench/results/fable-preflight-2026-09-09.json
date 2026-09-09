@@ -3,8 +3,13 @@
     {
       "campaign": "fable-preflight-20260909",
       "meta": {
+        "aborted_attempts": [],
         "agent_versions": {
           "claude": "2.1.266 (Claude Code)"
+        },
+        "analyzer_sha256": {
+          "compare.py": "5c1aef87d9ff9b5f1b7d754f06ef542b7214ddb304ad49ea2eb4cb85c52d896a",
+          "export_comparison.py": "f4a7e09e122102905dc2bd4bdeeb6c99e0dfdf7032860a5c5986360dc280396a"
         },
         "base_harness_sha256": "f506ee8fd07adb5ea67ca34932f3fe404ee14dc9c0bc1e580bae3c0141247839",
         "claude_bin_sha256": "553d1b9e9e7068b275c0a783c7e139ff6503096f286e674c8c919379fb0eca62",
@@ -234,6 +239,7 @@
           "observed_scopelet_view_modes": [],
           "passed": true,
           "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "rate_limit_reset": null,
           "repetition": 1,
           "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "stdout_sha256": "2a06cc035a556afb317305e62314439c98b2fd4c4b28941158f962ab83fd0c88",
@@ -335,6 +341,7 @@
           "observed_scopelet_view_modes": [],
           "passed": true,
           "prompt_sha256": "9e49e24f9ed328e8a0f68fc2342fb391d7d638ecfe94080ceb6b196402dd5d6b",
+          "rate_limit_reset": null,
           "repetition": 1,
           "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "stdout_sha256": "ed9ece72724d299dc930e751a06999a5fe934bd2440a48bb3a524874ce0dbcce",
@@ -450,6 +457,7 @@
           ],
           "passed": true,
           "prompt_sha256": "98874ccc2c52adf12cd99be2d2d23c83d2d876534321d0089693d8207461489b",
+          "rate_limit_reset": null,
           "repetition": 1,
           "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "stdout_sha256": "82e0401b78d2eb48c37cb858b6adfe8b66a07d56b2258ac2e91176b5a30178d5",
@@ -550,6 +558,7 @@
           "observed_scopelet_view_modes": [],
           "passed": true,
           "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "rate_limit_reset": null,
           "repetition": 1,
           "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "stdout_sha256": "5f8aefb48176d736b38a563d49eb4da5d8409c53a5667c07985dd16fb48bef1a",
@@ -666,6 +675,7 @@
           "observed_scopelet_view_modes": [],
           "passed": true,
           "prompt_sha256": "edbee81183808d463adfc22d3a39f352e079a3e664cedef2ce7e78267573e3bf",
+          "rate_limit_reset": null,
           "repetition": 1,
           "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "stdout_sha256": "ea1ef84ddc31b3633a9d1d682fb4355da73824059ebdc2fe1188c48570e5e68b",
@@ -776,6 +786,7 @@
           "observed_scopelet_view_modes": [],
           "passed": true,
           "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "rate_limit_reset": null,
           "repetition": 1,
           "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
           "stdout_sha256": "9a1a14024b160c219179997bc84aaea99aa2ac823f712cb3806f76ebad8473a3",
