@@ -43,7 +43,7 @@ For automatic operation without skill invocation, enable the hooks below.
 For a standalone CLI (Rust 1.88+):
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.3 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.2.0 --locked
 scopelet doctor
 scopelet query --repo . --find validateToken --context 5
 scopelet run -- npm test
