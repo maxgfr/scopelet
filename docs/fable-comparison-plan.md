@@ -123,6 +123,32 @@ new seed, own directory) with contemporaneous `concise` and unchanged
 `scopelet-ultra` controls, the same tasks and two repetitions. Nothing is
 attributed retroactively to the frozen campaign.
 
+## Amendment during execution (2026-09-09, 11:31)
+
+The first Fable attempt (`fable-comparison-20260909`) hit the account's
+five-hour usage window: all 54 sessions returned HTTP 429 after at most one
+turn and none is a measurement; the export is kept as
+`fable-comparison-2026-09-09-aborted-attempt1.json`. The harness then gained
+window-aware retries (aborted attempts are recorded apart from runs) and the
+second attempt ran normally. At 40 of 54 completed runs (all graded pass, no
+aborted attempt), the operator decided that measured test sessions must use
+Haiku 4.5 and that Fable is reserved for orchestration, because the campaign
+shares the account window with the operator's own sessions. The Fable attempt
+was stopped at that point, not on any result: its 40 runs are exported as a
+partial, unplanned dataset (`fable-comparison-2026-09-09-partial.json`) and
+are reported separately with their incomplete cells named explicitly.
+
+The declared 54-run matrix (same arms, tasks, seed 20260911, two repetitions,
+900 s timeout, same frozen pins and integration modes) is therefore executed
+with `--model claude-haiku-4-5-20251001 --effort high` (Haiku accepts the
+flag; the probe recorded `claude-haiku-4-5-20251001` in `init`). Everything
+else in this protocol is unchanged, including the model verification
+(`init.model` must equal the requested model), the metrics, the preflight
+rule and the post-freeze improvement rule. The question becomes: on Haiku 4.5
+at high effort, with the documented plugin/hook/proxy integrations and the
+released 0.1.3, does Scopelet reduce whole-session tokens at equal quality?
+The partial Fable data is a secondary observation, not the primary answer.
+
 ## Limits known in advance
 
 Claude Code's built-in skills and tools stay visible in every arm; provider
