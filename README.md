@@ -99,7 +99,7 @@ there. Those measurements concern different versions and integrations.
 For a standalone `scopelet` command, install with **Rust 1.88+**:
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.2.0 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.2.1 --locked
 scopelet query --repo . --find validateToken --context 5
 scopelet query --file events.jsonl --format jsonl --filter /status --equals '"failed"' --group /suite --output compact
 scopelet run --auto -- npm test
