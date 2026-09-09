@@ -1,9 +1,15 @@
 const fs = require('node:fs');
 const { execFileSync } = require('node:child_process');
 
-// Retain conventional major/minor semantics; every other commit gets a patch.
+// Require Conventional Commits; every valid commit releases at least a patch.
 exports.analyzeCommits = async (config, context) => {
   if (!context.commits.length) return null;
+  for (const { message } of context.commits) {
+    const header = message.split(/\r?\n/, 1)[0];
+    if (!/^[a-z][a-z0-9-]*(?:\([^()\r\n]+\))?!?: \S.*$/.test(header)) {
+      throw new Error(`Expected a Conventional Commit (type(scope): description): ${header}`);
+    }
+  }
   const { analyzeCommits } = await import('@semantic-release/commit-analyzer');
   return await analyzeCommits({ preset: 'conventionalcommits' }, context) || 'patch';
 };

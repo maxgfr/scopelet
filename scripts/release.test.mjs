@@ -9,23 +9,33 @@ const require = createRequire(import.meta.url);
 const plugin = require('./release-plugin.cjs');
 const logger = { log() {}, error() {} };
 test('every commit releases, preserving feature and breaking-change semantics', async () => {
-  for (const [message, expected] of [ ['docs: clarify install', 'patch'], ['ordinary commit', 'patch'],
-    ['fix: repair status', 'patch'], ['feat: automatic mode', 'minor'], ['feat!: change contract', 'major'],
+  for (const [message, expected] of [ ['docs: clarify install', 'patch'], ['ci: validate installation', 'patch'],
+    ['fix: repair status', 'patch'], ['feat: automatic mode', 'minor'], ['feat!: change contract', 'major'], ['fix(api)!: change result shape', 'major'],
     ['feat: contract\n\nBREAKING CHANGE: incompatible output', 'major'] ]) {
     assert.equal(await plugin.analyzeCommits({}, { commits: [{ message }], logger, cwd: process.cwd() }), expected);
   }
   assert.equal(await plugin.analyzeCommits({}, { commits: [], logger }), null);
+  for (const message of ['ordinary commit', 'fix:', 'feat: ', 'Fix: wrong type casing']) {
+    await assert.rejects(plugin.analyzeCommits({}, { commits: [{ message }], logger }), /Conventional Commit/);
+  }
+  assert.equal(await plugin.analyzeCommits({}, {
+    commits: [{message:'docs: update setup'}, {message:'feat: add mode'}, {message:'fix!: change output'}],
+    logger, cwd:process.cwd(),
+  }), 'major');
 });
 test('version synchronization changes release files without touching dependency versions', () => {
   const root=mkdtempSync(join(tmpdir(),'scopelet-release-'));
   try {
     for (const path of ['Cargo.toml','Cargo.lock','README.md','LICENSE','skills','scripts']) cpSync(path,join(root,path),{recursive:true});
     const before=readFileSync(join(root,'Cargo.lock'),'utf8');
-    execFileSync('python3',[join(root,'scripts/prepare_release.py'),'0.2.0']);
+    execFileSync('python3',[join(root,'scripts/prepare_release.py'),'9.8.7']);
     execFileSync('python3',[join(root,'scripts/check_skill.py'),'--pack']);
+    const testEnv={...process.env};delete testEnv.NODE_TEST_CONTEXT;
+    const launcherTests=execFileSync(process.execPath,['--test','scripts/launcher.test.mjs'],{cwd:root,env:testEnv,encoding:'utf8'});
+    assert.match(launcherTests,/explicit compatible offline binary preserves arguments and exit status/);
     const after=readFileSync(join(root,'Cargo.lock'),'utf8');
     assert.equal(after.replace(/(name = "scopelet"\nversion = ")[^"]+/, '$1OLD'),before.replace(/(name = "scopelet"\nversion = ")[^"]+/, '$1OLD'));
-    assert.match(readFileSync(join(root,'skills/scopelet/scripts/scopelet.mjs'),'utf8'),/const version = '0.2.0'/);
+    assert.match(readFileSync(join(root,'skills/scopelet/scripts/scopelet.mjs'),'utf8'),/const version = '9.8.7'/);
   } finally { rmSync(root,{recursive:true,force:true}); }
 });
 

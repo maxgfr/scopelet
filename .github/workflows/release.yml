@@ -54,6 +54,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -61,9 +64,12 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.version.outputs.version }}
         run: python3 scripts/prepare_release.py "$RELEASE_VERSION"
+      - run: node --test scripts/launcher.test.mjs
       - run: cargo test --locked --target ${{ matrix.target }}
       - run: cargo build --release --locked --target ${{ matrix.target }}
       - run: target/${{ matrix.target }}/release/scopelet bench
+      - name: Verify the versioned launcher and both host installations
+        run: python3 scripts/check_install.py --binary target/${{ matrix.target }}/release/scopelet
       - name: Stage binary and observed version
         env:
           TARGET: ${{ matrix.target }}

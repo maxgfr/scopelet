@@ -1,18 +1,33 @@
 # Setup
 
-Install the skill for both agents:
+Install globally for both agents (Node 22.20+ for the skills installer):
 
 ```sh
-npx skills add maxgfr/scopelet -a codex claude-code
+npx skills add maxgfr/scopelet --skill scopelet --global -a codex claude-code -y
 ```
+
+For automatic operation, activate the downloaded binary directly through the
+launcher; a Cargo install or a `scopelet` command on PATH is not required:
+
+```sh
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" install --agent all
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" doctor
+```
+
+Check `binary_installed` and both `hooks_configured` values. Restart existing
+sessions and review new hooks with Codex `/hooks`; configuration checks cannot
+verify interactive trust. First installation enables default mode.
 
 Invoke `/scopelet <task>` in Claude Code or `$scopelet <task>` in Codex.
 Explicit invocation accesses advanced queries; installed hooks run independently.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
 The launcher installs Scopelet **0.2.0** into the user's cache, downloading the
 matching macOS/Linux release from github.com and verifying its SHA-256. Node 18+
-is needed for the launcher. The launcher alone changes no agent settings. `install` explicitly installs user hooks.
+is sufficient for the launcher itself. The launcher alone changes no agent
+settings; `install` explicitly installs user hooks.
 
+In the commands below, replace `scopelet` with
+`node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs"` if it is not on PATH.
 An independently installed binary is also supported:
 
 ```sh
@@ -42,9 +57,11 @@ ordinary searches and Git staging, including when the cache is inside a reposito
 Existing ignore rules and read-only caches are preserved; unwritable directories
 may lack these markers; explicit no-ignore searches can still include it.
 
-Remove the skill using `npx skills remove scopelet -a codex claude-code`; remove
+Remove the skill using `npx skills remove scopelet --global -a codex claude-code -y`; remove
 a Cargo install with `cargo uninstall scopelet`. The launcher cache can be
-deleted separately. Remove automatic hooks first with `scopelet uninstall --agent all`. The binary and local cache can be removed separately. No telemetry or proxy is configured.
+deleted separately. Remove automatic hooks first with `scopelet uninstall --agent all`.
+The binary and local cache can be removed separately. Scopelet configures no
+telemetry or proxy.
 
 ## Automatic installation and modes
 
@@ -95,3 +112,8 @@ commands is supported. It is reconstructed from quoted argv in `/bin/sh`;
 short-circuiting and the final process status are preserved. Other shell control
 operators and pipelines still pass through. Interactive/background tool calls
 also pass through when the host exposes those flags.
+
+To upgrade a global installation, run `npx skills update scopelet --global -y`,
+then invoke the updated launcher with `install --agent all` and `doctor` again.
+Restart active sessions and review changed Codex hooks. Update any project-local
+copies too; they can shadow the global skill.

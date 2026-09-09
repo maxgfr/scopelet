@@ -1,13 +1,74 @@
 # Scopelet
 
-Compute before you send. A Rust CLI and a small skill for **Codex and Claude Code**
-that select, filter and aggregate evidence locally before it enters model context.
+Local, recoverable compression for **Codex and Claude Code**. Scopelet reduces
+noisy command output before it enters model context, keeps original bytes for
+recovery, and computes exact queries over large files. No extra model call, API
+key or proxy.
 
-## Latest results: automatic mode on Codex Luna
+## Install and enable automatic mode
 
-**52/52 sessions passed:** 48 comparative sessions plus four final-binary checks,
-including Codex code mode. The comparison used `gpt-5.6-luna`, low effort,
-three synthetic tasks and four repetitions per arm, without invoking the skill.
+Requires **Node.js 22.20+** for the `skills` installer. The bundled launcher itself
+supports Node 18+. Release binaries support macOS Intel/ARM and Linux Intel/ARM
+with Ubuntu 24.04-compatible glibc. Native Windows is not supported.
+
+```sh
+npx skills add maxgfr/scopelet --skill scopelet --global -a codex claude-code -y
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" install --agent all
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" doctor
+```
+
+The first command installs the skill. The second downloads its pinned release,
+checks SHA-256, and installs the automatic hooks with **default mode enabled**.
+The third reports the installed binary and `hooks_configured` for both agents.
+The skill installer does **not** put a `scopelet` command on your PATH.
+
+Restart active agent sessions. In Codex, review and trust the new hooks through
+`/hooks` when prompted; `doctor` checks configuration, not interactive trust.
+After activation, ordinary prompts use the hooks without `/scopelet` or
+`$scopelet`. Use `--agent codex` or `--agent claude` to enable only one host.
+
+For manual use only, run the first command and invoke `/scopelet <task>` in
+Claude Code or `$scopelet <task>` in Codex. Rust is not required for this setup.
+[Full setup and host coverage](skills/scopelet/references/setup.md).
+
+## Choose the response style
+
+| Mode | Behavior |
+| --- | --- |
+| `default` | Adaptive compression and brief, normal replies. Enabled on first install. |
+| `caveman` | Same compression, with telegraphic replies that retain necessary information. |
+| `off` | Disable automatic compression and its response preference. |
+
+```sh
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" mode caveman
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" mode default
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" mode off
+```
+
+Mode changes apply at the next prompt. They change neither the model nor its
+reasoning effort. Caveman is optional: shorter wording does not guarantee a
+cheaper whole session. Saved documents use normal prose.
+
+## What gets compressed
+
+Codex hooks wrap recognized noninteractive shell commands, including tests,
+builds, Python scripts and simple eligible `&&` chains. Claude Code hooks replace
+Bash output when the host supplies a supported result shape. Other tools,
+unsupported shell syntax and existing output wrappers pass through.
+
+Outputs up to 2 KiB stay byte-exact. Larger outputs are replaced only when the
+complete view saves at least 512 bytes and 20%, with a 4 KiB target per stream.
+Scopelet first factors repeated JSON keys without dropping values, then selects
+whole evidence units when needed. Repeated lines retain counts; omissions are
+explicit; original captured bytes remain recoverable. Exit status survives.
+Already persisted host previews pass through. [Contracts and limits](docs/design.md).
+
+## Measured results
+
+**52/52 Luna sessions passed:** 48 comparative sessions and four final-binary
+checks, including Codex code mode. The comparison requested `gpt-5.6-luna`, low
+effort, over three synthetic tasks with four repetitions per arm and no skill
+invocation.
 
 | Task | Default vs native | Caveman vs native | RTK vs native |
 | --- | ---: | ---: | ---: |
@@ -16,187 +77,121 @@ three synthetic tasks and four repetitions per arm, without invoking the skill.
 | JSONL aggregation | -16.0% | +1.9% | +10.4% |
 | Combined task mix | **-23.4%** | **-21.5%** | -2.4% |
 
-These are whole-session logical input plus output tokens, including cached
-input, **not billed cost or a universal savings guarantee**. The compressor
-activated on noisy commands; the other tasks' differences combine concise
-instructions with model variability. Caveman does not consistently beat default.
-RTK used its documented Codex awareness instructions. Headroom is unmeasured
-because the available adapter did not route Codex requests. No Claude Code model
-calls were made in this campaign.
+These are **whole-session logical input plus output tokens**, including cached
+input, not billed cost or a universal savings guarantee. Compression activated
+on noisy commands; differences on the other tasks combine concise instructions
+with model variability. Caveman did not consistently beat default. RTK used its
+documented Codex awareness instructions; Headroom is unmeasured because the
+available adapter did not route Codex requests. No Claude Code model calls were
+made in this campaign; that adapter has offline contract checks here.
 
-See [full results, variance and limitations](docs/luna-auto-2026-09-09.md) and
-[per-session measurements](bench/results/luna-auto-2026-09-09.json).
+[Full report and variance](docs/luna-auto-2026-09-09.md) ·
+[Per-session evidence](bench/results/luna-auto-2026-09-09.json) ·
+[Installation verification](bench/results/install-0.2.0-2026-09-09.json)
 
-## Installation
+Earlier [released-0.1.3 comparisons](docs/fable-comparison-2026-09-09.md) found
+strong noisy-command savings on Haiku, but none on Fable where Claude Code
+already persisted large outputs. Headroom was the strongest general competitor
+there. Those measurements concern different versions and integrations.
 
-```sh
-npx skills add maxgfr/scopelet -a codex claude-code -y
-```
+## Exact queries and recovery
 
-Invoke **`/scopelet` in Claude Code** or **`$scopelet` in Codex**, followed by your
-task. For tiny known-file edits, use native tools without activating the skill.
-Add **“ultra for this session”** to opt into aggressive display limits. The skill's Node 18+ launcher downloads
-a pinned, SHA-256 checked release for macOS/Linux, Intel or ARM. Linux releases target Ubuntu 24.04 or compatible glibc environments. Native Windows
-is not currently supported. Manual use needs no proxy, model API key or hook.
-For automatic operation without skill invocation, enable the hooks below.
-
-For a standalone CLI (Rust 1.88+):
+For a standalone `scopelet` command, install with **Rust 1.88+**:
 
 ```sh
 cargo install --git https://github.com/maxgfr/scopelet --tag v0.2.0 --locked
-scopelet doctor
 scopelet query --repo . --find validateToken --context 5
-scopelet run -- npm test
+scopelet query --file events.jsonl --format jsonl --filter /status --equals '"failed"' --group /suite --output compact
+scopelet run --auto -- npm test
 ```
 
-## Automatic mode
-
-After installing the new binary, enable automatic compression once:
-
-```sh
-scopelet install --agent all
-scopelet mode default
-```
-
-Hooks then operate without invoking the skill. `scopelet mode caveman` selects
-minimal telegraphic replies; `scopelet mode off` disables automatic intervention.
-Codex may request hook trust through `/hooks`; restart current sessions after
-installation. See [host coverage and removal](skills/scopelet/references/setup.md#automatic-installation-and-modes).
-
-The compressor first factors repeated JSON column names while keeping all
-values, then selects whole evidence units when needed. Small outputs stay
-byte-exact. Omissions are explicit and original bytes remain recoverable.
-
-## Query and recovery
-
-Compose operations to answer a question without sending the whole input:
+Without Cargo, replace `scopelet` with
+`node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs"`.
+Keep native tools for small known files. Compose filtering, projection, grouping
+and counting locally instead of sending an entire dataset to the model.
 
 ```sh
-scopelet query --spec - <<'JSON'
-{"version":1,"source":{"type":"file","path":"events.jsonl","format":"jsonl"},"operations":[{"op":"filter","pointer":"/status","equals":"failed"},{"op":"group","pointer":"/suite"}]}
-JSON
-```
-
-This returns exact counts by suite, source snapshots and coverage metadata.
-Search, JSON Pointer projection, filtering, counting, grouping, deduplication,
-keyword ranking and exact line reads share the same pipeline. Small known files
-usually deserve a direct read; a capable `rg`/`jq`/Python workflow can be cheaper.
-
-| Mode | Default view | Behavior |
-|---|---:|---|
-| default | 16 KiB | Keeps selected passages and JSON records exact; pages whole records |
-| ultra | 4 KiB | Also abridges large text passages, with explicit omitted-line counts |
-
-Budgets are **bytes, not token estimates**. Both modes can omit results from the
-visible page. Check `scan_complete` and `display_complete`; a partial view cannot
-prove absence. The full result and original bytes remain in local, hashed
-artifacts. Expand a result, recover an exact source span, or redirect original
-bytes to a file:
-
-```sh
-scopelet expand artifact:HASH --offset 10
 scopelet expand artifact:HASH --manifest
 scopelet expand blob:HASH --start 30 --end 70
 scopelet expand blob:HASH --raw > original.bin
 ```
 
-An oversized record reports `blocked_record` instead of repeating a page forever.
-Querying a saved artifact checks local source hashes; explicit expansion still
-recovers the immutable old snapshot. Cache data persists until explicit cleanup
-with `scopelet clean --older-days 7`.
+A partial view cannot prove absence or an exhaustive count. Recover exact bytes
+before editing omitted evidence. CLI display options are separate from response
+preferences: default JSON views use 16 KiB; `--mode ultra` uses 4 KiB and may
+abridge text. Budgets are bytes, not token estimates. [Query reference](skills/scopelet/references/queries.md).
 
-Optional adapters reuse existing tools:
+Optional [codeindex](https://github.com/maxgfr/codeindex) and
+[webindex](https://github.com/maxgfr/webindex) adapters add code relationships and
+document extraction. Basic files, logs, JSON and repository queries need neither.
+
+## Upgrade or remove
 
 ```sh
-npm install -g @maxgfr/codeindex@2.30.0
-brew install maxgfr/tap/webindex
+npx skills update scopelet --global -y
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" install --agent all
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" doctor
 ```
 
-**codeindex** supplies definitions, callers and impact; **webindex** extracts
-web pages and local documents. Native repository/file/log operations need neither.
-Adapter results disclose their syntactic or extraction limits. See the complete
-[query reference](skills/scopelet/references/queries.md) and
-[installation reference](skills/scopelet/references/setup.md).
+Reinstalling updates the pinned hook binary and preserves unrelated hooks.
+Restart current sessions and review changed hooks in Codex. Update project-local
+skill copies too if you use them; they can shadow the global installation.
 
-The design draws from [Headroom](https://github.com/headroomlabs-ai/headroom),
-[Caveman](https://github.com/juliusbrussee/caveman),
-[Ponytail](https://github.com/dietrichgebert/ponytail) and
-[RTK](https://github.com/rtk-ai/rtk). Recoverable compression already exists;
-Scopelet's focus is composing local operations and making coverage explicit.
-See the [pinned four-tool comparison](docs/competitive-review-2026-09-09.md),
-[scientific review](docs/scientific-review-2026-09-09.md) and
-[design contracts](docs/design.md). These projects are references, not bundled
-runtime dependencies. There is no additional LLM call in Scopelet's runtime.
+Remove hooks before removing the skill:
 
-## Earlier measurements
+```sh
+node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" uninstall --agent all
+npx skills remove scopelet --global -a codex claude-code -y
+```
 
-The [direct competitor pilot](docs/direct-comparison-2026-09-09.md) contains
-**51 completed runs across both agents and three tasks; all passed the external
-functional checks**. Scopelet does not win overall: RTK had the lowest observed
-usage on noisy commands in Codex, and Headroom in all three Claude tasks.
-On the noisy task, Scopelet ultra used 131,587 tokens in Codex versus native
-161,394, and 127,807 in Claude versus native 288,348. These are single-run session
-measurements, including cached input, not reliable savings guarantees.
-Stacking full Caveman with Scopelet did not consistently help. Codex/Headroom
-routing was unverified and its three cells are explicitly unmeasured.
+Uninstall preserves configuration backups and cached originals. Clean old
+artifacts separately with `clean --older-days 7`; references expire when their
+snapshots are removed. [Paths, backups and cleanup](skills/scopelet/references/setup.md).
 
-The [2026-09-09 comparison with the released 0.1.3](docs/fable-comparison-2026-09-09.md)
-repeats the matrix with the competitors in their documented integration modes
-(plugin hooks, RTK's PreToolUse hook, the Headroom proxy): **54 runs on Haiku 4.5
-at high effort plus 40 completed runs on Fable 5.1, all passing the external
-grader**. On Haiku, Scopelet cut the noisy-command session by 51% (default) and
-56% (ultra) and JSONL aggregation by 19%, but cost 35% more on the tiny edit.
-On Fable it saved nothing, because Claude Code 2.1.266 now persists large tool
-outputs itself. Headroom was the stronger general competitor. The decision is
-to specialize Scopelet, not to present it as a general token saver.
+## Automatic releases from semantic commits
 
-Use Scopelet for noisy commands whose output the host does not truncate and for
-exact aggregation of large structured files. Keep direct tools for tiny files
-and existing RTK wrappers for commands they already handle. Read the
-[verification summary](docs/verification.md) and
-[full reproduction instructions](bench/README.md): instructions, extra calls
-and recovery can cost more tokens than they save. The [24-run skill follow-up](docs/skill-followup-2026-09-09.md)
-records both repetitions and the final cache-exclusion fix.
+Push **Conventional Commits** to `main`; semantic-release determines the version
+and publishes binaries, checksums and the installable skill after CI succeeds.
 
-## Verification
+| Commit example | Version change |
+| --- | --- |
+| `fix: preserve exit status` | Patch |
+| `feat: add a query operation` | Minor |
+| `feat!: change the output contract` or a `BREAKING CHANGE:` footer | Major |
+| `docs: clarify installation`, `test: cover recovery`, `ci: verify packages` | Patch |
 
-To reproduce checks and the small agent experiment:
+Scopes work too: `fix(launcher): handle a missing cache`. Nonsemantic messages
+fail release validation. Use semantic titles when squash-merging. Every valid
+commit produces at least a patch; a push containing multiple commits produces
+one release with the highest applicable version change. The generated
+`chore(release): VERSION [skip ci]` commit avoids a release loop.
+
+The [workflow](.github/workflows/release.yml) tests Linux/macOS and Rust 1.88,
+sets the next version before compilation, then checks the versioned launcher
+and both host installations on all four platforms. Cargo, the skill, its launcher
+and README install tag are synchronized. Publication stops if the branch or
+resolved version changed during the build. No npm or crates.io package is published.
+
+## Development checks
+
+Use Rust 1.88+, Python 3.9+ and Node 24.10+ for the development/release tooling.
 
 ```sh
 cargo fmt --check
 cargo clippy --all-targets --locked -- -D warnings
 cargo test --locked
-python3 scripts/check_skill.py
+python3 scripts/check_skill.py --pack
+python3 -m unittest discover -s bench -p 'test_*.py'
 npm ci --ignore-scripts
 npm test
-python3 -m unittest discover -s bench -p 'test_*.py'
-cargo run --locked -- bench                      # offline bytes + correctness
 cargo build --release --locked
-python3 bench/run.py --binary target/release/scopelet --dry-run
-python3 bench/run.py --binary target/release/scopelet --live  # calls installed agents
-python3 bench/run.py --binary target/release/scopelet --live --tasks task4 --arms baseline,default,ultra --out bench/runs/commands
+python3 scripts/check_install.py --binary target/release/scopelet
 ```
 
-The live harness compares native baseline, the two Scopelet modes and a batched
-shell control on synthetic, independently graded tasks. It records model-reported
-usage, cache accounting, tool adoption, failures, fixture hashes and timings.
-Raw runs stay local under `bench/runs/`; publish only inspected summaries.
+The installation check uses temporary host configurations, preserves unrelated
+hooks, exercises default/caveman/off, and verifies uninstall. It makes no model
+calls. [Benchmark reproduction](bench/README.md) requires explicit `--live` for
+model sessions. [Verification history](docs/verification.md) preserves earlier
+results and failures. [Research and influences](docs/optimization-research-2026-09-09.md).
 
-
-## Automatic releases
-
-Every push to `main` runs verification before semantic-release publishes the
-macOS/Linux binaries, checksums and installable skill. Conventional feature and
-breaking-change commits produce minor and major versions; all other commits,
-including ordinary messages and documentation, produce at least a patch.
-A push containing several commits produces one release covering those commits.
-The generated version commit uses `[skip ci]` to avoid a release loop.
-
-The release workflow resolves the version before its four-platform build and
-refuses to publish if the branch moved or the resulting version changed. The
-release commit synchronizes Cargo, the skill and its pinned launcher, so the
-tag's sources reproduce the released binary version. `GITHUB_TOKEN` needs
-contents write permission, and branch rules must permit the workflow's version
-commit. No npm package or crates.io package is published.
-
-MIT. [Issues and support](https://github.com/maxgfr/scopelet/issues).
+MIT · [Issues and support](https://github.com/maxgfr/scopelet/issues)

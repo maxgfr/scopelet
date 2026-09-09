@@ -239,3 +239,19 @@ unchanged. It never calls Claude Code. Results and treatment limits are reported
 in the [automatic-mode report](luna-auto-2026-09-09.md): 48/48 primary passes
 and 4/4 final-binary smoke passes, including Codex code mode. Default reduces
 logical session tokens 23.4% over this task mix; the small edit is +0.4%.
+
+## Installation and subsequent semantic releases
+
+The README setup was exercised through `skills` 1.5.25 in fresh project and global
+installations. The global canonical path and Claude discovery link were checked,
+then the published 0.2.0 launcher downloaded and verified its binary. Both host
+hook configurations, idempotent reinstall, mode changes, preservation of unrelated
+hooks, offline bench and uninstall passed in temporary configurations.
+[Installation evidence](../bench/results/install-0.2.0-2026-09-09.json).
+
+The published version exposed launcher tests pinned to 0.1.3. Fixtures now read
+the Cargo version, forbid unintended network access in offline tests, and run
+again after a synthetic version change. Each release matrix also checks the
+versioned launcher and installation for both hosts before publication. Semantic
+commit headers are required; valid documentation/test/CI commits still produce
+a patch, while features and breaking changes retain minor/major semantics.
