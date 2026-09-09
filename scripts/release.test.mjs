@@ -70,3 +70,22 @@ test('version resolution exposes the matrix version and rejects a publication ra
     rmSync(root,{recursive:true,force:true});
   }
 });
+
+test('configured changelog preset renders feature and breaking-change release notes', async () => {
+  const { generateNotes } = await import('@semantic-release/release-notes-generator');
+  const config = require('../.releaserc.cjs').plugins.find(p => Array.isArray(p) && p[0] === '@semantic-release/release-notes-generator')[1];
+  const notes = await generateNotes(config, {
+    cwd: process.cwd(), logger,
+    options: { repositoryUrl: 'https://github.com/maxgfr/scopelet.git' },
+    lastRelease: { gitTag: 'v0.1.3' },
+    nextRelease: { version: '0.2.0', gitTag: 'v0.2.0' },
+    commits: [
+      { hash: 'a'.repeat(40), message: 'feat: automatic compression' },
+      { hash: 'b'.repeat(40), message: 'feat!: change output contract' },
+    ],
+  });
+  assert.match(notes, /automatic compression/);
+  assert.match(notes, /BREAKING CHANGES/);
+  assert.match(notes, /change output contract/);
+  assert.match(notes, /v0\.1\.3\.\.\.v0\.2\.0/);
+});

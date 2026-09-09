@@ -12,7 +12,7 @@ visible detail and requires recovery when that detail matters.
   process behavior.
 - 60 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
-- 4 launcher tests and 4 release automation tests pass locally. The launcher
+- 4 launcher tests and 5 release automation tests pass locally. The launcher
   also passed on Node 18.20.8 before this change; release tooling requires Node 24.10+.
 - Real codeindex 2.29.1/2.30.0 and webindex 1.18.10/1.19.4 adapter checks.
 - Rust 1.88 minimum checked in CI; formatting and Clippy pass.
@@ -229,7 +229,7 @@ evidence. These are final-release functional checks, not a token-saving comparis
 The unreleased 0.1.2 tag remains unchanged after a Linux-only benchmark-test path
 assertion failed; 0.1.3 corrects that assertion.
 
-## Automatic mode (unreleased)
+## Automatic mode
 
 The automatic-mode work adds contract tests for byte-exact small outputs,
 recoverable diagnostic selection, complete JSON schema factoring, installation
