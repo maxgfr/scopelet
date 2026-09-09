@@ -13,9 +13,9 @@ static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, clap::ValueEnum)]
 pub enum Version {
-    #[default]
     #[value(name = "1")]
     V1,
+    #[default]
     #[value(name = "2")]
     V2,
 }

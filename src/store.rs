@@ -29,6 +29,20 @@ impl<W: Write> Write for HashWriter<W> {
     }
 }
 
+fn hash_json(value: &impl serde::Serialize, output: impl Write) -> Result<String> {
+    let mut writer = HashWriter {
+        inner: output,
+        hash: Sha256::new(),
+        len: 0,
+    };
+    {
+        let mut buffer = BufWriter::with_capacity(65536, &mut writer);
+        serde_json::to_writer(&mut buffer, value)?;
+        buffer.flush()?;
+    }
+    Ok(format!("{:x}", writer.hash.finalize()))
+}
+
 /// Keep saved observations out of ordinary repository searches and Git staging.
 /// Each marker is local to a storage directory; never change existing rules.
 pub(crate) fn ignore_cached_evidence(directory: &Path) -> Result<()> {
@@ -119,23 +133,27 @@ pub struct Store {
 impl Store {
     /// Serialize once to a bounded, hashed temporary; publish only a complete item.
     pub fn put_json(&self, value: &impl serde::Serialize) -> Result<String> {
-        let mut temp = tempfile::Builder::new()
+        let temporary = tempfile::Builder::new()
             .prefix(TEMP_PREFIX)
             .rand_bytes(12)
-            .tempfile_in(self.root.join("artifacts"))?;
-        let hash = {
-            let mut writer = HashWriter {
-                inner: temp.as_file_mut(),
-                hash: Sha256::new(),
-                len: 0,
-            };
+            .tempfile_in(self.root.join("artifacts"));
+        let mut temp = match temporary {
+            Ok(temp) => temp,
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::ReadOnlyFilesystem
+                ) =>
             {
-                let mut buffer = BufWriter::with_capacity(65536, &mut writer);
-                serde_json::to_writer(&mut buffer, value)?;
-                buffer.flush()?;
+                // Existing artifacts remain reusable in a read-only directory.
+                let id = format!("artifact:{}", hash_json(value, std::io::sink())?);
+                self.verify(&id)?;
+                self.touch(&id)?;
+                return Ok(id);
             }
-            format!("{:x}", writer.hash.finalize())
+            Err(error) => return Err(error.into()),
         };
+        let hash = hash_json(value, temp.as_file_mut())?;
         let id = format!("artifact:{hash}");
         let path = self.location(&id)?;
         if path.exists() {

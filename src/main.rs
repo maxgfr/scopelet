@@ -23,7 +23,7 @@ struct Cli {
     cache_dir: Option<PathBuf>,
     #[command(subcommand)]
     command: Cmd,
-    /// Compact text representation; defaults to SCOPELET_COMPACT_VERSION or 1.
+    /// Compact text representation; defaults to SCOPELET_COMPACT_VERSION or 2.
     #[arg(long, global = true, value_enum)]
     compact_version: Option<compress::Version>,
 }
@@ -303,7 +303,11 @@ fn execute(cli: Cli) -> Result<i32> {
         let output = compress::automatic_lazy(&bytes, cli.cache_dir, max_bytes, compact_version)
             .unwrap_or(std::borrow::Cow::Borrowed(&bytes));
         std::io::stdout().write_all(&output)?;
-        return Ok(0);
+        return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
+            130
+        } else {
+            0
+        });
     }
     let store = Store::open(cli.cache_dir)?;
     match cli.command {
@@ -558,7 +562,11 @@ fn execute(cli: Cli) -> Result<i32> {
                     max_bytes,
                     offset,
                 )?)?;
-                return Ok(0);
+                return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
+                    130
+                } else {
+                    0
+                });
             }
             if id.starts_with("blob:") && (start.is_some() || end.is_some()) {
                 ensure!(!manifest, "--manifest requires an artifact");
@@ -569,7 +577,11 @@ fn execute(cli: Cli) -> Result<i32> {
                     end.unwrap_or(usize::MAX),
                 )?;
                 print(&render::render(&data, &store, Mode::Default, max_bytes, 0)?)?;
-                return Ok(0);
+                return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
+                    130
+                } else {
+                    0
+                });
             }
             let bytes = store.get(&id)?;
             // Expansion is use: keep the item out of the next age-based cleanup.

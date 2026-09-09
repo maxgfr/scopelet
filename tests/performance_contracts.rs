@@ -393,3 +393,75 @@ fn range_recovery_validates_reference_and_cleanup_preserves_foreign_index_files(
     assert!(!folder.join(".scopelet-write-AbCd12345678").exists());
     assert_eq!(fs::read(folder.join(".tmp-foreign")).unwrap(), b"foreign");
 }
+
+#[cfg(unix)]
+#[test]
+fn existing_json_artifact_can_be_reused_in_a_readonly_directory() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(Some(dir.path().into())).unwrap();
+    let value = json!({"exact":"é\r\n","n":9007199254740993u64});
+    let id = store
+        .put("artifact", &serde_json::to_vec(&value).unwrap())
+        .unwrap();
+    let folder = dir.path().join("artifacts");
+    fs::set_permissions(&folder, fs::Permissions::from_mode(0o555)).unwrap();
+    let result = store.put_json(&value);
+    fs::set_permissions(&folder, fs::Permissions::from_mode(0o700)).unwrap();
+    assert_eq!(result.unwrap(), id);
+}
+
+#[cfg(unix)]
+#[test]
+fn standalone_compression_preserves_interruption_exit_status() {
+    use std::{
+        io::Write,
+        process::{Command, Stdio},
+        time::Duration,
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let mut child = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
+        .args(["--cache-dir", dir.path().to_str().unwrap(), "compress"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+    let mut input = child.stdin.take().unwrap();
+    // Writing beyond pipe capacity proves the child is reading after handler setup.
+    input.write_all(&b"working\n".repeat(40000)).unwrap();
+    unsafe {
+        libc::kill(child.id() as i32, libc::SIGINT);
+    }
+    std::thread::sleep(Duration::from_millis(30));
+    drop(input);
+    assert_eq!(child.wait().unwrap().code(), Some(130));
+}
+
+#[test]
+fn compact_defaults_to_v2_and_explicit_version_overrides_environment() {
+    use assert_cmd::Command;
+    let dir = tempfile::tempdir().unwrap();
+    let raw = "working\n".repeat(1000);
+    for (env, explicit, expected) in [
+        (None, None, "2"),
+        (Some("1"), None, "1"),
+        (Some("2"), Some("1"), "1"),
+        (Some("invalid"), Some("2"), "2"),
+    ] {
+        let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
+        cmd.args(["--cache-dir", dir.path().to_str().unwrap(), "compress"])
+            .env_remove("SCOPELET_COMPACT_VERSION");
+        if let Some(value) = env {
+            cmd.env("SCOPELET_COMPACT_VERSION", value);
+        }
+        if let Some(value) = explicit {
+            cmd.args(["--compact-version", value]);
+        }
+        let result = cmd.write_stdin(raw.as_bytes()).assert().success();
+        assert!(
+            String::from_utf8_lossy(&result.get_output().stdout)
+                .starts_with(&format!("[scopelet compact-v{expected} "))
+        );
+    }
+}

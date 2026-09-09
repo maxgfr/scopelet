@@ -6,6 +6,7 @@ use std::fs;
 fn cli(dir: &std::path::Path) -> Command {
     let mut command = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
     command
+        .env("SCOPELET_COMPACT_VERSION", "1")
         .env("SCOPELET_CONFIG_DIR", dir.join("config"))
         .env("SCOPELET_CACHE_DIR", dir.join("cache"))
         .env("CODEX_HOME", dir.join("codex"))

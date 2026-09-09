@@ -1,0 +1,2168 @@
+{
+  "model_requested": "gpt-5.6-luna",
+  "effort": "low",
+  "live": true,
+  "notes": "At most 30 attempts, no retries. Native tools versus frozen baseline v1 and candidate v2. OS/model caches observed, not reset. No assertion of observed model when provider omits it.",
+  "binary_sha256": {
+    "baseline": "4ffe353b8fc016513375e565956b9fc747c63dc67e3bd4cc4545649191b7f51d",
+    "candidate": "28b82318f9e94c27eb8d5cdcef8b66abbc5fda689ffdcab9380df2903817f1bc"
+  },
+  "harness_sha256": "4c655d01b4881e3b69df6d9baf88ffa8f095d53e233709c5591537f040748c8d",
+  "codex_version": {
+    "available": true,
+    "exit_code": 0,
+    "version": "codex-cli 0.153.4",
+    "stderr": ""
+  },
+  "stopped": null,
+  "runs": [
+    {
+      "task": "diagnostics",
+      "arm": "candidate",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 32.239345,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 111929,
+            "cached_input_tokens": 82176,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1023,
+            "reasoning_output_tokens": 116
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 111929,
+        "output_tokens": 1023,
+        "cache_read_input_tokens": 82176,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 116,
+        "thinking_tokens": null,
+        "logical_input_tokens": 111929,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "6ee9ae5d7d31f871336b6a12616d50126939575203897c351ef97cc52cdb8f07",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+        "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+        "checks.py": "620f13ae19f0ad45fcb776c1ee7629589abaafb51ce60139748a04ab821266ac",
+        "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+        "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+      },
+      "trace": {
+        "completed_shell_calls": 5,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 1,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "recovery",
+      "arm": "native",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 80.67489,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 281210,
+            "cached_input_tokens": 249344,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 2739,
+            "reasoning_output_tokens": 715
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 281210,
+        "output_tokens": 2739,
+        "cache_read_input_tokens": 249344,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 715,
+        "thinking_tokens": null,
+        "logical_input_tokens": 281210,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": false,
+      "stdout_sha256": "6b6317e3fe622964300a74ecdc04c48dda79fe42d82e931939687eefaefe97b8",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "evidence.txt": "97acf4f060b9bd0d997fdd703de55140aca41a9a9945e93e582b20fbf7385165"
+      },
+      "trace": {
+        "completed_shell_calls": 12,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 2
+      }
+    },
+    {
+      "task": "diagnostics",
+      "arm": "baseline",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 25.732029,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 89956,
+            "cached_input_tokens": 76288,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 864,
+            "reasoning_output_tokens": 97
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 89956,
+        "output_tokens": 864,
+        "cache_read_input_tokens": 76288,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 97,
+        "thinking_tokens": null,
+        "logical_input_tokens": 89956,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "74c1aea5fce617f32bf0fc24974559b82ab0864eb7a0492a63c31123292ab306",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+        "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+        "checks.py": "620f13ae19f0ad45fcb776c1ee7629589abaafb51ce60139748a04ab821266ac",
+        "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+        "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+      },
+      "trace": {
+        "completed_shell_calls": 4,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 1,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "aggregate",
+      "arm": "baseline",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 44.576194,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 163796,
+            "cached_input_tokens": 143616,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1816,
+            "reasoning_output_tokens": 239
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 163796,
+        "output_tokens": 1816,
+        "cache_read_input_tokens": 143616,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 239,
+        "thinking_tokens": null,
+        "logical_input_tokens": 163796,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "1ec3b3894e21cd0f38967fe3aab65b4305198c7778095bdb6341b88022df0fc1",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+        "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+        "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+      },
+      "trace": {
+        "completed_shell_calls": 10,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 4,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "recovery",
+      "arm": "baseline",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 55.835377,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 268830,
+            "cached_input_tokens": 232192,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 2076,
+            "reasoning_output_tokens": 273
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 268830,
+        "output_tokens": 2076,
+        "cache_read_input_tokens": 232192,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 273,
+        "thinking_tokens": null,
+        "logical_input_tokens": 268830,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "53ef78474497a3d98ea018004d16cfac73c380aea5e26cbaf25e46356be1c220",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "evidence.txt": "96581ef712084a17d88cb0b26023ff57a37687db7257d72848f5ba7521750bb4"
+      },
+      "trace": {
+        "completed_shell_calls": 11,
+        "expand_invocations": 3,
+        "outputs_with_compact_v1": 2,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 2
+      }
+    },
+    {
+      "task": "recovery",
+      "arm": "candidate",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 19.539269,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 57138,
+            "cached_input_tokens": 49152,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 694,
+            "reasoning_output_tokens": 54
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 57138,
+        "output_tokens": 694,
+        "cache_read_input_tokens": 49152,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 54,
+        "thinking_tokens": null,
+        "logical_input_tokens": 57138,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "7335663c9aeaf5d31d6f5ffcd689a1f99c7706a9998b4386023752c07ebfc656",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "evidence.txt": "6201cb7f9d919ffe9eb238d5e8b9ad6e3ab9cf5a053bbeb440d0c56100d2d66d"
+      },
+      "trace": {
+        "completed_shell_calls": 3,
+        "expand_invocations": 1,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 1,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "repo",
+      "arm": "native",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 33.315921,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 120892,
+            "cached_input_tokens": 103424,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1210,
+            "reasoning_output_tokens": 131
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 120892,
+        "output_tokens": 1210,
+        "cache_read_input_tokens": 103424,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 131,
+        "thinking_tokens": null,
+        "logical_input_tokens": 120892,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "1caf6a16254ffa66b171b7501837278cdcab00ed62802579d8cf86657b657c00",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7ef15233d75a50ad51c041ccde53c8824fdbdfe19340c73285a8a13601378e28",
+        "acceptance.py": "ad6a1b1d03137a265ff5a819c5cad413562b1c2fa61086c36a6ad1e0cc04142b",
+        "app.py": "c12935f91811ff425513401b7a672c6fc7652953a2f4a808075398875896c83c",
+        "decoys/decoy_00.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_01.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_02.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_03.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_04.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_05.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_06.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_07.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_08.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_09.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_10.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_11.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_12.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_13.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_14.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_15.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_16.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_17.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_18.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_19.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_20.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_21.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_22.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_23.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_24.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_25.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_26.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_27.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_28.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_29.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_30.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_31.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_32.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_33.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_34.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_35.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_36.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_37.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_38.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_39.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "src/cache.py": "19b6d1e1455235d679a68ee0f1c5e32689c7257568bc505e4490ca85f4d13591"
+      },
+      "trace": {
+        "completed_shell_calls": 5,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "small",
+      "arm": "baseline",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 31.765912,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 94802,
+            "cached_input_tokens": 82176,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1177,
+            "reasoning_output_tokens": 141
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 94802,
+        "output_tokens": 1177,
+        "cache_read_input_tokens": 82176,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 141,
+        "thinking_tokens": null,
+        "logical_input_tokens": 94802,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "e2c631d871960336ee8e4470152840df235178dc065c00773d68709b6b7103a0",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "trace": {
+        "completed_shell_calls": 5,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "small",
+      "arm": "native",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 23.364831,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 66112,
+            "cached_input_tokens": 59136,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 840,
+            "reasoning_output_tokens": 107
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 66112,
+        "output_tokens": 840,
+        "cache_read_input_tokens": 59136,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 107,
+        "thinking_tokens": null,
+        "logical_input_tokens": 66112,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "e23e004dc1e0a78de05071aa0db34abcc58f7410784539e0379284331c43d756",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "trace": {
+        "completed_shell_calls": 3,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "diagnostics",
+      "arm": "baseline",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 23.561661,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 87171,
+            "cached_input_tokens": 73216,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 855,
+            "reasoning_output_tokens": 111
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 87171,
+        "output_tokens": 855,
+        "cache_read_input_tokens": 73216,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 111,
+        "thinking_tokens": null,
+        "logical_input_tokens": 87171,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "f68a1c10c04dc461897ba322dfc4e5a51dee4eebbd9f8be9ea986dfa5a28bb0f",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+        "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+        "checks.py": "620f13ae19f0ad45fcb776c1ee7629589abaafb51ce60139748a04ab821266ac",
+        "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+        "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+      },
+      "trace": {
+        "completed_shell_calls": 4,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 2,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "repo",
+      "arm": "baseline",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 32.085199,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 88237,
+            "cached_input_tokens": 68096,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 957,
+            "reasoning_output_tokens": 73
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 88237,
+        "output_tokens": 957,
+        "cache_read_input_tokens": 68096,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 73,
+        "thinking_tokens": null,
+        "logical_input_tokens": 88237,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "66d9ac8b5ded1266353af75fe922b3cdd1b1b2937d813568cf6b38ede709cf5e",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7ef15233d75a50ad51c041ccde53c8824fdbdfe19340c73285a8a13601378e28",
+        "acceptance.py": "ad6a1b1d03137a265ff5a819c5cad413562b1c2fa61086c36a6ad1e0cc04142b",
+        "app.py": "c12935f91811ff425513401b7a672c6fc7652953a2f4a808075398875896c83c",
+        "decoys/decoy_00.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_01.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_02.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_03.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_04.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_05.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_06.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_07.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_08.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_09.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_10.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_11.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_12.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_13.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_14.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_15.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_16.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_17.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_18.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_19.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_20.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_21.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_22.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_23.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_24.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_25.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_26.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_27.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_28.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_29.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_30.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_31.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_32.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_33.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_34.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_35.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_36.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_37.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_38.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_39.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "src/cache.py": "19b6d1e1455235d679a68ee0f1c5e32689c7257568bc505e4490ca85f4d13591"
+      },
+      "trace": {
+        "completed_shell_calls": 4,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 2
+      }
+    },
+    {
+      "task": "recovery",
+      "arm": "candidate",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 19.21468,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 57217,
+            "cached_input_tokens": 49152,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 728,
+            "reasoning_output_tokens": 65
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 57217,
+        "output_tokens": 728,
+        "cache_read_input_tokens": 49152,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 65,
+        "thinking_tokens": null,
+        "logical_input_tokens": 57217,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "5ceb216dc324843ee4f486629aa32a51caead0795565268a417d1923bad339d0",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "evidence.txt": "6201cb7f9d919ffe9eb238d5e8b9ad6e3ab9cf5a053bbeb440d0c56100d2d66d"
+      },
+      "trace": {
+        "completed_shell_calls": 3,
+        "expand_invocations": 1,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 1,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "aggregate",
+      "arm": "native",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 27.402566,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 81049,
+            "cached_input_tokens": 65024,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1022,
+            "reasoning_output_tokens": 53
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 81049,
+        "output_tokens": 1022,
+        "cache_read_input_tokens": 65024,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 53,
+        "thinking_tokens": null,
+        "logical_input_tokens": 81049,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "9f48eedf8085a1d14c9f00351d65f3eb29c539481c1ed1cbea9510968392da7b",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+        "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+        "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+      },
+      "trace": {
+        "completed_shell_calls": 4,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "small",
+      "arm": "candidate",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 33.337847,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 112259,
+            "cached_input_tokens": 97280,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1312,
+            "reasoning_output_tokens": 145
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 112259,
+        "output_tokens": 1312,
+        "cache_read_input_tokens": 97280,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 145,
+        "thinking_tokens": null,
+        "logical_input_tokens": 112259,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "9ae0540cb39943ab00c1690a64c9247c01c68d6998ec5b5775f12e3ce2066fec",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "trace": {
+        "completed_shell_calls": 6,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "repo",
+      "arm": "native",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 26.736135,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 90283,
+            "cached_input_tokens": 74240,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 907,
+            "reasoning_output_tokens": 116
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 90283,
+        "output_tokens": 907,
+        "cache_read_input_tokens": 74240,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 116,
+        "thinking_tokens": null,
+        "logical_input_tokens": 90283,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "4c610c56f59b3d6f9dceb600d26362e5a50c5431202887942e0a49a17b7fae99",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7ef15233d75a50ad51c041ccde53c8824fdbdfe19340c73285a8a13601378e28",
+        "acceptance.py": "ad6a1b1d03137a265ff5a819c5cad413562b1c2fa61086c36a6ad1e0cc04142b",
+        "app.py": "c12935f91811ff425513401b7a672c6fc7652953a2f4a808075398875896c83c",
+        "decoys/decoy_00.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_01.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_02.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_03.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_04.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_05.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_06.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_07.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_08.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_09.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_10.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_11.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_12.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_13.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_14.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_15.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_16.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_17.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_18.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_19.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_20.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_21.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_22.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_23.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_24.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_25.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_26.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_27.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_28.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_29.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_30.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_31.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_32.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_33.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_34.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_35.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_36.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_37.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_38.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_39.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "src/cache.py": "19b6d1e1455235d679a68ee0f1c5e32689c7257568bc505e4490ca85f4d13591"
+      },
+      "trace": {
+        "completed_shell_calls": 4,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "small",
+      "arm": "baseline",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 30.571666,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 94539,
+            "cached_input_tokens": 85248,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1122,
+            "reasoning_output_tokens": 130
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 94539,
+        "output_tokens": 1122,
+        "cache_read_input_tokens": 85248,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 130,
+        "thinking_tokens": null,
+        "logical_input_tokens": 94539,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "c1f70f9f46cb7406d9235b155804732c2602778838d20f7a98f78078c976f680",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "trace": {
+        "completed_shell_calls": 5,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "repo",
+      "arm": "baseline",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 40.622545,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 143341,
+            "cached_input_tokens": 121600,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1623,
+            "reasoning_output_tokens": 244
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 143341,
+        "output_tokens": 1623,
+        "cache_read_input_tokens": 121600,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 244,
+        "thinking_tokens": null,
+        "logical_input_tokens": 143341,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "8c890ddb993814a6b78cfec5404e7decba51d3d119655274131c1fb91871b686",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7ef15233d75a50ad51c041ccde53c8824fdbdfe19340c73285a8a13601378e28",
+        "acceptance.py": "ad6a1b1d03137a265ff5a819c5cad413562b1c2fa61086c36a6ad1e0cc04142b",
+        "app.py": "c12935f91811ff425513401b7a672c6fc7652953a2f4a808075398875896c83c",
+        "decoys/decoy_00.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_01.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_02.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_03.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_04.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_05.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_06.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_07.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_08.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_09.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_10.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_11.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_12.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_13.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_14.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_15.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_16.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_17.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_18.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_19.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_20.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_21.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_22.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_23.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_24.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_25.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_26.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_27.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_28.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_29.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_30.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_31.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_32.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_33.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_34.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_35.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_36.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_37.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_38.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_39.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "src/cache.py": "19b6d1e1455235d679a68ee0f1c5e32689c7257568bc505e4490ca85f4d13591"
+      },
+      "trace": {
+        "completed_shell_calls": 6,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "repo",
+      "arm": "candidate",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 31.496428,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 121196,
+            "cached_input_tokens": 103424,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1202,
+            "reasoning_output_tokens": 122
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 121196,
+        "output_tokens": 1202,
+        "cache_read_input_tokens": 103424,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 122,
+        "thinking_tokens": null,
+        "logical_input_tokens": 121196,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "b9768614baf852df776aab0006bca11070278c45200d0789b7c91aad59b8f71e",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7ef15233d75a50ad51c041ccde53c8824fdbdfe19340c73285a8a13601378e28",
+        "acceptance.py": "ad6a1b1d03137a265ff5a819c5cad413562b1c2fa61086c36a6ad1e0cc04142b",
+        "app.py": "c12935f91811ff425513401b7a672c6fc7652953a2f4a808075398875896c83c",
+        "decoys/decoy_00.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_01.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_02.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_03.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_04.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_05.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_06.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_07.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_08.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_09.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_10.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_11.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_12.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_13.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_14.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_15.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_16.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_17.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_18.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_19.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_20.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_21.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_22.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_23.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_24.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_25.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_26.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_27.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_28.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_29.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_30.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_31.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_32.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_33.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_34.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_35.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_36.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_37.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_38.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_39.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "src/cache.py": "19b6d1e1455235d679a68ee0f1c5e32689c7257568bc505e4490ca85f4d13591"
+      },
+      "trace": {
+        "completed_shell_calls": 5,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "small",
+      "arm": "native",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 33.317484,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 108367,
+            "cached_input_tokens": 94208,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1209,
+            "reasoning_output_tokens": 117
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 108367,
+        "output_tokens": 1209,
+        "cache_read_input_tokens": 94208,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 117,
+        "thinking_tokens": null,
+        "logical_input_tokens": 108367,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "5d4ec7a1bf9a970c8032dff02fb14fcb46e1bd09715f06e61c94b2fae5943533",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "trace": {
+        "completed_shell_calls": 6,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "recovery",
+      "arm": "native",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 24.709981,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 91100,
+            "cached_input_tokens": 80384,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 887,
+            "reasoning_output_tokens": 102
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 91100,
+        "output_tokens": 887,
+        "cache_read_input_tokens": 80384,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 102,
+        "thinking_tokens": null,
+        "logical_input_tokens": 91100,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "79efea8b47626fd5c8e90484bf1adb3c83c0767e4917672c7f19f266cef00c6c",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "evidence.txt": "97acf4f060b9bd0d997fdd703de55140aca41a9a9945e93e582b20fbf7385165"
+      },
+      "trace": {
+        "completed_shell_calls": 4,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "diagnostics",
+      "arm": "native",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 29.281244,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 143935,
+            "cached_input_tokens": 118784,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1036,
+            "reasoning_output_tokens": 123
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 143935,
+        "output_tokens": 1036,
+        "cache_read_input_tokens": 118784,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 123,
+        "thinking_tokens": null,
+        "logical_input_tokens": 143935,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "0c270c1db72d5a0ae2865e42173a21b2097b1fdce825caa91c254768edfc4d5f",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+        "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+        "checks.py": "620f13ae19f0ad45fcb776c1ee7629589abaafb51ce60139748a04ab821266ac",
+        "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+        "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+      },
+      "trace": {
+        "completed_shell_calls": 6,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "aggregate",
+      "arm": "candidate",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 48.625399,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 152852,
+            "cached_input_tokens": 125440,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1967,
+            "reasoning_output_tokens": 241
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 152852,
+        "output_tokens": 1967,
+        "cache_read_input_tokens": 125440,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 241,
+        "thinking_tokens": null,
+        "logical_input_tokens": 152852,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "d24d7c9134298b2a85368ac2154a06533aac1901e685f382c1b22fe4eccaaf3c",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+        "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+        "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+      },
+      "trace": {
+        "completed_shell_calls": 11,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 3
+      }
+    },
+    {
+      "task": "aggregate",
+      "arm": "baseline",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 53.352744,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 226091,
+            "cached_input_tokens": 200960,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 2050,
+            "reasoning_output_tokens": 267
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 226091,
+        "output_tokens": 2050,
+        "cache_read_input_tokens": 200960,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 267,
+        "thinking_tokens": null,
+        "logical_input_tokens": 226091,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "418d3a4776ecf6cbbb119889c10c9e2387fa6aa778f8ca2a2d1021864148bff1",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+        "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+        "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+      },
+      "trace": {
+        "completed_shell_calls": 9,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 3
+      }
+    },
+    {
+      "task": "repo",
+      "arm": "candidate",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 35.705344,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 124921,
+            "cached_input_tokens": 105472,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1320,
+            "reasoning_output_tokens": 208
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 124921,
+        "output_tokens": 1320,
+        "cache_read_input_tokens": 105472,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 208,
+        "thinking_tokens": null,
+        "logical_input_tokens": 124921,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "47d6b8b52ed7c0031b9aed6ddc9d3d7c5cc8b8d87318cb2296b92efa2c8a5fe5",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7ef15233d75a50ad51c041ccde53c8824fdbdfe19340c73285a8a13601378e28",
+        "acceptance.py": "ad6a1b1d03137a265ff5a819c5cad413562b1c2fa61086c36a6ad1e0cc04142b",
+        "app.py": "c12935f91811ff425513401b7a672c6fc7652953a2f4a808075398875896c83c",
+        "decoys/decoy_00.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_01.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_02.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_03.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_04.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_05.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_06.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_07.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_08.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_09.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_10.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_11.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_12.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_13.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_14.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_15.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_16.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_17.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_18.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_19.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_20.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_21.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_22.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_23.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_24.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_25.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_26.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_27.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_28.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_29.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_30.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_31.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_32.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_33.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_34.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_35.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_36.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_37.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_38.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "decoys/decoy_39.py": "0ed12d59f5c8abdd1a535775d87f3f280a42c4abe43594f45dfb8442eae10001",
+        "src/cache.py": "19b6d1e1455235d679a68ee0f1c5e32689c7257568bc505e4490ca85f4d13591"
+      },
+      "trace": {
+        "completed_shell_calls": 5,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "aggregate",
+      "arm": "native",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 26.48774,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 66740,
+            "cached_input_tokens": 55040,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1067,
+            "reasoning_output_tokens": 72
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 66740,
+        "output_tokens": 1067,
+        "cache_read_input_tokens": 55040,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 72,
+        "thinking_tokens": null,
+        "logical_input_tokens": 66740,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "01617286e313f11df1d11bdd776be19c4becfde05337bad3c86b6e21fa757845",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+        "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+        "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+      },
+      "trace": {
+        "completed_shell_calls": 3,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 0
+      }
+    },
+    {
+      "task": "diagnostics",
+      "arm": "candidate",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 28.805904,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 128910,
+            "cached_input_tokens": 109568,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1030,
+            "reasoning_output_tokens": 107
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 128910,
+        "output_tokens": 1030,
+        "cache_read_input_tokens": 109568,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 107,
+        "thinking_tokens": null,
+        "logical_input_tokens": 128910,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "884e9d43fbc7bba817f89090b4e5f1b4b372d3474626f3f175e833d3e16c2abb",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+        "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+        "checks.py": "620f13ae19f0ad45fcb776c1ee7629589abaafb51ce60139748a04ab821266ac",
+        "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+        "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+      },
+      "trace": {
+        "completed_shell_calls": 6,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 1,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "small",
+      "arm": "candidate",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 26.329458,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 82841,
+            "cached_input_tokens": 70144,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 969,
+            "reasoning_output_tokens": 141
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 82841,
+        "output_tokens": 969,
+        "cache_read_input_tokens": 70144,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 141,
+        "thinking_tokens": null,
+        "logical_input_tokens": 82841,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "3e38d511118cf458d2a9b380cde67ac46f4d6ab5af66a65c16f3f5712cad0487",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "trace": {
+        "completed_shell_calls": 5,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "aggregate",
+      "arm": "candidate",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 68.56391,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 326360,
+            "cached_input_tokens": 288000,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 2778,
+            "reasoning_output_tokens": 366
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 326360,
+        "output_tokens": 2778,
+        "cache_read_input_tokens": 288000,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 366,
+        "thinking_tokens": null,
+        "logical_input_tokens": 326360,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "9567161ae846cf5e5d94414a4ad5988457de3ab068cf1dc842ec3122b8edc111",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+        "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+        "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+      },
+      "trace": {
+        "completed_shell_calls": 13,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 8
+      }
+    },
+    {
+      "task": "diagnostics",
+      "arm": "native",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 29.128162,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 145126,
+            "cached_input_tokens": 129024,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1062,
+            "reasoning_output_tokens": 120
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 145126,
+        "output_tokens": 1062,
+        "cache_read_input_tokens": 129024,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 120,
+        "thinking_tokens": null,
+        "logical_input_tokens": 145126,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "stdout_sha256": "8e956b8b24d7a34c08005cca44191474be93b931035324a443967470451fd112",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+        "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+        "checks.py": "620f13ae19f0ad45fcb776c1ee7629589abaafb51ce60139748a04ab821266ac",
+        "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+        "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+      },
+      "trace": {
+        "completed_shell_calls": 6,
+        "expand_invocations": 0,
+        "outputs_with_compact_v1": 0,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 1
+      }
+    },
+    {
+      "task": "recovery",
+      "arm": "baseline",
+      "repetition": 2,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 124.438133,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 781622,
+            "cached_input_tokens": 713472,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 3696,
+            "reasoning_output_tokens": 907
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 781622,
+        "output_tokens": 3696,
+        "cache_read_input_tokens": 713472,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 907,
+        "thinking_tokens": null,
+        "logical_input_tokens": 781622,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": false,
+      "stdout_sha256": "b7a95910589272405fc398743f563ef9d8aab439b54dba0a3234ac8ef3c00f08",
+      "quota_rejected": false,
+      "fixture_hashes": {
+        "evidence.txt": "96581ef712084a17d88cb0b26023ff57a37687db7257d72848f5ba7521750bb4"
+      },
+      "trace": {
+        "completed_shell_calls": 20,
+        "expand_invocations": 4,
+        "outputs_with_compact_v1": 1,
+        "outputs_with_compact_v2": 0,
+        "tool_errors": 4
+      }
+    }
+  ],
+  "summary": {
+    "small/native": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        66952,
+        109576
+      ],
+      "mean_tokens": 88264,
+      "missing_usage": 0
+    },
+    "small/baseline": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        95979,
+        95661
+      ],
+      "mean_tokens": 95820,
+      "missing_usage": 0
+    },
+    "small/candidate": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        113571,
+        83810
+      ],
+      "mean_tokens": 98690.5,
+      "missing_usage": 0
+    },
+    "diagnostics/native": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        144971,
+        146188
+      ],
+      "mean_tokens": 145579.5,
+      "missing_usage": 0
+    },
+    "diagnostics/baseline": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        90820,
+        88026
+      ],
+      "mean_tokens": 89423,
+      "missing_usage": 0
+    },
+    "diagnostics/candidate": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        112952,
+        129940
+      ],
+      "mean_tokens": 121446,
+      "missing_usage": 0
+    },
+    "aggregate/native": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        82071,
+        67807
+      ],
+      "mean_tokens": 74939,
+      "missing_usage": 0
+    },
+    "aggregate/baseline": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        165612,
+        228141
+      ],
+      "mean_tokens": 196876.5,
+      "missing_usage": 0
+    },
+    "aggregate/candidate": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        154819,
+        329138
+      ],
+      "mean_tokens": 241978.5,
+      "missing_usage": 0
+    },
+    "repo/native": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        122102,
+        91190
+      ],
+      "mean_tokens": 106646,
+      "missing_usage": 0
+    },
+    "repo/baseline": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        89194,
+        144964
+      ],
+      "mean_tokens": 117079,
+      "missing_usage": 0
+    },
+    "repo/candidate": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        122398,
+        126241
+      ],
+      "mean_tokens": 124319.5,
+      "missing_usage": 0
+    },
+    "recovery/native": {
+      "attempts": 2,
+      "passes": 1,
+      "tokens": [
+        283949,
+        91987
+      ],
+      "mean_tokens": 187968,
+      "missing_usage": 0
+    },
+    "recovery/baseline": {
+      "attempts": 2,
+      "passes": 1,
+      "tokens": [
+        270906,
+        785318
+      ],
+      "mean_tokens": 528112,
+      "missing_usage": 0
+    },
+    "recovery/candidate": {
+      "attempts": 2,
+      "passes": 2,
+      "tokens": [
+        57832,
+        57945
+      ],
+      "mean_tokens": 57888.5,
+      "missing_usage": 0
+    }
+  },
+  "rollout": {
+    "complete": true,
+    "evidence_tokens": {
+      "baseline": 1862981,
+      "candidate": 1091265
+    },
+    "change_vs_baseline_percent": -41.423718223642645,
+    "all_candidate_sessions_pass": true,
+    "eligible_for_v2_default": true
+  }
+}

@@ -7,10 +7,10 @@ visible detail and requires recovery when that detail matters.
 
 ## Correctness and distribution
 
-- 74 Rust integration tests: queries, exact byte recovery, freshness, malformed
+- 93 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup, capture throughput and
   process behavior.
-- 65 offline benchmark-harness tests, including independent grading, cache usage,
+- 71 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
 - 4 launcher tests and 5 release automation tests pass locally. The launcher
   also passed on Node 18.20.8 before this change; release tooling requires Node 24.10+.
@@ -20,6 +20,12 @@ visible detail and requires recovery when that detail matters.
   offline `bench`: Linux x64/ARM64 and macOS Intel/ARM64.
 - Installation using `npx skills add maxgfr/scopelet -a codex claude-code --copy -y`
   created both agent bundles; both installed launchers passed the offline check.
+
+## Engine performance and compact-v2
+
+The [2026-09-10 performance report](performance-2026-09-10.md) records release-binary
+latency/memory comparisons and a separate 30-session Luna campaign. It retains
+negative results, exact recovery checks and the compact-version rollout decision.
 
 ## Installed automatic hooks with Fable 5.1
 

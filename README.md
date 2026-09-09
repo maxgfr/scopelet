@@ -212,7 +212,8 @@ The installation check uses temporary host configurations, preserves unrelated
 hooks, exercises default/caveman/off, and verifies uninstall. It makes no model
 calls. [Benchmark reproduction](bench/README.md) requires explicit `--live` for
 model sessions. [Verification history](docs/verification.md) preserves earlier
-results and failures. [Research and influences](docs/optimization-research-2026-09-09.md).
+results and failures. [Engine and compact-v2 measurements](docs/performance-2026-09-10.md).
+[Research and influences](docs/optimization-research-2026-09-09.md).
 
 MIT · [Issues and support](https://github.com/maxgfr/scopelet/issues)
 

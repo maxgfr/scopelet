@@ -47,4 +47,14 @@ class PerformanceTests(unittest.TestCase):
         self.assertEqual(value['failures'],1)
         self.assertIsNone(value['median_rss_bytes'])
 
+
+class RolloutTests(unittest.TestCase):
+    def test_incomplete_or_failed_campaign_cannot_enable_default(self):
+        from export_performance import rollout
+        rows=[{'task':task,'arm':arm,'passed':True,'exit_code':0,'usage':{'usage_missing':False,'logical_input_tokens':tokens,'output_tokens':1}} for task in live.TASKS for arm,tokens in [('baseline',100),('candidate',70)]]
+        self.assertFalse(rollout(rows,False)['eligible_for_v2_default'])
+        self.assertTrue(rollout(rows,True)['eligible_for_v2_default'])
+        rows[-1]['passed']=False
+        self.assertFalse(rollout(rows,True)['eligible_for_v2_default'])
+
 if __name__=='__main__':unittest.main()

@@ -242,4 +242,16 @@ python3 bench/performance_live.py --live --baseline /path/to/baseline --candidat
 The rollout gate for v2 is no functional regression and at least 10% fewer
 whole-session logical input plus output tokens than baseline on the combined
 four evidence-heavy tasks. An incomplete campaign does not pass this gate.
-V1 stays the default unless that complete comparison supports switching.
+The completed 2026-09-10 comparison passed this gate; v2 is now the CLI/hook
+default. Both versions remain explicitly selectable.
+
+Export the completed campaign for publication with verified raw-trace hashes and
+a whitelist excluding prompts, commands, authentication and personal paths:
+
+```sh
+python3 bench/export_performance.py bench/runs/luna-performance-new \
+  bench/results/performance-luna-new.json
+```
+
+The [2026-09-10 report](../docs/performance-2026-09-10.md) separates offline
+measurements, live token accounting, failures and the default-version decision.

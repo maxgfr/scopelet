@@ -157,7 +157,7 @@ This reads historical evidence after a local file changes. A new `query` on an
 artifact still checks freshness. Search conflicts with `--raw`, `--manifest`,
 `--start` and `--end`; use range expansion for a known line interval.
 
-## Compact-v2 (opt-in)
+## Compact-v2 (default)
 
 ```sh
 scopelet compress --compact-version 2 < build.log
@@ -170,5 +170,5 @@ rows to source labels. `total_records` and `omitted_units` describe coverage,
 not a computed aggregate. Complete cells, exact numbers and missing/null
 semantics survive. A partial table cannot establish an exhaustive count.
 V2 prioritizes distinct diagnostics before repetitions, and links directly to
-saved-source search. Version 1 remains the default and is selectable with
+saved-source search. Version 2 is the CLI/hook default; version 1 remains selectable with
 `--compact-version 1`; query and artifact JSON schemas remain version 1.

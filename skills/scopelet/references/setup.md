@@ -126,11 +126,11 @@ then invoke the updated launcher with `install --agent all` and `doctor` again.
 Restart active sessions and review changed Codex hooks. Update any project-local
 copies too; they can shadow the global skill.
 
-## Optional compact-v2 and additional commands
+## Compact version and additional commands
 
-Set `SCOPELET_COMPACT_VERSION=2` in the agent process environment to select v2
-for installed hooks; unset it or set `1` to restore v1. Direct CLI calls can
-override it with `--compact-version 1|2`. V2 adds partial JSON tables and broader
+Compact-v2 is the default. Set `SCOPELET_COMPACT_VERSION=1` in the agent process
+environment to restore v1 for installed hooks; unset it or set `2` to use v2.
+Direct CLI calls can override it with `--compact-version 1|2`. V2 adds partial JSON tables and broader
 diagnostic coverage; see [queries.md](queries.md) for exact recovery semantics.
 The JSON query interface and old saved artifacts remain compatible.
 

@@ -51,7 +51,7 @@ def fixtures(root, stress=False):
 def measure(binary, args, stdin, cache, version):
     command=[str(binary),'--cache-dir',str(cache),*args]
     env=os.environ.copy();env.pop('SCOPELET_COMPACT_VERSION',None)
-    if version == 2:command+=['--compact-version','2']
+    if version is not None:command+=['--compact-version',str(version)]
     timer=['/usr/bin/time','-l'] if platform.system()=='Darwin' else ['/usr/bin/time','-v']
     start=time.perf_counter()
     with open(stdin or os.devnull,'rb') as source:
@@ -97,7 +97,7 @@ def run(options):
                     arms=['baseline','candidate','candidate_v2']
                     if rep%2:arms.reverse()
                     for arm in arms:
-                        binary=binaries['baseline' if arm=='baseline' else 'candidate'];version=2 if arm=='candidate_v2' else 1
+                        binary=binaries['baseline' if arm=='baseline' else 'candidate'];version=None if arm=='baseline' else (2 if arm=='candidate_v2' else 1)
                         cache=root/f'cache-{arm}-{name}-{state}'
                         if state=='cold':shutil.rmtree(cache,ignore_errors=True)
                         actual_args=args

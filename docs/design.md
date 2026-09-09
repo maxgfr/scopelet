@@ -162,7 +162,9 @@ small/binary inputs and persisted previews perform no cache writes. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact v1 JSON
 serialization. A storage/compression failure returns native captured bytes.
-Explicit queries still report storage errors. Compact-v1 remains the default.
+Explicit queries still report storage errors. Compact-v2 is the CLI and hook default following the bounded
+[Luna rollout comparison](performance-2026-09-10.md). Legacy library helpers
+`automatic` and `compact` retain v1 behavior.
 
 `--compact-version 2` selects compact-v2; `SCOPELET_COMPACT_VERSION=2` selects it
 for automatic hooks too. An explicit CLI version takes precedence. Only `1` and
