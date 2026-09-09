@@ -120,10 +120,14 @@ def export(directory):
     # Older campaigns hard-coded the model in the harness rather than in meta.
     result["meta"]["models"] = {"codex": "gpt-5.6-luna (low)",
                                 "claude": meta.get("model_requested") or "claude-haiku-4-5-20251001"}
+    # Provider usage-window rejections are kept apart from measured runs.
+    result["meta"]["aborted_attempts"] = [
+        {key: item.get(key) for key in ("agent", "task", "arm", "repetition", "attempt", "reason", "reset_epoch", "num_turns")}
+        for item in report.get("aborted_attempts", [])]
     for run in report["runs"]:
         row = {key: run.get(key) for key in (
             "agent", "task", "arm", "repetition", "exit_code", "timed_out", "duration_seconds",
-            "integration", "model_requested", "effort_requested", "cache_markers_present",
+            "integration", "model_requested", "effort_requested", "cache_markers_present", "rate_limit_reset",
         )}
         row["passed"] = run.get("acceptance", {}).get("passed", False)
         row["harness_error"] = "harness_error" in run

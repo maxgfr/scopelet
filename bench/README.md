@@ -13,10 +13,18 @@ Read the [declared protocol](../docs/direct-comparison-plan.md) and
 
 Install/authenticate Codex and Claude Code normally. The recorded pilot used
 Codex 0.153.4 with GPT-5.6-Luna (low) and Claude Code 2.1.263 with Haiku 4.5.
-These models are configured in `run.py`; compare within an agent/model, not across
-the two. Host instructions can still affect results. Runs use temporary isolated
-Git workspaces, project skills and scoped environment/configuration overrides.
-They do not install competitor hooks or change global agent settings.
+The Codex model is configured in `run.py`; the Claude model and effort are
+`compare.py` options (`--model`, default `claude-fable-5-1`; `--effort`, default
+`high`; `--claude-bin` to pin the executable). Compare within an agent/model,
+not across the two. Host instructions can still affect results. Runs use
+temporary isolated Git workspaces, project skills and scoped
+environment/configuration overrides. `CLAUDE_CODE_EFFORT_LEVEL` and
+`ANTHROPIC_*` routing variables are removed from every child environment.
+Competitor hooks are loaded only per run (`--plugin-dir` for Caveman/Ponytail,
+`--settings` for the RTK hook); no global agent settings change. Plugin marker
+files (`~/.claude/.caveman-active`, `~/.claude/.ponytail-active`) and RTK's
+`~/.local/share/rtk/hook-audit.log` are written under the real `HOME` because an
+isolated `CLAUDE_CONFIG_DIR` loses OAuth authentication; remove them afterwards.
 
 Clone the competitors outside this repository and check out these revisions:
 
@@ -28,11 +36,15 @@ Clone the competitors outside this repository and check out these revisions:
 | rtk-ai/rtk | 8e9aa04cb2afb189747fac4e36bec2254ddd0564 |
 | maxgfr/scopelet (original pilot) | d7f114c0e6ce44f34856ee1bd395a59d138f66f7 (v0.1.1) |
 
-Use the full `skills/caveman` and `skills/ponytail` directories. Build RTK with
-`cargo build --release --locked` in its checkout. Headroom 0.37.0 was installed
-from the pinned checkout in a Python 3.13 virtual environment. Use the published
-Scopelet 0.1.1 binary for your platform and its tagged skill for the original
-pilot; current main contains a revised skill. Report hardware/build changes.
+For the Haiku pilot use the full `skills/caveman` and `skills/ponytail`
+directories (`--caveman-skill`, `--ponytail-skill`); for the Fable comparison
+pass the whole checkouts as plugins (`--caveman-plugin`, `--ponytail-plugin`;
+each must contain `.claude-plugin/plugin.json`). Build RTK with
+`cargo build --release --locked` in its checkout (the pinned commit declares
+crate version 0.42.4). Headroom 0.37.0 was installed from the pinned checkout in
+a Python 3.13 virtual environment. Use the published Scopelet 0.1.1 binary and
+tagged skill for the original pilot, and the published 0.1.3 binary plus the
+v0.1.3 skill for the Fable comparison. Report hardware/build changes.
 
 The harness copies binaries, complete skills and Python prefix files into each
 campaign's `frozen/` directory before starting. Headroom's executable/venv stays
@@ -69,6 +81,35 @@ and declare the new protocol before measuring. Random order does not make a
 single repetition statistically reliable. The revised-skill follow-up uses
 `--arms concise,scopelet-ultra --repetitions 2 --seed 20260910` and a separately
 frozen 0.1.2 skill/binary.
+
+## Fable 5.1 comparison
+
+The [declared protocol](../docs/fable-comparison-plan.md) runs Claude Code
+2.1.266 with `claude-fable-5-1` at high effort: nine arms, three tasks, two
+repetitions, seed 20260911, 900 s timeout. Preflights use the same command with
+`--tasks task3 --repetitions 1` and a separate output directory.
+
+```sh
+python3 bench/compare.py --live --agents claude --tasks task4,task2,task3 \
+  --repetitions 2 --seed 20260911 --timeout 900 \
+  --model claude-fable-5-1 --effort high --claude-bin /opt/homebrew/bin/claude \
+  --scopelet-binary "$COMPARE_SCOPELET" --scopelet-skill skills/scopelet \
+  --caveman-plugin "$COMPARE_CAVEMAN_CHECKOUT" --ponytail-plugin "$COMPARE_PONYTAIL_CHECKOUT" \
+  --rtk-binary "$COMPARE_RTK" --rtk-integration hook \
+  --headroom-binary "$COMPARE_HEADROOM" \
+  --headroom-prefix-json '["python3","bench/headroom_proxy.py","--headroom","{headroom}"]' \
+  --source-commits-json '{"caveman":"15581d14...","rtk":"8e9aa04c...","headroom":"e67b3c8a...","ponytail":"356918eb...","scopelet":"v0.1.3"}' \
+  --out bench/runs/fable-comparison-20260909
+```
+
+`--rtk-integration hook` injects RTK's documented PreToolUse hook through
+`--settings` and keeps the native prompt; `manual` reproduces the pilot's
+wrapper guidance. Per-run results record the model observed in the `init`
+event, every model in `modelUsage`, `model_mismatch`, turns, API duration,
+Claude Code's list-basis cost estimate, hook lifecycle events, RTK audit
+actions, tool errors, the task4 check sequence and cache-marker presence.
+`scripts/summarize_traces.py <campaign>` prints a local audit of ordered tool
+calls; it is for reading raw traces, not for publishing.
 
 ## Proxy verification
 

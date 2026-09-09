@@ -1,0 +1,897 @@
+{
+  "campaigns": [
+    {
+      "campaign": "fable-preflight-20260909",
+      "meta": {
+        "agent_versions": {
+          "claude": "2.1.266 (Claude Code)"
+        },
+        "base_harness_sha256": "f506ee8fd07adb5ea67ca34932f3fe404ee14dc9c0bc1e580bae3c0141247839",
+        "claude_bin_sha256": "553d1b9e9e7068b275c0a783c7e139ff6503096f286e674c8c919379fb0eca62",
+        "cost_note": "total_cost_usd_reported is Claude Code's list-basis estimate for the session, not an invoice",
+        "effort_requested": "high",
+        "environment_purged": [
+          "CLAUDE_CODE_EFFORT_LEVEL",
+          "ANTHROPIC_BASE_URL",
+          "ANTHROPIC_API_KEY",
+          "ANTHROPIC_AUTH_TOKEN"
+        ],
+        "executable_versions": {
+          "headroom": "headroom, version 0.37.0",
+          "rtk": "rtk 0.42.4",
+          "scopelet": "scopelet 0.1.3"
+        },
+        "executables_sha256": {
+          "headroom": "9d99c0394f75e8b3f5f5e0c20d4488d2de7e02e56d71229f4b267b97c8bafc3e",
+          "rtk": "5fd72eff6a8cd7239e9d64b449f46565d2e0668ad2c1960c360421f217897b68",
+          "scopelet": "0d2e57b5a9545ea195190e22bfd015cad398988aa970532df8ee3ed180d5a432"
+        },
+        "harness_sha256": "224d1d91500b58ee39be1ef36071a4bec6d97e39e399f39a75755cf7ed1a899d",
+        "limitations": [
+          "Pilot-scale repetitions; not powered for quality noninferiority",
+          "Provider caches are observed, not forcibly cold",
+          "Effort is requested through --effort and cannot be verified from provider output; thinking tokens are an indirect indicator",
+          "Claude Code built-in skills and tools remain visible to every arm (shared host context)",
+          "Global Codex skill paths explicitly disabled; other host instructions may remain",
+          "Plugin marker files are written under the real HOME because an isolated CLAUDE_CONFIG_DIR loses OAuth authentication",
+          "RTK hook rewrites only commands RTK recognizes and skips piped commands; Headroom compression adoption requires proxy telemetry",
+          "Reported cost is Claude Code's list-basis estimate, not an invoice"
+        ],
+        "model_requested": "claude-fable-5-1",
+        "models": {
+          "claude": "claude-fable-5-1",
+          "codex": "gpt-5.6-luna (low)"
+        },
+        "modes": {
+          "caveman": "Upstream plugin loaded with --plugin-dir (SessionStart/UserPromptSubmit hooks) plus explicit activation; legacy: copied project skill",
+          "concise": "Native workflow plus a short prose-only instruction",
+          "headroom": "Externally supplied Headroom token-mode proxy prefix wrapping the native agent CLI",
+          "native": "Unchanged native file/shell workflow",
+          "ponytail": "Upstream plugin loaded with --plugin-dir (SessionStart/UserPromptSubmit hooks) plus explicit activation; legacy: copied project skill",
+          "rtk": "Documented PreToolUse Bash hook (rtk hook claude) injected through --settings; transparent rewriting without manual prefixes; legacy: manual wrapper guidance",
+          "scopelet": "Project skill, explicit /scopelet activation and default-mode CLI guidance",
+          "scopelet-caveman": "Scopelet ultra plus the upstream Caveman plugin (automatic hooks) and explicit activation",
+          "scopelet-ultra": "Project skill, explicit /scopelet activation and ultra-mode CLI guidance"
+        },
+        "planned_runs": 6,
+        "plugins": {
+          "caveman": {
+            "git_head": "b46dc18476b88e0fe6e557608c0b8e3460297863",
+            "hooks_sha256": {
+              "src/hooks/cavecrew-model-overrides.js": "faf9d5b3d792f86441ed4298f2017e0d56815b787cfcf61e511108dc5b459bdb",
+              "src/hooks/caveman-activate.js": "279a5d51202140cb4cf7ae8917931aed5930e33e15db446d99b2c6766a0ee649",
+              "src/hooks/caveman-config.js": "80adc5bd31034c295c81512281f4b883679883babe8e8dd1c7469c20edad6723",
+              "src/hooks/caveman-mode-tracker.js": "d3a872db10c6b29510ec6df3410363f6df5b6c9be0e4054f90eea63d1acb0c87",
+              "src/hooks/caveman-parse.js": "63442c0e2d13a05f1dd30446c5bf3ee0839241507d64b33731d23abb8506f621",
+              "src/hooks/caveman-stats.js": "8650f6362d0dce65ea1be752b47719b18af3c50464b5d8d5284c81d4989aa8a6"
+            },
+            "plugin_json_sha256": "a61025b447f77b97c2f8da32afa53e9a2d3c291f95bb9c95f29d599294abc368",
+            "skill_hashes": {
+              "README.md": "e86f4b56765fc288859a8a1f3e3814c990ba920b326c40c55667b56d44c58c1e",
+              "SKILL.md": "c4d7354b4b063d54601fcdd5097a5b1713d1a1a2e386ac39efa438aa1ffef8ce"
+            }
+          },
+          "ponytail": {
+            "git_head": "b46dc18476b88e0fe6e557608c0b8e3460297863",
+            "hooks_sha256": {
+              "./hooks/claude-codex-hooks.json": "25f1af0c65db50fcc3b7c7e7535144a3ce2303d79c1a83feedf31bc4ce8673b1",
+              "hooks/claude-codex-hooks.json": "25f1af0c65db50fcc3b7c7e7535144a3ce2303d79c1a83feedf31bc4ce8673b1",
+              "hooks/copilot-hooks.json": "8ca43eef5316694ab7289cbec1c71e3dc04a45741c7a4d8f620e4bad6ab96785",
+              "hooks/ponytail-activate.js": "1c428c4ee9687c2f4321924109ee92e8f8b06fd6600cb6be9ec5b59633cafab1",
+              "hooks/ponytail-config.js": "0a8daf96cf9ac703dc4cb7b5065253567e513c951d60b8eb94a0fe727514aeca",
+              "hooks/ponytail-instructions.js": "23c050103f28dbe6bad953ae21d98cd06d720a20f33d4716e9de419f947d495e",
+              "hooks/ponytail-mode-tracker.js": "5d1a960ff01b73f651ec0242052a8cf1e064cb88147806bf6e13f92798aca251",
+              "hooks/ponytail-runtime.js": "02fa6127cf6c4b65a7b07b66541677ea587a0691802b6d1d2be2419bccea9110",
+              "hooks/ponytail-statusline.ps1": "6138f15bc7651ee7e5ced2a2a2280f5c810d58cad3e9f3252c628f4c923e48c9",
+              "hooks/ponytail-statusline.sh": "f1dbfa5997a5d4b5339619709053eff557ab16d71af75eb3041c3d3e3dca42ec",
+              "hooks/ponytail-subagent.js": "7f6bee86702a488d29ef0dcaabf424bbe2aca345a6a642319d43a1fe0276792e",
+              "hooks/qoder-hooks.json": "7f8f4be7d5f4c7db6a1b48f2274210a10dd3d3b884b4805c034e03a0b463e93f"
+            },
+            "plugin_json_sha256": "2e0fccb26a45203f0930eed785926926c2ca846389934ca30a210281263f78a2",
+            "skill_hashes": {
+              "SKILL.md": "1316a2f3f95741d2300b116fe0c2d81ce4a9568656ed0a62643f54aaf09957f2"
+            }
+          }
+        },
+        "prefix_sha256": {
+          "1-headroom_proxy.py": "30c75efb91b3957e9facef8f402f3d9e1501fddb4602ce5e455049f1d3864b38"
+        },
+        "repetitions": 1,
+        "rtk_integration": "hook",
+        "scopelet_view_mode_evidence": "Views in completed tool returns correlated with Scopelet command invocations. Shell-command recognition is conservative; combined commands can include other output. Expansion can intentionally return default mode.",
+        "seed": 20260911,
+        "skill_hashes": {
+          "scopelet": {
+            "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+            "SKILL.md": "08972c1f0efe89e10379e16836148bbf6d7a3471fdf4933d276121cd8e0cb14c",
+            "references/queries.md": "24cffe4855f2674ac9be803b1b99dbb20823da8a0ce3fc4ae6487d26298b0c34",
+            "references/setup.md": "db616b823ec072b70462db609d0639b31ecf1354eda913ed84608e73679a563e",
+            "scripts/scopelet.mjs": "b5e55699b2c2c52a2ee714608712005bf48f0205e660a8aaa60cea87a3c04356"
+          }
+        },
+        "source_commits": {
+          "caveman": "15581d14007fd01fb3f132016741962f34936ca2",
+          "headroom": "e67b3c8a29443a60d6b0018fb22f525c5cd7e709",
+          "ponytail": "356918eba965ee1eac64bd3a7f0dd02108350de5",
+          "rtk": "8e9aa04cb2afb189747fac4e36bec2254ddd0564",
+          "scopelet": "v0.1.3"
+        },
+        "timeout": 900.0
+      },
+      "runs": [
+        {
+          "agent": "claude",
+          "arm": "headroom",
+          "artifact_error": false,
+          "cache_markers_present": null,
+          "duration_seconds": 20.996891,
+          "effort_requested": "high",
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "30c75efb91b3957e9facef8f402f3d9e1501fddb4602ce5e455049f1d3864b38",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 3601.7,
+                "max_ms": 5048.29,
+                "min_ms": 1915.19,
+                "total_requests": 5
+              },
+              "requests": {
+                "cached": 3,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 5
+              },
+              "tokens": {
+                "active_savings_percent": 29.77,
+                "all_layers_saved": 17544,
+                "all_layers_savings_percent": 29.77,
+                "input": 41392,
+                "new_input_savings_percent": 9.3,
+                "new_input_tokens": 16237,
+                "output": 970,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 43056,
+                "proxy_compression_saved": 1664,
+                "proxy_savings_percent": 3.86,
+                "proxy_total_before_compression": 43056,
+                "saved": 17544,
+                "savings_percent": 29.77,
+                "total_before_compression": 58936
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "integration": "Externally supplied Headroom token-mode proxy prefix wrapping the native agent CLI",
+          "model_requested": "claude-fable-5-1",
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2a06cc035a556afb317305e62314439c98b2fd4c4b28941158f962ab83fd0c88",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_runs": [],
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "headroom_retrieve_calls": 0,
+            "hook_events": {
+              "responses": {},
+              "responses_with_output": {},
+              "started": {}
+            },
+            "rtk_audit": null,
+            "rtk_invocations": 0,
+            "rtk_recall_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_cache_reingested_bytes": 0,
+            "scopelet_expand_invocations": 0,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 1,
+              "Edit": 1,
+              "Grep": 1,
+              "Read": 2
+            },
+            "tool_error_count": 0,
+            "tool_use_count": 5
+          },
+          "usage": {
+            "api_error_status": null,
+            "cache_creation_input_tokens": 14918,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 39677,
+            "duration_api_ms": 18473,
+            "duration_ms": 16603,
+            "fast_mode_state": "off",
+            "input_tokens": 101,
+            "logical_input_tokens": 54696,
+            "model_init": "claude-fable-5-1",
+            "model_mismatch": false,
+            "model_usage": {
+              "claude-fable-5-1": {
+                "cacheCreationInputTokens": 16237,
+                "cacheReadInputTokens": 39677,
+                "canonicalModel": "claude-fable-5-1",
+                "contextWindow": 200000,
+                "costBasis": "list",
+                "costUSD": 0.37431675000000003,
+                "inputTokens": 105,
+                "maxOutputTokens": 64000,
+                "outputTokens": 970,
+                "provider": "firstParty",
+                "thinkingTokens": 16,
+                "webSearchRequests": 0
+              }
+            },
+            "models_observed": [
+              "claude-fable-5-1"
+            ],
+            "num_turns": 6,
+            "output_tokens": 946,
+            "permission_denials": [],
+            "permission_denials_count": 0,
+            "reasoning_tokens": 16,
+            "result_is_error": false,
+            "result_subtype": "success",
+            "thinking_tokens": 16,
+            "total_cost_usd_reported": 0.37431675000000003,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ponytail",
+          "artifact_error": false,
+          "cache_markers_present": null,
+          "duration_seconds": 16.783528,
+          "effort_requested": "high",
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "integration": "Upstream plugin loaded with --plugin-dir (SessionStart/UserPromptSubmit hooks) plus explicit activation; legacy: copied project skill [plugin]",
+          "model_requested": "claude-fable-5-1",
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "9e49e24f9ed328e8a0f68fc2342fb391d7d638ecfe94080ceb6b196402dd5d6b",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ed9ece72724d299dc930e751a06999a5fe934bd2440a48bb3a524874ce0dbcce",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_runs": [],
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "headroom_retrieve_calls": 0,
+            "hook_events": {
+              "responses": {
+                "SessionStart:startup": 1,
+                "UserPromptSubmit": 1
+              },
+              "responses_with_output": {
+                "SessionStart:startup": 1,
+                "UserPromptSubmit": 1
+              },
+              "started": {
+                "SessionStart:startup": 1,
+                "UserPromptSubmit": 1
+              }
+            },
+            "rtk_audit": null,
+            "rtk_invocations": 0,
+            "rtk_recall_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_cache_reingested_bytes": 0,
+            "scopelet_expand_invocations": 0,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 1,
+              "Edit": 1,
+              "Grep": 1,
+              "Read": 2
+            },
+            "tool_error_count": 0,
+            "tool_use_count": 5
+          },
+          "usage": {
+            "api_error_status": null,
+            "cache_creation_input_tokens": 13935,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 86394,
+            "duration_api_ms": 15283,
+            "duration_ms": 15524,
+            "fast_mode_state": "off",
+            "input_tokens": 98,
+            "logical_input_tokens": 100427,
+            "model_init": "claude-fable-5-1",
+            "model_mismatch": false,
+            "model_usage": {
+              "claude-fable-5-1": {
+                "cacheCreationInputTokens": 13935,
+                "cacheReadInputTokens": 86394,
+                "canonicalModel": "claude-fable-5-1",
+                "contextWindow": 1000000,
+                "costBasis": "list",
+                "costUSD": 0.34377850000000004,
+                "inputTokens": 98,
+                "maxOutputTokens": 64000,
+                "outputTokens": 850,
+                "provider": "firstParty",
+                "thinkingTokens": 0,
+                "webSearchRequests": 0
+              }
+            },
+            "models_observed": [
+              "claude-fable-5-1"
+            ],
+            "num_turns": 6,
+            "output_tokens": 850,
+            "permission_denials": [],
+            "permission_denials_count": 0,
+            "reasoning_tokens": 0,
+            "result_is_error": false,
+            "result_subtype": "success",
+            "thinking_tokens": 0,
+            "total_cost_usd_reported": 0.34377850000000004,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet-ultra",
+          "artifact_error": false,
+          "cache_markers_present": {
+            "artifacts": true,
+            "blobs": true
+          },
+          "duration_seconds": 21.906604,
+          "effort_requested": "high",
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "integration": "Project skill, explicit /scopelet activation and ultra-mode CLI guidance",
+          "model_requested": "claude-fable-5-1",
+          "observed_scopelet_view_modes": [
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "98874ccc2c52adf12cd99be2d2d23c83d2d876534321d0089693d8207461489b",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "82e0401b78d2eb48c37cb858b6adfe8b66a07d56b2258ac2e91176b5a30178d5",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_runs": [],
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "headroom_retrieve_calls": 0,
+            "hook_events": {
+              "responses": {},
+              "responses_with_output": {},
+              "started": {}
+            },
+            "rtk_audit": null,
+            "rtk_invocations": 0,
+            "rtk_recall_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_cache_reingested_bytes": 0,
+            "scopelet_expand_invocations": 0,
+            "scopelet_invocations": 2,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_error_count": 0,
+            "tool_use_count": 4
+          },
+          "usage": {
+            "api_error_status": null,
+            "cache_creation_input_tokens": 11120,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 97611,
+            "duration_api_ms": 20744,
+            "duration_ms": 21057,
+            "fast_mode_state": "off",
+            "input_tokens": 130,
+            "logical_input_tokens": 108861,
+            "model_init": "claude-fable-5-1",
+            "model_mismatch": false,
+            "model_usage": {
+              "claude-fable-5-1": {
+                "cacheCreationInputTokens": 11120,
+                "cacheReadInputTokens": 97611,
+                "canonicalModel": "claude-fable-5-1",
+                "contextWindow": 1000000,
+                "costBasis": "list",
+                "costUSD": 0.30975274999999997,
+                "inputTokens": 130,
+                "maxOutputTokens": 64000,
+                "outputTokens": 1233,
+                "provider": "firstParty",
+                "thinkingTokens": 58,
+                "webSearchRequests": 0
+              }
+            },
+            "models_observed": [
+              "claude-fable-5-1"
+            ],
+            "num_turns": 5,
+            "output_tokens": 1233,
+            "permission_denials": [],
+            "permission_denials_count": 0,
+            "reasoning_tokens": 58,
+            "result_is_error": false,
+            "result_subtype": "success",
+            "thinking_tokens": 58,
+            "total_cost_usd_reported": 0.30975274999999997,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "native",
+          "artifact_error": false,
+          "cache_markers_present": null,
+          "duration_seconds": 29.771287,
+          "effort_requested": "high",
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "integration": "Unchanged native file/shell workflow",
+          "model_requested": "claude-fable-5-1",
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5f8aefb48176d736b38a563d49eb4da5d8409c53a5667c07985dd16fb48bef1a",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_runs": [],
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "headroom_retrieve_calls": 0,
+            "hook_events": {
+              "responses": {},
+              "responses_with_output": {},
+              "started": {}
+            },
+            "rtk_audit": null,
+            "rtk_invocations": 0,
+            "rtk_recall_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_cache_reingested_bytes": 0,
+            "scopelet_expand_invocations": 0,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 1,
+              "Edit": 1,
+              "Grep": 1,
+              "Read": 2
+            },
+            "tool_error_count": 0,
+            "tool_use_count": 5
+          },
+          "usage": {
+            "api_error_status": null,
+            "cache_creation_input_tokens": 8730,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 70802,
+            "duration_api_ms": 30893,
+            "duration_ms": 28881,
+            "fast_mode_state": "off",
+            "input_tokens": 98,
+            "logical_input_tokens": 79630,
+            "model_init": "claude-fable-5-1",
+            "model_mismatch": false,
+            "model_usage": {
+              "claude-fable-5-1": {
+                "cacheCreationInputTokens": 8730,
+                "cacheReadInputTokens": 70802,
+                "canonicalModel": "claude-fable-5-1",
+                "contextWindow": 1000000,
+                "costBasis": "list",
+                "costUSD": 0.23838050000000002,
+                "inputTokens": 98,
+                "maxOutputTokens": 64000,
+                "outputTokens": 902,
+                "provider": "firstParty",
+                "thinkingTokens": 0,
+                "webSearchRequests": 0
+              },
+              "claude-haiku-4-5-20251001": {
+                "cacheCreationInputTokens": 0,
+                "cacheReadInputTokens": 0,
+                "canonicalModel": "claude-haiku-4-5",
+                "contextWindow": 200000,
+                "costBasis": "list",
+                "costUSD": 0.001085,
+                "inputTokens": 1000,
+                "maxOutputTokens": 32000,
+                "outputTokens": 17,
+                "provider": "firstParty",
+                "thinkingTokens": 0,
+                "webSearchRequests": 0
+              }
+            },
+            "models_observed": [
+              "claude-fable-5-1",
+              "claude-haiku-4-5-20251001"
+            ],
+            "num_turns": 6,
+            "output_tokens": 902,
+            "permission_denials": [],
+            "permission_denials_count": 0,
+            "reasoning_tokens": 0,
+            "result_is_error": false,
+            "result_subtype": "success",
+            "thinking_tokens": 0,
+            "total_cost_usd_reported": 0.23946550000000003,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "caveman",
+          "artifact_error": false,
+          "cache_markers_present": null,
+          "duration_seconds": 16.371004,
+          "effort_requested": "high",
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "integration": "Upstream plugin loaded with --plugin-dir (SessionStart/UserPromptSubmit hooks) plus explicit activation; legacy: copied project skill [plugin]",
+          "model_requested": "claude-fable-5-1",
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "edbee81183808d463adfc22d3a39f352e079a3e664cedef2ce7e78267573e3bf",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ea1ef84ddc31b3633a9d1d682fb4355da73824059ebdc2fe1188c48570e5e68b",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_runs": [],
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "headroom_retrieve_calls": 0,
+            "hook_events": {
+              "responses": {
+                "SessionStart:startup": 1,
+                "UserPromptSubmit": 1
+              },
+              "responses_with_output": {
+                "SessionStart:startup": 1,
+                "UserPromptSubmit": 1
+              },
+              "started": {
+                "SessionStart:startup": 1,
+                "UserPromptSubmit": 1
+              }
+            },
+            "rtk_audit": null,
+            "rtk_invocations": 0,
+            "rtk_recall_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_cache_reingested_bytes": 0,
+            "scopelet_expand_invocations": 0,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 1,
+              "Edit": 1,
+              "Grep": 1,
+              "Read": 2
+            },
+            "tool_error_count": 0,
+            "tool_use_count": 5
+          },
+          "usage": {
+            "api_error_status": null,
+            "cache_creation_input_tokens": 15165,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 116191,
+            "duration_api_ms": 15658,
+            "duration_ms": 15886,
+            "fast_mode_state": "off",
+            "input_tokens": 130,
+            "logical_input_tokens": 131486,
+            "model_init": "claude-fable-5-1",
+            "model_mismatch": false,
+            "model_usage": {
+              "claude-fable-5-1": {
+                "cacheCreationInputTokens": 15165,
+                "cacheReadInputTokens": 116191,
+                "canonicalModel": "claude-fable-5-1",
+                "contextWindow": 1000000,
+                "costBasis": "list",
+                "costUSD": 0.38104774999999996,
+                "inputTokens": 130,
+                "maxOutputTokens": 64000,
+                "outputTokens": 948,
+                "provider": "firstParty",
+                "thinkingTokens": 33,
+                "webSearchRequests": 0
+              }
+            },
+            "models_observed": [
+              "claude-fable-5-1"
+            ],
+            "num_turns": 6,
+            "output_tokens": 948,
+            "permission_denials": [],
+            "permission_denials_count": 0,
+            "reasoning_tokens": 33,
+            "result_is_error": false,
+            "result_subtype": "success",
+            "thinking_tokens": 33,
+            "total_cost_usd_reported": 0.38104774999999996,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "rtk",
+          "artifact_error": false,
+          "cache_markers_present": null,
+          "duration_seconds": 16.10399,
+          "effort_requested": "high",
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "integration": "Documented PreToolUse Bash hook (rtk hook claude) injected through --settings; transparent rewriting without manual prefixes; legacy: manual wrapper guidance [hook]",
+          "model_requested": "claude-fable-5-1",
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "9a1a14024b160c219179997bc84aaea99aa2ac823f712cb3806f76ebad8473a3",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_runs": [],
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "headroom_retrieve_calls": 0,
+            "hook_events": {
+              "responses": {
+                "PreToolUse:Bash": 1
+              },
+              "responses_with_output": {},
+              "started": {
+                "PreToolUse:Bash": 1
+              }
+            },
+            "rtk_audit": {
+              "actions": {
+                "skip:defer": 1
+              },
+              "lines": 1,
+              "rewrites": 0
+            },
+            "rtk_invocations": 0,
+            "rtk_recall_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_cache_reingested_bytes": 0,
+            "scopelet_expand_invocations": 0,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 1,
+              "Edit": 1,
+              "Grep": 1,
+              "Read": 2
+            },
+            "tool_error_count": 0,
+            "tool_use_count": 5
+          },
+          "usage": {
+            "api_error_status": null,
+            "cache_creation_input_tokens": 8753,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 70814,
+            "duration_api_ms": 15374,
+            "duration_ms": 14771,
+            "fast_mode_state": "off",
+            "input_tokens": 98,
+            "logical_input_tokens": 79665,
+            "model_init": "claude-fable-5-1",
+            "model_mismatch": false,
+            "model_usage": {
+              "claude-fable-5-1": {
+                "cacheCreationInputTokens": 8753,
+                "cacheReadInputTokens": 70814,
+                "canonicalModel": "claude-fable-5-1",
+                "contextWindow": 1000000,
+                "costBasis": "list",
+                "costUSD": 0.2388435,
+                "inputTokens": 98,
+                "maxOutputTokens": 64000,
+                "outputTokens": 902,
+                "provider": "firstParty",
+                "thinkingTokens": 0,
+                "webSearchRequests": 0
+              },
+              "claude-haiku-4-5-20251001": {
+                "cacheCreationInputTokens": 0,
+                "cacheReadInputTokens": 0,
+                "canonicalModel": "claude-haiku-4-5",
+                "contextWindow": 200000,
+                "costBasis": "list",
+                "costUSD": 0.001085,
+                "inputTokens": 1000,
+                "maxOutputTokens": 32000,
+                "outputTokens": 17,
+                "provider": "firstParty",
+                "thinkingTokens": 0,
+                "webSearchRequests": 0
+              }
+            },
+            "models_observed": [
+              "claude-fable-5-1",
+              "claude-haiku-4-5-20251001"
+            ],
+            "num_turns": 6,
+            "output_tokens": 902,
+            "permission_denials": [],
+            "permission_denials_count": 0,
+            "reasoning_tokens": 0,
+            "result_is_error": false,
+            "result_subtype": "success",
+            "thinking_tokens": 0,
+            "total_cost_usd_reported": 0.2399285,
+            "usage_missing": false
+          }
+        }
+      ]
+    }
+  ],
+  "metric": "model-reported logical input plus output; cache included; not currency",
+  "models": {
+    "fable-preflight-20260909": {
+      "claude": "claude-fable-5-1",
+      "codex": "gpt-5.6-luna (low)"
+    }
+  },
+  "schema_version": 2
+}

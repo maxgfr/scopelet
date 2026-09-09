@@ -294,6 +294,26 @@ def adoption(agent: str, raw: bytes, task: str | None = None, rtk_audit: str | N
     return result
 
 
+def rate_limit_reset(raw: bytes) -> int | None:
+    """Return the reset epoch when the provider rejected the session for its usage window.
+
+    A rejected window is not a measurement of any arm: the run is recorded as
+    an aborted attempt and repeated after the window resets.
+    """
+    rejected = False
+    reset: int | None = None
+    for event in base.parse_json_stream(raw):
+        if event.get("type") == "rate_limit_event":
+            info = event.get("rate_limit_info")
+            if isinstance(info, dict) and info.get("status") == "rejected":
+                rejected = True
+                reset = base._number(info.get("resetsAt")) or reset
+        elif event.get("type") == "result":
+            if event.get("api_error_status") == 429 or (isinstance(event.get("result"), str) and "session limit" in event["result"]):
+                rejected = True
+    return (reset or 0) if rejected else None
+
+
 def cache_markers(workspace: Path) -> dict[str, Any] | None:
     cache = workspace / "scopelet-cache"
     if not cache.is_dir():
@@ -425,7 +445,7 @@ def execute(case: dict[str, Any], args: argparse.Namespace, paths: dict[str, Pat
         if case["arm"] == "rtk":
             integration += f" [{getattr(args, 'rtk_integration', 'manual')}]"
         result = {**case, **invocation, "run_id": run_id, "integration": integration,
-                  "model_requested": expected_model, "effort_requested": getattr(args, "effort", None) if case["agent"] == "claude" else None,
+                  "rate_limit_reset": rate_limit_reset(stdout), "model_requested": expected_model, "effort_requested": getattr(args, "effort", None) if case["agent"] == "claude" else None,
                   "fixture_hashes": hashes, "acceptance": base.grade_workspace(case["task"], workspace, expected_fixture_hashes=hashes),
                   "usage": base.normalize_usage(case["agent"], stdout, expected_model),
                   "tools": adoption(case["agent"], stdout, case["task"], rtk_audit),
@@ -506,6 +526,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--headroom-binary")
     result.add_argument("--source-commits-json", default="{}", help="Operator-recorded upstream commit metadata; hashes remain independent")
     result.add_argument("--headroom-prefix-json", default="[]", help='JSON argv prefix; {headroom} expands to executable. Native agent argv is appended.')
+    result.add_argument("--max-attempts", type=int, default=4, help="Attempts per case when the provider usage window rejects the session; aborted attempts are kept apart from runs")
+    result.add_argument("--reset-margin", type=float, default=120, help="Seconds added after the reported window reset before retrying")
     mode = result.add_mutually_exclusive_group()
     mode.add_argument("--live", action="store_true")
     mode.add_argument("--dry-run", action="store_true")
@@ -523,6 +545,8 @@ def main(argv: list[str] | None = None) -> int:
             cli.error(f"invalid or duplicate {label}")
     if args.repetitions < 1 or not math.isfinite(args.timeout) or not 0 < args.timeout <= 3600:
         cli.error("repetitions must be positive and timeout in (0, 3600]")
+    if args.max_attempts < 1 or not math.isfinite(args.reset_margin) or args.reset_margin < 0:
+        cli.error("max attempts must be positive and reset margin non-negative")
     try:
         commits = json.loads(args.source_commits_json)
         if not isinstance(commits, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in commits.items()):
@@ -616,13 +640,30 @@ def main(argv: list[str] | None = None) -> int:
     if not args.live:
         print(f"Dry-run plan: {out / 'report.json'} ({len(planned)} runs)")
         return 0
+    report["aborted_attempts"] = []
     for case in planned:
-        print(f"Running {case}", flush=True)
-        try:
-            result = execute(case, args, paths, skills, out)
-        except Exception as error:
-            result = {**case, "harness_error": f"{type(error).__name__}: {error}",
-                      "acceptance": {"grade": "harness_error", "passed": False}}
+        for attempt in range(1, args.max_attempts + 1):
+            print(f"Running {case} (attempt {attempt})", flush=True)
+            try:
+                result = execute(case, args, paths, skills, out)
+            except Exception as error:
+                result = {**case, "harness_error": f"{type(error).__name__}: {error}",
+                          "acceptance": {"grade": "harness_error", "passed": False}}
+            reset = result.get("rate_limit_reset")
+            if reset is None or attempt == args.max_attempts:
+                break
+            # A provider usage-window rejection measures the account, not the arm.
+            run_dir = out / "runs" / result["run_id"]
+            aborted = out / "aborted" / f"{result['run_id']}_attempt{attempt}"
+            aborted.parent.mkdir(exist_ok=True)
+            run_dir.rename(aborted)
+            report["aborted_attempts"].append({**case, "attempt": attempt, "reason": "provider usage window rejected (HTTP 429)",
+                                               "reset_epoch": reset, "aborted_directory": str(aborted.relative_to(out)),
+                                               "num_turns": result.get("usage", {}).get("num_turns")})
+            write_report(out, report)
+            delay = max(0.0, reset - time.time()) + args.reset_margin
+            print(f"Provider window rejected; waiting {round(delay)} s until reset before retrying", flush=True)
+            time.sleep(delay)
         report["runs"].append(result)
         write_report(out, report)
     return 0 if all(item["acceptance"]["passed"] and item.get("exit_code") == 0 and not item.get("timed_out") for item in report["runs"]) else 1

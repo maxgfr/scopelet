@@ -189,6 +189,42 @@ class CompareTests(unittest.TestCase):
             self.assertEqual(report["planned_cases"], compare.cases(["claude"], list(compare.ARMS), list(compare.TASKS), 2, 20260911))
             self.assertEqual(report["meta"]["timeout"], 900)
 
+    def test_rate_limit_rejection_is_detected_from_stream_events(self):
+        rejected = (json.dumps({"type": "rate_limit_event", "rate_limit_info": {"status": "rejected", "resetsAt": 1788945000, "rateLimitType": "five_hour"}}) + "\n"
+                    + json.dumps({"type": "result", "subtype": "success", "is_error": True, "api_error_status": 429, "result": "You've hit your session limit", "num_turns": 1}) + "\n").encode()
+        self.assertEqual(compare.rate_limit_reset(rejected), 1788945000)
+        allowed = (json.dumps({"type": "rate_limit_event", "rate_limit_info": {"status": "allowed", "resetsAt": 1788945000}}) + "\n"
+                   + json.dumps({"type": "result", "subtype": "success", "is_error": False, "api_error_status": None, "result": "ok"}) + "\n").encode()
+        self.assertIsNone(compare.rate_limit_reset(allowed))
+        self.assertEqual(compare.rate_limit_reset(b'{"type":"result","api_error_status":429}\n'), 0)
+
+    def test_rate_limited_attempts_are_kept_apart_and_the_case_is_retried(self):
+        limited = {"agent": "claude", "task": "task3", "arm": "native", "repetition": 1, "run_id": "claude_task3_native_1",
+                   "rate_limit_reset": 1, "acceptance": {"grade": "fail", "passed": False}, "usage": {"num_turns": 1}, "exit_code": 1}
+        measured = {**limited, "rate_limit_reset": None, "acceptance": {"grade": "pass", "passed": True}, "usage": {"num_turns": 5}, "exit_code": 0}
+        outcomes = iter([limited, measured])
+        waits = []
+
+        def fake_execute(case, args, paths, skills, out):
+            (out / "runs" / "claude_task3_native_1").mkdir(parents=True)
+            return dict(next(outcomes))
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(compare, "execute", side_effect=fake_execute), \
+                patch.object(compare.time, "sleep", side_effect=waits.append), \
+                patch.object(compare.subprocess, "Popen", side_effect=AssertionError("no model calls")), \
+                patch.object(base, "agent_cli_version", return_value={"available": False}), \
+                patch.object(compare.shutil, "which", return_value="/bin/true"):
+            code = compare.main(["--live", "--agents", "claude", "--arms", "native", "--tasks", "task3", "--reset-margin", "5", "--out", tmp])
+            report = json.loads((Path(tmp) / "report.json").read_text())
+            self.assertTrue((Path(tmp) / "aborted" / "claude_task3_native_1_attempt1").is_dir())
+        self.assertEqual(code, 0)
+        self.assertEqual(len(report["runs"]), 1)
+        self.assertTrue(report["runs"][0]["acceptance"]["passed"])
+        self.assertEqual(len(report["aborted_attempts"]), 1)
+        self.assertEqual(report["aborted_attempts"][0]["attempt"], 1)
+        self.assertEqual(len(waits), 1)
+        self.assertGreaterEqual(waits[0], 5)
+
     def test_modified_checks_are_rejected_by_shared_external_grader(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
