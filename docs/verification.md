@@ -48,6 +48,19 @@ Codex/Headroom routing was unverified and its three planned cells are unmeasured
 The old and new campaigns have different host-context controls and are reported
 separately. The final cache fix is validated separately from those frozen runs.
 
+## Independent comparison with the released 0.1.3 (Haiku 4.5, partial Fable 5.1)
+
+The [2026-09-09 comparison](fable-comparison-2026-09-09.md) ran the released
+0.1.3 binary and skill against native, a concision instruction and the four
+competitors in their documented integration modes (plugins with hooks, RTK's
+PreToolUse hook, the Headroom proxy): 54 runs on Haiku 4.5 at high effort and
+40 completed runs on Fable 5.1, all passing the external grader. Scopelet cut
+the noisy command by 51% to 56% and JSONL aggregation by 19% on Haiku, cost
+35% more on the tiny edit, and saved nothing on Fable, where Claude Code
+2.1.266 already persists large outputs. The cache markers held in every run.
+The decision is to specialize Scopelet rather than present it as a general
+saver; Headroom was the stronger general competitor.
+
 ## Earlier live agent measurements
 
 The [machine-readable results](../bench/results/2026-09-09.json) retain every
