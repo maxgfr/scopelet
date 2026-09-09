@@ -13,17 +13,19 @@ import run as base
 class CompareTests(unittest.TestCase):
     def test_randomized_plan_is_reproducible_and_complete(self):
         cases = compare.cases(["codex", "claude"], list(compare.ARMS), ["task4"], 2, 7)
-        self.assertEqual(len(cases), 32)
-        self.assertEqual(len({tuple(sorted(item.items())) for item in cases}), 32)
+        self.assertEqual(len(cases), 36)
+        self.assertEqual(len({tuple(sorted(item.items())) for item in cases}), 36)
         self.assertEqual(cases, compare.cases(["codex", "claude"], list(compare.ARMS), ["task4"], 2, 7))
         self.assertNotEqual(cases, compare.cases(["codex", "claude"], list(compare.ARMS), ["task4"], 2, 8))
 
     def test_prompts_activate_only_selected_skill(self):
         for agent, prefix in (("claude", "/"), ("codex", "$")):
-            for arm in ("caveman", "ponytail", "scopelet", "scopelet-ultra"):
+            for arm in ("caveman", "ponytail", "scopelet", "scopelet-ultra", "scopelet-caveman"):
                 prompt = compare.prompt_for({"agent": agent, "arm": arm, "task": "task4"}, Path("/bin/scopelet"))
                 name = "scopelet" if arm.startswith("scopelet") else arm
                 self.assertTrue(prompt.startswith(prefix + name + " "))
+                if arm == "scopelet-caveman":
+                    self.assertIn("caveman skill in full mode", prompt)
         native = compare.prompt_for({"agent": "claude", "arm": "native", "task": "task4"}, Path("scopelet"))
         self.assertEqual(native, base.prompt_for("claude", "task4", "baseline", Path("scopelet")))
 
@@ -50,7 +52,7 @@ class CompareTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp, patch.object(compare.subprocess, "Popen", side_effect=AssertionError("no model calls")):
             self.assertEqual(compare.main(["--dry-run", "--out", tmp]), 0)
             report = json.loads((Path(tmp) / "report.json").read_text())
-            self.assertEqual(report["meta"]["planned_runs"], 16)
+            self.assertEqual(report["meta"]["planned_runs"], 18)
             self.assertFalse(report["runs"])
             with self.assertRaises(SystemExit):
                 compare.main(["--dry-run", "--out", tmp])

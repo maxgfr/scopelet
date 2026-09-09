@@ -10,7 +10,10 @@ across workloads or a production quality margin.
 Use Codex with GPT-5.6-Luna, low reasoning, and Claude Code with Haiku 4.5. Keep
 the same model and reasoning configuration across treatments for each agent.
 Run a native baseline, a concise-native control, Scopelet default, Scopelet ultra,
-Caveman's full skill, Ponytail's skill, RTK and Headroom. Begin with the noisy
+Caveman's full skill, Ponytail's skill, RTK and Headroom. Following the user's
+request, add Scopelet ultra combined with Caveman's full communication skill
+before starting measurements: nine arms, three tasks and two agents = 54 runs.
+Begin with the noisy
 command task, then include exact JSONL aggregation and a tiny known-file edit.
 Use one repetition per cell for this pilot, seeded shuffled order, and retain
 failures. Additional repetitions must be labeled separately.

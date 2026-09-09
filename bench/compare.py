@@ -21,7 +21,7 @@ from typing import Any
 
 import run as base
 
-ARMS = ("native", "concise", "scopelet", "scopelet-ultra", "caveman", "ponytail", "rtk", "headroom")
+ARMS = ("native", "concise", "scopelet", "scopelet-ultra", "scopelet-caveman", "caveman", "ponytail", "rtk", "headroom")
 TASKS = ("task4", "task2", "task3")
 CONCISE = "Keep narration and the final report concise. Preserve exact code, commands, quantities, negation, evidence, and unresolved limitations."
 MODES = {
@@ -29,6 +29,7 @@ MODES = {
     "concise": "Native workflow plus a short prose-only instruction",
     "scopelet": "Project skill and explicit Scopelet default CLI guidance",
     "scopelet-ultra": "Project skill and explicit Scopelet ultra CLI guidance",
+    "scopelet-caveman": "Scopelet ultra CLI plus full upstream Caveman communication skill",
     "caveman": "Full upstream project skill; no automatic host hook installation",
     "ponytail": "Full upstream project skill; no automatic host hook installation",
     "rtk": "Manual RTK test wrapper guidance; no automatic host hook installation",
@@ -45,8 +46,12 @@ def cases(agents: list[str], arms: list[str], tasks: list[str], repetitions: int
 
 def prompt_for(case: dict[str, Any], binary: Path) -> str:
     arm, agent, task = case["arm"], case["agent"], case["task"]
-    if arm in ("scopelet", "scopelet-ultra"):
-        prompt = base.prompt_for(agent, task, "ultra" if arm.endswith("ultra") else "default", binary)
+    if arm.startswith("scopelet"):
+        prompt = base.prompt_for(agent, task, "default" if arm == "scopelet" else "ultra", binary)
+        if arm == "scopelet-caveman":
+            prompt += "Also invoke the copied caveman skill in full mode for communication. Keep Scopelet ultra for the local evidence operations.\n"
+            if agent == "codex":
+                prompt = "$caveman " + prompt
         return "$scopelet " + prompt if agent == "codex" else prompt
     prompt = base.prompt_for(agent, task, "baseline", binary)
     if arm == "concise":
@@ -155,9 +160,11 @@ def execute(case: dict[str, Any], args: argparse.Namespace, paths: dict[str, Pat
         base.create_fixture(workspace, case["task"])
         hashes = base.fixture_hashes(workspace)
         name = "scopelet" if case["arm"].startswith("scopelet") else case["arm"]
-        if name in skills:
-            for parent in (".agents/skills", ".claude/skills"):
-                shutil.copytree(skills[name], workspace / parent / name)
+        skill_names = ["scopelet", "caveman"] if case["arm"] == "scopelet-caveman" else [name]
+        for skill_name in skill_names:
+            if skill_name in skills:
+                for parent in (".agents/skills", ".claude/skills"):
+                    shutil.copytree(skills[skill_name], workspace / parent / skill_name)
         base._git_init(workspace)
         prompt = prompt_for(case, paths.get("scopelet", Path("scopelet")))
         (run_dir / "prompt.txt").write_text(prompt)
@@ -256,6 +263,8 @@ def main(argv: list[str] | None = None) -> int:
     if out.exists() and any(out.iterdir()):
         cli.error("output directory must be empty; completed evidence is never overwritten")
     selected = {"scopelet" if arm.startswith("scopelet") else arm for arm in arms}
+    if "scopelet-caveman" in arms:
+        selected.add("caveman")
     paths, skills = {}, {}
     for name in selected & {"scopelet", "rtk", "headroom"}:
         value = getattr(args, name + "_binary")
