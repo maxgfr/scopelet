@@ -125,3 +125,23 @@ To upgrade a global installation, run `npx skills update scopelet --global -y`,
 then invoke the updated launcher with `install --agent all` and `doctor` again.
 Restart active sessions and review changed Codex hooks. Update any project-local
 copies too; they can shadow the global skill.
+
+## Optional compact-v2 and additional commands
+
+Set `SCOPELET_COMPACT_VERSION=2` in the agent process environment to select v2
+for installed hooks; unset it or set `1` to restore v1. Direct CLI calls can
+override it with `--compact-version 1|2`. V2 adds partial JSON tables and broader
+diagnostic coverage; see [queries.md](queries.md) for exact recovery semantics.
+The JSON query interface and old saved artifacts remain compatible.
+
+Codex also recognizes simple `rg`/`grep`, Git diff/log/show/status without forced
+pagination, `go test`, `node --test`, and package-manager build/lint/typecheck
+scripts. Shell pipelines and unsupported syntax still run natively. Recognition
+permits wrapping; it does not guarantee compression. Outputs are replaced only
+when the complete view clears the existing savings gate. Rejected compression
+now avoids opening the cache as well as leaving the output unchanged.
+
+Range expansion can create disposable `line-index-v1` cache files. They carry
+local ignore markers and are cleaned with their originals or when old. Index
+failures do not prevent recovery; original blob hashes and source-line
+boundaries are verified before an index is used.

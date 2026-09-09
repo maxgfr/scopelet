@@ -23,6 +23,9 @@ struct Cli {
     cache_dir: Option<PathBuf>,
     #[command(subcommand)]
     command: Cmd,
+    /// Compact text representation; defaults to SCOPELET_COMPACT_VERSION or 1.
+    #[arg(long, global = true, value_enum)]
+    compact_version: Option<compress::Version>,
 }
 
 #[derive(Subcommand)]
@@ -109,7 +112,15 @@ enum Cmd {
     /// Recover an immutable snapshot or page a saved result.
     Expand {
         id: String,
-        #[arg(long, conflicts_with_all = ["manifest", "start", "end"])]
+        /// Search literal text in immutable originals; repeat for alternatives.
+        #[arg(long, conflicts_with_all = ["raw", "manifest", "start", "end"])]
+        find: Vec<String>,
+        #[arg(long, default_value_t = 3, requires = "find")]
+        context: usize,
+        /// Restrict an artifact search to an exact source label from its manifest.
+        #[arg(long, requires = "find")]
+        source: Option<String>,
+        #[arg(long, conflicts_with_all = ["manifest", "start", "end", "find", "source"])]
         raw: bool,
         #[arg(long)]
         manifest: bool,
@@ -198,6 +209,7 @@ fn manifest_view(data: &Dataset, max_bytes: usize) -> Result<serde_json::Value> 
 }
 
 fn execute(cli: Cli) -> Result<i32> {
+    let compact_version = compress::Version::configured(cli.compact_version);
     match &cli.command {
         Cmd::Install { agent } => {
             print(&integration::install(*agent, false)?)?;
@@ -214,12 +226,22 @@ fn execute(cli: Cli) -> Result<i32> {
         }
         Cmd::Hook { agent } => {
             // Hook failures must not prevent the host from executing the native call.
-            let result = integration::hook_stdin(*agent).unwrap_or_else(|_| json!({}));
+            let result = compact_version
+                .and_then(|version| integration::hook_stdin_version(*agent, version))
+                .unwrap_or_else(|_| json!({}));
             print(&result)?;
             return Ok(0);
         }
         _ => {}
     }
+    let compact_version = if matches!(
+        cli.command,
+        Cmd::Compress { .. } | Cmd::Run { .. } | Cmd::Query { .. }
+    ) {
+        compact_version?
+    } else {
+        compress::Version::default()
+    };
     let cancel = Arc::new(AtomicBool::new(false));
     let signal = cancel.clone();
     ctrlc::set_handler(move || signal.store(true, std::sync::atomic::Ordering::SeqCst))?;
@@ -251,17 +273,10 @@ fn execute(cli: Cli) -> Result<i32> {
             cancel.clone(),
         )?;
         let code = process::exit_code(&result);
-        let store =
-            if result.stdout.len() > compress::SMALL || result.stderr.len() > compress::SMALL {
-                Store::open(cli.cache_dir).ok()
-            } else {
-                None
-            };
         for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
-            let output = store
-                .as_ref()
-                .and_then(|s| compress::automatic(bytes, s, 4096).ok())
-                .unwrap_or_else(|| bytes.clone());
+            let output =
+                compress::automatic_lazy(bytes, cli.cache_dir.clone(), 4096, compact_version)
+                    .unwrap_or(std::borrow::Cow::Borrowed(bytes));
             if stderr {
                 std::io::stderr().write_all(&output)?;
             } else {
@@ -275,16 +290,23 @@ fn execute(cli: Cli) -> Result<i32> {
         }
         return Ok(code);
     }
+    if let Cmd::Compress { max_bytes } = cli.command {
+        ensure!(
+            (1024..=1024 * 1024).contains(&max_bytes),
+            "max_bytes must be 1024..1048576"
+        );
+        let mut bytes = Vec::new();
+        std::io::stdin()
+            .take(MAX_INPUT as u64 + 1)
+            .read_to_end(&mut bytes)?;
+        ensure!(bytes.len() <= MAX_INPUT, "input exceeds 32 MiB");
+        let output = compress::automatic_lazy(&bytes, cli.cache_dir, max_bytes, compact_version)
+            .unwrap_or(std::borrow::Cow::Borrowed(&bytes));
+        std::io::stdout().write_all(&output)?;
+        return Ok(0);
+    }
     let store = Store::open(cli.cache_dir)?;
     match cli.command {
-        Cmd::Compress { max_bytes } => {
-            let mut bytes = Vec::new();
-            std::io::stdin()
-                .take(MAX_INPUT as u64 + 1)
-                .read_to_end(&mut bytes)?;
-            ensure!(bytes.len() <= MAX_INPUT, "input exceeds 32 MiB");
-            std::io::stdout().write_all(&compress::automatic(&bytes, &store, max_bytes)?)?;
-        }
         Cmd::Query {
             spec,
             repo,
@@ -364,10 +386,14 @@ fn execute(cli: Cli) -> Result<i32> {
                 request.max_bytes = max_bytes;
             }
             pipeline::validate(&request)?;
-            let mut data = sources::load(&request.source, &store, cancel.clone())?;
-            pipeline::apply(&mut data, &request.operations)?;
+            let data = scopelet::query::execute(&request, &store, cancel.clone())?;
             if matches!(output, Output::Compact) {
-                let text = compress::compact(&data, &store, request.max_bytes.unwrap_or(4096))?;
+                let text = compress::compact_version(
+                    &data,
+                    &store,
+                    request.max_bytes.unwrap_or(4096),
+                    compact_version,
+                )?;
                 std::io::stdout().write_all(text.as_bytes())?;
                 return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
                     130
@@ -487,7 +513,12 @@ fn execute(cli: Cli) -> Result<i32> {
                 let prefix =
                     format!("exit_code={code} stdout={stdout_blob} stderr={stderr_blob}\n");
                 ensure!(budget >= prefix.len() + 512, "compact run budget too small");
-                let text = compress::compact(&data, &store, budget - prefix.len())?;
+                let text = compress::compact_version(
+                    &data,
+                    &store,
+                    budget - prefix.len(),
+                    compact_version,
+                )?;
                 std::io::stdout().write_all(format!("{prefix}{text}").as_bytes())?;
                 return Ok(code);
             }
@@ -503,6 +534,9 @@ fn execute(cli: Cli) -> Result<i32> {
         }
         Cmd::Expand {
             id,
+            find,
+            context,
+            source,
             raw,
             manifest,
             offset,
@@ -514,6 +548,29 @@ fn execute(cli: Cli) -> Result<i32> {
                 (1024..=1024 * 1024).contains(&max_bytes),
                 "max_bytes must be 1024..1048576"
             );
+            if !find.is_empty() {
+                let data =
+                    scopelet::recovery::search(&store, &id, &find, context, source.as_deref())?;
+                print(&render::render(
+                    &data,
+                    &store,
+                    Mode::Default,
+                    max_bytes,
+                    offset,
+                )?)?;
+                return Ok(0);
+            }
+            if id.starts_with("blob:") && (start.is_some() || end.is_some()) {
+                ensure!(!manifest, "--manifest requires an artifact");
+                let data = scopelet::recovery::range(
+                    &store,
+                    &id,
+                    start.unwrap_or(1),
+                    end.unwrap_or(usize::MAX),
+                )?;
+                print(&render::render(&data, &store, Mode::Default, max_bytes, 0)?)?;
+                return Ok(0);
+            }
             let bytes = store.get(&id)?;
             // Expansion is use: keep the item out of the next age-based cleanup.
             store.touch(&id)?;
@@ -543,15 +600,6 @@ fn execute(cli: Cli) -> Result<i32> {
                 ensure!(!manifest, "--manifest requires an artifact");
                 let mut data = Dataset::default();
                 sources::ingest(&mut data, &store, &id, bytes, None, Format::Text)?;
-                if start.is_some() || end.is_some() {
-                    pipeline::apply(
-                        &mut data,
-                        &[Operation::Read {
-                            start: start.unwrap_or(1),
-                            end: end.unwrap_or(usize::MAX),
-                        }],
-                    )?;
-                }
                 data.notes.push(
                     "Immutable original snapshot; does not assert the source is still current."
                         .into(),
@@ -567,7 +615,8 @@ fn execute(cli: Cli) -> Result<i32> {
         | Cmd::Install { .. }
         | Cmd::Uninstall { .. }
         | Cmd::Mode { .. }
-        | Cmd::Hook { .. } => unreachable!(),
+        | Cmd::Hook { .. }
+        | Cmd::Compress { .. } => unreachable!(),
     }
     Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
         130

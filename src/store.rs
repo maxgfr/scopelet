@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, bail, ensure};
 use sha2::{Digest, Sha256};
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
@@ -9,9 +9,29 @@ pub const MAX_INPUT: usize = 32 * 1024 * 1024;
 pub const MAX_STORE_FILE: usize = 256 * 1024 * 1024;
 const TEMP_PREFIX: &str = ".scopelet-write-";
 
+struct HashWriter<W> {
+    inner: W,
+    hash: Sha256,
+    len: usize,
+}
+impl<W: Write> Write for HashWriter<W> {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        if bytes.len() > MAX_STORE_FILE.saturating_sub(self.len) {
+            return Err(std::io::Error::other("artifact exceeds storage item limit"));
+        }
+        let n = self.inner.write(bytes)?;
+        self.hash.update(&bytes[..n]);
+        self.len += n;
+        Ok(n)
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
+    }
+}
+
 /// Keep saved observations out of ordinary repository searches and Git staging.
 /// Each marker is local to a storage directory; never change existing rules.
-fn ignore_cached_evidence(directory: &Path) -> Result<()> {
+pub(crate) fn ignore_cached_evidence(directory: &Path) -> Result<()> {
     for name in [".ignore", ".gitignore"] {
         let path = directory.join(name);
         if fs::symlink_metadata(&path).is_ok() {
@@ -54,7 +74,12 @@ fn content_hash_name(name: &str) -> bool {
 }
 
 /// Discard an aged leftover from a write that was killed before it persisted.
-fn reap_temporary(item: &fs::DirEntry, name: &str, now: SystemTime, age: Duration) -> Result<bool> {
+pub(crate) fn reap_temporary(
+    item: &fs::DirEntry,
+    name: &str,
+    now: SystemTime,
+    age: Duration,
+) -> Result<bool> {
     let suffix = name.strip_prefix(TEMP_PREFIX).unwrap_or("");
     if suffix.len() != 12
         || !suffix.bytes().all(|c| c.is_ascii_alphanumeric())
@@ -92,6 +117,72 @@ pub struct Store {
 }
 
 impl Store {
+    /// Serialize once to a bounded, hashed temporary; publish only a complete item.
+    pub fn put_json(&self, value: &impl serde::Serialize) -> Result<String> {
+        let mut temp = tempfile::Builder::new()
+            .prefix(TEMP_PREFIX)
+            .rand_bytes(12)
+            .tempfile_in(self.root.join("artifacts"))?;
+        let hash = {
+            let mut writer = HashWriter {
+                inner: temp.as_file_mut(),
+                hash: Sha256::new(),
+                len: 0,
+            };
+            {
+                let mut buffer = BufWriter::with_capacity(65536, &mut writer);
+                serde_json::to_writer(&mut buffer, value)?;
+                buffer.flush()?;
+            }
+            format!("{:x}", writer.hash.finalize())
+        };
+        let id = format!("artifact:{hash}");
+        let path = self.location(&id)?;
+        if path.exists() {
+            self.verify(&id)?;
+            self.touch(&id)?;
+            return Ok(id);
+        }
+        temp.as_file().sync_all()?;
+        if let Err(error) = temp.persist_noclobber(&path) {
+            if error.error.kind() != std::io::ErrorKind::AlreadyExists {
+                return Err(error.error.into());
+            }
+            self.verify(&id)?;
+        }
+        Ok(id)
+    }
+
+    fn verify(&self, id: &str) -> Result<()> {
+        let path = self.location(id)?;
+        ensure!(
+            !fs::symlink_metadata(&path)?.file_type().is_symlink(),
+            "cache item is a symlink"
+        );
+        let file = fs::File::open(path)?;
+        ensure!(
+            file.metadata()?.is_file(),
+            "cache item is not a regular file"
+        );
+        let mut reader = file.take(MAX_STORE_FILE as u64 + 1);
+        let mut hash = Sha256::new();
+        let mut count = 0;
+        let mut buf = [0; 65536];
+        loop {
+            let n = reader.read(&mut buf)?;
+            if n == 0 {
+                break;
+            }
+            count += n;
+            ensure!(count <= MAX_STORE_FILE, "stored item exceeds limit");
+            hash.update(&buf[..n]);
+        }
+        ensure!(
+            id.ends_with(&format!("{:x}", hash.finalize())),
+            "cache integrity mismatch for {id}"
+        );
+        Ok(())
+    }
     pub fn open(path: Option<PathBuf>) -> Result<Self> {
         let root = path
             .or_else(|| std::env::var_os("SCOPELET_CACHE_DIR").map(PathBuf::from))
@@ -245,6 +336,7 @@ impl Store {
                 removed += 1;
             }
         }
+        removed += crate::line_index::clean(&self.root, now, age)?;
         Ok(removed)
     }
 }

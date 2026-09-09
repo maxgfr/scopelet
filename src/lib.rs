@@ -1,10 +1,17 @@
 pub mod adapters;
 pub mod benchmark;
+pub mod commands;
+mod compact_table;
 pub mod compress;
+mod encoding;
 pub mod integration;
+mod line_index;
 pub mod model;
 pub mod pipeline;
 pub mod process;
+pub mod query;
+pub mod recovery;
 pub mod render;
+mod search;
 pub mod sources;
 pub mod store;

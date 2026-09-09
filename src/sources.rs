@@ -7,6 +7,15 @@ use std::path::Path;
 use std::sync::{Arc, atomic::AtomicBool};
 
 pub fn load(source: &Source, store: &Store, cancel: Arc<AtomicBool>) -> Result<Dataset> {
+    load_search(source, store, cancel, None)
+}
+
+pub(crate) fn load_search(
+    source: &Source,
+    store: &Store,
+    cancel: Arc<AtomicBool>,
+    search: Option<&crate::search::Search>,
+) -> Result<Dataset> {
     let mut data = Dataset::default();
     match source {
         Source::Repo {
@@ -73,14 +82,20 @@ pub fn load(source: &Source, store: &Store, cancel: Arc<AtomicBool>) -> Result<D
                     .strip_prefix(&root)?
                     .to_string_lossy()
                     .into_owned();
+                let mut file = Dataset::default();
                 ingest(
-                    &mut data,
+                    &mut file,
                     store,
                     &name,
                     raw,
                     Some(entry.path().to_string_lossy().into_owned()),
                     Format::Text,
                 )?;
+                data.snapshots.extend(file.snapshots);
+                data.records.extend(match search {
+                    Some(search) => search.apply(file.records),
+                    None => file.records,
+                });
             }
         }
         Source::File { path, format } => {
@@ -140,62 +155,103 @@ pub fn ingest(
     });
     let text = String::from_utf8(raw)
         .context("text and JSON sources must be UTF-8; original bytes are saved in cache")?;
-    let base = Record {
-        source: source.into(),
-        blob: Some(blob),
-        start_line: None,
-        end_line: None,
-        text: String::new(),
-        value: None,
-        omitted_lines: None,
-        text_truncated: false,
-    };
-    let mut records = Vec::new();
-    match format {
-        Format::Text => {
-            let end_line = text.lines().count();
-            records.push(Record {
-                text,
+    let parsed = Parsed::parse(text, format, source)?;
+    data.records.extend(parsed.records(source, blob));
+    Ok(())
+}
+
+pub(crate) enum Parsed {
+    Text(String),
+    Json(Value),
+    Jsonl(Vec<(usize, Value)>),
+}
+
+impl Parsed {
+    pub(crate) fn detected(text: String) -> Self {
+        if let Ok(value) = serde_json::from_str(&text) {
+            return Self::Json(value);
+        }
+        if text.lines().count() > 1 {
+            let rows: Result<Vec<_>, _> = text
+                .lines()
+                .enumerate()
+                .map(|(i, line)| serde_json::from_str(line).map(|v| (i + 1, v)))
+                .collect();
+            if let Ok(rows) = rows {
+                return Self::Jsonl(rows);
+            }
+        }
+        Self::Text(text)
+    }
+
+    fn parse(text: String, format: Format, source: &str) -> Result<Self> {
+        Ok(match format {
+            Format::Text => Self::Text(text),
+            Format::Json => Self::Json(
+                serde_json::from_str(&text)
+                    .context("invalid JSON; use jsonl for newline-delimited records")?,
+            ),
+            Format::Jsonl => Self::Jsonl(
+                text.lines()
+                    .enumerate()
+                    .filter(|(_, line)| !line.trim().is_empty())
+                    .map(|(i, line)| {
+                        serde_json::from_str(line)
+                            .map(|v| (i + 1, v))
+                            .with_context(|| {
+                                format!(
+                                    "malformed JSONL at {source}:{}; no partial aggregate emitted",
+                                    i + 1
+                                )
+                            })
+                    })
+                    .collect::<Result<_>>()?,
+            ),
+        })
+    }
+
+    pub(crate) fn records(self, source: &str, blob: String) -> Vec<Record> {
+        let base = Record {
+            source: source.into(),
+            blob: Some(blob),
+            start_line: None,
+            end_line: None,
+            text: String::new(),
+            value: None,
+            omitted_lines: None,
+            text_truncated: false,
+        };
+        match self {
+            Self::Text(text) => vec![Record {
+                end_line: Some(text.lines().count()),
                 start_line: Some(1),
-                end_line: Some(end_line),
+                text,
                 ..base
-            });
-        }
-        Format::Json => {
-            let value: Value = serde_json::from_str(&text)
-                .context("invalid JSON; use jsonl for newline-delimited records")?;
-            let values = match value {
-                Value::Array(values) => values,
-                value => vec![value],
-            };
-            for (i, value) in values.into_iter().enumerate() {
-                records.push(Record {
-                    source: format!("{source}#record={i}"),
+            }],
+            Self::Json(value) => {
+                let values = match value {
+                    Value::Array(values) => values,
+                    value => vec![value],
+                };
+                values
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, value)| Record {
+                        source: format!("{source}#record={i}"),
+                        value: Some(value),
+                        ..base.clone()
+                    })
+                    .collect()
+            }
+            Self::Jsonl(rows) => rows
+                .into_iter()
+                .map(|(line, value)| Record {
+                    start_line: Some(line),
+                    end_line: Some(line),
                     value: Some(value),
                     ..base.clone()
-                });
-            }
-        }
-        Format::Jsonl => {
-            for (i, line) in text.lines().enumerate() {
-                if line.trim().is_empty() {
-                    continue;
-                }
-                let value: Value = serde_json::from_str(line).with_context(|| {
-                    format!(
-                        "malformed JSONL at {source}:{}; no partial aggregate emitted",
-                        i + 1
-                    )
-                })?;
-                records.push(Record {
-                    start_line: Some(i + 1),
-                    end_line: Some(i + 1),
-                    value: Some(value),
-                    ..base.clone()
-                });
-            }
+                })
+                .collect(),
         }
     }
-    data.records.extend(records);
-    Ok(())
 }

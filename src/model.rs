@@ -158,9 +158,13 @@ impl Record {
     }
 
     pub fn searchable(&self) -> String {
+        self.searchable_ref().into_owned()
+    }
+
+    pub fn searchable_ref(&self) -> std::borrow::Cow<'_, str> {
         match &self.value {
-            Some(value) => value.to_string(),
-            None => self.text.clone(),
+            Some(value) => std::borrow::Cow::Owned(value.to_string()),
+            None => std::borrow::Cow::Borrowed(&self.text),
         }
     }
 }

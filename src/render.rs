@@ -28,7 +28,7 @@ pub fn render(
     budget: usize,
     offset: usize,
 ) -> Result<View> {
-    let artifact = store.put("artifact", &serde_json::to_vec(data)?)?;
+    let artifact = store.put_json(data)?;
     paginate(data, artifact, mode, budget, offset)
 }
 
@@ -81,13 +81,13 @@ fn paginate(
     let mut abridged = false;
     let mut encoded_size = serde_json::to_vec(&view)?.len();
     for record in &data.records[offset..] {
-        let mut record = record.clone();
-        if mode == Mode::Ultra && record.value.is_none() && record.text.len() > 1024 {
-            let lines: Vec<&str> = record.text.split_inclusive('\n').collect();
-            let total = lines.len();
+        let shortened;
+        let record = if mode == Mode::Ultra && record.value.is_none() && record.text.len() > 1024 {
+            let total = record.text.split_inclusive('\n').count();
             let mut text = String::new();
             let mut kept = 0;
-            for line in lines.iter().take(8) {
+            let mut truncated = record.text_truncated;
+            for line in record.text.split_inclusive('\n').take(8) {
                 if text.len() + line.len() > 1024 {
                     break;
                 }
@@ -95,31 +95,39 @@ fn paginate(
                 kept += 1;
             }
             if kept == 0 {
-                // One line longer than the ultra limit: ship its head rather than an
-                // empty record. The exact bytes stay recoverable through the blob.
-                let line = lines[0];
+                let line = record.text.split_inclusive('\n').next().unwrap();
                 let cut = (0..=1024)
                     .rev()
                     .find(|&i| line.is_char_boundary(i))
                     .unwrap();
                 text.push_str(&line[..cut]);
                 kept = 1;
-                record.text_truncated = true;
+                truncated = true;
             }
-            record.omitted_lines = Some(total - kept);
-            record.text = text;
-            record.end_line = Some(record.start_line.unwrap_or(1) + kept - 1);
-        }
-        let record_size = serde_json::to_vec(&record)?.len() + 1;
-        // Serialize each record once; reserve final counts and recovery instructions.
-        if encoded_size + record_size + 256 > budget {
+            shortened = Record {
+                source: record.source.clone(),
+                blob: record.blob.clone(),
+                start_line: record.start_line,
+                end_line: Some(record.start_line.unwrap_or(1) + kept - 1),
+                text,
+                value: None,
+                omitted_lines: Some(total - kept),
+                text_truncated: truncated,
+            };
+            &shortened
+        } else {
+            record
+        };
+        let remaining = budget.saturating_sub(encoded_size + 257);
+        let Some(size) = crate::encoding::size(record, remaining) else {
             if view.records.is_empty() {
                 view.blocked_record = Some(offset);
             }
             break;
-        }
+        };
+        let record_size = size + 1;
         encoded_size += record_size;
-        view.records.push(record);
+        view.records.push(record.clone());
         abridged |= view.records.last().unwrap().omitted_lines.is_some();
     }
     view.shown_records = view.records.len();

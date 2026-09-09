@@ -205,3 +205,41 @@ python3 bench/proportional.py --live --released /path/to/released/scopelet \
 Use a new directory for every revision. Keep earlier failures and distinguish
 candidate hashes; do not pool revised candidates into an earlier comparison.
 This small sample is exploratory, not a claim of universal savings.
+
+## Engine and compact-v2 performance
+
+`performance.py` compares frozen release binaries offline, with five warmups
+and thirty measurements per cell by default. It alternates native process
+invocations of baseline v1, candidate v1 and candidate v2. Cold means an empty
+application cache; the OS page cache is not flushed. It reports wall time,
+maximum process RSS, output hashes, failures and retained cache bytes. V1 output
+mismatches fail the campaign. `--stress` adds a capture just below 32 MiB.
+
+```sh
+python3 bench/performance.py --baseline /path/to/baseline --candidate target/release/scopelet \
+  --stress --out bench/runs/performance-new
+```
+
+`performance_live.py` is a separate Luna-only pilot: five tasks, three arms
+(native, frozen baseline, candidate v2), two repetitions, 30 attempts maximum.
+It uses `gpt-5.6-luna` at low effort, isolated synthetic workspaces and scoped
+hooks. No retry or model fallback occurs. Quota rejection or missing usage stops
+the campaign; failed sessions remain in the report. Existing harness usage
+normalization and independent graders are reused. Global skills are disabled.
+The native arm uses native tools; the two Scopelet arms receive the same brief
+availability instruction and retain their respective hooks. The recovery task
+provides native text versus a saved compact view backed by immutable originals.
+Raw traces and temporary authentication stay local; authentication is removed
+before archiving a workspace. Reports do not equate logical tokens with bills.
+
+```sh
+python3 bench/performance_live.py --baseline /path/to/baseline --candidate target/release/scopelet \
+  --out bench/runs/luna-performance-plan
+python3 bench/performance_live.py --live --baseline /path/to/baseline --candidate target/release/scopelet \
+  --out bench/runs/luna-performance-new
+```
+
+The rollout gate for v2 is no functional regression and at least 10% fewer
+whole-session logical input plus output tokens than baseline on the combined
+four evidence-heavy tasks. An incomplete campaign does not pass this gate.
+V1 stays the default unless that complete comparison supports switching.

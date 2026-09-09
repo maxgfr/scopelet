@@ -140,3 +140,35 @@ the spec interface's validation behavior. All shortcuts conflict with `--spec`.
 it never computes an aggregate from malformed rows. Invalid UTF-8 passes through.
 `run --auto` preserves small stdout and stderr byte-for-byte and the process
 exit code; it cannot be combined with selection/mode/budget flags.
+
+## Search saved originals directly
+
+```sh
+scopelet expand artifact:HASH --find 'missing evidence' --context 3
+scopelet expand artifact:HASH --find 'receipt' --source input
+scopelet expand blob:HASH --find 'failure' --find 'warning' --context 0
+```
+
+`--find` is literal and repeatable (alternatives). On an artifact it searches
+original snapshots, including material omitted by its earlier query. `--source`
+is an exact label from the manifest; unknown labels fail. Results are paginated
+JSON text windows with absolute line numbers; use `next_offset` to recover more.
+This reads historical evidence after a local file changes. A new `query` on an
+artifact still checks freshness. Search conflicts with `--raw`, `--manifest`,
+`--start` and `--end`; use range expansion for a known line interval.
+
+## Compact-v2 (opt-in)
+
+```sh
+scopelet compress --compact-version 2 < build.log
+scopelet query --file events.jsonl --format jsonl --output compact --compact-version 2
+```
+
+Version 2 keeps full JSON columns when selecting partial tables. `indices` are
+zero-based positions in the original dataset; `record_sources` maps selected
+rows to source labels. `total_records` and `omitted_units` describe coverage,
+not a computed aggregate. Complete cells, exact numbers and missing/null
+semantics survive. A partial table cannot establish an exhaustive count.
+V2 prioritizes distinct diagnostics before repetitions, and links directly to
+saved-source search. Version 1 remains the default and is selectable with
+`--compact-version 1`; query and artifact JSON schemas remain version 1.

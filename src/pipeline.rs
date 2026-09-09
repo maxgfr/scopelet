@@ -1,6 +1,5 @@
 use crate::model::{Dataset, Operation, Record};
 use anyhow::{Result, bail, ensure};
-use regex::RegexBuilder;
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -31,73 +30,7 @@ fn transform(records: Vec<Record>, op: &Operation) -> Result<Vec<Record>> {
             all,
             regex,
             context,
-        } => {
-            ensure!(
-                !patterns.is_empty() && patterns.len() <= 64,
-                "provide 1..64 search patterns"
-            );
-            ensure!(*context <= 1000, "context must be <= 1000 lines");
-            let patterns = patterns
-                .iter()
-                .map(|p| {
-                    RegexBuilder::new(&if *regex { p.clone() } else { regex::escape(p) })
-                        .multi_line(true)
-                        .crlf(true)
-                        .build()
-                })
-                .collect::<std::result::Result<Vec<_>, _>>()?;
-            let mut out = Vec::new();
-            for mut r in records {
-                let content = r.searchable();
-                let matched = if *all {
-                    patterns.iter().all(|p| p.is_match(&content))
-                } else {
-                    patterns.iter().any(|p| p.is_match(&content))
-                };
-                if !matched {
-                    continue;
-                }
-                // Structured records remain whole; never join fields from different objects.
-                if r.value.is_some()
-                    || patterns
-                        .iter()
-                        .any(|p| p.find_iter(&content).any(|m| m.as_str().contains('\n')))
-                {
-                    out.push(r);
-                    continue;
-                }
-                let text = std::mem::take(&mut r.text);
-                let lines: Vec<&str> = text.split_inclusive('\n').collect();
-                let mut spans: Vec<(usize, usize)> = Vec::new();
-                for (i, line) in lines.iter().enumerate() {
-                    if patterns.iter().any(|p| p.is_match(line)) {
-                        let start = i.saturating_sub(*context);
-                        let end = (i + context + 1).min(lines.len());
-                        if let Some(last) = spans.last_mut().filter(|last| start <= last.1) {
-                            last.1 = last.1.max(end);
-                        } else {
-                            spans.push((start, end));
-                        }
-                    }
-                }
-                // Multiline regex can match across physical lines. Preserve the whole unit.
-                if spans.is_empty() {
-                    r.text = text;
-                    out.push(r);
-                    continue;
-                }
-                for (start, end) in spans {
-                    let base = r.start_line.unwrap_or(1);
-                    out.push(Record {
-                        text: lines[start..end].concat(),
-                        start_line: Some(base + start),
-                        end_line: Some(base + end - 1),
-                        ..r.clone()
-                    });
-                }
-            }
-            Ok(out)
-        }
+        } => Ok(crate::search::Search::new(patterns, *all, *regex, *context)?.apply(records)),
         Operation::Filter {
             pointer: path,
             equals,

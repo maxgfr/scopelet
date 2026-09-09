@@ -145,3 +145,61 @@ commands is supported. It is reconstructed from quoted argv in `/bin/sh`;
 short-circuiting and the final process status are preserved. Other shell control
 operators and pipelines still pass through. Interactive/background tool calls
 also pass through when the host exposes those flags.
+
+## Execution and compact-v2
+
+The query and saved-dataset schemas remain version 1. The execution planner
+recognizes JSONL filter chains ending in count/group and repository queries
+starting with search. It streams those operations while retaining every source
+snapshot, original scan order, exclusions and limits. JSONL parsing completes
+before a result or a deferred grouping error is exposed. Other compositions use
+the materialized pipeline. Searches compile once, retain record-wide `all`
+semantics and preserve multiline matches. No index substitutes for source-hash
+verification or certifies an unvisited source.
+
+Automatic compression prepares a view before opening storage. Rejected views,
+small/binary inputs and persisted previews perform no cache writes. Accepted
+views save original bytes and serialize the same dataset through a bounded,
+buffered hashing writer; artifact identities remain SHA-256 of the exact v1 JSON
+serialization. A storage/compression failure returns native captured bytes.
+Explicit queries still report storage errors. Compact-v1 remains the default.
+
+`--compact-version 2` selects compact-v2; `SCOPELET_COMPACT_VERSION=2` selects it
+for automatic hooks too. An explicit CLI version takes precedence. Only `1` and
+`2` are accepted. Version 2 retains complete tables when they fit, otherwise
+selects whole rows with `indices` (zero-based dataset positions), `total_records`
+and positional `record_sources` when source labels differ. Columns require
+identical keys across every row, including missing/null distinctions. Selected
+cells and exact decimal representations remain intact; a partial table is not an
+aggregate and never establishes absence. Heterogeneous records use ordinary
+whole-record selection. The complete-table path is lossless in both versions.
+
+V2 selection prioritizes boundary units, the first occurrence of distinct
+signal text, additional signals, context and ordinary units. Diagnostics in
+JSON are matched in string values, not field names. Distinctness uses exact
+text, without normalizing numbers or paths. Selection remains a heuristic:
+omissions stay explicit, the output stays within the byte budget, and originals
+remain recoverable. The output is restored to source order after selection.
+
+`expand ID --find TEXT [--find TEXT] [--context N] [--source LABEL]` searches
+immutable original blobs, including evidence no longer present in a filtered
+artifact's records. It uses literal alternatives and absolute source lines,
+returns ordinary paginated JSON views, and labels the data as historical.
+`--source` selects an exact artifact snapshot label; unknown labels fail.
+Search conflicts with raw/manifest/range expansion. This is text-window
+recovery, even for a JSON original; structured computations belong in `query`.
+No local freshness check is implied by explicit recovery.
+
+Blob range recovery optionally caches offsets for at most 100000 lines in
+`line-index-v1/`. These disposable indexes have local ignore markers and bind
+offsets to a blob hash. Recovery verifies original bytes and all index line
+boundaries; missing, invalid or unwritable indexes fall back to reconstruction.
+Larger sources use bounded sequential range selection. Cleanup removes aged
+indexes and indexes whose original blob is gone, preserving foreign files.
+
+The shared command classifier also recognizes simple `rg`/`grep`, non-paginated
+Git diff/log/show/status, `go test`, `node --test`, and package-manager
+build/lint/typecheck scripts. The existing shell grammar and permission envelope
+remain in force. Watch/debug/interactive forms and unrecognized syntax stay
+native. Every eligible command executes once; stdout/stderr and process status
+remain independent of presentation.

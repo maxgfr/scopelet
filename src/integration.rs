@@ -1,7 +1,7 @@
 //! Host adapters and reversible installation. No model/network calls.
 use crate::{
     compress,
-    store::{MAX_INPUT, Store, digest},
+    store::{MAX_INPUT, digest},
 };
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Serialize};
@@ -296,30 +296,7 @@ fn command_args(command: &str) -> Option<Vec<String>> {
 }
 
 fn eligible(args: &[String]) -> bool {
-    let name = Path::new(&args[0])
-        .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap_or("");
-    let second = args.get(1).map(String::as_str).unwrap_or("");
-    if args.iter().any(|a| {
-        matches!(
-            a.as_str(),
-            "--watch" | "-w" | "--pdb" | "-i" | "--interactive"
-        ) || a.contains("scopelet")
-            || a.contains("rtk")
-    }) {
-        return false;
-    }
-    match name {
-        "cargo" => matches!(second, "test" | "check" | "clippy" | "build"),
-        "python3" => second.ends_with(".py"),
-        "pytest" => true,
-        "npm" | "pnpm" | "yarn" => {
-            second == "test" || (second == "run" && args.get(2).is_some_and(|s| s == "test"))
-        }
-        "cat" => args.len() == 2 && !second.starts_with('-'),
-        _ => false,
-    }
+    crate::commands::profile(args).is_some()
 }
 // This is only a compression bypass: native execution still reads the file,
 // including changes after this metadata check, and enforces host permissions.
@@ -368,6 +345,9 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
     Ok(json!({"hookSpecificOutput":{"hookEventName":name,"additionalContext":text}}))
 }
 pub fn hook_stdin(agent: Agent) -> Result<Value> {
+    hook_stdin_version(agent, compress::Version::configured(None)?)
+}
+pub fn hook_stdin_version(agent: Agent, version: compress::Version) -> Result<Value> {
     ensure!(agent != Agent::All, "hook needs one agent");
     let mut bytes = Vec::new();
     std::io::stdin()
@@ -375,9 +355,12 @@ pub fn hook_stdin(agent: Agent) -> Result<Value> {
         .read_to_end(&mut bytes)?;
     ensure!(bytes.len() <= MAX_INPUT * 3, "hook input too large");
     let event: Value = serde_json::from_slice(&bytes)?;
-    hook(agent, &event)
+    hook_version(agent, &event, version)
 }
 pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
+    hook_version(agent, event, compress::Version::configured(None)?)
+}
+fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Result<Value> {
     let mode = preference()?;
     let name = event["hook_event_name"].as_str().unwrap_or("");
     if matches!(name, "SessionStart" | "UserPromptSubmit") {
@@ -401,8 +384,13 @@ pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
         }
         let binary = std::env::current_exe()?;
         let command = format!(
-            "{} run --auto --timeout 3600 -- {}",
+            "{} run --auto --timeout 3600 {} -- {}",
             quote(&binary.to_string_lossy()),
+            if version == compress::Version::V2 {
+                "--compact-version 2"
+            } else {
+                "--compact-version 1"
+            },
             args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" ")
         );
         let mut input = event["tool_input"].clone();
@@ -444,16 +432,15 @@ pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
         }) {
             return Ok(json!({}));
         }
-        let store = Store::open(None)?;
         let mut changed = false;
         for stream in ["stdout", "stderr"] {
             let raw = output[stream].as_str().unwrap();
             if raw.len() > MAX_INPUT {
                 return Ok(json!({}));
             }
-            let small = compress::automatic(raw.as_bytes(), &store, 4096)?;
-            if small != raw.as_bytes() {
-                output[stream] = json!(String::from_utf8(small)?);
+            let small = compress::automatic_lazy(raw.as_bytes(), None, 4096, version)?;
+            if small.as_ref() != raw.as_bytes() {
+                output[stream] = json!(String::from_utf8(small.into_owned())?);
                 changed = true;
             }
         }
