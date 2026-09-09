@@ -119,7 +119,7 @@ not establish a new small-edit savings claim. [Competitor mechanisms reviewed](d
 For a standalone `scopelet` command, install with **Rust 1.88+**:
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.2.4 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.3.0 --locked
 scopelet query --repo . --find validateToken --context 5
 scopelet query --file events.jsonl --format jsonl --filter /status --equals '"failed"' --group /suite --output compact
 scopelet run --auto -- npm test
