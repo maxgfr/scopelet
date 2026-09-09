@@ -123,7 +123,10 @@ command is never rerun. Its stdin remains closed, so only noninteractive command
 belong in this path. The Codex adapter intentionally skips shell expansions,
 control operators, pipelines and recognized interactive flags. Claude's adapter
 replaces only known Bash output shapes after execution and keeps all other
-fields. Unknown host/tool shapes pass through unchanged.
+fields. Results carrying a nonempty `persistedOutputPath` or positive
+`persistedOutputSize` pass through before Claude renders its own preview, so the
+host cannot truncate an already compressed view again. Failure events without
+a replaceable result and unknown host/tool shapes pass through unchanged.
 
 A Codex AND-list (`cmd && cmd`) of at most eight individually recognized simple
 commands is supported. It is reconstructed from quoted argv in `/bin/sh`;

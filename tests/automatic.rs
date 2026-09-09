@@ -178,6 +178,32 @@ fn claude_replacement_preserves_envelope_and_small_outputs() {
     assert_eq!(hook(dir.path(), "claude", event), json!({}));
 }
 #[test]
+fn claude_persistence_metadata_bypasses_compression_before_preview_rendering() {
+    let dir = tempfile::tempdir().unwrap();
+    let event = json!({"hook_event_name":"PostToolUse","tool_name":"Bash","tool_response":{"stdout":"noise\n".repeat(2000),"stderr":"","interrupted":false,"isImage":false}});
+    for metadata in [
+        json!({"persistedOutputPath":"/synthetic/tool-results/checks.txt"}),
+        json!({"persistedOutputSize":12000}),
+    ] {
+        let mut persisted = event.clone();
+        persisted["tool_response"]
+            .as_object_mut()
+            .unwrap()
+            .extend(metadata.as_object().unwrap().clone());
+        assert_eq!(hook(dir.path(), "claude", persisted), json!({}));
+        assert!(!dir.path().join("cache").exists());
+    }
+    let mut inline = event;
+    inline["tool_response"]["persistedOutputPath"] = json!(null);
+    inline["tool_response"]["persistedOutputSize"] = json!(0);
+    assert!(
+        hook(dir.path(), "claude", inline)["hookSpecificOutput"]["updatedToolOutput"]["stdout"]
+            .as_str()
+            .unwrap()
+            .contains("[scopelet compact-v1")
+    );
+}
+#[test]
 fn context_is_sent_only_at_start_or_mode_change() {
     let dir = tempfile::tempdir().unwrap();
     let event = json!({"hook_event_name":"UserPromptSubmit","session_id":"session-one"});

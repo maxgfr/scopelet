@@ -187,6 +187,21 @@ class HarnessTests(unittest.TestCase):
             self.assertFalse(bad["passed"])
             self.assertEqual(bad["grade"], "fail")
 
+    def test_grader_uses_frozen_custom_checks_hash_and_rejects_later_tampering(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="scopelet-harness-test-") as directory:
+            root = Path(directory)
+            run.create_fixture(root, "task4")
+            checks = root / "checks.py"
+            checks.write_text(checks.read_text().replace("range(1200)", "range(100)"))
+            frozen = run.fixture_hashes(root)
+            self.assertFalse(run.grade_workspace("task4", root, expected_fixture_hashes=frozen)["passed"])
+            worker = root / "src/worker.py"
+            worker.write_text(worker.read_text().replace("if not limit:", "if limit is None:"))
+            self.assertTrue(run.grade_workspace("task4", root, expected_fixture_hashes=frozen)["passed"])
+            self.assertFalse(run.grade_workspace("task4", root)["passed"])
+            checks.write_text("print('forged success')\n")
+            self.assertFalse(run.grade_workspace("task4", root, expected_fixture_hashes=frozen)["passed"])
+
     def test_grader_accepts_exact_task2_json(self) -> None:
         with tempfile.TemporaryDirectory(prefix="scopelet-harness-test-") as directory:
             root = Path(directory)

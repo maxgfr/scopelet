@@ -234,7 +234,7 @@ print("task4 acceptance passed")
     return {"task": task, "expected": "acceptance.py"}
 
 
-def pristine_acceptance_source(task: str) -> str:
+def pristine_acceptance_source(task: str, checks_hash: str | None = None) -> str:
     """Return grader code kept outside the agent workspace."""
     if task == "task1":
         return """import sys
@@ -276,7 +276,7 @@ assert run_worker_check(None) == ["alpha", "beta", "gamma"]
 with open("checks.py", "rb") as stream:
     assert hashlib.sha256(stream.read()).hexdigest() == __CHECKS_HASH__
 print("task4 acceptance passed")
-""".replace("__CHECKS_HASH__", repr(sha256_bytes(checks_script().encode("utf-8"))))
+""".replace("__CHECKS_HASH__", repr(checks_hash or sha256_bytes(checks_script().encode("utf-8"))))
     raise ValueError(f"unknown task: {task}")
 
 
@@ -839,7 +839,7 @@ def grade_workspace(
             }
     with tempfile.TemporaryDirectory(prefix="scopelet-pristine-grader-") as grader_directory:
         grader = Path(grader_directory) / "acceptance.py"
-        grader.write_text(pristine_acceptance_source(task), encoding="utf-8")
+        grader.write_text(pristine_acceptance_source(task, (expected_fixture_hashes or {}).get("checks.py")), encoding="utf-8")
         try:
             result = subprocess.run(
                 [sys.executable, str(grader)],

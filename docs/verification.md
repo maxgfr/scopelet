@@ -7,10 +7,10 @@ visible detail and requires recovery when that detail matters.
 
 ## Correctness and distribution
 
-- 71 Rust integration tests: queries, exact byte recovery, freshness, malformed
+- 72 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup, capture throughput and
   process behavior.
-- 60 offline benchmark-harness tests, including independent grading, cache usage,
+- 61 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
 - 4 launcher tests and 5 release automation tests pass locally. The launcher
   also passed on Node 18.20.8 before this change; release tooling requires Node 24.10+.
@@ -20,6 +20,46 @@ visible detail and requires recovery when that detail matters.
   offline `bench`: Linux x64/ARM64 and macOS Intel/ARM64.
 - Installation using `npx skills add maxgfr/scopelet -a codex claude-code --copy -y`
   created both agent bundles; both installed launchers passed the offline check.
+
+## Installed automatic hooks with Fable 5.1
+
+The [installed 0.2.1 smoke evidence](../bench/results/fable-installed-0.2.1-2026-09-09.json)
+records two Claude Code 2.1.266 sessions requesting `claude-fable-5-1`, high
+effort, with real user hooks and no skill invocation. Both saved worker fixes
+pass external grading and execute the failing check before the passing check.
+The reduced fixture initially failed a harness hash check: the grader used the
+full fixture's hash despite receiving the reduced fixture's frozen hash. That
+initial failure remains in the report; regrading the saved workspace after the
+harness correction required no model call. Regression coverage rejects both an
+incorrect worker and subsequent fixture tampering.
+
+The inline successful result reaches Fable as 3,922 bytes instead of 10,634,
+including the final success line and omission footer. Recovery returns the
+host-supplied capture; Claude already removed the process's final newline.
+Failure events retain native output. Default-mode final replies were verbose
+under the user's existing instructions. No native control or repetitions were
+run, so these checks cannot establish session token savings.
+
+The large-output trace exposed a host interaction: Claude supplies
+`persistedOutputPath` and `persistedOutputSize` before rendering its 2 KiB
+preview. Recompressing that stdout caused the host to truncate the compact
+view, hiding its final lines and omission footer. The adapter now skips those
+persisted envelopes before opening its store. This preserves the host's native
+recovery path and avoids redundant storage. The replacement shape follows the
+[Claude Code hook contract](https://code.claude.com/docs/en/hooks#posttooluse-decision-control).
+
+A third Fable session used the patched release build and a private relocated copy
+of the user's hooks in caveman mode. The external grader and failing/passing
+sequence pass. Its persisted preview contains no Scopelet compression; a separate
+inline sample is compressed with its exact `retries=0` warning and “do not enable
+retries” instruction preserved in both the view and final response. Caveman
+context is observed, but the final response remains verbose. This is a response
+preference, not a strict output-token limit. The three calls report $1.30255025
+at the provider's list prices; this is not necessarily the subscription charge.
+Raw traces and personal settings remain private; only inspected summaries are
+published.
+
+## Earlier verification
 
 A [33 MiB command stress test](../bench/results/stress-2026-09-09.json) completed
 its final side effect and retained exit code 0. Scopelet saved the first 32 MiB,

@@ -94,6 +94,16 @@ strong noisy-command savings on Haiku, but none on Fable where Claude Code
 already persisted large outputs. Headroom was the strongest general competitor
 there. Those measurements concern different versions and integrations.
 
+An [installed Fable 5.1 check](bench/results/fable-installed-0.2.1-2026-09-09.json)
+also exercised the real Claude Code user hooks without invoking the skill.
+An inline successful Bash result reached the model at **3,922 bytes instead of
+10,634**. Failed commands retained native error output. The check found and fixed
+double compression of outputs Claude had already saved to disk; those envelopes
+now pass through. These functional checks do not measure whole-session savings.
+A third Fable check passes with the fix and caveman enabled, preserving the exact
+warning and its negation. Its final reply remains verbose: caveman is a preference,
+not a hard response-length limit.
+
 ## Exact queries and recovery
 
 For a standalone `scopelet` command, install with **Rust 1.88+**:

@@ -398,6 +398,18 @@ pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
         {
             return Ok(json!({}));
         }
+        // Claude can attach persistence metadata before rendering its preview.
+        // Replacing stdout here would make that preview truncate our compact
+        // view a second time, hiding its final diagnostics and omission footer.
+        if output["persistedOutputPath"]
+            .as_str()
+            .is_some_and(|path| !path.is_empty())
+            || output["persistedOutputSize"]
+                .as_u64()
+                .is_some_and(|size| size > 0)
+        {
+            return Ok(json!({}));
+        }
         let store = Store::open(None)?;
         let mut changed = false;
         for stream in ["stdout", "stderr"] {
