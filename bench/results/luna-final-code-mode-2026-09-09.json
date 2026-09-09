@@ -1,0 +1,375 @@
+{
+  "binary_sha256": "07730718fba788ff7799115b351cc56b7babefb482a477bb75e2eafd574e9588",
+  "code_mode": true,
+  "codex_version": "codex-cli 0.153.4",
+  "effort": "low",
+  "harness_sha256": {
+    "auto.py": "6a87f5330384eb1434bda1733a92bf53d967eda709ebe67e1c63d0565f7b2aed",
+    "compare.py": "424e56baba69aa1238968ee96d12a30098aaa8633280bd1b8248faace8d95178",
+    "run.py": "270b2efa116c66f9658f71f9fdb926be07a6cdb4509515dbd0cdd5c79e47f4e7"
+  },
+  "integration": {
+    "caveman": "Installed hooks with telegraphic response preference.",
+    "default": "Installed automatic hooks; no skill invocation.",
+    "rtk": "Pinned upstream Codex awareness instructions; no automatic rewriting hook."
+  },
+  "live": true,
+  "max_attempts": 2,
+  "measurement_notes": [
+    "Tokens are provider-reported logical input plus output across the entire session, not billed cost.",
+    "Luna and low effort are explicitly requested in argv. The stream does not independently identify the serving model.",
+    "All attempts and failures remain; missing usage is unknown, never zero.",
+    "Trace audits inspect completed typed shell events only; they do not prove coverage of other tool types.",
+    "Cache-path matches are observable result mentions, not proof of content ingestion or its absence.",
+    "Primary campaign binary is immutable; later hardening is validated in separate smoke campaigns."
+  ],
+  "model": "gpt-5.6-luna",
+  "runs": [
+    {
+      "acceptance": {
+        "duration_seconds": 0.016393,
+        "exit_code": 0,
+        "grade": "pass",
+        "passed": true,
+        "stderr": "",
+        "stdout": "task4 acceptance passed\n",
+        "task": "task4",
+        "timed_out": false
+      },
+      "arm": "caveman",
+      "duration_seconds": 43.943618,
+      "effort_requested": "low",
+      "exit_code": 0,
+      "fixture_hashes": {
+        "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+        "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+        "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+        "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+        "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+      },
+      "integration_audit": {
+        "rtk_invocations": 0,
+        "rtk_recall_invocations": 0,
+        "tool_error_count": 1,
+        "tool_use_count": 5
+      },
+      "model_requested": "gpt-5.6-luna",
+      "repetition": 1,
+      "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+      "stdout_sha256": "2439cf79b1f1175626eec782534697116dcce0527adcd2a7459e7ccc90bd2f34",
+      "task": "task4",
+      "timed_out": false,
+      "trace_audit": {
+        "automatic_commands": 2,
+        "cache_paths_in_tool_results": 0,
+        "compact_results": 2,
+        "completed_shell_calls": 5,
+        "final_response_bytes": 301,
+        "recovery_commands": 0
+      },
+      "usage": {
+        "api_error_status": null,
+        "cache_creation_input_tokens": 0,
+        "cache_included_in_reported_input": true,
+        "cache_read_input_tokens": 87296,
+        "duration_api_ms": null,
+        "duration_ms": null,
+        "fast_mode_state": null,
+        "input_tokens": 104080,
+        "logical_input_tokens": 104080,
+        "model_init": null,
+        "model_mismatch": null,
+        "model_usage": {},
+        "models_observed": [],
+        "num_turns": null,
+        "output_tokens": 1086,
+        "permission_denials": [],
+        "permission_denials_count": null,
+        "raw_events_with_usage": 1,
+        "raw_usage": [
+          {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 87296,
+            "input_tokens": 104080,
+            "output_tokens": 1086,
+            "reasoning_output_tokens": 135
+          }
+        ],
+        "reasoning_tokens": 135,
+        "result_is_error": null,
+        "result_subtype": null,
+        "thinking_tokens": null,
+        "total_cost_usd_reported": null,
+        "usage_missing": false
+      }
+    },
+    {
+      "acceptance": {
+        "duration_seconds": 0.02261,
+        "exit_code": 0,
+        "grade": "pass",
+        "passed": true,
+        "stderr": "",
+        "stdout": "task4 acceptance passed\n",
+        "task": "task4",
+        "timed_out": false
+      },
+      "arm": "default",
+      "duration_seconds": 36.330462,
+      "effort_requested": "low",
+      "exit_code": 0,
+      "fixture_hashes": {
+        "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+        "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+        "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+        "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+        "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+      },
+      "integration_audit": {
+        "rtk_invocations": 0,
+        "rtk_recall_invocations": 0,
+        "tool_error_count": 1,
+        "tool_use_count": 4
+      },
+      "model_requested": "gpt-5.6-luna",
+      "repetition": 1,
+      "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+      "stdout_sha256": "8b5ed90a7c308a628088cdc505d45df784fec3df051488ad10ad08475b7c0060",
+      "task": "task4",
+      "timed_out": false,
+      "trace_audit": {
+        "automatic_commands": 1,
+        "cache_paths_in_tool_results": 0,
+        "compact_results": 1,
+        "completed_shell_calls": 4,
+        "final_response_bytes": 271,
+        "recovery_commands": 0
+      },
+      "usage": {
+        "api_error_status": null,
+        "cache_creation_input_tokens": 0,
+        "cache_included_in_reported_input": true,
+        "cache_read_input_tokens": 71168,
+        "duration_api_ms": null,
+        "duration_ms": null,
+        "fast_mode_state": null,
+        "input_tokens": 92117,
+        "logical_input_tokens": 92117,
+        "model_init": null,
+        "model_mismatch": null,
+        "model_usage": {},
+        "models_observed": [],
+        "num_turns": null,
+        "output_tokens": 850,
+        "permission_denials": [],
+        "permission_denials_count": null,
+        "raw_events_with_usage": 1,
+        "raw_usage": [
+          {
+            "cache_write_input_tokens": 0,
+            "cached_input_tokens": 71168,
+            "input_tokens": 92117,
+            "output_tokens": 850,
+            "reasoning_output_tokens": 71
+          }
+        ],
+        "reasoning_tokens": 71,
+        "result_is_error": null,
+        "result_subtype": null,
+        "thinking_tokens": null,
+        "total_cost_usd_reported": null,
+        "usage_missing": false
+      }
+    }
+  ],
+  "summary": {
+    "task2/caveman": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task2/default": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task2/headroom": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task2/native": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task2/rtk": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task3/caveman": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task3/default": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task3/headroom": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task3/native": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task3/rtk": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task4/caveman": {
+      "attempts": 1,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": 87296,
+      "mean_final_response_bytes": 301,
+      "mean_output_tokens": 1086,
+      "mean_tokens": 105166,
+      "missing_usage": 0,
+      "passes": 1,
+      "stddev_tokens": null,
+      "tokens": [
+        105166
+      ]
+    },
+    "task4/default": {
+      "attempts": 1,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": 71168,
+      "mean_final_response_bytes": 271,
+      "mean_output_tokens": 850,
+      "mean_tokens": 92967,
+      "missing_usage": 0,
+      "passes": 1,
+      "stddev_tokens": null,
+      "tokens": [
+        92967
+      ]
+    },
+    "task4/headroom": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task4/native": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    },
+    "task4/rtk": {
+      "attempts": 0,
+      "change_vs_native_percent": null,
+      "mean_cache_read_input_tokens": null,
+      "mean_final_response_bytes": null,
+      "mean_output_tokens": null,
+      "mean_tokens": null,
+      "missing_usage": 0,
+      "passes": 0,
+      "stddev_tokens": null,
+      "tokens": []
+    }
+  },
+  "unmeasured": {
+    "headroom": "Existing proxy adapter rejects Codex. Prior probes show zero routed requests; no Claude substitution.",
+    "rtk": "Provide pinned RTK binary and its Codex awareness document."
+  }
+}

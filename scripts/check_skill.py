@@ -13,7 +13,7 @@ front = text.split('---', 2)[1]
 assert re.search(r'^name: scopelet$', front, re.M)
 description = re.search(r'^description: (.+)$', front, re.M).group(1)
 assert 0 < len(description) <= 1024
-assert len(text.encode()) <= 3000, 'keep the entrypoint under 3 KiB'
+assert len(text.encode()) <= 1536, 'keep the entrypoint under 1.5 KiB'
 version = re.search(r'^version = "([^"]+)"$', (root / 'Cargo.toml').read_text(), re.M).group(1)
 assert f'version: "{version}"' in front
 assert f"const version = '{version}'" in (skill / 'scripts/scopelet.mjs').read_text()

@@ -1,13 +1,43 @@
 name: Release
 on:
-  workflow_dispatch:
   push:
-    tags: ['v*']
+    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: release-main
+  cancel-in-progress: false
 jobs:
+  verify:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/ci.yml
+  version:
+    needs: verify
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - id: next
+        name: Resolve next release without publishing
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run release -- --dry-run
   binary:
+    needs: version
+    if: needs.version.outputs.version != ''
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-24.04
@@ -21,26 +51,40 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      - name: Set the resolved version before compilation
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
+        run: python3 scripts/prepare_release.py "$RELEASE_VERSION"
       - run: cargo test --locked --target ${{ matrix.target }}
       - run: cargo build --release --locked --target ${{ matrix.target }}
-      - run: target/${{ matrix.target }}/release/scopelet --version
       - run: target/${{ matrix.target }}/release/scopelet bench
-      - run: cp target/${{ matrix.target }}/release/scopelet scopelet-${{ matrix.target }}
+      - name: Stage binary and observed version
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p dist
+          cp "target/$TARGET/release/scopelet" "dist/scopelet-$TARGET"
+          "dist/scopelet-$TARGET" --version > "dist/scopelet-$TARGET.version"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: scopelet-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
   publish:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: binary
+    needs: [version, binary]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -50,24 +94,15 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - run: node --test scripts/launcher.test.mjs
-      - run: python3 -m unittest discover -s bench -p 'test_*.py'
-      - run: python3 scripts/check_skill.py --pack
-      - name: Verify release version and generate checksums
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Refuse publishing an outdated branch head
         env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          python3 - <<'PY'
-          import os, pathlib, hashlib, tomllib
-          root = pathlib.Path('.')
-          assert os.environ['TAG'] == 'v' + tomllib.loads((root/'Cargo.toml').read_text())['package']['version']
-          files = sorted((root/'dist').glob('scopelet-*'))
-          assert len(files) == 4
-          (root/'dist/SHA256SUMS').write_text(''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name+'\n' for p in files))
-          PY
-      - name: Publish binaries and installable skill
+          BUILD_SHA: ${{ github.sha }}
+        run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$BUILD_SHA"
+      - name: Release versioned binaries, skill and checksums
         env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" dist/* --verify-tag --title "Scopelet $TAG" --notes-file docs/release-notes.md
+          GITHUB_TOKEN: ${{ github.token }}
+          SCOPELET_RELEASE_VERSION: ${{ needs.version.outputs.version }}
+        run: npm run release

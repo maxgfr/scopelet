@@ -1,0 +1,421 @@
+//! Host adapters and reversible installation. No model/network calls.
+use crate::{
+    compress,
+    store::{MAX_INPUT, Store, digest},
+};
+use anyhow::{Context, Result, ensure};
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
+use std::{
+    fs,
+    io::{Read, Write},
+    path::{Path, PathBuf},
+};
+
+#[derive(Clone, Copy, clap::ValueEnum, PartialEq)]
+pub enum Agent {
+    Claude,
+    Codex,
+    All,
+}
+#[derive(Clone, Copy, Default, clap::ValueEnum, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum Preference {
+    #[default]
+    Default,
+    Caveman,
+    Off,
+}
+
+fn root() -> Result<PathBuf> {
+    if let Some(path) = std::env::var_os("SCOPELET_CONFIG_DIR") {
+        return Ok(path.into());
+    }
+    let home = std::env::var_os("HOME").context("HOME is required")?;
+    Ok(std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(home).join(".config"))
+        .join("scopelet"))
+}
+fn private_dir(path: &Path) -> Result<()> {
+    ensure!(
+        !fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink()),
+        "directory is a symlink"
+    );
+    let mut builder = fs::DirBuilder::new();
+    builder.recursive(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    builder.create(path)?;
+    Ok(())
+}
+fn write_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
+    ensure!(
+        !fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink()),
+        "refusing to replace symlink"
+    );
+    let parent = path.parent().context("path needs parent")?;
+    private_dir(parent)?;
+    let mut temp = tempfile::NamedTempFile::new_in(parent)?;
+    temp.write_all(bytes)?;
+    if let Ok(meta) = fs::metadata(path) {
+        temp.as_file().set_permissions(meta.permissions())?;
+    }
+    temp.persist(path)?;
+    Ok(())
+}
+fn preference() -> Result<Preference> {
+    match fs::read(root()?.join("mode.json")) {
+        Ok(bytes) => Ok(serde_json::from_slice(&bytes)?),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(Preference::Default),
+        Err(e) => Err(e.into()),
+    }
+}
+pub fn set_mode(mode: Preference) -> Result<()> {
+    write_atomic(&root()?.join("mode.json"), &serde_json::to_vec(&mode)?)
+}
+fn host_file(agent: Agent) -> Result<PathBuf> {
+    let home = PathBuf::from(std::env::var_os("HOME").context("HOME is required")?);
+    Ok(match agent {
+        Agent::Claude => std::env::var_os("CLAUDE_CONFIG_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join(".claude"))
+            .join("settings.json"),
+        Agent::Codex => std::env::var_os("CODEX_HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| home.join(".codex"))
+            .join("hooks.json"),
+        Agent::All => anyhow::bail!("select one host"),
+    })
+}
+fn quote(text: &str) -> String {
+    format!("'{}'", text.replace('\'', "'\\''"))
+}
+fn owned(group: &Value, command: &str) -> bool {
+    group
+        .get("hooks")
+        .and_then(Value::as_array)
+        .is_some_and(|hooks| {
+            hooks.len() == 1 && hooks[0].get("command").and_then(Value::as_str) == Some(command)
+        })
+}
+pub fn install(agent: Agent, remove: bool) -> Result<Value> {
+    let config = root()?;
+    let binary = config.join("bin/scopelet");
+    if !remove {
+        let bytes = fs::read(std::env::current_exe()?)?;
+        if fs::read(&binary).ok().as_deref() != Some(&bytes) {
+            write_atomic(&binary, &bytes)?;
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(&binary, fs::Permissions::from_mode(0o700))?;
+        }
+        if !config.join("mode.json").exists() {
+            set_mode(Preference::Default)?;
+        }
+    }
+    let agents = if agent == Agent::All {
+        vec![Agent::Claude, Agent::Codex]
+    } else {
+        vec![agent]
+    };
+    let mut paths = Vec::new();
+    for agent in agents {
+        let path = host_file(agent)?;
+        let old = match fs::read(&path) {
+            Ok(b) => Some(b),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+            Err(e) => return Err(e.into()),
+        };
+        let mut value: Value = match &old {
+            Some(b) => serde_json::from_slice(b).context("invalid existing host configuration")?,
+            None => json!({}),
+        };
+        let name = if agent == Agent::Codex {
+            "codex"
+        } else {
+            "claude"
+        };
+        let command = format!(
+            "SCOPELET_CONFIG_DIR={} {} hook {name}",
+            quote(&config.to_string_lossy()),
+            quote(&binary.to_string_lossy())
+        );
+        let events = if agent == Agent::Codex {
+            vec!["SessionStart", "UserPromptSubmit", "PreToolUse"]
+        } else {
+            vec!["SessionStart", "UserPromptSubmit", "PostToolUse"]
+        };
+        let object = value
+            .as_object_mut()
+            .context("host config must be an object")?;
+        if remove && !object.contains_key("hooks") {
+            continue;
+        }
+        let hooks = object
+            .entry("hooks")
+            .or_insert(json!({}))
+            .as_object_mut()
+            .context("hooks must be an object")?;
+        for event in events {
+            if remove && !hooks.contains_key(event) {
+                continue;
+            }
+            let groups = hooks
+                .entry(event)
+                .or_insert(json!([]))
+                .as_array_mut()
+                .context("hook event must be an array")?;
+            groups.retain(|group| !owned(group, &command));
+            if !remove {
+                let mut entry =
+                    json!({"hooks":[{"type":"command", "command":command,"timeout":5}]});
+                if event.ends_with("ToolUse") {
+                    entry["matcher"] = json!("Bash");
+                }
+                groups.push(entry);
+            }
+            if groups.is_empty() {
+                hooks.remove(event);
+            }
+        }
+        if hooks.is_empty() {
+            object.remove("hooks");
+        }
+        let updated = serde_json::to_vec_pretty(&value)?;
+        // Compare semantic values, so reinstalling does not churn files/backups.
+        if old
+            .as_ref()
+            .and_then(|b| serde_json::from_slice::<Value>(b).ok())
+            .as_ref()
+            != Some(&value)
+        {
+            if let Some(bytes) = &old {
+                let backup = config
+                    .join("backups")
+                    .join(format!("{name}-{}.json", digest(bytes)));
+                if !backup.exists() {
+                    write_atomic(&backup, bytes)?;
+                }
+            }
+            if old.is_some() || !remove {
+                write_atomic(&path, &updated)?;
+            }
+        }
+        paths.push(path);
+    }
+    Ok(
+        json!({"installed":!remove,"files":paths,"binary":binary,"mode":preference()?,"note":"Codex: review new hooks with /hooks. Restart active sessions after installation."}),
+    )
+}
+pub fn doctor() -> Value {
+    let config = root().ok();
+    let binary = config.as_ref().map(|p| p.join("bin/scopelet"));
+    let files: Vec<_> = [Agent::Claude, Agent::Codex].into_iter().map(|agent| {
+        let path = host_file(agent).ok();
+        let name = if agent == Agent::Codex { "codex" } else { "claude" };
+        let event = if agent == Agent::Codex { "PreToolUse" } else { "PostToolUse" };
+        let value = path.as_ref().and_then(|p| fs::read(p).ok()).and_then(|b| serde_json::from_slice::<Value>(&b).ok());
+        let command = config.as_ref().zip(binary.as_ref()).map(|(c,b)| format!("SCOPELET_CONFIG_DIR={} {} hook {name}", quote(&c.to_string_lossy()), quote(&b.to_string_lossy())));
+        let configured = value.as_ref().zip(command.as_ref()).is_some_and(|(v,c)| {
+            ["SessionStart", "UserPromptSubmit", event].iter().all(|e| v["hooks"][e].as_array().is_some_and(|groups| groups.iter().any(|group| owned(group,c))))
+        });
+        json!({"host":name,"config":path,"hooks_configured":configured,"config_exists":path.as_ref().is_some_and(|p|p.is_file())})
+    }).collect();
+    json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash PostToolUse; Codex simple noninteractive Bash PreToolUse; hook trust and host versions must be verified"})
+}
+
+/// A deliberately small shell grammar. Any expansion, pipeline or control operator passes through.
+fn simple_args(command: &str) -> Option<Vec<String>> {
+    if command.contains([
+        '\n', '\r', '$', '`', '|', '&', ';', '<', '>', '(', ')', '{', '}', '*', '?', '[', ']', '!',
+        '\\',
+    ]) {
+        return None;
+    }
+    let mut args = Vec::new();
+    let mut token = String::new();
+    let mut quoted = None;
+    let mut started = false;
+    for c in command.chars() {
+        match quoted {
+            Some(q) if c == q => quoted = None,
+            Some(_) => token.push(c),
+            None if c == '\'' || c == '"' => {
+                quoted = Some(c);
+                started = true;
+            }
+            None if c.is_whitespace() => {
+                if started {
+                    args.push(std::mem::take(&mut token));
+                    started = false;
+                }
+            }
+            None => {
+                token.push(c);
+                started = true;
+            }
+        }
+    }
+    if quoted.is_some() {
+        return None;
+    }
+    if started {
+        args.push(token);
+    }
+    if args.is_empty() {
+        return None;
+    }
+    Some(args)
+}
+/// A short AND-list of eligible argv commands has well-defined noninteractive
+/// semantics. Reconstruct only that grammar; never reinterpret arbitrary shell.
+fn command_args(command: &str) -> Option<Vec<String>> {
+    if !command.contains("&&") {
+        return simple_args(command).filter(|args| eligible(args));
+    }
+    let parts: Vec<_> = command.split("&&").collect();
+    if parts.len() > 8 {
+        return None;
+    }
+    let commands: Option<Vec<_>> = parts
+        .iter()
+        .map(|part| simple_args(part).filter(|args| eligible(args)))
+        .collect();
+    let script = commands?
+        .iter()
+        .map(|args| args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" "))
+        .collect::<Vec<_>>()
+        .join(" && ");
+    Some(vec!["/bin/sh".into(), "-c".into(), script])
+}
+
+fn eligible(args: &[String]) -> bool {
+    let name = Path::new(&args[0])
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    let second = args.get(1).map(String::as_str).unwrap_or("");
+    if args.iter().any(|a| {
+        matches!(
+            a.as_str(),
+            "--watch" | "-w" | "--pdb" | "-i" | "--interactive"
+        ) || a.contains("scopelet")
+            || a.contains("rtk")
+    }) {
+        return false;
+    }
+    match name {
+        "cargo" => matches!(second, "test" | "check" | "clippy" | "build"),
+        "python3" => second.ends_with(".py"),
+        "pytest" => true,
+        "npm" | "pnpm" | "yarn" => {
+            second == "test" || (second == "run" && args.get(2).is_some_and(|s| s == "test"))
+        }
+        "cat" => args.len() == 2 && !second.starts_with('-'),
+        _ => false,
+    }
+}
+fn context(event: &Value, mode: Preference) -> Result<Value> {
+    let name = event["hook_event_name"].as_str().unwrap_or("");
+    let Some(session) = event["session_id"].as_str() else {
+        return Ok(json!({}));
+    };
+    let state = root()?.join("sessions").join(digest(session.as_bytes()));
+    let current = serde_json::to_vec(&mode)?;
+    if name != "SessionStart" && fs::read(&state).ok().as_deref() == Some(&current) {
+        return Ok(json!({}));
+    }
+    write_atomic(&state, &current)?;
+    let text = match mode {
+        Preference::Default => {
+            "Scopelet auto is active. Keep replies brief. Compressed tool output is partial; recover exact evidence using its reference when needed. Use native tools for small edits."
+        }
+        Preference::Caveman => {
+            "Scopelet caveman: minimal telegraphic replies in the user's language. Preserve results, errors, qualifications, negation, numbers and needed next actions. Documents use normal prose. Recover partial tool evidence when needed."
+        }
+        Preference::Off => "Scopelet is off. Resume normal tools and response style.",
+    };
+    Ok(json!({"hookSpecificOutput":{"hookEventName":name,"additionalContext":text}}))
+}
+pub fn hook_stdin(agent: Agent) -> Result<Value> {
+    ensure!(agent != Agent::All, "hook needs one agent");
+    let mut bytes = Vec::new();
+    std::io::stdin()
+        .take((MAX_INPUT * 3 + 1) as u64)
+        .read_to_end(&mut bytes)?;
+    ensure!(bytes.len() <= MAX_INPUT * 3, "hook input too large");
+    let event: Value = serde_json::from_slice(&bytes)?;
+    hook(agent, &event)
+}
+pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
+    let mode = preference()?;
+    let name = event["hook_event_name"].as_str().unwrap_or("");
+    if matches!(name, "SessionStart" | "UserPromptSubmit") {
+        return context(event, mode);
+    }
+    if mode == Preference::Off || event["tool_name"] != "Bash" {
+        return Ok(json!({}));
+    }
+    if agent == Agent::Codex && name == "PreToolUse" {
+        if event["tool_input"]["tty"] == true || event["tool_input"]["run_in_background"] == true {
+            return Ok(json!({}));
+        }
+        let Some(command) = event["tool_input"]["command"].as_str() else {
+            return Ok(json!({}));
+        };
+        let Some(args) = command_args(command) else {
+            return Ok(json!({}));
+        };
+        let binary = std::env::current_exe()?;
+        let command = format!(
+            "{} run --auto --timeout 3600 -- {}",
+            quote(&binary.to_string_lossy()),
+            args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" ")
+        );
+        let mut input = event["tool_input"].clone();
+        input["command"] = json!(command);
+        return Ok(
+            json!({"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow","updatedInput":input}}),
+        );
+    }
+    if agent == Agent::Claude && name == "PostToolUse" {
+        if event["tool_input"]["command"]
+            .as_str()
+            .is_some_and(|s| s.contains("scopelet") || s.contains("rtk"))
+        {
+            return Ok(json!({}));
+        }
+        let mut output = event["tool_response"].clone();
+        if output["isImage"] == true
+            || !output["stdout"].is_string()
+            || !output["stderr"].is_string()
+        {
+            return Ok(json!({}));
+        }
+        let store = Store::open(None)?;
+        let mut changed = false;
+        for stream in ["stdout", "stderr"] {
+            let raw = output[stream].as_str().unwrap();
+            if raw.len() > MAX_INPUT {
+                return Ok(json!({}));
+            }
+            let small = compress::automatic(raw.as_bytes(), &store, 4096)?;
+            if small != raw.as_bytes() {
+                output[stream] = json!(String::from_utf8(small)?);
+                changed = true;
+            }
+        }
+        if changed {
+            return Ok(
+                json!({"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":output}}),
+            );
+        }
+    }
+    Ok(json!({}))
+}

@@ -116,3 +116,27 @@ return raw references and the original command exit status. stdout/stderr are se
 Failed commands present blocks from the end first. Unknown output stays exact
 and paginated; no success is inferred by deleting apparent noise. Original
 capture is capped at 32 MiB per stream and truncation is explicitly reported.
+
+## Compact output and shortcut operations
+
+`query` and `run` accept `--output compact`; their default JSON interface is
+unchanged. Compact-v1 groups provenance behind an artifact reference and labels
+source lines, exact repetitions and omitted units. A unit is a whole JSON record
+or a run of identical text lines. `display_complete` concerns these units,
+not unobserved source data. Open the artifact manifest for original blob IDs.
+
+```sh
+scopelet query --file events.jsonl --format jsonl --filter /status --equals '"failed"' --group /suite
+scopelet query --file data.json --format json --project /id --project /name
+scopelet compress < build.log
+scopelet run --auto -- python3 checks.py
+```
+
+Shortcut operations run in order: search, filter, project, group, count. For a
+different order use a spec. `--equals` is a JSON literal: strings need JSON
+quotes, while `null`, numbers and booleans do not. Unknown/missing fields retain
+the spec interface's validation behavior. All shortcuts conflict with `--spec`.
+`compress` detects valid JSON/JSONL conservatively and otherwise selects text;
+it never computes an aggregate from malformed rows. Invalid UTF-8 passes through.
+`run --auto` preserves small stdout and stderr byte-for-byte and the process
+exit code; it cannot be combined with selection/mode/budget flags.

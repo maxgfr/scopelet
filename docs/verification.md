@@ -7,15 +7,16 @@ visible detail and requires recovery when that detail matters.
 
 ## Correctness and distribution
 
-- 57 Rust integration tests: queries, exact byte recovery, freshness, malformed
+- 71 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup, capture throughput and
   process behavior.
-- 56 offline benchmark-harness tests, including independent grading, cache usage,
+- 60 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
-- 4 launcher tests, passing on Node 18.20.8 and the local Node 26.8.1 runtime.
+- 4 launcher tests and 4 release automation tests pass locally. The launcher
+  also passed on Node 18.20.8 before this change; release tooling requires Node 24.10+.
 - Real codeindex 2.29.1/2.30.0 and webindex 1.18.10/1.19.4 adapter checks.
 - Rust 1.88 minimum checked in CI; formatting and Clippy pass.
-- [Linux and macOS CI](https://github.com/maxgfr/scopelet/actions/workflows/ci.yml) pass. All four release targets ran their own `--version` and
+- For the published version, [Linux and macOS CI](https://github.com/maxgfr/scopelet/actions/workflows/ci.yml) pass. All four release targets ran their own `--version` and
   offline `bench`: Linux x64/ARM64 and macOS Intel/ARM64.
 - Installation using `npx skills add maxgfr/scopelet -a codex claude-code --copy -y`
   created both agent bundles; both installed launchers passed the offline check.
@@ -227,3 +228,14 @@ Cache exclusion markers existed and native `rg --hidden` did not re-ingest cache
 evidence. These are final-release functional checks, not a token-saving comparison.
 The unreleased 0.1.2 tag remains unchanged after a Linux-only benchmark-test path
 assertion failed; 0.1.3 corrects that assertion.
+
+## Automatic mode (unreleased)
+
+The automatic-mode work adds contract tests for byte-exact small outputs,
+recoverable diagnostic selection, complete JSON schema factoring, installation
+coexistence/idempotence, mode changes and automatic-run failure fallback.
+`bench/auto.py` is a separate Luna-only pilot; historical comparisons above are
+unchanged. It never calls Claude Code. Results and treatment limits are reported
+in the [automatic-mode report](luna-auto-2026-09-09.md): 48/48 primary passes
+and 4/4 final-binary smoke passes, including Codex code mode. Default reduces
+logical session tokens 23.4% over this task mix; the small edit is +0.4%.

@@ -146,3 +146,40 @@ Raw transcripts, prompts, generated workspaces and proxy logs remain under
 ignored `bench/runs/`. Export only inspected summaries. Logical session input
 includes cached input; it is not a price calculation. Competitor compression
 estimates and byte reductions are separate measurements.
+
+## Automatic-mode pilot: Codex Luna only
+
+`auto.py` fixes `gpt-5.6-luna` at low effort and compares ordinary task prompts
+without invoking a skill. It uses the immutable synthetic fixtures and external
+functional grader from `run.py`. Four repetitions across three tasks and five
+arms form 60 planned cells. Headroom remains unmeasured because the available
+proxy adapter rejects Codex; RTK uses its upstream Codex awareness document.
+Missing integrations do not consume model sessions or become native results.
+
+```sh
+python3 bench/auto.py --out bench/runs/luna-plan
+python3 bench/auto.py --live --binary target/release/scopelet \
+  --rtk /absolute/path/to/pinned/rtk \
+  --rtk-awareness /absolute/path/to/pinned/rtk-awareness-full.md \
+  --out bench/runs/luna-auto --max-attempts 48
+```
+
+The executable and competitor instructions are frozen before measurement.
+Each attempt is persisted before launch, failures remain in reports, and missing
+usage stops the campaign for inspection. Reports include raw stream hashes,
+reported input/output/cache usage, task grade, commands and adoption evidence.
+Four available arms consume 48 sessions; any extra validation must keep the
+whole first-phase total under 60. No Claude CLI, auxiliary model, or API proxy
+fallback is allowed. Local Codex authentication is copied into each private
+fixture and deleted before archiving; raw traces remain local under `bench/runs`.
+
+Export inspected, path-free summaries with typed completed-tool audits:
+
+```sh
+python3 bench/export_auto.py bench/runs/luna-auto bench/results/luna-auto.json
+```
+
+Use `--tasks task4 --arms default caveman --repetitions 1 --max-attempts 2`
+for a separate final-binary smoke; add `--code-mode` for Codex's experimental
+code mode. These are separate treatments, never pooled into the primary matrix.
+The maximum applies per invocation; count every campaign toward the user budget.

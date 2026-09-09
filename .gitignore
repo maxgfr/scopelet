@@ -4,4 +4,9 @@
 /dist/
 __pycache__/
 .DS_Store
+/node_modules/
 
+# Local copies created by the skill installer; canonical bundle is skills/scopelet.
+/.agents/skills/scopelet/
+/.claude/skills/scopelet
+/skills-lock.json

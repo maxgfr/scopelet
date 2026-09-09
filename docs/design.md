@@ -74,3 +74,59 @@ optional engines do. No external compressor runtime is vendored.
 Token savings are a session-level experimental outcome. Byte reductions alone,
 identical repeated blocks, or a smaller final answer cannot prove a cheaper
 session. Compare equivalent tasks and preserve failed runs in the denominator.
+
+## Automatic integration and compact-v1
+
+Automatic hooks are an optional local installation, independent of skill
+activation. They use the same immutable store and do not alter API requests or
+conversation history. Default and caveman share the compression engine; caveman
+only changes the host's concise response instruction. Off returns native calls.
+Host settings are merged, original bytes backed up, and only exact Scopelet hook
+entries are removed. The resolved executable is copied during installation so
+hooks never trigger downloads. Host permission/trust mechanisms remain in force;
+Codex's input-rewrite protocol requires an explicit hook `allow` decision, but
+Scopelet never changes permission rules, mode, sandbox or escalation parameters.
+
+The version-1 JSON request/artifact/view contracts remain unchanged. The new
+`--output compact` is a separate textual compact-v1 presentation, not a JSON
+schema migration. Every compact view links the full dataset artifact; its
+manifest maps source labels to immutable blobs. A unit is a complete JSON record
+or consecutive identical text lines represented by an exact line plus a repeat
+count. Source line labels remain absolute; ordered gaps and omitted-unit counts
+make selection visible. Formatting prefixes and repeat markers are metadata,
+never bytes claimed to occur in the source.
+
+Uniform JSON objects first get a complete representation with shared `columns`
+and positional `rows`. `record_sources` retains per-row provenance when labels
+differ. Every key must exist in every row; missing fields never become null.
+Values retain JSON types and exact decimal numbers. If the full representation
+cannot fit, the engine selects whole records rather than clipping fields.
+Text presentation preserves first/final lines, then selects diagnostic lines
+before context and ordinary lines. Automatic compression passes through when
+no whole evidence unit fits; it never substitutes a recovery-only envelope.
+All originals remain available. Automatic detection of malformed JSONL falls
+back to text selection and never asserts an exact aggregate.
+
+Automatic inputs up to 2048 bytes remain unchanged. Larger inputs have a 4096
+byte target per stream and need both 512 bytes and 20% savings including all
+metadata before replacement. Non-UTF-8 input, existing Scopelet output and host
+persisted-output previews remain unchanged. Inputs over 100000 lines bypass
+automatic compression to bound selection memory; explicit compact queries reject
+more than 100000 units. Byte thresholds are not tokenizer or session savings.
+The original capture limit remains 32 MiB per stream. Capture incompleteness is
+reported outside the compressed view; a hook only retains bytes supplied by its
+host and cannot recover an earlier truncation.
+
+`run --auto` executes once and returns stdout/stderr independently, preserving
+exit status. Failed storage/compression returns captured native bytes; the
+command is never rerun. Its stdin remains closed, so only noninteractive commands
+belong in this path. The Codex adapter intentionally skips shell expansions,
+control operators, pipelines and recognized interactive flags. Claude's adapter
+replaces only known Bash output shapes after execution and keeps all other
+fields. Unknown host/tool shapes pass through unchanged.
+
+A Codex AND-list (`cmd && cmd`) of at most eight individually recognized simple
+commands is supported. It is reconstructed from quoted argv in `/bin/sh`;
+short-circuiting and the final process status are preserved. Other shell control
+operators and pipelines still pass through. Interactive/background tool calls
+also pass through when the host exposes those flags.

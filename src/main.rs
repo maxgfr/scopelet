@@ -1,6 +1,7 @@
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use scopelet::{
+    compress, integration,
     model::*,
     pipeline, process, render, sources,
     store::{MAX_INPUT, Store, read_bounded},
@@ -26,6 +27,31 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Cmd {
+    /// Install automatic hooks without changing other integrations.
+    Install {
+        #[arg(long, value_enum)]
+        agent: integration::Agent,
+    },
+    /// Remove only Scopelet hooks.
+    Uninstall {
+        #[arg(long, value_enum)]
+        agent: integration::Agent,
+    },
+    /// Persist the automatic compression and response style preference.
+    Mode {
+        #[arg(value_enum)]
+        mode: integration::Preference,
+    },
+    /// Agent lifecycle adapter; receives one JSON event on stdin.
+    Hook {
+        #[arg(value_enum)]
+        agent: integration::Agent,
+    },
+    /// Adaptively compress stdin; small or unsuitable inputs remain byte-exact.
+    Compress {
+        #[arg(long, default_value_t = 4096)]
+        max_bytes: usize,
+    },
     /// Compose search, filtering and aggregation. Request schema: skills/scopelet/references/queries.md
     Query {
         #[arg(long)]
@@ -45,6 +71,16 @@ enum Cmd {
         context: usize,
         #[arg(long, conflicts_with = "spec")]
         count: bool,
+        #[arg(long, conflicts_with = "spec")]
+        filter: Option<String>,
+        #[arg(long, requires = "filter", conflicts_with = "spec")]
+        equals: Option<String>,
+        #[arg(long, conflicts_with = "spec")]
+        project: Vec<String>,
+        #[arg(long, conflicts_with = "spec")]
+        group: Option<String>,
+        #[arg(long, value_enum, default_value = "json")]
+        output: Output,
         #[arg(long, value_enum)]
         mode: Option<Mode>,
         #[arg(long)]
@@ -52,6 +88,11 @@ enum Cmd {
     },
     /// Run once, preserve original stdout/stderr, and return bounded excerpts.
     Run {
+        /// Adaptive stream output for automatic hooks; preserve small outputs verbatim.
+        #[arg(long, conflicts_with_all = ["focus", "format", "mode", "max_bytes", "output"])]
+        auto: bool,
+        #[arg(long, value_enum, default_value = "json")]
+        output: Output,
         #[arg(long, value_enum, default_value = "default")]
         mode: Mode,
         #[arg(long)]
@@ -90,6 +131,12 @@ enum Cmd {
         #[arg(long, default_value_t = 7)]
         older_days: u64,
     },
+}
+
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum Output {
+    Json,
+    Compact,
 }
 
 fn main() {
@@ -151,19 +198,88 @@ fn manifest_view(data: &Dataset, max_bytes: usize) -> Result<serde_json::Value> 
 }
 
 fn execute(cli: Cli) -> Result<i32> {
+    match &cli.command {
+        Cmd::Install { agent } => {
+            print(&integration::install(*agent, false)?)?;
+            return Ok(0);
+        }
+        Cmd::Uninstall { agent } => {
+            print(&integration::install(*agent, true)?)?;
+            return Ok(0);
+        }
+        Cmd::Mode { mode } => {
+            integration::set_mode(*mode)?;
+            print(&json!({"mode":mode}))?;
+            return Ok(0);
+        }
+        Cmd::Hook { agent } => {
+            // Hook failures must not prevent the host from executing the native call.
+            let result = integration::hook_stdin(*agent).unwrap_or_else(|_| json!({}));
+            print(&result)?;
+            return Ok(0);
+        }
+        _ => {}
+    }
     let cancel = Arc::new(AtomicBool::new(false));
     let signal = cancel.clone();
     ctrlc::set_handler(move || signal.store(true, std::sync::atomic::Ordering::SeqCst))?;
     if matches!(cli.command, Cmd::Doctor) {
-        print(&scopelet::adapters::doctor(cancel))?;
+        let mut status = scopelet::adapters::doctor(cancel);
+        status["integration"] = integration::doctor();
+        print(&status)?;
         return Ok(0);
     }
     if matches!(cli.command, Cmd::Bench) {
         print(&scopelet::benchmark::offline()?)?;
         return Ok(0);
     }
+    if let Cmd::Run {
+        auto: true,
+        command,
+        timeout,
+        ..
+    } = &cli.command
+    {
+        ensure!(
+            *timeout > 0 && *timeout <= 3600,
+            "timeout must be 1..3600 seconds"
+        );
+        let result = process::capture(
+            Command::new(&command[0]).args(&command[1..]),
+            Duration::from_secs(*timeout),
+            MAX_INPUT,
+            cancel.clone(),
+        )?;
+        let code = process::exit_code(&result);
+        let store = Store::open(cli.cache_dir).ok();
+        for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
+            let output = store
+                .as_ref()
+                .and_then(|s| compress::automatic(bytes, s, 4096).ok())
+                .unwrap_or_else(|| bytes.clone());
+            if stderr {
+                std::io::stderr().write_all(&output)?;
+            } else {
+                std::io::stdout().write_all(&output)?;
+            }
+        }
+        if result.capped || result.drain_incomplete || result.timed_out || result.interrupted {
+            eprintln!(
+                "[scopelet capture_complete=false exit_code={code}; saved output may be partial]"
+            );
+        }
+        return Ok(code);
+    }
     let store = Store::open(cli.cache_dir)?;
     match cli.command {
+        Cmd::Compress { max_bytes } => {
+            let mut bytes = Vec::new();
+            std::io::stdin()
+                .take(MAX_INPUT as u64 + 1)
+                .read_to_end(&mut bytes)?;
+            ensure!(bytes.len() <= MAX_INPUT, "input exceeds 32 MiB");
+            std::io::stdout().write_all(&compress::automatic(&bytes, &store, max_bytes)?)?;
+        }
         Cmd::Query {
             spec,
             repo,
@@ -172,6 +288,11 @@ fn execute(cli: Cli) -> Result<i32> {
             find,
             context,
             count,
+            filter,
+            equals,
+            project,
+            group,
+            output,
             mode,
             max_bytes,
         } => {
@@ -206,6 +327,20 @@ fn execute(cli: Cli) -> Result<i32> {
                         context,
                     });
                 }
+                if let Some(pointer) = filter {
+                    let equals = equals.context("--filter requires --equals with a JSON value")?;
+                    operations.push(Operation::Filter {
+                        pointer,
+                        equals: serde_json::from_str(&equals)
+                            .context("--equals must be JSON; quote string values")?,
+                    });
+                }
+                if !project.is_empty() {
+                    operations.push(Operation::Project { pointers: project });
+                }
+                if let Some(pointer) = group {
+                    operations.push(Operation::Group { pointer });
+                }
                 if count {
                     operations.push(Operation::Count);
                 }
@@ -226,6 +361,15 @@ fn execute(cli: Cli) -> Result<i32> {
             pipeline::validate(&request)?;
             let mut data = sources::load(&request.source, &store, cancel.clone())?;
             pipeline::apply(&mut data, &request.operations)?;
+            if matches!(output, Output::Compact) {
+                let text = compress::compact(&data, &store, request.max_bytes.unwrap_or(4096))?;
+                std::io::stdout().write_all(text.as_bytes())?;
+                return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
+                    130
+                } else {
+                    0
+                });
+            }
             print(&render::render(
                 &data,
                 &store,
@@ -235,6 +379,8 @@ fn execute(cli: Cli) -> Result<i32> {
             )?)?;
         }
         Cmd::Run {
+            auto: _,
+            output,
             mode,
             max_bytes,
             timeout,
@@ -332,6 +478,14 @@ fn execute(cli: Cli) -> Result<i32> {
                 data.notes.push("Failed command: blocks displayed from the end of stderr, then stdout; each record keeps its source label, and line numbers where it has them.".into());
             }
             data.examined = 2;
+            if matches!(output, Output::Compact) {
+                let prefix =
+                    format!("exit_code={code} stdout={stdout_blob} stderr={stderr_blob}\n");
+                ensure!(budget >= prefix.len() + 512, "compact run budget too small");
+                let text = compress::compact(&data, &store, budget - prefix.len())?;
+                std::io::stdout().write_all(format!("{prefix}{text}").as_bytes())?;
+                return Ok(code);
+            }
             let envelope_bytes = serde_json::to_vec(
                 &json!({"exit_code":code,"stdout":stdout_blob,"stderr":stderr_blob,"result":null}),
             )?
@@ -403,7 +557,12 @@ fn execute(cli: Cli) -> Result<i32> {
         Cmd::Clean { older_days } => {
             print(&json!({"removed":store.clean(older_days)?,"cache":store.root}))?
         }
-        Cmd::Doctor | Cmd::Bench => unreachable!(),
+        Cmd::Doctor
+        | Cmd::Bench
+        | Cmd::Install { .. }
+        | Cmd::Uninstall { .. }
+        | Cmd::Mode { .. }
+        | Cmd::Hook { .. } => unreachable!(),
     }
     Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
         130

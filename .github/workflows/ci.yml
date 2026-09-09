@@ -1,5 +1,10 @@
 name: CI
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 jobs:
@@ -19,14 +24,15 @@ jobs:
           python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --locked -- -D warnings
       - run: cargo test --locked
       - run: cargo run --locked -- bench
       - run: python3 scripts/check_skill.py --pack
       - run: python3 -m unittest discover -s bench -p 'test_*.py'
-      - run: node --test scripts/launcher.test.mjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
       - run: npm install -g @maxgfr/codeindex@2.30.0
       - run: python3 scripts/install_ci_webindex.py "$RUNNER_TEMP/scopelet-adapters"
       - run: echo "$RUNNER_TEMP/scopelet-adapters" >> "$GITHUB_PATH"

@@ -7,11 +7,11 @@ npx skills add maxgfr/scopelet -a codex claude-code
 ```
 
 Invoke `/scopelet <task>` in Claude Code or `$scopelet <task>` in Codex.
-Explicit invocation is more reliable than expecting automatic selection.
+Explicit invocation accesses advanced queries; installed hooks run independently.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
 The launcher installs Scopelet **0.1.3** into the user's cache, downloading the
 matching macOS/Linux release from github.com and verifying its SHA-256. Node 18+
-is needed for the launcher. No global agent settings are changed.
+is needed for the launcher. The launcher alone changes no agent settings. `install` explicitly installs user hooks.
 
 An independently installed binary is also supported:
 
@@ -44,4 +44,54 @@ may lack these markers; explicit no-ignore searches can still include it.
 
 Remove the skill using `npx skills remove scopelet -a codex claude-code`; remove
 a Cargo install with `cargo uninstall scopelet`. The launcher cache can be
-deleted separately. No telemetry, proxy configuration or agent hooks remain.
+deleted separately. Remove automatic hooks first with `scopelet uninstall --agent all`. The binary and local cache can be removed separately. No telemetry or proxy is configured.
+
+## Automatic installation and modes
+
+```sh
+scopelet install --agent all
+scopelet doctor
+scopelet mode caveman
+scopelet mode default
+scopelet mode off
+scopelet uninstall --agent all
+```
+
+Install accepts `claude`, `codex`, or `all`. It copies the resolved binary to
+`$XDG_CONFIG_HOME/scopelet/bin/scopelet` (otherwise `~/.config/scopelet`), merges
+user hooks, and backs up replaced configuration bytes. `SCOPELET_CONFIG_DIR`
+overrides that root. Reinstall after upgrading the binary. Existing sessions
+need restarting; in Codex review the hooks with `/hooks` when prompted.
+Mode changes apply at the next prompt. `off` leaves hooks installed but disables
+compression; uninstall removes only matching Scopelet hooks and keeps backups.
+
+Default uses brief normal replies. Caveman uses telegraphic replies, retaining
+results, failures, qualifications, numbers, units, negation and necessary next
+actions in the user's language. Requested explanations and saved documents use
+normal prose. Neither mode changes the model or its reasoning effort.
+
+Claude Code uses `PostToolUse.updatedToolOutput` for Bash results with known
+stdout/stderr fields. Other fields survive unchanged. Failure events without a
+replaceable output, images and unknown envelopes pass through. Codex uses
+`PreToolUse.updatedInput` for simple Bash calls: cargo test/check/clippy/build,
+pytest, python3 scripts, package-manager tests and single-file cat. Shell
+expansions, pipelines, unsupported control operators, interactive flags and
+existing wrappers pass through. Simple `&&` lists are supported as described below. This is not interception of all host tools or conversation history.
+Codex's hook requires its documented `allow` rewrite decision; it does not set
+sandbox, escalation, permission rules or permission mode. Other policy hooks
+must remain enabled. Interactive commands should always use native tools.
+
+Compression leaves outputs up to 2 KiB intact. Larger outputs are replaced only
+if the complete replacement saves at least 20% and 512 bytes, with a 4 KiB target
+per stream. Repetitions have counts; selected lines stay exact; omissions and
+immutable recovery references are explicit. A host-truncated input cannot be
+restored to bytes the compressor never received. Existing persisted-output
+previews and Scopelet output pass through. Capture is bounded at 32 MiB per
+stream; interruption or overflow is reported. Storage/compression failures in an
+automatic run return captured native output without rerunning the command.
+
+A Codex AND-list (`cmd && cmd`) of at most eight individually recognized simple
+commands is supported. It is reconstructed from quoted argv in `/bin/sh`;
+short-circuiting and the final process status are preserved. Other shell control
+operators and pipelines still pass through. Interactive/background tool calls
+also pass through when the host exposes those flags.
