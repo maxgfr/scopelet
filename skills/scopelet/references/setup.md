@@ -82,10 +82,13 @@ need restarting; in Codex review the hooks with `/hooks` when prompted.
 Mode changes apply at the next prompt. `off` leaves hooks installed but disables
 compression; uninstall removes only matching Scopelet hooks and keeps backups.
 
-Default uses brief normal replies. Caveman uses telegraphic replies, retaining
-results, failures, qualifications, numbers, units, negation and necessary next
-actions in the user's language. Requested explanations and saved documents use
-normal prose. Neither mode changes the model or its reasoning effort.
+Default asks for relevant code and existing checks to be inspected before a
+routine edit is verified, then reports outcome and validation in 1–3 short
+sentences. Caveman targets 30 words for routine replies, retaining failures,
+qualifications, numbers, negation and necessary next actions in the user's
+language. Required information or requested detail can exceed these targets;
+saved documents use normal prose. These are preferences, not output truncation
+or changes to the model's reasoning effort.
 
 Claude Code uses `PostToolUse.updatedToolOutput` for Bash results with known
 stdout/stderr fields. Other fields survive unchanged. Failure events without a
@@ -97,6 +100,11 @@ existing wrappers pass through. Simple `&&` lists are supported as described bel
 Codex's hook requires its documented `allow` rewrite decision; it does not set
 sandbox, escalation, permission rules or permission mode. Other policy hooks
 must remain enabled. Interactive commands should always use native tools.
+
+Small automatic outputs do not open the cache. Codex leaves a plain `cat` of a
+known regular file up to 2 KiB native; missing paths, unknown working directories
+and larger files retain the normal command path. The host still reads the file
+and enforces its permissions, so a subsequent file change is not hidden.
 
 Compression leaves outputs up to 2 KiB intact. Larger outputs are replaced only
 if the complete replacement saves at least 20% and 512 bytes, with a 4 KiB target

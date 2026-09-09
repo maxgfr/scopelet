@@ -7,10 +7,10 @@ visible detail and requires recovery when that detail matters.
 
 ## Correctness and distribution
 
-- 72 Rust integration tests: queries, exact byte recovery, freshness, malformed
+- 74 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup, capture throughput and
   process behavior.
-- 61 offline benchmark-harness tests, including independent grading, cache usage,
+- 65 offline benchmark-harness tests, including independent grading, cache usage,
   tool-adoption false positives and immutable fixtures.
 - 4 launcher tests and 5 release automation tests pass locally. The launcher
   also passed on Node 18.20.8 before this change; release tooling requires Node 24.10+.
@@ -60,6 +60,14 @@ Raw traces and personal settings remain private; only inspected summaries are
 published.
 
 ## Earlier verification
+
+The [proportional small-task evaluation](proportional-2026-09-09.md) records
+27 additional Luna trials and three Fable calls (one design review, two smokes).
+An initial candidate correctness failure remains in the report; the refined
+candidate passes its separate checks. Small automatic outputs avoid cache setup,
+and known small Codex file reads stay native. Their mechanics are covered by
+boundary, exact-stream, exit-status and cache-absence tests. Aggregate small-task
+tokens are effectively unchanged from 0.2.2 in the refined exploratory sample.
 
 A [33 MiB command stress test](../bench/results/stress-2026-09-09.json) completed
 its final side effect and retained exit code 0. Scopelet saved the first 32 MiB,

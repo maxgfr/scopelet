@@ -1,0 +1,610 @@
+{
+  "model_requested": "gpt-5.6-luna",
+  "effort": "low",
+  "live": true,
+  "notes": [
+    "Equal prompts and isolated host configs; no skill invocation.",
+    "Logical input plus output includes cached input and is not billed cost.",
+    "Two repetitions per cell cannot establish general or statistically reliable savings.",
+    "All failures retained; missing usage stops further batches."
+  ],
+  "binary_sha256": {
+    "released": "66fcaae9bdee5cb827a4ea2ef69d984bbf4e3ab7376bed8109bae8f14e3c8a0a",
+    "candidate": "dac90480647b765d8fce8d336f232a5edb2688ac9820ec1b1a43d90f7b64bd12"
+  },
+  "harness_sha256": {
+    "proportional.py": "f89390bb631984dbe80cc2c8960ec41aa3eb04a34cfc7891bfd6008e8450a933",
+    "run.py": "b4de4fdf616626851a9d02a3e6139bbf8773fe72a7c8e8dc0764c82e580782af",
+    "compare.py": "424e56baba69aa1238968ee96d12a30098aaa8633280bd1b8248faace8d95178"
+  },
+  "codex_version": "codex-cli 0.153.4",
+  "runs": [
+    {
+      "task": "python",
+      "arm": "candidate",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 27.849431,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 66077,
+            "cached_input_tokens": 55040,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 731,
+            "reasoning_output_tokens": 103
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 66077,
+        "output_tokens": 731,
+        "cache_read_input_tokens": 55040,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 103,
+        "thinking_tokens": null,
+        "logical_input_tokens": 66077,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "stdout_sha256": "883f30484153e1f910f970db9d4a3cb4f0bdb58588561c43c27eae19d8b5ee77",
+      "trace": {
+        "completed_shell_calls": 4,
+        "compact_outputs": 0,
+        "final_reply_bytes": 177,
+        "final_reply_words": 19
+      }
+    },
+    {
+      "task": "json",
+      "arm": "native",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 26.409751,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 65158,
+            "cached_input_tokens": 58112,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 706,
+            "reasoning_output_tokens": 71
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 65158,
+        "output_tokens": 706,
+        "cache_read_input_tokens": 58112,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 71,
+        "thinking_tokens": null,
+        "logical_input_tokens": 65158,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "config.json": "665cb14ff1f4b2f56b6bd5d6c9d1eee7234e2b1bdcd7f8a7ef93d94f5f7d5bc1"
+      },
+      "stdout_sha256": "408d8525e58f66539d91f4da5a5fc2cb46d8234208dd570f44fa37a9292728de",
+      "trace": {
+        "completed_shell_calls": 3,
+        "compact_outputs": 0,
+        "final_reply_bytes": 244,
+        "final_reply_words": 21
+      }
+    },
+    {
+      "task": "javascript",
+      "arm": "candidate",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 27.733002,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 65299,
+            "cached_input_tokens": 54016,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 736,
+            "reasoning_output_tokens": 74
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 65299,
+        "output_tokens": 736,
+        "cache_read_input_tokens": 54016,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 74,
+        "thinking_tokens": null,
+        "logical_input_tokens": 65299,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "check.mjs": "f58c8da8e6bb78dc8ec4200a714c2dd08eb54ebf0aeda2b495c4b03d4de946a5",
+        "options.mjs": "ee8679b6293943ba63ff846d9f491dbffb63972ccd0f8b1f4a24170efc1917db"
+      },
+      "stdout_sha256": "c8d6a0d24d3ded34cb6695596d189060902521e70e96855255b8e4cd05b16f5a",
+      "trace": {
+        "completed_shell_calls": 3,
+        "compact_outputs": 0,
+        "final_reply_bytes": 245,
+        "final_reply_words": 24
+      }
+    },
+    {
+      "task": "javascript",
+      "arm": "native",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 32.001434,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 78695,
+            "cached_input_tokens": 64000,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 867,
+            "reasoning_output_tokens": 83
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 78695,
+        "output_tokens": 867,
+        "cache_read_input_tokens": 64000,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 83,
+        "thinking_tokens": null,
+        "logical_input_tokens": 78695,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "check.mjs": "f58c8da8e6bb78dc8ec4200a714c2dd08eb54ebf0aeda2b495c4b03d4de946a5",
+        "options.mjs": "ee8679b6293943ba63ff846d9f491dbffb63972ccd0f8b1f4a24170efc1917db"
+      },
+      "stdout_sha256": "91153acdfce34450e6435b8386156daa652c140042c9081affab530d5fb0d0e0",
+      "trace": {
+        "completed_shell_calls": 4,
+        "compact_outputs": 0,
+        "final_reply_bytes": 259,
+        "final_reply_words": 23
+      }
+    },
+    {
+      "task": "python",
+      "arm": "native",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 35.841559,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 79616,
+            "cached_input_tokens": 64000,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 1052,
+            "reasoning_output_tokens": 98
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 79616,
+        "output_tokens": 1052,
+        "cache_read_input_tokens": 64000,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 98,
+        "thinking_tokens": null,
+        "logical_input_tokens": 79616,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "stdout_sha256": "d32757d7fcfaf15e6a1f09dc85ac8750501b67fa2755cad91ecbac67a8319fe6",
+      "trace": {
+        "completed_shell_calls": 4,
+        "compact_outputs": 0,
+        "final_reply_bytes": 309,
+        "final_reply_words": 23
+      }
+    },
+    {
+      "task": "javascript",
+      "arm": "released",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 34.554787,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 65243,
+            "cached_input_tokens": 58112,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 743,
+            "reasoning_output_tokens": 44
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 65243,
+        "output_tokens": 743,
+        "cache_read_input_tokens": 58112,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 44,
+        "thinking_tokens": null,
+        "logical_input_tokens": 65243,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "check.mjs": "f58c8da8e6bb78dc8ec4200a714c2dd08eb54ebf0aeda2b495c4b03d4de946a5",
+        "options.mjs": "ee8679b6293943ba63ff846d9f491dbffb63972ccd0f8b1f4a24170efc1917db"
+      },
+      "stdout_sha256": "d8b674d9bdf4ff92cc38ad2ac6da9b0e806a053a2c8c7fb0592076a8d31c7e2f",
+      "trace": {
+        "completed_shell_calls": 3,
+        "compact_outputs": 0,
+        "final_reply_bytes": 254,
+        "final_reply_words": 23
+      }
+    },
+    {
+      "task": "json",
+      "arm": "released",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 25.261174,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 51601,
+            "cached_input_tokens": 41984,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 509,
+            "reasoning_output_tokens": 36
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 51601,
+        "output_tokens": 509,
+        "cache_read_input_tokens": 41984,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 36,
+        "thinking_tokens": null,
+        "logical_input_tokens": 51601,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "config.json": "665cb14ff1f4b2f56b6bd5d6c9d1eee7234e2b1bdcd7f8a7ef93d94f5f7d5bc1"
+      },
+      "stdout_sha256": "61c86708cb85e3997ab0efe35ec9335cb4e8415717c8485f401f6a1abd493d22",
+      "trace": {
+        "completed_shell_calls": 2,
+        "compact_outputs": 0,
+        "final_reply_bytes": 232,
+        "final_reply_words": 17
+      }
+    },
+    {
+      "task": "json",
+      "arm": "candidate",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 28.06968,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 64965,
+            "cached_input_tokens": 50944,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 640,
+            "reasoning_output_tokens": 83
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 64965,
+        "output_tokens": 640,
+        "cache_read_input_tokens": 50944,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 83,
+        "thinking_tokens": null,
+        "logical_input_tokens": 64965,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "config.json": "665cb14ff1f4b2f56b6bd5d6c9d1eee7234e2b1bdcd7f8a7ef93d94f5f7d5bc1"
+      },
+      "stdout_sha256": "e2b4f5e2031aeac9fff8010179757c161bca1305105c129231bc9baecbf03fcd",
+      "trace": {
+        "completed_shell_calls": 3,
+        "compact_outputs": 0,
+        "final_reply_bytes": 253,
+        "final_reply_words": 24
+      }
+    },
+    {
+      "task": "python",
+      "arm": "released",
+      "repetition": 1,
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_seconds": 32.270061,
+      "usage": {
+        "raw_usage": [
+          {
+            "input_tokens": 79175,
+            "cached_input_tokens": 71168,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 947,
+            "reasoning_output_tokens": 91
+          }
+        ],
+        "raw_events_with_usage": 1,
+        "input_tokens": 79175,
+        "output_tokens": 947,
+        "cache_read_input_tokens": 71168,
+        "cache_creation_input_tokens": 0,
+        "reasoning_tokens": 91,
+        "thinking_tokens": null,
+        "logical_input_tokens": 79175,
+        "cache_included_in_reported_input": true,
+        "usage_missing": false,
+        "model_init": null,
+        "models_observed": [],
+        "model_usage": {},
+        "model_mismatch": null,
+        "num_turns": null,
+        "duration_ms": null,
+        "duration_api_ms": null,
+        "total_cost_usd_reported": null,
+        "permission_denials_count": null,
+        "permission_denials": [],
+        "api_error_status": null,
+        "fast_mode_state": null,
+        "result_subtype": null,
+        "result_is_error": null
+      },
+      "passed": true,
+      "fixture_hashes": {
+        "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+        "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+        "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+      },
+      "stdout_sha256": "7a94f775b8705397fb206d646a686bf9624ac58b30b8f7e52b21f2789894fc86",
+      "trace": {
+        "completed_shell_calls": 4,
+        "compact_outputs": 0,
+        "final_reply_bytes": 232,
+        "final_reply_words": 27
+      }
+    }
+  ],
+  "summary": {
+    "python/native": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        80668
+      ],
+      "median_tokens": 80668,
+      "mean_tokens": 80668,
+      "missing_usage": 0
+    },
+    "python/released": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        80122
+      ],
+      "median_tokens": 80122,
+      "mean_tokens": 80122,
+      "missing_usage": 0
+    },
+    "python/candidate": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        66808
+      ],
+      "median_tokens": 66808,
+      "mean_tokens": 66808,
+      "missing_usage": 0
+    },
+    "javascript/native": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        79562
+      ],
+      "median_tokens": 79562,
+      "mean_tokens": 79562,
+      "missing_usage": 0
+    },
+    "javascript/released": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        65986
+      ],
+      "median_tokens": 65986,
+      "mean_tokens": 65986,
+      "missing_usage": 0
+    },
+    "javascript/candidate": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        66035
+      ],
+      "median_tokens": 66035,
+      "mean_tokens": 66035,
+      "missing_usage": 0
+    },
+    "json/native": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        65864
+      ],
+      "median_tokens": 65864,
+      "mean_tokens": 65864,
+      "missing_usage": 0
+    },
+    "json/released": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        52110
+      ],
+      "median_tokens": 52110,
+      "mean_tokens": 52110,
+      "missing_usage": 0
+    },
+    "json/candidate": {
+      "attempts": 1,
+      "passes": 1,
+      "tokens": [
+        65605
+      ],
+      "median_tokens": 65605,
+      "mean_tokens": 65605,
+      "missing_usage": 0
+    }
+  }
+}

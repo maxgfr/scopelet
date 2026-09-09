@@ -204,6 +204,46 @@ fn claude_persistence_metadata_bypasses_compression_before_preview_rendering() {
     );
 }
 #[test]
+fn small_automatic_outputs_do_not_open_cache() {
+    let dir = tempfile::tempdir().unwrap();
+    let event = json!({"hook_event_name":"PostToolUse","tool_name":"Bash","tool_response":{"stdout":"x".repeat(2048),"stderr":"warning\r\n","interrupted":false,"isImage":false}});
+    assert_eq!(hook(dir.path(), "claude", event), json!({}));
+    assert!(!dir.path().join("cache").exists());
+    cli(dir.path())
+        .args([
+            "run",
+            "--auto",
+            "--",
+            "sh",
+            "-c",
+            "printf 'ok\\r\\n'; printf 'warning\\n' >&2; exit 7",
+        ])
+        .assert()
+        .code(7)
+        .stdout("ok\r\n")
+        .stderr("warning\n");
+    assert!(!dir.path().join("cache").exists());
+}
+#[test]
+fn codex_small_file_reads_stay_native_and_large_reads_are_wrapped() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("small.txt");
+    fs::write(&file, vec![b'x'; 2048]).unwrap();
+    let mut event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":dir.path(),"tool_input":{"command":"cat small.txt"}});
+    assert_eq!(hook(dir.path(), "codex", event.clone()), json!({}));
+    fs::write(&file, vec![b'x'; 2049]).unwrap();
+    assert!(
+        hook(dir.path(), "codex", event.clone())["hookSpecificOutput"]["updatedInput"]["command"]
+            .as_str()
+            .unwrap()
+            .contains("run --auto")
+    );
+    event["tool_input"]["command"] = json!("cat missing.txt");
+    assert_ne!(hook(dir.path(), "codex", event.clone()), json!({}));
+    event["tool_input"]["command"] = json!("cat .");
+    assert_ne!(hook(dir.path(), "codex", event), json!({}));
+}
+#[test]
 fn context_is_sent_only_at_start_or_mode_change() {
     let dir = tempfile::tempdir().unwrap();
     let event = json!({"hook_event_name":"UserPromptSubmit","session_id":"session-one"});

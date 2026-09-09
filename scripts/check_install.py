@@ -57,7 +57,7 @@ def verify(skill, binary=None):
             output = subprocess.check_output(['node', str(launcher), 'hook', 'codex'],
                                              env=env, cwd=root, input=event, text=True, timeout=30)
             context = json.loads(output)['hookSpecificOutput']['additionalContext']
-            assert {'caveman': 'caveman', 'off': 'off', 'default': 'auto is active'}[mode] in context
+            assert {'caveman': 'caveman', 'off': 'off', 'default': 'Scopelet auto'}[mode] in context
         bench = json.loads(call('bench'))
         assert bench['passed']
         call('uninstall', '--agent', 'all')

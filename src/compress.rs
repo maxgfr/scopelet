@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use std::sync::LazyLock;
 
 pub const DEFAULT_BUDGET: usize = 4096;
-const SMALL: usize = 2048;
+pub const SMALL: usize = 2048;
 static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r"(?i)\b(error|failed|failure|panic|panicked|exception|traceback|warning|assertionerror|caused by|test result|tests? passed|tests? failed)\b|^\s*(FAIL|PASS|E\s+|FATAL|×|✕)").unwrap()
 });

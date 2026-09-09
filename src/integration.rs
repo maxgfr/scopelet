@@ -321,6 +321,30 @@ fn eligible(args: &[String]) -> bool {
         _ => false,
     }
 }
+// This is only a compression bypass: native execution still reads the file,
+// including changes after this metadata check, and enforces host permissions.
+fn small_file_read(args: &[String], event: &Value) -> bool {
+    if args.len() != 2 || Path::new(&args[0]).file_name().and_then(|n| n.to_str()) != Some("cat") {
+        return false;
+    }
+    let file = Path::new(&args[1]);
+    let path = if file.is_absolute() {
+        file.to_path_buf()
+    } else {
+        let Some(cwd) = event["tool_input"]["workdir"]
+            .as_str()
+            .or_else(|| event["cwd"].as_str())
+        else {
+            return false;
+        };
+        if !Path::new(cwd).is_absolute() {
+            return false;
+        }
+        Path::new(cwd).join(file)
+    };
+    fs::metadata(path).is_ok_and(|meta| meta.is_file() && meta.len() <= compress::SMALL as u64)
+}
+
 fn context(event: &Value, mode: Preference) -> Result<Value> {
     let name = event["hook_event_name"].as_str().unwrap_or("");
     let Some(session) = event["session_id"].as_str() else {
@@ -334,10 +358,10 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
     write_atomic(&state, &current)?;
     let text = match mode {
         Preference::Default => {
-            "Scopelet auto is active. Keep replies brief. Compressed tool output is partial; recover exact evidence using its reference when needed. Use native tools for small edits."
+            "Scopelet auto: for routine edits, inspect relevant code and existing checks; preserve their intended behavior and verify the change. Report outcome and validation in 1–3 short sentences. Expand for requested detail, uncertainty or next steps. Recover partial evidence when needed."
         }
         Preference::Caveman => {
-            "Scopelet caveman: minimal telegraphic replies in the user's language. Preserve results, errors, qualifications, negation, numbers and needed next actions. Documents use normal prose. Recover partial tool evidence when needed."
+            "Scopelet caveman: routine replies target 30 words, telegraphic, in the user's language. Preserve errors, qualifications, negation, numbers and next actions; exceed the target when needed or requested. Inspect relevant code and existing checks; verify intended behavior. Documents use normal prose. Recover partial evidence when needed."
         }
         Preference::Off => "Scopelet is off. Resume normal tools and response style.",
     };
@@ -372,6 +396,9 @@ pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
         let Some(args) = command_args(command) else {
             return Ok(json!({}));
         };
+        if small_file_read(&args, event) {
+            return Ok(json!({}));
+        }
         let binary = std::env::current_exe()?;
         let command = format!(
             "{} run --auto --timeout 3600 -- {}",
@@ -408,6 +435,13 @@ pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
                 .as_u64()
                 .is_some_and(|size| size > 0)
         {
+            return Ok(json!({}));
+        }
+        if ["stdout", "stderr"].iter().all(|stream| {
+            output[stream]
+                .as_str()
+                .is_some_and(|text| text.len() <= compress::SMALL)
+        }) {
             return Ok(json!({}));
         }
         let store = Store::open(None)?;

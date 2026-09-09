@@ -183,3 +183,25 @@ Use `--tasks task4 --arms default caveman --repetitions 1 --max-attempts 2`
 for a separate final-binary smoke; add `--code-mode` for Codex's experimental
 code mode. These are separate treatments, never pooled into the primary matrix.
 The maximum applies per invocation; count every campaign toward the user budget.
+
+## Proportional small-edit checks
+
+`proportional.py` compares native, a frozen released binary and a frozen candidate
+on Python normalization, JavaScript nullish defaults and a JSON configuration
+edit. Identical prompts, independent graders, preserved fixtures and raw usage
+make correctness failures visible alongside tokens. The JSON grader distinguishes
+zero from false; the JavaScript grader checks values beyond the visible test.
+Two repetitions produce 18 sessions, run at most two at a time. A missing-usage
+batch stops the campaign. Raw workspaces and authentication stay private; local
+auth copies are removed before workspace archival.
+
+```sh
+python3 bench/proportional.py --released /path/to/released/scopelet \
+  --candidate target/release/scopelet --out bench/runs/proportional-plan
+python3 bench/proportional.py --live --released /path/to/released/scopelet \
+  --candidate target/release/scopelet --out bench/runs/proportional-live
+```
+
+Use a new directory for every revision. Keep earlier failures and distinguish
+candidate hashes; do not pool revised candidates into an earlier comparison.
+This small sample is exploratory, not a claim of universal savings.

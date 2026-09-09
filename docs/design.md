@@ -81,6 +81,11 @@ Automatic hooks are an optional local installation, independent of skill
 activation. They use the same immutable store and do not alter API requests or
 conversation history. Default and caveman share the compression engine; caveman
 only changes the host's concise response instruction. Off returns native calls.
+Routine-edit guidance asks the agent to inspect relevant code and existing
+checks, preserve intended behavior and verify the change. Default asks for
+1–3 short outcome/validation sentences; caveman targets 30 words with explicit
+exceptions for required information and requested detail. These are preferences,
+never forced truncation or a reason to omit verification.
 Host settings are merged, original bytes backed up, and only exact Scopelet hook
 entries are removed. The resolved executable is copied during installation so
 hooks never trigger downloads. Host permission/trust mechanisms remain in force;
@@ -116,6 +121,13 @@ more than 100000 units. Byte thresholds are not tokenizer or session savings.
 The original capture limit remains 32 MiB per stream. Capture incompleteness is
 reported outside the compressed view; a hook only retains bytes supplied by its
 host and cannot recover an earlier truncation.
+
+Automatic runs and Claude hooks avoid opening the store when both streams fit
+the small-output threshold. Codex also bypasses the wrapper for a plain `cat`
+whose regular-file metadata reports at most 2048 bytes. Relative paths require
+a known absolute working directory. Metadata only chooses whether to compress:
+the native command still reads the current file and enforces host permissions.
+A file growing after the check stays correct, though that read may miss savings.
 
 `run --auto` executes once and returns stdout/stderr independently, preserving
 exit status. Failed storage/compression returns captured native bytes; the

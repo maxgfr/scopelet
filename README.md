@@ -35,8 +35,8 @@ Claude Code or `$scopelet <task>` in Codex. Rust is not required for this setup.
 
 | Mode | Behavior |
 | --- | --- |
-| `default` | Adaptive compression and brief, normal replies. Enabled on first install. |
-| `caveman` | Same compression, with telegraphic replies that retain necessary information. |
+| `default` | Adaptive compression; routine edits use existing checks, then 1–3 short outcome/validation sentences. Enabled on first install. |
+| `caveman` | Same compression; routine replies target 30 words, exceeding that when needed to retain meaning or meet the request. |
 | `off` | Disable automatic compression and its response preference. |
 
 ```sh
@@ -62,6 +62,10 @@ Scopelet first factors repeated JSON keys without dropping values, then selects
 whole evidence units when needed. Repeated lines retain counts; omissions are
 explicit; original captured bytes remain recoverable. Exit status survives.
 Already persisted host previews pass through. [Contracts and limits](docs/design.md).
+
+Small automatic outputs skip cache setup. Codex also leaves a plain `cat` of a
+known regular file up to 2 KiB native. Small edits keep their original bytes and
+still require verification; shortening a response never justifies skipping checks.
 
 ## Measured results
 
@@ -103,6 +107,12 @@ now pass through. These functional checks do not measure whole-session savings.
 A third Fable check passes with the fix and caveman enabled, preserving the exact
 warning and its negation. Its final reply remains verbose: caveman is a preference,
 not a hard response-length limit.
+
+The later [small-edit evaluation](docs/proportional-2026-09-09.md) adds Python,
+JavaScript and JSON tasks. An initial candidate failed one check and was revised;
+all nine follow-up sessions pass. The refined mix uses 12.2% fewer logical tokens
+than native and **0.1% more than 0.2.2**, with only one sample per cell. This does
+not establish a new small-edit savings claim. [Competitor mechanisms reviewed](docs/small-task-competitors-2026-09-09.md).
 
 ## Exact queries and recovery
 

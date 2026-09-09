@@ -251,7 +251,12 @@ fn execute(cli: Cli) -> Result<i32> {
             cancel.clone(),
         )?;
         let code = process::exit_code(&result);
-        let store = Store::open(cli.cache_dir).ok();
+        let store =
+            if result.stdout.len() > compress::SMALL || result.stderr.len() > compress::SMALL {
+                Store::open(cli.cache_dir).ok()
+            } else {
+                None
+            };
         for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
             let output = store
                 .as_ref()
