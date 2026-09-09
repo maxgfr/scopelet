@@ -19,10 +19,20 @@ MODE_EVIDENCE = (
 )
 
 USAGE_FIELDS = (
-    "logical_input_tokens", "input_tokens", "output_tokens", "reasoning_tokens",
+    "logical_input_tokens", "input_tokens", "output_tokens", "reasoning_tokens", "thinking_tokens",
     "cache_read_input_tokens", "cache_creation_input_tokens", "usage_missing",
-    "cache_included_in_reported_input",
+    "cache_included_in_reported_input", "model_init", "models_observed", "model_usage", "model_mismatch",
+    "num_turns", "duration_ms", "duration_api_ms", "total_cost_usd_reported", "permission_denials_count",
+    "permission_denials", "api_error_status", "fast_mode_state", "result_subtype", "result_is_error",
 )
+COST_NOTE = "total_cost_usd_reported is Claude Code's list-basis estimate for the session, not an invoice"
+# Private absolute paths never belong in a published summary.
+PRIVATE_PATH_PATTERN = re.compile(r"(?:/Users/|/home/|/private/|/var/folders/|[A-Za-z]:\\+Users)")
+
+
+def private_paths(value):
+    """Return the private path fragments found in a JSON-serializable value."""
+    return sorted(set(PRIVATE_PATH_PATTERN.findall(json.dumps(value))))
 
 
 def digest(path):
@@ -92,17 +102,28 @@ def export(directory):
         key: meta.get(key) for key in (
             "seed", "repetitions", "timeout", "planned_runs", "modes", "limitations",
             "harness_sha256", "base_harness_sha256", "source_commits", "skill_hashes",
+            "model_requested", "effort_requested", "rtk_integration", "claude_bin_sha256", "environment_purged",
         )}, "runs": []}
     result["meta"]["executables_sha256"] = {
         name: data.get("sha256") for name, data in meta.get("executables", {}).items()}
+    result["meta"]["executable_versions"] = {
+        name: data.get("version") for name, data in meta.get("executable_versions", {}).items()}
     result["meta"]["scopelet_view_mode_evidence"] = MODE_EVIDENCE
+    result["meta"]["cost_note"] = COST_NOTE
     result["meta"]["agent_versions"] = {
         name: data.get("version") for name, data in meta.get("agent_versions", {}).items()}
     result["meta"]["prefix_sha256"] = {
         Path(path).name: sha for path, sha in meta.get("prefix_file_hashes", {}).items()}
+    result["meta"]["plugins"] = {
+        name: {key: data.get(key) for key in ("plugin_json_sha256", "hooks_sha256", "skill_hashes", "git_head")}
+        for name, data in meta.get("plugins", {}).items()}
+    # Older campaigns hard-coded the model in the harness rather than in meta.
+    result["meta"]["models"] = {"codex": "gpt-5.6-luna (low)",
+                                "claude": meta.get("model_requested") or "claude-haiku-4-5-20251001"}
     for run in report["runs"]:
         row = {key: run.get(key) for key in (
             "agent", "task", "arm", "repetition", "exit_code", "timed_out", "duration_seconds",
+            "integration", "model_requested", "effort_requested", "cache_markers_present",
         )}
         row["passed"] = run.get("acceptance", {}).get("passed", False)
         row["harness_error"] = "harness_error" in run
@@ -130,10 +151,14 @@ def main():
     parser.add_argument("directories", type=Path, nargs="+")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
-    output = {"schema_version": 1,
+    campaigns = [export(directory) for directory in args.directories]
+    output = {"schema_version": 2,
               "metric": "model-reported logical input plus output; cache included; not currency",
-              "models": {"codex": "gpt-5.6-luna (low)", "claude": "claude-haiku-4-5-20251001"},
-              "campaigns": [export(directory) for directory in args.directories]}
+              "models": {campaign["campaign"]: campaign["meta"]["models"] for campaign in campaigns},
+              "campaigns": campaigns}
+    leaked = private_paths(output)
+    if leaked:
+        raise SystemExit(f"refusing to export private paths: {leaked}")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(output, indent=2, sort_keys=True) + "\n")
     print(args.out)

@@ -28,6 +28,12 @@ AGENTS = ("codex", "claude")
 ARMS = ("baseline", "default", "ultra", "shell_control")
 TASKS = ("task1", "task2", "task3")
 ALL_TASKS = (*TASKS, "task4")
+DEFAULT_CLAUDE_MODEL = "claude-haiku-4-5-20251001"
+CLAUDE_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+CLAUDE_ALLOWED_TOOLS = "Read,Write,Edit,Glob,Grep,Bash,Skill"
+# Provider routing and effort overrides must not leak from the operator's
+# shell into measured sessions; the effort variable overrides --effort.
+PURGED_ENVIRONMENT = ("CLAUDE_CODE_EFFORT_LEVEL", "ANTHROPIC_BASE_URL", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
 
 
 def csv_values(value: str) -> list[str]:
@@ -312,7 +318,14 @@ Do not ask questions and do not report success until the requested file change i
 """
 
 
-def command_for(agent: str) -> list[str]:
+def command_for(
+    agent: str,
+    model: str | None = None,
+    effort: str | None = None,
+    claude_bin: str | None = None,
+    include_hook_events: bool = False,
+) -> list[str]:
+    """Build the agent argv; model/effort/binary apply to Claude Code only."""
     if agent == "codex":
         return [
             "codex",
@@ -329,11 +342,14 @@ def command_for(agent: str) -> list[str]:
             "--json",
         ]
     if agent == "claude":
-        return [
-            "claude",
+        # User/global hooks and skills are excluded by --setting-sources
+        # project; plugin hooks passed explicitly by a caller remain active
+        # and are proven by the hook lifecycle events in the stream.
+        command = [
+            claude_bin or "claude",
             "-p",
             "--model",
-            "claude-haiku-4-5-20251001",
+            model or DEFAULT_CLAUDE_MODEL,
             "--output-format",
             "stream-json",
             "--verbose",
@@ -342,15 +358,28 @@ def command_for(agent: str) -> list[str]:
             "--strict-mcp-config",
             "--mcp-config",
             '{"mcpServers":{}}',
-            "--settings",
-            '{"disableAllHooks":true}',
             "--permission-mode",
             "acceptEdits",
             "--allowedTools",
-            "Read,Write,Edit,Glob,Grep,Bash,Skill",
+            CLAUDE_ALLOWED_TOOLS,
             "--no-session-persistence",
         ]
+        if effort is not None:
+            if effort not in CLAUDE_EFFORTS:
+                raise ValueError(f"unknown Claude effort: {effort}")
+            command += ["--effort", effort]
+        if include_hook_events:
+            command.append("--include-hook-events")
+        return command
     raise ValueError(f"unknown agent: {agent}")
+
+
+def purged_environment(source: dict[str, str] | None = None) -> dict[str, str]:
+    """Copy the environment without provider routing or effort overrides."""
+    environment = dict(os.environ if source is None else source)
+    for variable in PURGED_ENVIRONMENT:
+        environment.pop(variable, None)
+    return environment
 
 
 def _walk_dicts(value: Any) -> Iterable[dict[str, Any]]:
@@ -420,12 +449,80 @@ def _outer_usage(event: dict[str, Any]) -> dict[str, Any] | None:
     return candidate if isinstance(candidate, dict) else None
 
 
-def normalize_usage(agent: str, raw: bytes) -> dict[str, Any]:
+def _model_usages(events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Return the final result event's per-model usage, scalar fields only."""
+    result: dict[str, dict[str, Any]] = {}
+    for event in events:
+        model_usage = event.get("modelUsage")
+        if not isinstance(model_usage, dict):
+            continue
+        result = {}
+        for name, candidate in model_usage.items():
+            if isinstance(candidate, dict):
+                result[str(name)] = {key: value for key, value in candidate.items() if isinstance(value, (int, float, str, bool)) or value is None}
+    return result
+
+
+def _init_event(events: list[dict[str, Any]]) -> dict[str, Any]:
+    for event in events:
+        if event.get("type") == "system" and event.get("subtype") == "init":
+            return event
+    return {}
+
+
+def _result_event(events: list[dict[str, Any]]) -> dict[str, Any]:
+    for event in reversed(events):
+        if event.get("type") == "result":
+            return event
+    return {}
+
+
+def _provider_fields(agent: str, events: list[dict[str, Any]], expected_model: str | None) -> dict[str, Any]:
+    """Claude Code result/init metadata kept beside token usage, never combined with it."""
+    if agent != "claude":
+        return {"model_init": None, "models_observed": [], "model_usage": {}, "model_mismatch": None, "num_turns": None,
+                "duration_ms": None, "duration_api_ms": None, "total_cost_usd_reported": None, "permission_denials_count": None,
+                "permission_denials": [], "api_error_status": None, "fast_mode_state": None, "result_subtype": None, "result_is_error": None}
+    init = _init_event(events)
+    result = _result_event(events)
+    model_usage = _model_usages(events)
+    model_init = init.get("model") if isinstance(init.get("model"), str) else None
+    denials = result.get("permission_denials") if isinstance(result.get("permission_denials"), list) else []
+    denial_names = sorted({str(item.get("tool_name")) for item in denials if isinstance(item, dict) and item.get("tool_name")})
+    mismatch: bool | None = None
+    if expected_model is not None:
+        # The primary model comes from the init event. Auxiliary models can
+        # legitimately appear in modelUsage (Claude Code uses a small model
+        # for side tasks), so they are recorded rather than treated as a
+        # mismatch; an absent expected model in modelUsage is one.
+        mismatch = model_init != expected_model or (bool(model_usage) and expected_model not in model_usage)
+    cost = result.get("total_cost_usd")
+    return {
+        "model_init": model_init,
+        "models_observed": sorted(model_usage),
+        "model_usage": model_usage,
+        "model_mismatch": mismatch,
+        "num_turns": _number(result.get("num_turns")),
+        "duration_ms": _number(result.get("duration_ms")),
+        "duration_api_ms": _number(result.get("duration_api_ms")),
+        "total_cost_usd_reported": cost if isinstance(cost, (int, float)) and not isinstance(cost, bool) else None,
+        "permission_denials_count": len(denials) if result else None,
+        "permission_denials": denial_names,
+        "api_error_status": result.get("api_error_status") if isinstance(result.get("api_error_status"), (int, str)) else None,
+        "fast_mode_state": result.get("fast_mode_state") if isinstance(result.get("fast_mode_state"), str) else (init.get("fast_mode_state") if isinstance(init.get("fast_mode_state"), str) else None),
+        "result_subtype": result.get("subtype") if isinstance(result.get("subtype"), str) else None,
+        "result_is_error": result.get("is_error") if isinstance(result.get("is_error"), bool) else None,
+    }
+
+
+def normalize_usage(agent: str, raw: bytes, expected_model: str | None = None) -> dict[str, Any]:
     """Normalize the final usage event while preserving absent fields as null.
 
     Codex's reported input token count already includes cached input. Claude's
     usage reports cache reads/creation separately, so those are added only to
-    the logical input total for Claude.
+    the logical input total for Claude. Reasoning/thinking tokens are already
+    part of reported output and are never added again. When Claude's outer
+    result usage is partial or absent, every model in modelUsage is summed.
     """
     events = parse_json_stream(raw)
     selected_raw: list[dict[str, Any]] = []
@@ -451,34 +548,20 @@ def normalize_usage(agent: str, raw: bytes) -> dict[str, Any]:
             for event in events
             if event.get("type") == "result" and _outer_usage(event) is not None
         ]
+        models = list(_model_usages(events).values())
+        usage = _usage_from({})
         if result_events:
             selected_raw = [result_events[-1]]
             selected = [_usage_from(selected_raw[0])]
-            if selected[0]["input_tokens"] is None or selected[0]["output_tokens"] is None:
-                # Some Claude stream versions put complete accounting in
-                # modelUsage while leaving the outer result partial.
-                models = []
-                for event in events:
-                    model_usage = event.get("modelUsage")
-                    if isinstance(model_usage, dict):
-                        models.extend(candidate for candidate in model_usage.values() if isinstance(candidate, dict))
-                if len(models) == 1:
-                    model_candidate = _usage_from(models[0])
-                    if model_candidate["input_tokens"] is not None and model_candidate["output_tokens"] is not None:
-                        selected_raw = [models[0]]
-                        selected = [model_candidate]
-        else:
-            # Claude can expose modelUsage when the outer result has no usage.
-            models: list[dict[str, Any]] = []
-            for event in events:
-                model_usage = event.get("modelUsage")
-                if isinstance(model_usage, dict):
-                    for candidate in model_usage.values():
-                        if isinstance(candidate, dict):
-                            models.append(candidate)
-            selected_raw = [models[0]] if len(models) == 1 else []
-            selected = [_usage_from(selected_raw[0])] if selected_raw else []
-        usage = selected[-1] if selected else _usage_from({})
+            usage = selected[0]
+        if (usage["input_tokens"] is None or usage["output_tokens"] is None) and models:
+            # Some Claude stream versions put complete accounting in
+            # modelUsage while leaving the outer result partial or absent.
+            summed = _sum_usages([_usage_from(model) for model in models])
+            if summed["input_tokens"] is not None and summed["output_tokens"] is not None:
+                selected_raw = models
+                selected = [summed]
+                usage = summed
     input_tokens = usage["input_tokens"]
     output_tokens = usage["output_tokens"]
     cache_read = usage["cache_read_input_tokens"]
@@ -496,9 +579,11 @@ def normalize_usage(agent: str, raw: bytes) -> dict[str, Any]:
         "cache_read_input_tokens": cache_read,
         "cache_creation_input_tokens": cache_creation,
         "reasoning_tokens": usage["reasoning_tokens"],
+        "thinking_tokens": usage["reasoning_tokens"] if agent == "claude" else None,
         "logical_input_tokens": logical_input,
         "cache_included_in_reported_input": agent == "codex",
         "usage_missing": not bool(selected_raw) or input_tokens is None or output_tokens is None,
+        **_provider_fields(agent, events, expected_model),
     }
 
 
@@ -863,10 +948,10 @@ def freeze_binary(binary: Path, out: Path) -> Path:
     return frozen
 
 
-def agent_cli_version(agent: str) -> dict[str, Any]:
+def agent_cli_version(agent: str, binary: Path | None = None) -> dict[str, Any]:
     try:
         result = subprocess.run(
-            [agent, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10, check=False
+            [str(binary) if binary else agent, "--version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10, check=False
         )
         return {
             "available": True,

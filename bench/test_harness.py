@@ -73,6 +73,59 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(usage["input_tokens"], 100)
         self.assertEqual(usage["logical_input_tokens"], 180)
 
+    def test_claude_multi_model_fallback_sums_models_and_records_them(self) -> None:
+        raw = (b'{"type":"system","subtype":"init","model":"claude-fable-5-1","fast_mode_state":"off"}\n'
+               b'{"type":"result","usage":{"output_tokens":14},"modelUsage":{'
+               b'"claude-haiku-4-5-20251001":{"inputTokens":899,"outputTokens":10,"cacheReadInputTokens":0,"cacheCreationInputTokens":0,"thinkingTokens":0,"costUSD":0.0009},'
+               b'"claude-fable-5-1":{"inputTokens":2,"outputTokens":4,"cacheReadInputTokens":10078,"cacheCreationInputTokens":7202,"thinkingTokens":0,"costUSD":0.1467}},'
+               b'"num_turns":1,"duration_ms":2838,"duration_api_ms":3792,"total_cost_usd":0.1477,"permission_denials":[{"tool_name":"Bash"}],"api_error_status":null,"subtype":"success","is_error":false}\n')
+        usage = run.normalize_usage("claude", raw, expected_model="claude-fable-5-1")
+        self.assertEqual(usage["input_tokens"], 901)
+        self.assertEqual(usage["logical_input_tokens"], 901 + 10078 + 7202)
+        self.assertEqual(usage["models_observed"], ["claude-fable-5-1", "claude-haiku-4-5-20251001"])
+        self.assertEqual(usage["model_init"], "claude-fable-5-1")
+        self.assertFalse(usage["model_mismatch"])
+        self.assertEqual(usage["model_usage"]["claude-fable-5-1"]["costUSD"], 0.1467)
+        self.assertEqual((usage["num_turns"], usage["duration_ms"], usage["duration_api_ms"]), (1, 2838, 3792))
+        self.assertEqual(usage["total_cost_usd_reported"], 0.1477)
+        self.assertEqual((usage["permission_denials_count"], usage["permission_denials"]), (1, ["Bash"]))
+        self.assertEqual(usage["fast_mode_state"], "off")
+        self.assertFalse(usage["usage_missing"])
+
+    def test_claude_model_mismatch_is_flagged_but_usage_is_retained(self) -> None:
+        raw = (b'{"type":"system","subtype":"init","model":"claude-haiku-4-5-20251001"}\n'
+               b'{"type":"result","usage":{"input_tokens":10,"output_tokens":20,"cache_read_input_tokens":0,"cache_creation_input_tokens":0,"output_tokens_details":{"thinking_tokens":8}},'
+               b'"modelUsage":{"claude-haiku-4-5-20251001":{"inputTokens":10,"outputTokens":20}}}\n')
+        usage = run.normalize_usage("claude", raw, expected_model="claude-fable-5-1")
+        self.assertTrue(usage["model_mismatch"])
+        self.assertEqual(usage["thinking_tokens"], 8)
+        self.assertEqual(usage["output_tokens"], 20)
+        self.assertEqual(usage["logical_input_tokens"], 10)
+        self.assertIsNone(run.normalize_usage("claude", raw)["model_mismatch"])
+        self.assertIsNone(run.normalize_usage("codex", b'{"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}\n')["model_init"])
+
+    def test_claude_command_pins_model_effort_and_hook_events(self) -> None:
+        default = run.command_for("claude")
+        self.assertEqual(default[default.index("--model") + 1], run.DEFAULT_CLAUDE_MODEL)
+        self.assertNotIn("--effort", default)
+        self.assertNotIn("--settings", default)
+        self.assertNotIn("--include-hook-events", default)
+        pinned = run.command_for("claude", "claude-fable-5-1", "high", "/opt/homebrew/bin/claude", include_hook_events=True)
+        self.assertEqual(pinned[0], "/opt/homebrew/bin/claude")
+        self.assertEqual(pinned[pinned.index("--model") + 1], "claude-fable-5-1")
+        self.assertEqual(pinned[pinned.index("--effort") + 1], "high")
+        self.assertIn("--include-hook-events", pinned)
+        self.assertEqual(pinned[pinned.index("--setting-sources") + 1], "project")
+        with self.assertRaises(ValueError):
+            run.command_for("claude", effort="maximum")
+        self.assertEqual(run.command_for("codex"), run.command_for("codex", "claude-fable-5-1", "high"))
+
+    def test_purged_environment_drops_provider_overrides_only(self) -> None:
+        source = {"CLAUDE_CODE_EFFORT_LEVEL": "low", "ANTHROPIC_BASE_URL": "http://x", "ANTHROPIC_API_KEY": "k", "ANTHROPIC_AUTH_TOKEN": "t", "PATH": "/usr/bin", "HOME": "/home/me"}
+        purged = run.purged_environment(source)
+        self.assertEqual(purged, {"PATH": "/usr/bin", "HOME": "/home/me"})
+        self.assertEqual(source["ANTHROPIC_API_KEY"], "k")
+
     def test_missing_usage_is_null_and_flagged(self) -> None:
         usage = run.normalize_usage("codex", b'{"type":"message","text":"done"}\n')
         self.assertIsNone(usage["input_tokens"])

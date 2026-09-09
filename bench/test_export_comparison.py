@@ -89,3 +89,39 @@ class ExportTests(unittest.TestCase):
         self.assertIsNone(result["runs"][0]["usage"]["logical_input_tokens"])
         self.assertTrue(result["runs"][0]["harness_error"])
         self.assertIsNone(result["runs"][0]["stdout_sha256"])
+        self.assertEqual(result["meta"]["models"]["claude"], "claude-haiku-4-5-20251001")
+
+    def test_provider_fields_plugins_and_model_label_are_exported_without_paths(self):
+        report = {"meta": {"model_requested": "claude-fable-5-1", "effort_requested": "high", "rtk_integration": "hook",
+                           "claude_bin": "/Users/someone/bin/claude", "claude_bin_sha256": "c" * 64,
+                           "executables": {"rtk": {"path": "/Users/someone/rtk", "sha256": "r" * 64}},
+                           "executable_versions": {"rtk": {"version": "rtk 0.42.4", "stderr": "/Users/someone"}},
+                           "plugins": {"caveman": {"path": "/Users/someone/caveman", "plugin_json_sha256": "p" * 64,
+                                                   "hooks_sha256": {"src/hooks/caveman-activate.js": "h" * 64}, "skill_hashes": {"SKILL.md": "s" * 64}, "git_head": "15581d1"}},
+                           "environment_purged": ["CLAUDE_CODE_EFFORT_LEVEL"]},
+                  "runs": [{"agent": "claude", "task": "task4", "arm": "rtk", "repetition": 2, "command": ["/Users/someone/claude"],
+                            "integration": "Documented PreToolUse Bash hook [hook]", "model_requested": "claude-fable-5-1", "effort_requested": "high",
+                            "cache_markers_present": None, "acceptance": {"passed": True},
+                            "usage": {"input_tokens": 3, "output_tokens": 4, "thinking_tokens": 2, "model_init": "claude-fable-5-1",
+                                      "models_observed": ["claude-fable-5-1"], "model_usage": {"claude-fable-5-1": {"costUSD": 0.5}},
+                                      "model_mismatch": False, "num_turns": 7, "total_cost_usd_reported": 0.5, "permission_denials": [],
+                                      "raw_usage": [{"private": "/Users/someone"}]},
+                            "tools": {"rtk_audit": {"rewrites": 2}, "hook_events": {"responses": {"PreToolUse:Bash": 3}}}}]}
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "report.json").write_text(json.dumps(report))
+            result = exporter.export(root)
+        self.assertEqual(exporter.private_paths(result), [])
+        self.assertEqual(result["meta"]["models"]["claude"], "claude-fable-5-1")
+        self.assertEqual(result["meta"]["effort_requested"], "high")
+        self.assertEqual(result["meta"]["plugins"]["caveman"]["git_head"], "15581d1")
+        self.assertEqual(result["meta"]["executable_versions"]["rtk"], "rtk 0.42.4")
+        row = result["runs"][0]
+        self.assertEqual(row["integration"], "Documented PreToolUse Bash hook [hook]")
+        self.assertEqual(row["usage"]["model_usage"]["claude-fable-5-1"]["costUSD"], 0.5)
+        self.assertEqual(row["usage"]["num_turns"], 7)
+        self.assertEqual(row["tools"]["rtk_audit"]["rewrites"], 2)
+        leaked = exporter.private_paths({"x": "/Users/someone/a", "y": "C:\\Users\\x", "z": "/private/tmp/venv"})
+        self.assertEqual(len(leaked), 3)
+        self.assertIn("/Users/", leaked)
+        self.assertIn("/private/", leaked)
