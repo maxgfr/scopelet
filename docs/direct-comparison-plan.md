@@ -48,3 +48,17 @@ Compare like cells; do not combine the two agents into a global score. A lower
 number on one synthetic task is an observed pilot result, not a reliable ranking.
 The [scientific review](scientific-review-2026-09-09.md) describes the repeated,
 multi-repository evaluation needed for stronger claims.
+
+## Declared follow-up: bounded reads and explicit modes
+
+After inspecting the completed 51-run pilot, test a revised Scopelet skill against
+contemporaneous concise-native controls: the same three tasks and two agents,
+two repetitions per cell, 24 runs, shuffled seed 20260910. This is a separate,
+post-pilot campaign. Freeze its binaries and skills independently. The changes
+require a bounded schema preview before aggregation, explicit `--mode ultra` on
+query/spec/run calls, a shared context flag for alternative search patterns and
+native handling of short tests. Retain the existing evidence/recovery safeguards.
+The runtime query engine is unchanged. Check actual modes, premature bulk reads,
+required checks and correctness alongside whole-session token usage. Compare
+candidate and control within this campaign; comparisons to the original one-run
+pilot are exploratory and do not isolate the instruction change causally.
