@@ -1,7 +1,8 @@
 # What is reused, and what differs
 
 See the [fresh review with pinned upstream commits](competitive-review-2026-09-09.md)
-for the feature/test matrix and the [scientific assessment](scientific-review-2026-09-09.md)
+for the feature/test matrix, the [51-run direct pilot](direct-comparison-2026-09-09.md)
+for measured outcomes, and the [scientific assessment](scientific-review-2026-09-09.md)
 for evidence, transfer limits and the next evaluation design.
 
 Inspected on 2026-09-09. These projects evolve; links identify the implementation

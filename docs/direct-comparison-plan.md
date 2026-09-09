@@ -62,3 +62,13 @@ The runtime query engine is unchanged. Check actual modes, premature bulk reads,
 required checks and correctness alongside whole-session token usage. Compare
 candidate and control within this campaign; comparisons to the original one-run
 pilot are exploratory and do not isolate the instruction change causally.
+
+## Post-follow-up cache correction
+
+The 24-run instruction follow-up completed before the final 0.1.2 runtime change.
+Independent trace review found that a Codex broad `rg --hidden` re-ingested
+139,464 characters from workspace-local cache entries. Add local ignore markers
+inside storage subdirectories, preserving existing rules. Validate with a
+deterministic replay of the offending search, original-byte recovery, regression
+tests and final installed-agent smokes. Keep the original follow-up measurements
+and binary hashes: they do not measure this later cache correction.

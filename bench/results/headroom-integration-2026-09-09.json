@@ -1,0 +1,1116 @@
+{
+  "campaigns": [
+    {
+      "campaign": "headroom-live-preflight",
+      "meta": {
+        "agent_versions": {
+          "claude": "2.1.266 (Claude Code)",
+          "codex": "codex-cli 0.153.4"
+        },
+        "base_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
+        "executables_sha256": {
+          "headroom": "9d99c0394f75e8b3f5f5e0c20d4488d2de7e02e56d71229f4b267b97c8bafc3e"
+        },
+        "harness_sha256": "2532bccd9e55a73600d2cb6a58081cf1dd8a524ad3ac4604e05d25108eac872a",
+        "limitations": [
+          "Exploratory pilot, not powered for quality noninferiority",
+          "Provider caches are observed, not forcibly cold",
+          "Global Codex skill paths explicitly disabled; other host instructions may remain",
+          "RTK hooks and competitor hooks are not installed",
+          "Headroom compression adoption requires separate proxy telemetry"
+        ],
+        "modes": {
+          "caveman": "Full upstream project skill; no automatic host hook installation",
+          "concise": "Native workflow plus a short prose-only instruction",
+          "headroom": "Externally supplied Headroom proxy prefix wrapping native agent CLI",
+          "native": "Unchanged native file/shell workflow",
+          "ponytail": "Full upstream project skill; no automatic host hook installation",
+          "rtk": "Manual RTK test wrapper guidance; no automatic host hook installation",
+          "scopelet": "Project skill and explicit Scopelet default CLI guidance",
+          "scopelet-caveman": "Scopelet ultra CLI plus full upstream Caveman communication skill",
+          "scopelet-ultra": "Project skill and explicit Scopelet ultra CLI guidance"
+        },
+        "planned_runs": 2,
+        "prefix_sha256": {
+          "1-scopelet-headroom-runner.py": "57e7edd7ed8f2d1afc78cefb68ba6506217b601cc7abe9fa495fd1f989cee3fe"
+        },
+        "repetitions": 1,
+        "scopelet_view_mode_evidence": "Views in completed tool returns correlated with Scopelet command invocations. Shell-command recognition is conservative; combined commands can include other output. Expansion can intentionally return default mode.",
+        "seed": 20260909,
+        "skill_hashes": {},
+        "source_commits": {
+          "headroom": "e67b3c8a29443a60d6b0018fb22f525c5cd7e709"
+        },
+        "timeout": 90.0
+      },
+      "runs": [
+        {
+          "agent": "claude",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 26.117829,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "57e7edd7ed8f2d1afc78cefb68ba6506217b601cc7abe9fa495fd1f989cee3fe",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 2640.47,
+                "max_ms": 4697.03,
+                "min_ms": 1194.61,
+                "total_requests": 7
+              },
+              "requests": {
+                "cached": 5,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 7
+              },
+              "tokens": {
+                "active_savings_percent": 26.6,
+                "all_layers_saved": 34539,
+                "all_layers_savings_percent": 26.6,
+                "input": 95304,
+                "new_input_savings_percent": 17.76,
+                "new_input_tokens": 17883,
+                "output": 1439,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 99165,
+                "proxy_compression_saved": 3861,
+                "proxy_savings_percent": 3.89,
+                "proxy_total_before_compression": 99165,
+                "saved": 34539,
+                "savings_percent": 26.6,
+                "total_before_compression": 129843
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "e89c81f9012c5a3b9f39304eb4b5d48b5e13b47d6375a68b9498aa82a378782c",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 17520,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 83544,
+            "input_tokens": 49,
+            "logical_input_tokens": 101113,
+            "output_tokens": 1423,
+            "reasoning_tokens": 765,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 50.63072,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "57e7edd7ed8f2d1afc78cefb68ba6506217b601cc7abe9fa495fd1f989cee3fe",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "72962824c6e1542eefdcceed4bf3e824e4f3e94ea3df7f7df617504ac8160388",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 78080,
+            "input_tokens": 90412,
+            "logical_input_tokens": 90412,
+            "output_tokens": 1379,
+            "reasoning_tokens": 155,
+            "usage_missing": false
+          }
+        }
+      ]
+    },
+    {
+      "campaign": "headroom-codex-provider-preflight",
+      "meta": {
+        "agent_versions": {
+          "codex": "codex-cli 0.153.4"
+        },
+        "base_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
+        "executables_sha256": {
+          "headroom": "9d99c0394f75e8b3f5f5e0c20d4488d2de7e02e56d71229f4b267b97c8bafc3e"
+        },
+        "harness_sha256": "2532bccd9e55a73600d2cb6a58081cf1dd8a524ad3ac4604e05d25108eac872a",
+        "limitations": [
+          "Exploratory pilot, not powered for quality noninferiority",
+          "Provider caches are observed, not forcibly cold",
+          "Global Codex skill paths explicitly disabled; other host instructions may remain",
+          "RTK hooks and competitor hooks are not installed",
+          "Headroom compression adoption requires separate proxy telemetry"
+        ],
+        "modes": {
+          "caveman": "Full upstream project skill; no automatic host hook installation",
+          "concise": "Native workflow plus a short prose-only instruction",
+          "headroom": "Externally supplied Headroom proxy prefix wrapping native agent CLI",
+          "native": "Unchanged native file/shell workflow",
+          "ponytail": "Full upstream project skill; no automatic host hook installation",
+          "rtk": "Manual RTK test wrapper guidance; no automatic host hook installation",
+          "scopelet": "Project skill and explicit Scopelet default CLI guidance",
+          "scopelet-caveman": "Scopelet ultra CLI plus full upstream Caveman communication skill",
+          "scopelet-ultra": "Project skill and explicit Scopelet ultra CLI guidance"
+        },
+        "planned_runs": 1,
+        "prefix_sha256": {
+          "1-scopelet-headroom-runner.py": "42e545b2c27e62001d98eb79454b5d4ea18ea4ed1bbf7ad7c63ab6e9f193e222"
+        },
+        "repetitions": 1,
+        "scopelet_view_mode_evidence": "Views in completed tool returns correlated with Scopelet command invocations. Shell-command recognition is conservative; combined commands can include other output. Expansion can intentionally return default mode.",
+        "seed": 20260909,
+        "skill_hashes": {},
+        "source_commits": {
+          "headroom": "e67b3c8a29443a60d6b0018fb22f525c5cd7e709"
+        },
+        "timeout": 90.0
+      },
+      "runs": [
+        {
+          "agent": "codex",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 63.265463,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "42e545b2c27e62001d98eb79454b5d4ea18ea4ed1bbf7ad7c63ab6e9f193e222",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "e94083ac6f10a6f18e1866d681fc3e48f820766e2aa8f681f846f01eb9f9717e",
+          "stdout_sha256": "50aad0a0a971731c72c9be69d9b6cb80150f6c4c32b525fcc849ca996d50a4bf",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 94208,
+            "input_tokens": 103093,
+            "logical_input_tokens": 103093,
+            "output_tokens": 1351,
+            "reasoning_tokens": 141,
+            "usage_missing": false
+          }
+        }
+      ]
+    },
+    {
+      "campaign": "headroom-codex-chatgpt-preflight",
+      "meta": {
+        "agent_versions": {
+          "codex": "codex-cli 0.153.4"
+        },
+        "base_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
+        "executables_sha256": {
+          "headroom": "9d99c0394f75e8b3f5f5e0c20d4488d2de7e02e56d71229f4b267b97c8bafc3e"
+        },
+        "harness_sha256": "2532bccd9e55a73600d2cb6a58081cf1dd8a524ad3ac4604e05d25108eac872a",
+        "limitations": [
+          "Exploratory pilot, not powered for quality noninferiority",
+          "Provider caches are observed, not forcibly cold",
+          "Global Codex skill paths explicitly disabled; other host instructions may remain",
+          "RTK hooks and competitor hooks are not installed",
+          "Headroom compression adoption requires separate proxy telemetry"
+        ],
+        "modes": {
+          "caveman": "Full upstream project skill; no automatic host hook installation",
+          "concise": "Native workflow plus a short prose-only instruction",
+          "headroom": "Externally supplied Headroom proxy prefix wrapping native agent CLI",
+          "native": "Unchanged native file/shell workflow",
+          "ponytail": "Full upstream project skill; no automatic host hook installation",
+          "rtk": "Manual RTK test wrapper guidance; no automatic host hook installation",
+          "scopelet": "Project skill and explicit Scopelet default CLI guidance",
+          "scopelet-caveman": "Scopelet ultra CLI plus full upstream Caveman communication skill",
+          "scopelet-ultra": "Project skill and explicit Scopelet ultra CLI guidance"
+        },
+        "planned_runs": 1,
+        "prefix_sha256": {
+          "1-scopelet-headroom-runner.py": "cd7cc1ef3d1d1a6990453a107e3ebbb41895cd802c5fe04bfbbe58f953c8e1f3"
+        },
+        "repetitions": 1,
+        "scopelet_view_mode_evidence": "Views in completed tool returns correlated with Scopelet command invocations. Shell-command recognition is conservative; combined commands can include other output. Expansion can intentionally return default mode.",
+        "seed": 20260909,
+        "skill_hashes": {},
+        "source_commits": {
+          "headroom": "e67b3c8a29443a60d6b0018fb22f525c5cd7e709"
+        },
+        "timeout": 90.0
+      },
+      "runs": [
+        {
+          "agent": "codex",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 49.672909,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "cd7cc1ef3d1d1a6990453a107e3ebbb41895cd802c5fe04bfbbe58f953c8e1f3",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "2c073bd2b0a22d258d3c7a7df42161795222782f5e05cb6060984917883bf0a6",
+          "stdout_sha256": "f679e6f288446f8318388781507eb7e8a58a43072c0673f4157104e37cd35b51",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 117248,
+            "input_tokens": 132710,
+            "logical_input_tokens": 132710,
+            "output_tokens": 1329,
+            "reasoning_tokens": 190,
+            "usage_missing": false
+          }
+        }
+      ]
+    },
+    {
+      "campaign": "headroom-codex-builtin-preflight",
+      "meta": {
+        "agent_versions": {
+          "codex": "codex-cli 0.153.4"
+        },
+        "base_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
+        "executables_sha256": {
+          "headroom": "9d99c0394f75e8b3f5f5e0c20d4488d2de7e02e56d71229f4b267b97c8bafc3e"
+        },
+        "harness_sha256": "2532bccd9e55a73600d2cb6a58081cf1dd8a524ad3ac4604e05d25108eac872a",
+        "limitations": [
+          "Exploratory pilot, not powered for quality noninferiority",
+          "Provider caches are observed, not forcibly cold",
+          "Global Codex skill paths explicitly disabled; other host instructions may remain",
+          "RTK hooks and competitor hooks are not installed",
+          "Headroom compression adoption requires separate proxy telemetry"
+        ],
+        "modes": {
+          "caveman": "Full upstream project skill; no automatic host hook installation",
+          "concise": "Native workflow plus a short prose-only instruction",
+          "headroom": "Externally supplied Headroom proxy prefix wrapping native agent CLI",
+          "native": "Unchanged native file/shell workflow",
+          "ponytail": "Full upstream project skill; no automatic host hook installation",
+          "rtk": "Manual RTK test wrapper guidance; no automatic host hook installation",
+          "scopelet": "Project skill and explicit Scopelet default CLI guidance",
+          "scopelet-caveman": "Scopelet ultra CLI plus full upstream Caveman communication skill",
+          "scopelet-ultra": "Project skill and explicit Scopelet ultra CLI guidance"
+        },
+        "planned_runs": 1,
+        "prefix_sha256": {
+          "1-scopelet-headroom-runner.py": "d1d3534cec2529c5c18d3a898204a7b1ca49ff7b548fc92424f39940092b7582"
+        },
+        "repetitions": 1,
+        "scopelet_view_mode_evidence": "Views in completed tool returns correlated with Scopelet command invocations. Shell-command recognition is conservative; combined commands can include other output. Expansion can intentionally return default mode.",
+        "seed": 20260909,
+        "skill_hashes": {},
+        "source_commits": {
+          "headroom": "e67b3c8a29443a60d6b0018fb22f525c5cd7e709"
+        },
+        "timeout": 90.0
+      },
+      "runs": [
+        {
+          "agent": "codex",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 52.946792,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "d1d3534cec2529c5c18d3a898204a7b1ca49ff7b548fc92424f39940092b7582",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "6d88d67eb5230f842b347fc766c3d649a1627ebf7fccf706e19ff660b7cdd34d",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 94208,
+            "input_tokens": 103114,
+            "logical_input_tokens": 103114,
+            "output_tokens": 1415,
+            "reasoning_tokens": 170,
+            "usage_missing": false
+          }
+        }
+      ]
+    },
+    {
+      "campaign": "public-headroom-adapter-20260909",
+      "meta": {
+        "agent_versions": {
+          "claude": "2.1.266 (Claude Code)"
+        },
+        "base_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
+        "executables_sha256": {
+          "headroom": "9d99c0394f75e8b3f5f5e0c20d4488d2de7e02e56d71229f4b267b97c8bafc3e"
+        },
+        "harness_sha256": "2532bccd9e55a73600d2cb6a58081cf1dd8a524ad3ac4604e05d25108eac872a",
+        "limitations": [
+          "Exploratory pilot, not powered for quality noninferiority",
+          "Provider caches are observed, not forcibly cold",
+          "Global Codex skill paths explicitly disabled; other host instructions may remain",
+          "RTK hooks and competitor hooks are not installed",
+          "Headroom compression adoption requires separate proxy telemetry"
+        ],
+        "modes": {
+          "caveman": "Full upstream project skill; no automatic host hook installation",
+          "concise": "Native workflow plus a short prose-only instruction",
+          "headroom": "Externally supplied Headroom proxy prefix wrapping native agent CLI",
+          "native": "Unchanged native file/shell workflow",
+          "ponytail": "Full upstream project skill; no automatic host hook installation",
+          "rtk": "Manual RTK test wrapper guidance; no automatic host hook installation",
+          "scopelet": "Project skill and explicit Scopelet default CLI guidance",
+          "scopelet-caveman": "Scopelet ultra CLI plus full upstream Caveman communication skill",
+          "scopelet-ultra": "Project skill and explicit Scopelet ultra CLI guidance"
+        },
+        "planned_runs": 1,
+        "prefix_sha256": {
+          "1-headroom_proxy.py": "30c75efb91b3957e9facef8f402f3d9e1501fddb4602ce5e455049f1d3864b38"
+        },
+        "repetitions": 1,
+        "scopelet_view_mode_evidence": "Views in completed tool returns correlated with Scopelet command invocations. Shell-command recognition is conservative; combined commands can include other output. Expansion can intentionally return default mode.",
+        "seed": 20260909,
+        "skill_hashes": {},
+        "source_commits": {
+          "headroom": "e67b3c8a29443a60d6b0018fb22f525c5cd7e709"
+        },
+        "timeout": 300.0
+      },
+      "runs": [
+        {
+          "agent": "claude",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 28.314883,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "30c75efb91b3957e9facef8f402f3d9e1501fddb4602ce5e455049f1d3864b38",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 3151.42,
+                "max_ms": 8591.76,
+                "min_ms": 1085.3,
+                "total_requests": 8
+              },
+              "requests": {
+                "cached": 7,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 8
+              },
+              "tokens": {
+                "active_savings_percent": 25.82,
+                "all_layers_saved": 40298,
+                "all_layers_savings_percent": 25.82,
+                "input": 115755,
+                "new_input_savings_percent": 24.53,
+                "new_input_tokens": 13863,
+                "output": 1910,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 120262,
+                "proxy_compression_saved": 4507,
+                "proxy_savings_percent": 3.75,
+                "proxy_total_before_compression": 120262,
+                "saved": 40298,
+                "savings_percent": 25.82,
+                "total_before_compression": 156053
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "1f3c3ebc6635cf821f357f5a739986e76126d9d9a749025e832019bd968314d5",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 4
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11772,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 108598,
+            "input_tokens": 57,
+            "logical_input_tokens": 120427,
+            "output_tokens": 1896,
+            "reasoning_tokens": 997,
+            "usage_missing": false
+          }
+        }
+      ]
+    }
+  ],
+  "metric": "model-reported logical input plus output; cache included; not currency",
+  "models": {
+    "claude": "claude-haiku-4-5-20251001",
+    "codex": "gpt-5.6-luna (low)"
+  },
+  "schema_version": 1
+}

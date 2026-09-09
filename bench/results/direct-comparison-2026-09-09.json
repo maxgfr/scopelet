@@ -1,0 +1,3102 @@
+{
+  "campaigns": [
+    {
+      "campaign": "direct-claude-20260909",
+      "meta": {
+        "agent_versions": {
+          "claude": "2.1.266 (Claude Code)"
+        },
+        "base_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
+        "executables_sha256": {
+          "headroom": "9d99c0394f75e8b3f5f5e0c20d4488d2de7e02e56d71229f4b267b97c8bafc3e",
+          "rtk": "96824d47cbd5cd12d22695432bbb4b7347165a0281a666e2e19056b7d4cfd2cc",
+          "scopelet": "202cc5e9526d183210c132b98d1f702f51ac4b4513b99327eece427688fd2976"
+        },
+        "harness_sha256": "2532bccd9e55a73600d2cb6a58081cf1dd8a524ad3ac4604e05d25108eac872a",
+        "limitations": [
+          "Exploratory pilot, not powered for quality noninferiority",
+          "Provider caches are observed, not forcibly cold",
+          "Global Codex skill paths explicitly disabled; other host instructions may remain",
+          "RTK hooks and competitor hooks are not installed",
+          "Headroom compression adoption requires separate proxy telemetry"
+        ],
+        "modes": {
+          "caveman": "Full upstream project skill; no automatic host hook installation",
+          "concise": "Native workflow plus a short prose-only instruction",
+          "headroom": "Externally supplied Headroom proxy prefix wrapping native agent CLI",
+          "native": "Unchanged native file/shell workflow",
+          "ponytail": "Full upstream project skill; no automatic host hook installation",
+          "rtk": "Manual RTK test wrapper guidance; no automatic host hook installation",
+          "scopelet": "Project skill and explicit Scopelet default CLI guidance",
+          "scopelet-caveman": "Scopelet ultra CLI plus full upstream Caveman communication skill",
+          "scopelet-ultra": "Project skill and explicit Scopelet ultra CLI guidance"
+        },
+        "planned_runs": 27,
+        "prefix_sha256": {
+          "1-scopelet-headroom-claude-frozen.py": "42e545b2c27e62001d98eb79454b5d4ea18ea4ed1bbf7ad7c63ab6e9f193e222"
+        },
+        "repetitions": 1,
+        "scopelet_view_mode_evidence": "Views in completed tool returns correlated with Scopelet command invocations. Shell-command recognition is conservative; combined commands can include other output. Expansion can intentionally return default mode.",
+        "seed": 20260909,
+        "skill_hashes": {
+          "caveman": {
+            "README.md": "e86f4b56765fc288859a8a1f3e3814c990ba920b326c40c55667b56d44c58c1e",
+            "SKILL.md": "c4d7354b4b063d54601fcdd5097a5b1713d1a1a2e386ac39efa438aa1ffef8ce"
+          },
+          "ponytail": {
+            "SKILL.md": "1316a2f3f95741d2300b116fe0c2d81ce4a9568656ed0a62643f54aaf09957f2"
+          },
+          "scopelet": {
+            "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+            "SKILL.md": "e98ab6d5bcc6a877d12f452d78852f2eb00816c497de308f47d20ac96be34fcb",
+            "references/queries.md": "24cffe4855f2674ac9be803b1b99dbb20823da8a0ce3fc4ae6487d26298b0c34",
+            "references/setup.md": "b966853ab2d0532cd783de52df3e59e09f3f568e38e13b8eaf77d8353583abe3",
+            "scripts/scopelet.mjs": "364d004f5f34a030f33ae5f761c97cb3c2e1780641aeb417f546443438191928"
+          }
+        },
+        "source_commits": {
+          "caveman": "15581d14007fd01fb3f132016741962f34936ca2",
+          "headroom": "e67b3c8a29443a60d6b0018fb22f525c5cd7e709",
+          "ponytail": "356918eba965ee1eac64bd3a7f0dd02108350de5",
+          "rtk": "8e9aa04cb2afb189747fac4e36bec2254ddd0564",
+          "scopelet": "d7f114c0e6ce44f34856ee1bd395a59d138f66f7"
+        },
+        "timeout": 240.0
+      },
+      "runs": [
+        {
+          "agent": "claude",
+          "arm": "rtk",
+          "artifact_error": false,
+          "duration_seconds": 37.466711,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "75f958148ad41a80e06a9192b1254c789b3f8db21d510562a23fdb130dfcc0ca",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "b0347cbb15f5180abfe526bf48124e0fb489e2f989247109b5c553c0e3f87d78",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Read": 2,
+              "Write": 1
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 33418,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 226881,
+            "input_tokens": 49,
+            "logical_input_tokens": 260348,
+            "output_tokens": 2142,
+            "reasoning_tokens": 1206,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "caveman",
+          "artifact_error": false,
+          "duration_seconds": 18.99454,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "8e5917fa1187f364095db914f41780bf8fd88b06caf28adcd8228da46c2c916c",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "d7c446a0d62dacaf3c2826107ad50e802af548c481435c9960d0baffcfc469ff",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 1,
+              "Read": 2
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 34847,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 136917,
+            "input_tokens": 34,
+            "logical_input_tokens": 171798,
+            "output_tokens": 1372,
+            "reasoning_tokens": 805,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "concise",
+          "artifact_error": false,
+          "duration_seconds": 23.871758,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "52405ccc63c9f5764c4c8133220aeedb71024c1a3937fe2b9cfb777f6a5646c7",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "9d765ebaed80e78feac5ac203dc86f6d9cbea0978ec152e64c1246fafd4c9e9a",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 1,
+              "Read": 2
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 33650,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 131710,
+            "input_tokens": 33,
+            "logical_input_tokens": 165393,
+            "output_tokens": 2180,
+            "reasoning_tokens": 1517,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "concise",
+          "artifact_error": false,
+          "duration_seconds": 20.434438,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "c967218267653584d0864c9e4f0ace6895b08de5fb2909da95a1f5a4e156b242",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "aeaa7a1596b65073ef4214d6aaa66eb84d449343084e2fd7e911023f12154f2c",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 3,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 15515,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 149584,
+            "input_tokens": 49,
+            "logical_input_tokens": 165148,
+            "output_tokens": 1413,
+            "reasoning_tokens": 642,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet",
+          "artifact_error": false,
+          "duration_seconds": 22.512332,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default"
+          ],
+          "passed": true,
+          "prompt_sha256": "c91aa0d5202e70f4160f983e2b6adfe719ecbcceaa06ad5361da2db3839ccb50",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "1527fbe69a8ea36c4902f6fbfe8fb723f6607c76729eb211ddbe4e881c6afded",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Read": 3,
+              "Write": 1
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11908,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 166421,
+            "input_tokens": 58,
+            "logical_input_tokens": 178387,
+            "output_tokens": 1861,
+            "reasoning_tokens": 807,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "concise",
+          "artifact_error": false,
+          "duration_seconds": 19.498789,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "670272e6683743889d558c0c52674b93959e9551300b70d7833c5e4e269ee151",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "c693bedc42c15c87ba222a646ec32b162155f82d9ee98536ffa54f6495409168",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9238,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 107340,
+            "input_tokens": 41,
+            "logical_input_tokens": 116619,
+            "output_tokens": 1629,
+            "reasoning_tokens": 892,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 26.862857,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "42e545b2c27e62001d98eb79454b5d4ea18ea4ed1bbf7ad7c63ab6e9f193e222",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 3363.52,
+                "max_ms": 5059.51,
+                "min_ms": 1032.72,
+                "total_requests": 7
+              },
+              "requests": {
+                "cached": 6,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 7
+              },
+              "tokens": {
+                "active_savings_percent": 23.68,
+                "all_layers_saved": 34551,
+                "all_layers_savings_percent": 23.68,
+                "input": 111345,
+                "new_input_savings_percent": 19.05,
+                "new_input_tokens": 16454,
+                "output": 1895,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 115218,
+                "proxy_compression_saved": 3873,
+                "proxy_savings_percent": 3.36,
+                "proxy_total_before_compression": 115218,
+                "saved": 34551,
+                "savings_percent": 23.68,
+                "total_before_compression": 145896
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "efa2c2b325b74a3e13ec9a5c30f8938cf9b6f4dbd88e0a3e26347cb17a52dc1f",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "280ba1c3b0601a2adaa20606c1fb9e66f77efd4326e991448e3b1a45c66bd701",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 3
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": 16454,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 105922,
+            "input_tokens": 49,
+            "logical_input_tokens": 122425,
+            "output_tokens": 1880,
+            "reasoning_tokens": 897,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "native",
+          "artifact_error": false,
+          "duration_seconds": 21.997498,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "6adcb76d758904591c7fdb5d9a946a3a06b1b87db527f3c779b334e8d69b699c",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 3
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 9458,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 153611,
+            "input_tokens": 57,
+            "logical_input_tokens": 163126,
+            "output_tokens": 1738,
+            "reasoning_tokens": 842,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet-caveman",
+          "artifact_error": false,
+          "duration_seconds": 23.632212,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "8048f4cfdfc1040201c94055b3f0cbafb25057a75f5027e5c7c311915e81bf25",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f4df0755853c9f9d8c69b069191de0dd9bbd06da4dcee729ece0e7744c812fe3",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": true,
+              "ponytail": false
+            },
+            "skill_tool_invoked": true,
+            "tool_counts": {
+              "Bash": 2,
+              "Read": 2,
+              "Skill": 2,
+              "Write": 1
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": 13430,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 174001,
+            "input_tokens": 60,
+            "logical_input_tokens": 187491,
+            "output_tokens": 1883,
+            "reasoning_tokens": 979,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ponytail",
+          "artifact_error": false,
+          "duration_seconds": 27.429659,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "ef930c1b6b8f7f9e147a02ac1140b7c0b9bd4c4f93ab51f20505fc155c2ad7f4",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5336c83bb219a5c6cd98a53cbc9d45a3b0a024d8e60b5b663c08cbd8c5ad5807",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 3
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": 15906,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 212416,
+            "input_tokens": 66,
+            "logical_input_tokens": 228388,
+            "output_tokens": 1628,
+            "reasoning_tokens": 716,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ponytail",
+          "artifact_error": false,
+          "duration_seconds": 24.272167,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "ac45d5b5b126bc7cc8e856ade8df963a6828767bd95c67a2bb488bf71e0f9a5c",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "fbd7d3d801681f38c79288f0df33472ffaefc73239d49eb1ddf37339b27ff974",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Grep": 1,
+              "Read": 2
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11249,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 164309,
+            "input_tokens": 58,
+            "logical_input_tokens": 175616,
+            "output_tokens": 1629,
+            "reasoning_tokens": 910,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet-caveman",
+          "artifact_error": false,
+          "duration_seconds": 24.67154,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "d0a31c57044795307364e6a5f9ab405487cf5975e30b67bde8b85f8e73551a06",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "f1287c5ef9be8f374bf7d4b6f5cc7d66fa51d05546025c97244051a15fc61bff",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": true,
+              "ponytail": false
+            },
+            "skill_tool_invoked": true,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2,
+              "Skill": 2
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": 15545,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 178505,
+            "input_tokens": 60,
+            "logical_input_tokens": 194110,
+            "output_tokens": 1580,
+            "reasoning_tokens": 732,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "rtk",
+          "artifact_error": false,
+          "duration_seconds": 34.22773,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "f075860b915aa149187a605fb24f7352c0f9e4c89fe5d448d6ee1b9be6f86a4a",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "eecfb35bc25dbb4902c7793d137ac17bf9548a06353e90369fcc61b74032a4ae",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 4
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 10283,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 157263,
+            "input_tokens": 57,
+            "logical_input_tokens": 167603,
+            "output_tokens": 2235,
+            "reasoning_tokens": 1233,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet-caveman",
+          "artifact_error": false,
+          "duration_seconds": 24.609397,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default"
+          ],
+          "passed": true,
+          "prompt_sha256": "3e46fa40132624234a1aef64a389e33865ec64068f0535a3a41b3b1180e82978",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "feb6b4e77b6c9cb48b3008a4ba5e6edb51c61b94a5c1c537deb383d6c1c9a24f",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": true,
+              "ponytail": false
+            },
+            "skill_tool_invoked": true,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 1,
+              "Skill": 2
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": 13940,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 176179,
+            "input_tokens": 60,
+            "logical_input_tokens": 190179,
+            "output_tokens": 1907,
+            "reasoning_tokens": 1153,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "caveman",
+          "artifact_error": false,
+          "duration_seconds": 22.481655,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "a9e61abdf645706952b6f6e8403d32ee01a0fb648f0467e0867ba3f79f086402",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "65bd4c937f69cfc189de4affa5b3bd24062acaea6439a950fea3512c7a4e838b",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11635,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 140600,
+            "input_tokens": 50,
+            "logical_input_tokens": 152285,
+            "output_tokens": 1887,
+            "reasoning_tokens": 1191,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet-ultra",
+          "artifact_error": false,
+          "duration_seconds": 20.320278,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default"
+          ],
+          "passed": true,
+          "prompt_sha256": "0852784f34f85173d529ea633f0448cafbe6cb13f620d6f64962e9b293ecffb1",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ec658d8c6cf8a675f11f8587e00e6bc3e3d24e60bcf9a68a9cf398a603bee6c3",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Read": 2,
+              "Write": 1
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 34470,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 279870,
+            "input_tokens": 58,
+            "logical_input_tokens": 314398,
+            "output_tokens": 1896,
+            "reasoning_tokens": 927,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet-ultra",
+          "artifact_error": false,
+          "duration_seconds": 19.779472,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "1dd59d3741965754cc8d742639ecadc13b06bcf7a04dc9cc0df921bc5c361639",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ad3528919d1747773e7245bd03c3e0be220c89b655855439fedce4322d468aae",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 10121,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 134668,
+            "input_tokens": 50,
+            "logical_input_tokens": 144839,
+            "output_tokens": 1666,
+            "reasoning_tokens": 954,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "rtk",
+          "artifact_error": false,
+          "duration_seconds": 31.840822,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "6a0333d1bfdb3c598d6077ada06cc911f2a81c040c434c925dd3fc10b9f60b65",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "b5fb69883de18045850101c5a09003a605d6918910ba7b90aa67131a12a87d16",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 3,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 2,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 4,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 4
+            },
+            "tool_use_count": 10
+          },
+          "usage": {
+            "cache_creation_input_tokens": 14626,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 285958,
+            "input_tokens": 89,
+            "logical_input_tokens": 300673,
+            "output_tokens": 2390,
+            "reasoning_tokens": 1026,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet",
+          "artifact_error": false,
+          "duration_seconds": 39.254428,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "bf12af5f8b4a430c64a5e57714c73d5ee152c58ef863705ea6b8caa359e4b7fd",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "9faa8a4d99e8c778218a7f0bad33e2d6249ef0911dcabc5cfed944b43f20b059",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Edit": 1,
+              "Read": 2
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 11344,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 139010,
+            "input_tokens": 50,
+            "logical_input_tokens": 150404,
+            "output_tokens": 2872,
+            "reasoning_tokens": 1918,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "native",
+          "artifact_error": false,
+          "duration_seconds": 22.273008,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "59066bedacf3be10c89341a72bf4267b3bd5449e77a8806ad722a476f52ec75b",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "688c7629133c23d39f16af764a36465577bdf0e668852bd92526119fce2ac310",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 1,
+              "Read": 3
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 33319,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 154020,
+            "input_tokens": 41,
+            "logical_input_tokens": 187380,
+            "output_tokens": 1724,
+            "reasoning_tokens": 946,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "native",
+          "artifact_error": false,
+          "duration_seconds": 30.562768,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "efa2c2b325b74a3e13ec9a5c30f8938cf9b6f4dbd88e0a3e26347cb17a52dc1f",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "5db9102102a618f710fd0720620420052554aa63cc8b3123c84ec2cd93704ace",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 3,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 4,
+              "Edit": 1,
+              "Glob": 1,
+              "Read": 3
+            },
+            "tool_use_count": 9
+          },
+          "usage": {
+            "cache_creation_input_tokens": 16630,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 269411,
+            "input_tokens": 81,
+            "logical_input_tokens": 286122,
+            "output_tokens": 2226,
+            "reasoning_tokens": 1117,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "ponytail",
+          "artifact_error": false,
+          "duration_seconds": 31.972549,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "fd694cf7977470f721ad26eb11ae01a02b31ed97aacd2698c1deb534f99a4305",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "4882cf0cd2c79a9ff6e68780f3edf951fee107d723bfc9147fee29aa39afb69e",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 3,
+              "Read": 3,
+              "Write": 1
+            },
+            "tool_use_count": 7
+          },
+          "usage": {
+            "cache_creation_input_tokens": 36414,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 339494,
+            "input_tokens": 66,
+            "logical_input_tokens": 375974,
+            "output_tokens": 2510,
+            "reasoning_tokens": 1473,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet-ultra",
+          "artifact_error": false,
+          "duration_seconds": 19.312828,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "497d9d06470d6e429f56c178f24066be79010ef0225031cf18656b4504bbe185",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "ede1a9e5c44baf5b6f6cd43ef3ffa4c0b54d9edaf206ff348aa1b70fc87a9a79",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 12579,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 113669,
+            "input_tokens": 42,
+            "logical_input_tokens": 126290,
+            "output_tokens": 1517,
+            "reasoning_tokens": 758,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 22.603438,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "42e545b2c27e62001d98eb79454b5d4ea18ea4ed1bbf7ad7c63ab6e9f193e222",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 1,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 3282.89,
+                "max_ms": 6899.47,
+                "min_ms": 273.83,
+                "total_requests": 6
+              },
+              "requests": {
+                "cached": 4,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 6
+              },
+              "tokens": {
+                "active_savings_percent": 15.15,
+                "all_layers_saved": 23028,
+                "all_layers_savings_percent": 15.15,
+                "input": 128933,
+                "new_input_savings_percent": 6.9,
+                "new_input_tokens": 34784,
+                "output": 1229,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 131509,
+                "proxy_compression_saved": 2576,
+                "proxy_savings_percent": 1.96,
+                "proxy_total_before_compression": 131509,
+                "saved": 23028,
+                "savings_percent": 15.15,
+                "total_before_compression": 151961
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "59066bedacf3be10c89341a72bf4267b3bd5449e77a8806ad722a476f52ec75b",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "d81f1f83bf888e9376560bbd5d4c3aeca9ad4511fa50d098a648c909ca7f7aef",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Read": 2
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 34784,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 103827,
+            "input_tokens": 33,
+            "logical_input_tokens": 138644,
+            "output_tokens": 1213,
+            "reasoning_tokens": 544,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "caveman",
+          "artifact_error": false,
+          "duration_seconds": 28.293808,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "5a94d013f4463deca518133c66b09e61f3d49db6e9cd34e4502cb1b5cf46208e",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "9546c8890c8456972ee3ce2cfa42fe2aed79e186bbca861511b77f201e92b416",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 3,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 4,
+              "Edit": 1,
+              "Read": 3
+            },
+            "tool_use_count": 8
+          },
+          "usage": {
+            "cache_creation_input_tokens": 18680,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 256695,
+            "input_tokens": 74,
+            "logical_input_tokens": 275449,
+            "output_tokens": 2090,
+            "reasoning_tokens": 1092,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "headroom",
+          "artifact_error": false,
+          "duration_seconds": 32.64691,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "headroom": {
+            "measurement_missing": null,
+            "mode": "token",
+            "proxy_ready": true,
+            "runner_sha256": "42e545b2c27e62001d98eb79454b5d4ea18ea4ed1bbf7ad7c63ab6e9f193e222",
+            "stats_after": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 4094.9,
+                "max_ms": 10413.24,
+                "min_ms": 1101.18,
+                "total_requests": 7
+              },
+              "requests": {
+                "cached": 6,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 7
+              },
+              "tokens": {
+                "active_savings_percent": 27.54,
+                "all_layers_saved": 34542,
+                "all_layers_savings_percent": 27.54,
+                "input": 90889,
+                "new_input_savings_percent": 26.15,
+                "new_input_tokens": 10915,
+                "output": 1228,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 94753,
+                "proxy_compression_saved": 3864,
+                "proxy_savings_percent": 4.08,
+                "proxy_total_before_compression": 94753,
+                "saved": 34542,
+                "savings_percent": 27.54,
+                "total_before_compression": 125431
+              }
+            },
+            "stats_before": {
+              "cache": {
+                "entries": 0,
+                "max_entries": 1000,
+                "total_hits": 0,
+                "ttl_seconds": 3600
+              },
+              "compression": {
+                "ccr_entries": 0,
+                "ccr_max_entries": 1000,
+                "ccr_retrievals": 0,
+                "compressed_tokens_cached": 0,
+                "original_tokens_cached": 0
+              },
+              "latency": {
+                "average_ms": 0,
+                "max_ms": 0,
+                "min_ms": 0,
+                "total_requests": 0
+              },
+              "requests": {
+                "cached": 0,
+                "failed": 0,
+                "rate_limited": 0,
+                "total": 0
+              },
+              "tokens": {
+                "active_savings_percent": 0,
+                "all_layers_saved": 0,
+                "all_layers_savings_percent": 0,
+                "input": 0,
+                "new_input_savings_percent": 0,
+                "new_input_tokens": 0,
+                "output": 0,
+                "output_reduction_percent": 0,
+                "output_saved": 0,
+                "proxy_attempted_tokens": 0,
+                "proxy_compression_saved": 0,
+                "proxy_savings_percent": 0,
+                "proxy_total_before_compression": 0,
+                "saved": 0,
+                "savings_percent": 0,
+                "total_before_compression": 0
+              }
+            }
+          },
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "eaa660ed4535253fc7916026c5d660f2874c2001b499efa627c27348594f39e7",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": false,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 2
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 10915,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 89268,
+            "input_tokens": 49,
+            "logical_input_tokens": 100232,
+            "output_tokens": 1212,
+            "reasoning_tokens": 416,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "claude",
+          "arm": "scopelet",
+          "artifact_error": false,
+          "duration_seconds": 19.780547,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default"
+          ],
+          "passed": true,
+          "prompt_sha256": "78f4e85789ceed22b87ac86ee4ec380e794d801889e1b7b7a8aa5be692192f1a",
+          "repetition": 1,
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stdout_sha256": "2d2728eb9657846967fa9fcbd79a52d6f4cc081dfd4241c260eb52939939d410",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 2,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": true,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": false,
+            "tool_counts": {
+              "Bash": 2,
+              "Edit": 1,
+              "Read": 1
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 19296,
+            "cache_included_in_reported_input": false,
+            "cache_read_input_tokens": 121633,
+            "input_tokens": 42,
+            "logical_input_tokens": 140971,
+            "output_tokens": 1581,
+            "reasoning_tokens": 823,
+            "usage_missing": false
+          }
+        }
+      ]
+    },
+    {
+      "campaign": "direct-codex-20260909",
+      "meta": {
+        "agent_versions": {
+          "codex": "codex-cli 0.153.4"
+        },
+        "base_harness_sha256": "686eb2ca3157f7ba0fde3bc7c8b3d3a165c274c0235f65505093d73e1d9be2cb",
+        "executables_sha256": {
+          "rtk": "96824d47cbd5cd12d22695432bbb4b7347165a0281a666e2e19056b7d4cfd2cc",
+          "scopelet": "202cc5e9526d183210c132b98d1f702f51ac4b4513b99327eece427688fd2976"
+        },
+        "harness_sha256": "2532bccd9e55a73600d2cb6a58081cf1dd8a524ad3ac4604e05d25108eac872a",
+        "limitations": [
+          "Exploratory pilot, not powered for quality noninferiority",
+          "Provider caches are observed, not forcibly cold",
+          "Global Codex skill paths explicitly disabled; other host instructions may remain",
+          "RTK hooks and competitor hooks are not installed",
+          "Headroom compression adoption requires separate proxy telemetry"
+        ],
+        "modes": {
+          "caveman": "Full upstream project skill; no automatic host hook installation",
+          "concise": "Native workflow plus a short prose-only instruction",
+          "headroom": "Externally supplied Headroom proxy prefix wrapping native agent CLI",
+          "native": "Unchanged native file/shell workflow",
+          "ponytail": "Full upstream project skill; no automatic host hook installation",
+          "rtk": "Manual RTK test wrapper guidance; no automatic host hook installation",
+          "scopelet": "Project skill and explicit Scopelet default CLI guidance",
+          "scopelet-caveman": "Scopelet ultra CLI plus full upstream Caveman communication skill",
+          "scopelet-ultra": "Project skill and explicit Scopelet ultra CLI guidance"
+        },
+        "planned_runs": 24,
+        "prefix_sha256": {},
+        "repetitions": 1,
+        "scopelet_view_mode_evidence": "Views in completed tool returns correlated with Scopelet command invocations. Shell-command recognition is conservative; combined commands can include other output. Expansion can intentionally return default mode.",
+        "seed": 20260909,
+        "skill_hashes": {
+          "caveman": {
+            "README.md": "e86f4b56765fc288859a8a1f3e3814c990ba920b326c40c55667b56d44c58c1e",
+            "SKILL.md": "c4d7354b4b063d54601fcdd5097a5b1713d1a1a2e386ac39efa438aa1ffef8ce"
+          },
+          "ponytail": {
+            "SKILL.md": "1316a2f3f95741d2300b116fe0c2d81ce4a9568656ed0a62643f54aaf09957f2"
+          },
+          "scopelet": {
+            "LICENSE": "9c3c32c87f56f3731a7431169319c7a77bad08ab864dfc16092f0d11975e19af",
+            "SKILL.md": "e98ab6d5bcc6a877d12f452d78852f2eb00816c497de308f47d20ac96be34fcb",
+            "references/queries.md": "24cffe4855f2674ac9be803b1b99dbb20823da8a0ce3fc4ae6487d26298b0c34",
+            "references/setup.md": "b966853ab2d0532cd783de52df3e59e09f3f568e38e13b8eaf77d8353583abe3",
+            "scripts/scopelet.mjs": "364d004f5f34a030f33ae5f761c97cb3c2e1780641aeb417f546443438191928"
+          }
+        },
+        "source_commits": {
+          "caveman": "15581d14007fd01fb3f132016741962f34936ca2",
+          "ponytail": "356918eba965ee1eac64bd3a7f0dd02108350de5",
+          "rtk": "8e9aa04cb2afb189747fac4e36bec2254ddd0564",
+          "scopelet": "d7f114c0e6ce44f34856ee1bd395a59d138f66f7"
+        },
+        "timeout": 240.0
+      },
+      "runs": [
+        {
+          "agent": "codex",
+          "arm": "scopelet-caveman",
+          "artifact_error": false,
+          "duration_seconds": 29.738936,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "47ac7e86a719e4f34ab65434264303989b8ed0d11c9736141ee15ce761b5d157",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "0b311558129bc416f7992d248ca14aed76dadab582734cfaab541d55d94490c1",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 66304,
+            "input_tokens": 85918,
+            "logical_input_tokens": 85918,
+            "output_tokens": 843,
+            "reasoning_tokens": 148,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "scopelet-caveman",
+          "artifact_error": false,
+          "duration_seconds": 55.846203,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default",
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "ace480788872993c211f440961aa67f95eec7056c6c2b88bdb16d20e4ed6435a",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "ffef0c9f2c9024663ccf5bda2d18dc1bc96814885e60ab7192efbd847c86ebf2",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 6,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 10
+            },
+            "tool_use_count": 10
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 183296,
+            "input_tokens": 213910,
+            "logical_input_tokens": 213910,
+            "output_tokens": 1178,
+            "reasoning_tokens": 317,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "scopelet",
+          "artifact_error": false,
+          "duration_seconds": 34.7813,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default"
+          ],
+          "passed": true,
+          "prompt_sha256": "4c4fb0560d71627e586cff34a3cae052aa3ef1412cd2ff2c7a488c3687c12eae",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "8fcd1f5ca759a0ecf010a73f47688d9d301da30017f082c0bcbb58172d58bc15",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 86272,
+            "input_tokens": 103084,
+            "logical_input_tokens": 103084,
+            "output_tokens": 1020,
+            "reasoning_tokens": 175,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "native",
+          "artifact_error": false,
+          "duration_seconds": 38.755157,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "59066bedacf3be10c89341a72bf4267b3bd5449e77a8806ad722a476f52ec75b",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "c4d7da5b768c3b2f9d9c0a0177038bf2ee73df54071c9d01d85bfe5f9341c3e5",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 66048,
+            "input_tokens": 77277,
+            "logical_input_tokens": 77277,
+            "output_tokens": 1074,
+            "reasoning_tokens": 84,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "caveman",
+          "artifact_error": false,
+          "duration_seconds": 30.28419,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "829156c28c82178d337d3c8f763875e635bd288fefa685867eb2724419b83805",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "f5b69df9090d04ee1f8cbc0945d867d4a61ad895ce379466214fb9ab4c181ccd",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 88320,
+            "input_tokens": 102997,
+            "logical_input_tokens": 102997,
+            "output_tokens": 1124,
+            "reasoning_tokens": 120,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ponytail",
+          "artifact_error": false,
+          "duration_seconds": 25.467163,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "de02304fe893e33d8c3fdbf2093e8260d043490e03c8f09eefddfb8baa432cc6",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "cb5d33e5a79fac2c9e4afd4e96d55cdfdf2bee7605cb0d1ed22b94294c34f67b",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 73216,
+            "input_tokens": 88013,
+            "logical_input_tokens": 88013,
+            "output_tokens": 760,
+            "reasoning_tokens": 83,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "concise",
+          "artifact_error": false,
+          "duration_seconds": 34.502478,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "c967218267653584d0864c9e4f0ace6895b08de5fb2909da95a1f5a4e156b242",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "a084d8f264997f5264ad83b8f8fc4100fa2db5bd0849d0c497939cc7aa6d52ae",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 3,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 138240,
+            "input_tokens": 158459,
+            "logical_input_tokens": 158459,
+            "output_tokens": 1226,
+            "reasoning_tokens": 214,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ponytail",
+          "artifact_error": false,
+          "duration_seconds": 29.590026,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "51fce3856e392a53fd5e6a9c084869f0e939ba9f180430a94508689c49a298db",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "d7e6ac3ad9748cfefcfd0a520d4f624f25c869cb997960340aaa60866702c073",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 76544,
+            "input_tokens": 89874,
+            "logical_input_tokens": 89874,
+            "output_tokens": 1043,
+            "reasoning_tokens": 188,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "caveman",
+          "artifact_error": false,
+          "duration_seconds": 23.007657,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "5c67b099979754604936f08980617ed4895995bb46dee2116bc9d6e42647450e",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "713637e78340338ee7d75914b3b13efb1969f050c05e421bbc52ceb3bea2325e",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 64256,
+            "input_tokens": 73863,
+            "logical_input_tokens": 73863,
+            "output_tokens": 828,
+            "reasoning_tokens": 90,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "ponytail",
+          "artifact_error": false,
+          "duration_seconds": 28.283636,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "f70c2864f1a35e76f0cdc67613082876d7e8b7f5bf7e073eeea4a6b17327b10a",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "ceb6cb82f373d8be7fbba73e773663ece54d55d31b2159d6abe87cba9ca1e5f2",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 1,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 95744,
+            "input_tokens": 127212,
+            "logical_input_tokens": 127212,
+            "output_tokens": 974,
+            "reasoning_tokens": 157,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "rtk",
+          "artifact_error": false,
+          "duration_seconds": 30.121725,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "6a0333d1bfdb3c598d6077ada06cc911f2a81c040c434c925dd3fc10b9f60b65",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "ed0d214d6d8cbbfbdfe34e7c39d488b23ccccec0c18d5af318f34410d435edb0",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 2,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 71168,
+            "input_tokens": 78374,
+            "logical_input_tokens": 78374,
+            "output_tokens": 779,
+            "reasoning_tokens": 54,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "native",
+          "artifact_error": false,
+          "duration_seconds": 43.130664,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "373817e3d70e4b600f93317117ab0355f0ab10babac5629ebd7e1d13b2798be2",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "7184b14c83b4b3cbcd8f5c95314afbdd6072cae364d771f0f8e741e1ef383c0f",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 86016,
+            "input_tokens": 102832,
+            "logical_input_tokens": 102832,
+            "output_tokens": 1342,
+            "reasoning_tokens": 148,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "scopelet-ultra",
+          "artifact_error": false,
+          "duration_seconds": 31.179318,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "68170fc68fdbf496911d04ab11d336cf30bcd4db37edbeb21716298acc23fe96",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "e9c830ffdb862db8a1a5cde52699aa7a3c291439e10fa8574b207d7a556547f3",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 38912,
+            "input_tokens": 56348,
+            "logical_input_tokens": 56348,
+            "output_tokens": 1074,
+            "reasoning_tokens": 144,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "scopelet",
+          "artifact_error": false,
+          "duration_seconds": 26.253336,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default"
+          ],
+          "passed": true,
+          "prompt_sha256": "92c079645e86abec17daab2e9ac9fd35cfdc1f8c2cd97bb939d35de0ad514eac",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "76ac1c656fa2cb000878b7428e84ccf311604a15c0a65e4bc28a7f5b98608e7b",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 1,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 51968,
+            "input_tokens": 70656,
+            "logical_input_tokens": 70656,
+            "output_tokens": 995,
+            "reasoning_tokens": 147,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "scopelet-ultra",
+          "artifact_error": false,
+          "duration_seconds": 38.080325,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default",
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "43741e25b05a055c78c18cd69219a518d6fc6c51799d31659744a8f8f621678c",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "daacd475c980d27ee3eb65a053f4512797ec83b22ba9d6dcb7d64c54f180a897",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 3,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 91392,
+            "input_tokens": 103144,
+            "logical_input_tokens": 103144,
+            "output_tokens": 1124,
+            "reasoning_tokens": 237,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "scopelet-caveman",
+          "artifact_error": false,
+          "duration_seconds": 20.901058,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default",
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "1b76d032be73ab88dd512dd398d3608a021542213e10dbfb8feaaf60b012dc41",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "b4f8b248042665703b349f9427221604dd58e9b3b731041104fde0193bebf7aa",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 3,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 68352,
+            "input_tokens": 79013,
+            "logical_input_tokens": 79013,
+            "output_tokens": 636,
+            "reasoning_tokens": 153,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "concise",
+          "artifact_error": false,
+          "duration_seconds": 28.770763,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "52405ccc63c9f5764c4c8133220aeedb71024c1a3937fe2b9cfb777f6a5646c7",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "ff2f946a6956c4c683f00a1204471b4c6a5dfbf36ac612ff7e09acac84737c9d",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 3
+            },
+            "tool_use_count": 3
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 44032,
+            "input_tokens": 51280,
+            "logical_input_tokens": 51280,
+            "output_tokens": 1026,
+            "reasoning_tokens": 92,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "native",
+          "artifact_error": false,
+          "duration_seconds": 36.38448,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "efa2c2b325b74a3e13ec9a5c30f8938cf9b6f4dbd88e0a3e26347cb17a52dc1f",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "9e0751631789c54003bdd54594e9db871b5d96a655a1118f626940ead6288c02",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 141312,
+            "input_tokens": 160189,
+            "logical_input_tokens": 160189,
+            "output_tokens": 1205,
+            "reasoning_tokens": 130,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "rtk",
+          "artifact_error": false,
+          "duration_seconds": 30.262262,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "7747bea75643b4c8d0403f33e76e09a9281cc2ba5a31b571b6a8f38d0954fc9d",
+            "acceptance.py": "68e2b9ce0c8df8a53c869854d03a82226ea500bd2b0f3231f685461228943996",
+            "records.jsonl": "2b65ba9555a07e9de5ebed5a0b8ece0e2ffd7033c983fe0f52203d48204d96b4"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "75f958148ad41a80e06a9192b1254c789b3f8db21d510562a23fdb130dfcc0ca",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "f339f20eec37b51aa008eddd43d71af082d7532cc91f354f7212782fa24f17f2",
+          "task": "task2",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 4
+            },
+            "tool_use_count": 4
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 64000,
+            "input_tokens": 78274,
+            "logical_input_tokens": 78274,
+            "output_tokens": 1215,
+            "reasoning_tokens": 103,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "scopelet-ultra",
+          "artifact_error": false,
+          "duration_seconds": 38.274293,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "ultra"
+          ],
+          "passed": true,
+          "prompt_sha256": "3619634550effba7028c051f5f304d683de3998b195caa7931dc6f9b1cc69425",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "5b29f86f66dfff9b22c11c8af9201ed8b238b7e5867d16420a8da5d4b3ee59ea",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 3,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 116736,
+            "input_tokens": 130304,
+            "logical_input_tokens": 130304,
+            "output_tokens": 1283,
+            "reasoning_tokens": 206,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "concise",
+          "artifact_error": false,
+          "duration_seconds": 33.668099,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "670272e6683743889d558c0c52674b93959e9551300b70d7833c5e4e269ee151",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "0ba689814c099d2ab063417b6e70a9be0e4c70dc1686639f8d8262bb340e35ad",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 5
+            },
+            "tool_use_count": 5
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 82176,
+            "input_tokens": 90416,
+            "logical_input_tokens": 90416,
+            "output_tokens": 1291,
+            "reasoning_tokens": 168,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "caveman",
+          "artifact_error": false,
+          "duration_seconds": 26.363659,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "9ca9512f4a9d28491d5b2cb715f3c67e6c645ba4d649f82dc927798a325856b5",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "3cae5040b54c0789cdd9956224d42925481706fc2a4ec876e24130d9be9edcfc",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 131328,
+            "input_tokens": 152679,
+            "logical_input_tokens": 152679,
+            "output_tokens": 877,
+            "reasoning_tokens": 117,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "rtk",
+          "artifact_error": false,
+          "duration_seconds": 44.117039,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "c5c1f1568704dc218e8c04a955e7aeda6dc94e28c3153fd9717a4405647bdaca",
+            "acceptance.py": "bf6fe52a43dfcb1a9f9b02e463c2b77076daf8d8f9a5a455cdc44561db26373d",
+            "src/helpers.py": "9afe2d4243519f96e125c609f5f883e33e2bd7a5f8f6f44a3df8c50824054e97"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [],
+          "passed": true,
+          "prompt_sha256": "f075860b915aa149187a605fb24f7352c0f9e4c89fe5d448d6ee1b9be6f86a4a",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "5fd2337beccc25dc4073fba9db72ef2ba6a2f26337dde63da939ce3a296b966a",
+          "task": "task3",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 0,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": false,
+            "scopelet_invocations": 0,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 88064,
+            "input_tokens": 104350,
+            "logical_input_tokens": 104350,
+            "output_tokens": 1366,
+            "reasoning_tokens": 151,
+            "usage_missing": false
+          }
+        },
+        {
+          "agent": "codex",
+          "arm": "scopelet",
+          "artifact_error": false,
+          "duration_seconds": 38.657591,
+          "exit_code": 0,
+          "fixture_hashes": {
+            "README.md": "4e4c6b075c8851a66d6a2a5b0de417292b7c8d92ec2c7af5a2c700d543b9ce73",
+            "acceptance.py": "3bcaa8c7ab9b1b265c4bfa9a7fbbb78ba83a29a4376e9cefb1dc6907ec3f7b65",
+            "checks.py": "282d34a6ae7df7bed6363e667b9ff9173cb0b745f396fc79c047eb22f90e43e4",
+            "src/app.py": "19d9e147c1eda8fa327271f5baba51e99756afcfa3fdd8ed34e43c87af188410",
+            "src/worker.py": "b9a63c2672c2f90534198fb0b20e3a453d98b2d64ff26d25ce4661f2a71e730a"
+          },
+          "harness_error": false,
+          "observed_scopelet_view_modes": [
+            "default"
+          ],
+          "passed": true,
+          "prompt_sha256": "78a0446059690cdc6c2fd5f7ebd534509f76f3c5c1855e0aaaefa8084a918216",
+          "repetition": 1,
+          "stderr_sha256": "3e75d28a6681c31400a3f0fcb564c7613fd42796fb83294e4d53fea86bcbd401",
+          "stdout_sha256": "d534ee380c2f3384aacd0bb76879bf8f1e62b0f783476b5306af38be2bfda19a",
+          "task": "task4",
+          "timed_out": false,
+          "tools": {
+            "checks_command_invocations": 2,
+            "checks_sequence_verified": null,
+            "headroom_compression_verified": null,
+            "rtk_invocations": 0,
+            "scopelet_adopted": true,
+            "scopelet_invocations": 4,
+            "skill_compliance": "not inferred from short output or discovery; inspect raw trace",
+            "skill_discovered": null,
+            "skill_tool_invocations": {
+              "caveman": false,
+              "ponytail": false
+            },
+            "skill_tool_invoked": null,
+            "tool_counts": {
+              "command_execution": 6
+            },
+            "tool_use_count": 6
+          },
+          "usage": {
+            "cache_creation_input_tokens": 0,
+            "cache_included_in_reported_input": true,
+            "cache_read_input_tokens": 119040,
+            "input_tokens": 142989,
+            "logical_input_tokens": 142989,
+            "output_tokens": 1188,
+            "reasoning_tokens": 182,
+            "usage_missing": false
+          }
+        }
+      ]
+    }
+  ],
+  "metric": "model-reported logical input plus output; cache included; not currency",
+  "models": {
+    "claude": "claude-haiku-4-5-20251001",
+    "codex": "gpt-5.6-luna (low)"
+  },
+  "schema_version": 1
+}

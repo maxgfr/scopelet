@@ -508,3 +508,105 @@ fn expanding_an_artifact_keeps_it_out_of_age_based_cleanup() {
         "a just-expanded artifact must survive cleanup"
     );
 }
+
+#[test]
+fn cached_evidence_does_not_reenter_hidden_repository_searches() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir(dir.path().join(".git")).unwrap();
+    fs::write(dir.path().join("worker.py"), "sentinel explicit zero\n").unwrap();
+    let store = Store::open(Some(dir.path().join("scopelet-cache"))).unwrap();
+    let blob = store.put("blob", b"sentinel noisy output\n").unwrap();
+    store.put("artifact", b"sentinel saved metadata\n").unwrap();
+    // The same ignore walker backs native Scopelet traversal and ripgrep.
+    // Hidden entries remain enabled, as in the observed `rg --hidden` failure.
+    let matches: Vec<_> = ignore::WalkBuilder::new(dir.path())
+        .hidden(false)
+        .build()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_some_and(|kind| kind.is_file()))
+        .filter(|entry| {
+            fs::read_to_string(entry.path())
+                .unwrap_or_default()
+                .contains("sentinel")
+        })
+        .map(|entry| entry.path().to_path_buf())
+        .collect();
+    assert_eq!(matches, vec![dir.path().join("worker.py")]);
+    assert_eq!(store.get(&blob).unwrap(), b"sentinel noisy output\n");
+    store.clean(0).unwrap();
+    for folder in ["blobs", "artifacts"] {
+        for marker in [".ignore", ".gitignore"] {
+            assert_eq!(
+                fs::read(store.root.join(folder).join(marker)).unwrap(),
+                b"*\n"
+            );
+        }
+    }
+}
+
+#[test]
+fn cache_exclusions_preserve_existing_rules_and_unrelated_root_files() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir(dir.path().join("blobs")).unwrap();
+    fs::write(dir.path().join("blobs/.ignore"), "user rules\n").unwrap();
+    fs::write(dir.path().join(".gitignore"), "root rules\n").unwrap();
+    fs::write(dir.path().join("source.py"), "user code\n").unwrap();
+    Store::open(Some(dir.path().to_path_buf())).unwrap();
+    assert_eq!(
+        fs::read(dir.path().join("blobs/.ignore")).unwrap(),
+        b"user rules\n"
+    );
+    assert_eq!(
+        fs::read(dir.path().join(".gitignore")).unwrap(),
+        b"root rules\n"
+    );
+    assert!(!dir.path().join(".ignore").exists());
+    assert_eq!(
+        fs::read(dir.path().join("source.py")).unwrap(),
+        b"user code\n"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn cache_exclusions_do_not_follow_existing_marker_symlinks() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir(dir.path().join("blobs")).unwrap();
+    let outside = dir.path().join("outside");
+    fs::write(&outside, "keep\n").unwrap();
+    std::os::unix::fs::symlink(&outside, dir.path().join("blobs/.ignore")).unwrap();
+    std::os::unix::fs::symlink(
+        dir.path().join("missing"),
+        dir.path().join("blobs/.gitignore"),
+    )
+    .unwrap();
+    Store::open(Some(dir.path().to_path_buf())).unwrap();
+    assert_eq!(fs::read(outside).unwrap(), b"keep\n");
+    assert!(!dir.path().join("missing").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn old_readonly_cache_without_markers_remains_readable() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(Some(dir.path().to_path_buf())).unwrap();
+    let id = store.put("blob", b"immutable original\n").unwrap();
+    for folder in ["blobs", "artifacts"] {
+        let directory = dir.path().join(folder);
+        for marker in [".ignore", ".gitignore"] {
+            fs::remove_file(directory.join(marker)).unwrap();
+        }
+        fs::set_permissions(directory, fs::Permissions::from_mode(0o555)).unwrap();
+    }
+    let result = Store::open(Some(dir.path().to_path_buf())).and_then(|store| store.get(&id));
+    for folder in ["blobs", "artifacts"] {
+        let directory = dir.path().join(folder);
+        assert_eq!(
+            fs::metadata(&directory).unwrap().permissions().mode() & 0o777,
+            0o555
+        );
+        fs::set_permissions(directory, fs::Permissions::from_mode(0o700)).unwrap();
+    }
+    assert_eq!(result.unwrap(), b"immutable original\n");
+}

@@ -9,6 +9,41 @@ pub const MAX_INPUT: usize = 32 * 1024 * 1024;
 pub const MAX_STORE_FILE: usize = 256 * 1024 * 1024;
 const TEMP_PREFIX: &str = ".scopelet-write-";
 
+/// Keep saved observations out of ordinary repository searches and Git staging.
+/// Each marker is local to a storage directory; never change existing rules.
+fn ignore_cached_evidence(directory: &Path) -> Result<()> {
+    for name in [".ignore", ".gitignore"] {
+        let path = directory.join(name);
+        if fs::symlink_metadata(&path).is_ok() {
+            continue;
+        }
+        let marker = tempfile::Builder::new()
+            .prefix(TEMP_PREFIX)
+            .rand_bytes(12)
+            .tempfile_in(directory);
+        let mut marker = match marker {
+            Ok(marker) => marker,
+            // Existing read-only caches must remain readable during migration.
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::ReadOnlyFilesystem
+                ) =>
+            {
+                continue;
+            }
+            Err(error) => return Err(error.into()),
+        };
+        marker.write_all(b"*\n")?;
+        if let Err(error) = marker.persist_noclobber(&path)
+            && error.error.kind() != std::io::ErrorKind::AlreadyExists
+        {
+            return Err(error.error).context("create cache search-exclusion marker");
+        }
+    }
+    Ok(())
+}
+
 pub fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -82,6 +117,9 @@ impl Store {
                 builder.mode(0o700);
             }
             builder.create(dir)?;
+        }
+        for directory in [root.join("blobs"), root.join("artifacts")] {
+            ignore_cached_evidence(&directory)?;
         }
         Ok(Self { root })
     }

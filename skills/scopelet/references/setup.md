@@ -9,14 +9,14 @@ npx skills add maxgfr/scopelet -a codex claude-code
 Invoke `/scopelet <task>` in Claude Code or `$scopelet <task>` in Codex.
 Explicit invocation is more reliable than expecting automatic selection.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
-The launcher installs Scopelet **0.1.1** into the user's cache, downloading the
+The launcher installs Scopelet **0.1.2** into the user's cache, downloading the
 matching macOS/Linux release from github.com and verifying its SHA-256. Node 18+
 is needed for the launcher. No global agent settings are changed.
 
 An independently installed binary is also supported:
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.1 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.2 --locked
 ```
 
 Optional adapters are external dependencies, not bundled copies:
@@ -36,7 +36,11 @@ substitute an unverified binary.
 Cache: `SCOPELET_CACHE_DIR`, otherwise `$XDG_CACHE_HOME/scopelet`, otherwise
 `~/.cache/scopelet`. `scopelet clean --older-days 7` removes old originals and
 artifacts; `--older-days 0` removes all. References to removed snapshots expire.
-Run cleanup when no Scopelet operation is using those artifacts.
+Run cleanup when no Scopelet operation is using those artifacts. The `blobs` and
+`artifacts` directories create local ignore markers to keep saved evidence out of
+ordinary searches and Git staging, including when the cache is inside a repository.
+Existing ignore rules and read-only caches are preserved; unwritable directories
+may lack these markers; explicit no-ignore searches can still include it.
 
 Remove the skill using `npx skills remove scopelet -a codex claude-code`; remove
 a Cargo install with `cargo uninstall scopelet`. The launcher cache can be

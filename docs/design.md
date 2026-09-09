@@ -43,7 +43,7 @@ the external engine's envelope is retained separately.
 Limits: requests 1 MiB, 32 operations, each file 32 MiB, repository scan 20000
 files/128 MiB, stored item 256 MiB, command capture 32 MiB per stream, default
 command timeout 120 seconds (maximum 3600). New store directories are private on
-Unix; existing directory permissions are preserved; writes are atomic and content hashes are checked on reads. Storage grows
+Unix; existing directory permissions are preserved; writes are atomic and content hashes are checked on reads. Storage subdirectories get local `.ignore` and `.gitignore` markers so ordinary searches and Git staging do not re-ingest saved evidence. Existing markers and read-only caches are preserved; marker creation is skipped when permissions forbid it; explicit no-ignore searches can still include the cache. Storage grows
 with distinct observations until explicit cleanup; no silent eviction expires
 active references. Cleanup retains blobs referenced by surviving artifacts, and
 paging an artifact does not store it again. Only content-hash-named files are

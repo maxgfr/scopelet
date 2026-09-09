@@ -8,14 +8,15 @@ npx skills add maxgfr/scopelet -a codex claude-code -y
 ```
 
 Invoke **`/scopelet` in Claude Code** or **`$scopelet` in Codex**, followed by your
-task. Add **“ultra for this session”** to opt into aggressive display limits. The skill's Node 18+ launcher downloads
+task. For tiny known-file edits, use native tools without activating the skill.
+Add **“ultra for this session”** to opt into aggressive display limits. The skill's Node 18+ launcher downloads
 a pinned, SHA-256 checked release for macOS/Linux, Intel or ARM. Linux releases target Ubuntu 24.04 or compatible glibc environments. Native Windows
 is not currently supported. No proxy, model API key or agent hook is needed.
 
 For a standalone CLI (Rust 1.88+):
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.1 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.1.2 --locked
 scopelet doctor
 scopelet query --repo . --find validateToken --context 5
 scopelet run -- npm test
@@ -80,15 +81,22 @@ See the [pinned four-tool comparison](docs/competitive-review-2026-09-09.md),
 [design contracts](docs/design.md). These projects are references, not bundled
 runtime dependencies. There is no additional LLM call in Scopelet's runtime.
 
-Token savings are workload-dependent. Installation instructions, extra commands
-and recovery can cost more than the context they save. The
-[verification report](docs/verification.md) records actual agent outcomes and
-limitations; no universal percentage is promised. On the latest noisy-command
-repeat, ultra used **19% more session tokens in Codex** and **51% fewer in Claude**,
-with correct outcomes in both. Earlier repeats saved tokens in both agents;
-the direction is unstable for Codex. Several small code tasks also became more
-expensive. See [all repeated outcomes](docs/verification.md#repeated-noisy-command-task).
-These are pilot measurements, not a measured ranking against the four projects.
+The [direct competitor pilot](docs/direct-comparison-2026-09-09.md) contains
+**51 completed runs across both agents and three tasks; all passed the external
+functional checks**. Scopelet does not win overall: RTK had the lowest observed
+usage on noisy commands in Codex, and Headroom in all three Claude tasks.
+On the noisy task, Scopelet ultra used 131,587 tokens in Codex versus native
+161,394, and 127,807 in Claude versus native 288,348. These are single-run session
+measurements, including cached input, not reliable savings guarantees.
+Stacking full Caveman with Scopelet did not consistently help. Codex/Headroom
+routing was unverified and its three cells are explicitly unmeasured.
+
+Use Scopelet for exact local queries, explicit coverage and recoverable originals
+without a proxy. Keep direct tools for tiny files and existing RTK wrappers for
+commands they already handle. Read the [earlier repeated outcomes](docs/verification.md)
+and [full reproduction instructions](bench/README.md): instructions, extra calls
+and recovery can cost more tokens than they save. The [24-run skill follow-up](docs/skill-followup-2026-09-09.md)
+records both repetitions and the final cache-exclusion fix.
 
 To reproduce checks and the small agent experiment:
 

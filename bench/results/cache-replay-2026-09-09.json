@@ -1,0 +1,24 @@
+{
+  "kind": "deterministic replay, not model tokens",
+  "fixture": "saved final workspace of candidate Codex task4 ultra repeat2; not its intermediate snapshot",
+  "search_argv": [
+    "rg",
+    "-n",
+    "--hidden",
+    "--glob",
+    "!build/**",
+    "--glob",
+    "!.git/**",
+    "worker_count|limit|worker",
+    "."
+  ],
+  "before_bytes": 142385,
+  "cache_hit_bytes": 139467,
+  "after_bytes": 2918,
+  "noncache_lines_identical": true,
+  "exact_blob_recovery": true,
+  "cache_not_untracked_in_git": true,
+  "before_sha256": "dcf2e966889f82e3bd9f55918519f50bb953036b8a32e44a03a2f31a7f1507cb",
+  "after_sha256": "c574074ddd72285ab36cb2cfbb8a8ebd5c2647caf57540d3edf24429a5a853b4",
+  "binary_sha256": "13ab4be23bfbbf0bc1ece7a700f06992c5f5b6dd6f2df0296d2c384ddb3f6d83"
+}

@@ -4,7 +4,7 @@ description: Reduce context when exploring repositories, querying large JSON/log
 license: MIT
 metadata:
   author: maxgfr
-  version: "0.1.1"
+  version: "0.1.2"
 ---
 
 # Scopelet
@@ -15,16 +15,17 @@ Otherwise use `node <this-skill>/scripts/scopelet.mjs`; an existing compatible
 downloads its pinned release once. For a small known file, read it directly.
 
 Choose the result needed: matching passages, selected fields, counts or groups.
-Compose those operations in one query instead of printing bulk data to compute
-over it yourself. Start with these recipes; read [queries.md](references/queries.md)
-only for other operations or codeindex/webindex.
+Compose them in one query. Never read a whole large file to learn its schema: if
+fields are unknown, inspect at most 2 KiB first (`head -c 2048 events.jsonl`), then
+compute locally. Read [queries.md](references/queries.md) for other operations.
 
 ```sh
 scopelet query --repo . --find validateToken --context 5
 scopelet run -- npm test
 ```
 
-`--find` matches literal text. Repeat it for alternatives; regex needs a spec.
+`--find` is literal; repeat it for alternatives, with one shared `--context`.
+Regex needs a spec.
 
 For JSONL counts by a known field, filter then group in one call:
 
@@ -35,12 +36,14 @@ JSON
 ```
 
 Group rows contain `value.key` and `value.count`; sum counts locally for a total.
-Operations are sequential: `count` replaces the records, so never put it before
-`group`. Use native tools for edits and short test output.
+`count` replaces records: never put it before `group`. Use native tools for edits
+and short tests. If RTK already wraps a command, use it directly; avoid stacking
+wrappers. Stop gathering evidence once the question and required checks are met.
 
 Default preserves exact selected passages; `--mode ultra` also abridges large
-text units. Keep the selected mode for this conversation; `off` resumes native
-tools. Ultra is opt-in. Both modes can omit results to fit the display budget.
+text units. Ultra is opt-in: pass `--mode ultra` on EVERY `query` and `run` in
+that mode, including `--spec` calls. `off` resumes native tools. Both modes can
+omit results to fit the budget.
 
 Check `scan_complete`, `display_complete` and `omitted_records` before drawing
 conclusions. A partial view cannot establish absence or exhaustiveness. Expand
@@ -54,6 +57,5 @@ ordered steps clear. Requested explanations and saved documentation use normal
 prose. Before delivery, check these coverage rules
 and the task's acceptance tests. Tool byte reductions are not session savings.
 
-Reference files: [queries.md](references/queries.md) covers operations and
-recovery; [setup.md](references/setup.md) covers installation failures and adapters.
+See [setup.md](references/setup.md) for installation failures and adapters.
 MIT · [maxgfr / support](https://github.com/maxgfr/scopelet/issues).
