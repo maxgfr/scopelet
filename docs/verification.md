@@ -168,3 +168,11 @@ fix; the skill was frozen before that literal-search clarification. Both differe
 are independently verified locally, and neither is represented as having been
 live-benchmarked by this campaign. Host-global skills were still visible to Codex
 and loaded in the treatment; this remains an attribution limitation.
+
+
+Version 0.1.1 passed the native-target test/release workflow on all four targets.
+The refreshed global skill bundles matched the repository byte for byte. Two
+new real-agent installation smokes each ran the downloaded 0.1.1 launcher,
+queried JSONL and saved the correct count. Its macOS ARM64 SHA-256 matched the
+published release manifest. [Smoke accounting](../bench/results/release-smoke-0.1.1.json)
+is separate from the 67 measurement sessions above.
