@@ -45,7 +45,7 @@ instead of vetoing the view. JSON and JSONL are unchanged: they take the shared
 table path, and the small difference is the v3 envelope spending its saved
 bytes on more rows.
 
-Cold latency on these fixtures falls from 26–37 ms to 4.6–7.0 ms and no longer
+Cold latency on these fixtures falls from 26–37 ms to 4.9–7.0 ms and no longer
 differs from warm.
 
 ## Engine measurements
@@ -61,28 +61,58 @@ Median milliseconds:
 
 | case | 0.3.2 (v2) | candidate (v2) | candidate (v3) |
 |---|---|---|---|
-| small/cold | 4.1 | 4.1 | 4.0 |
-| rejected/cold | 4.4 | 4.3 | 5.7 |
-| log/cold | 30.3 | 23.0 | 27.2 |
-| log/warm | 32.8 | 33.2 | 37.7 |
-| json_table/cold | 37.5 | 29.8 | 29.7 |
-| aggregate/cold | 22.3 | 14.3 | 14.5 |
-| repo/cold | 1654.4 | 92.4 | 99.0 |
-| repo/warm | 30.1 | 30.4 | 30.0 |
-| recovery/cold | 15.3 | 11.1 | 11.1 |
-| limit_32m/cold | 172.6 | 160.7 | 206.1 |
-| limit_32m/warm | 271.9 | 271.9 | 317.1 |
+| small/cold | 3.7 | 3.6 | 3.7 |
+| rejected/cold | 4.2 | 4.2 | 5.5 |
+| log/cold | 29.5 | 21.2 | 27.0 |
+| log/warm | 30.6 | 31.2 | 37.0 |
+| json_table/cold | 36.4 | 28.7 | 28.7 |
+| aggregate/cold | 21.5 | 13.8 | 13.9 |
+| repo/cold | 1648.3 | 58.6 | 62.7 |
+| repo/warm | 32.8 | 32.7 | 33.5 |
+| recovery/cold | 16.5 | 11.8 | 11.8 |
+| limit_32m/cold | 172.6 | 160.0 | 184.2 |
+| limit_32m/warm | 275.3 | 275.5 | 299.6 |
 
 The two columns of the candidate separate the two changes. Comparing 0.3.2
 against the candidate at v2 isolates the storage change: the cold repository
-query over 400 files drops from 1654 ms to 92 ms, because both store writes
+query over 400 files drops from 1648 ms to 59 ms, because both store writes
 called `sync_all`, which std maps to `F_FULLFSYNC` on Apple platforms and costs
-milliseconds per stored item. Comparing the candidate's two columns isolates
-the v3 presentation: it costs 13% on a 3 MB log warm and 28% on the 32 MiB
-boundary case, the price of computing a template key per line. In absolute
-terms the boundary case moves from 161 ms to 206 ms for a 32 MiB input, and
-`rejected` moves from 4.3 ms to 5.7 ms while changing from passthrough to a
-1288-byte view. Peak resident memory is unchanged.
+milliseconds per stored item.
+
+Comparing the candidate's two columns isolates the v3 presentation, which is
+slower: 27% on a 3 MB log cold, 19% warm, and 15% on the 32 MiB boundary case.
+In absolute terms the boundary case moves from 160 ms to 184 ms for a 32 MiB
+input, and `rejected` moves from 4.2 ms to 5.5 ms while changing from
+passthrough to a 1288-byte view. Peak resident memory is unchanged.
+
+The first attempt to close that gap was wrong and is worth recording. The
+per-line `String` allocation for each template key looked like the cost;
+removing it changed the boundary case by about one percent. The cost was
+building the template at all, and skipping it when a line's exact text has
+already been grouped (identical text always shares a group and always has the
+same template) took the boundary case from 27% to 15%. What remains is the
+per-line regex and template work that v2 does not do, and it is accepted: on
+the 3 MB log it is roughly 6 ms of local CPU in exchange for 3963 bytes of
+output becoming 663.
+
+### Range blocks
+
+The plan asked for these to be dropped if they returned less than 3% of the
+budget. Measured across the eight shared fixtures plus two shapes added for
+this question, the answer is not uniform:
+
+| fixture | lines in blocks | label bytes saved | share of 4096 |
+|---|---|---|---|
+| crowded diagnostics | 161 | 1336 | 32.6% |
+| build log with one error | 5 | 31 | 0.8% |
+| the other eight fixtures | 0 | 0 | 0.0% |
+
+They pay on exactly one shape: a flood of similar diagnostic lines where the
+value of the view is showing many of them. That shape is a failing test suite,
+which is the case the engine exists for, so they are kept. On every other
+fixture they cost nothing, because no run of three consecutive plain lines is
+ever selected. Averaging the rule across fixtures would have removed a third
+of the budget from the most important case.
 
 ## Live campaign
 
@@ -138,6 +168,18 @@ A campaign able to attribute a token difference to the engine would need
 tasks whose commands reliably exceed the 2 KiB threshold several times per
 session, and enough repetitions to separate a single-digit effect from a
 1.8× spread. That is a larger budget than this plan declared.
+
+## What guards this
+
+`tests/content_gate.rs` holds the eight fixtures with a minimum reduction, the
+required facts and byte-exact recovery per fixture, so a change that trades
+evidence for bytes fails in CI. `tests/compact_v3.rs` resolves every label of
+40 generated views against an independently written model of what a terminal
+shows for a source line, and fails if that coverage collapses, so a label that
+named the wrong line could not pass. `tests/performance_contracts.rs` pins the
+compact-v1 and compact-v2 bytes against the released 0.3.2. The v3 tuning
+values are named constants documented as judgement calls pinned by the gate,
+not derived numbers.
 
 ## Follow-ups, not addressed here
 
