@@ -79,9 +79,10 @@ def run(options):
     for name, source in [('baseline',options.baseline),('candidate',options.candidate)]:
         binaries[name]=frozen/name;shutil.copy2(source,binaries[name])
     baseline_version = getattr(options, 'baseline_version', None)
+    candidate_version = getattr(options, 'candidate_version', None) or 1
     comparison_arm = 'candidate_v2' if baseline_version == 2 else 'candidate'
     report={'kind':'offline process measurements; not model tokens','platform':platform.platform(),
-            'baseline_compact_version': baseline_version, 'comparison_arm': comparison_arm,
+            'baseline_compact_version': baseline_version, 'candidate_compact_version': candidate_version, 'comparison_arm': comparison_arm,
             'warmups':options.warmups,'repetitions':options.repetitions,'stress':options.stress,
             'cache_note':'cold means empty application cache, not flushed OS page cache',
             'binary_sha256':{k:sha(p.read_bytes()) for k,p in binaries.items()},'cases':{},'v1_mismatches':[], 'output_mismatches':[]}
@@ -100,7 +101,7 @@ def run(options):
                     arms=['baseline','candidate','candidate_v2']
                     if rep%2:arms.reverse()
                     for arm in arms:
-                        binary=binaries['baseline' if arm=='baseline' else 'candidate'];version=baseline_version if arm=='baseline' else (2 if arm=='candidate_v2' else 1)
+                        binary=binaries['baseline' if arm=='baseline' else 'candidate'];version=baseline_version if arm=='baseline' else (2 if arm=='candidate_v2' else candidate_version)
                         cache=root/f'cache-{arm}-{name}-{state}'
                         if state=='cold':shutil.rmtree(cache,ignore_errors=True)
                         actual_args=args
@@ -131,7 +132,8 @@ def run(options):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--baseline',type=Path,required=True);p.add_argument('--candidate',type=Path,required=True)
-    p.add_argument('--baseline-version', type=int, choices=(1, 2), help='Pin the reference presentation; use 2 for released 0.3.0.')
+    p.add_argument('--baseline-version', type=int, choices=(1, 2, 3), help='Pin the reference presentation; use 2 for released 0.3.0.')
+    p.add_argument('--candidate-version', type=int, choices=(1, 2, 3), default=1, help='Presentation measured by the candidate arm; candidate_v2 always measures 2.')
     p.add_argument('--out',type=Path,required=True);p.add_argument('--repetitions',type=int,default=30)
     p.add_argument('--warmups',type=int,default=5);p.add_argument('--stress',action='store_true')
     p.add_argument('--cases',help='comma-separated subset for a component follow-up')

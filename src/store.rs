@@ -78,6 +78,27 @@ pub(crate) fn ignore_cached_evidence(directory: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Flush written data to the device before the rename publishes the item.
+/// A full disk-cache flush (F_FULLFSYNC, which std uses for both sync calls on
+/// Apple platforms) costs milliseconds per item; the temporary-plus-rename
+/// publication and the hash check on every read already guarantee that an
+/// interrupted write yields a missing or rejected item, never a wrong one.
+fn flush(file: &fs::File) -> std::io::Result<()> {
+    #[cfg(target_vendor = "apple")]
+    {
+        use std::os::fd::AsRawFd;
+        // SAFETY: fsync on a valid open descriptor has no memory effects.
+        match unsafe { libc::fsync(file.as_raw_fd()) } {
+            0 => Ok(()),
+            _ => Err(std::io::Error::last_os_error()),
+        }
+    }
+    #[cfg(not(target_vendor = "apple"))]
+    {
+        file.sync_data()
+    }
+}
+
 pub fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -161,7 +182,7 @@ impl Store {
             self.touch(&id)?;
             return Ok(id);
         }
-        temp.as_file().sync_all()?;
+        flush(temp.as_file())?;
         if let Err(error) = temp.persist_noclobber(&path) {
             if error.error.kind() != std::io::ErrorKind::AlreadyExists {
                 return Err(error.error.into());
@@ -263,7 +284,7 @@ impl Store {
             .rand_bytes(12)
             .tempfile_in(path.parent().unwrap())?;
         temp.write_all(bytes)?;
-        temp.as_file().sync_all()?;
+        flush(temp.as_file())?;
         if let Err(error) = temp.persist_noclobber(&path) {
             if error.error.kind() != std::io::ErrorKind::AlreadyExists {
                 return Err(error.error.into());
