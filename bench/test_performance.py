@@ -57,4 +57,33 @@ class RolloutTests(unittest.TestCase):
         rows[-1]['passed']=False
         self.assertFalse(rollout(rows,True)['eligible_for_v2_default'])
 
+
+class VersionComparisonTests(unittest.TestCase):
+    def test_v2_baseline_compares_v2_output_and_retains_v1_measurements(self):
+        from argparse import Namespace
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            binary = root / 'binary'; binary.write_bytes(b'frozen')
+            options = Namespace(out=root / 'out', baseline=binary, candidate=binary, baseline_version=2,
+                                warmups=0, repetitions=1, stress=False, cases='small')
+            def fixture(path, stress):
+                path.mkdir(); source = path / 'small'; source.write_bytes(b'fixture')
+                return {'small': (['compress'], source)}
+            def measure(binary, args, source, cache, version):
+                raw = str(version).encode()
+                return {'seconds': 0.01, 'rss_bytes': 1, 'exit_code': 0, 'stdout_sha256': performance.sha(raw), 'output_bytes': len(raw)}, raw
+            with patch.object(performance, 'fixtures', side_effect=fixture), patch.object(performance, 'measure', side_effect=measure), patch('builtins.print'):
+                report = performance.run(options)
+            self.assertEqual(report['comparison_arm'], 'candidate_v2')
+            self.assertEqual(report['output_mismatches'], [])
+            self.assertIn('candidate', report['cases']['small/cold'])
+
+    def test_v2_output_mismatch_fails_command(self):
+        from unittest.mock import patch
+        with patch('sys.argv', ['performance.py', '--baseline', 'a', '--candidate', 'b', '--out', 'unused']), \
+                patch.object(performance, 'run', return_value={'output_mismatches': [{'case': 'small'}], 'v1_mismatches': [], 'cases': {}}):
+            with self.assertRaises(SystemExit) as error: performance.main()
+            self.assertEqual(error.exception.code, 1)
+
 if __name__=='__main__':unittest.main()

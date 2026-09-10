@@ -14,6 +14,31 @@ import run
 
 
 class HarnessTests(unittest.TestCase):
+    def test_external_count_grader_rejects_float_counts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            run.create_fixture(root, 'task2')
+            for total, group_value in [(200.0, 50), (200, 50.0), (200, 50)]:
+                with self.subTest(total=type(total).__name__, groups=type(group_value).__name__):
+                    (root / 'answer.json').write_text(json.dumps({'failed_count': total,
+                        'failed_by_group': {f'group-{i}': group_value for i in range(4)}}))
+                    grade = run.grade_workspace('task2', root)
+                    self.assertEqual(grade['passed'], type(total) is int and type(group_value) is int)
+
+    def test_missing_claude_cache_is_unknown_session_usage(self):
+        raw = json.dumps({'type': 'result', 'usage': {'input_tokens': 100, 'output_tokens': 10}}).encode()
+        usage = run.normalize_usage('claude', raw)
+        self.assertIsNone(usage['logical_input_tokens'])
+        self.assertTrue(usage['usage_missing'])
+
+    def test_complete_model_usage_recovers_missing_outer_cache(self):
+        raw = json.dumps({'type': 'result', 'usage': {'input_tokens': 100, 'output_tokens': 10},
+                          'modelUsage': {'haiku': {'inputTokens': 100, 'outputTokens': 10,
+                                                   'cacheReadInputTokens': 40, 'cacheCreationInputTokens': 20}}}).encode()
+        usage = run.normalize_usage('claude', raw)
+        self.assertEqual(usage['logical_input_tokens'], 160)
+        self.assertFalse(usage['usage_missing'])
+
     def test_observed_reasoning_aliases_do_not_inflate_output(self):
         codex = run.normalize_usage("codex", json.dumps({"type":"turn.completed", "usage":{"input_tokens":100,"output_tokens":20,"reasoning_output_tokens":7,"cache_write_input_tokens":0}}).encode())
         self.assertEqual(codex["reasoning_tokens"], 7)

@@ -187,7 +187,7 @@ def ordered_tool_calls(agent: str, raw: bytes) -> list[dict[str, Any]]:
     return calls
 
 
-def _shell_segments(label: str, payload: str) -> list[list[str]]:
+def _shell_segments(label: str, payload: str, _depth: int = 0) -> list[list[str]]:
     if label.lower() not in SHELL_LABELS:
         return []
     segments = []
@@ -195,6 +195,14 @@ def _shell_segments(label: str, payload: str) -> list[list[str]]:
         tokens = base._shell_tokens(segment)
         if tokens and not any(arg in ("--help", "-h", "--version", "-V") for arg in tokens):
             segments.append(tokens)
+            # Automatic && chains execute under a shell child of Scopelet.
+            # Inspect that argv as shell syntax, never arbitrary quoted prose.
+            if (_depth < 4 and base._is_scopelet_executable(tokens[0])
+                    and len(tokens) > 2 and tokens[1] == 'run' and '--' in tokens):
+                child = tokens[tokens.index('--') + 1:]
+                if (len(child) == 3 and Path(child[0]).name in ('sh', 'bash', 'zsh')
+                        and child[1] in ('-c', '-lc')):
+                    segments.extend(_shell_segments(label, shlex.join(child), _depth + 1))
     return segments
 
 

@@ -252,6 +252,10 @@ print("task1 acceptance passed")
 expected = {json.dumps(expected, sort_keys=True)}
 with open("answer.json", encoding="utf-8") as stream:
     actual = json.load(stream)
+assert type(actual) is dict
+assert type(actual.get("failed_count")) is int
+assert type(actual.get("failed_by_group")) is dict
+assert all(type(value) is int for value in actual["failed_by_group"].values())
 assert actual == expected, (actual, expected)
 print("task2 acceptance passed")
 """
@@ -555,11 +559,12 @@ def normalize_usage(agent: str, raw: bytes, expected_model: str | None = None) -
             selected_raw = [result_events[-1]]
             selected = [_usage_from(selected_raw[0])]
             usage = selected[0]
-        if (usage["input_tokens"] is None or usage["output_tokens"] is None) and models:
+        session_fields = ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
+        if any(usage[field] is None for field in session_fields) and models:
             # Some Claude stream versions put complete accounting in
             # modelUsage while leaving the outer result partial or absent.
             summed = _sum_usages([_usage_from(model) for model in models])
-            if summed["input_tokens"] is not None and summed["output_tokens"] is not None:
+            if all(summed[field] is not None for field in session_fields):
                 selected_raw = models
                 selected = [summed]
                 usage = summed
@@ -583,7 +588,7 @@ def normalize_usage(agent: str, raw: bytes, expected_model: str | None = None) -
         "thinking_tokens": usage["reasoning_tokens"] if agent == "claude" else None,
         "logical_input_tokens": logical_input,
         "cache_included_in_reported_input": agent == "codex",
-        "usage_missing": not bool(selected_raw) or input_tokens is None or output_tokens is None,
+        "usage_missing": not bool(selected_raw) or logical_input is None or output_tokens is None,
         **_provider_fields(agent, events, expected_model),
     }
 

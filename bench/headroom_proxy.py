@@ -13,7 +13,6 @@ import time
 import urllib.error
 import urllib.request
 
-PIN = 'e67b3c8a29443a60d6b0018fb22f525c5cd7e709'
 children = []
 
 def stop_children():
@@ -50,6 +49,7 @@ def safe_stats(value):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--headroom', required=True, type=Path)
+    parser.add_argument('--source-commit', help='Verified commit of the supplied installation; unknown if omitted.')
     parser.add_argument('command', nargs=argparse.REMAINDER)
     options = parser.parse_args()
     headroom = str(options.headroom.resolve())
@@ -74,7 +74,7 @@ def main():
     mode = os.environ.get('SCOPELET_HEADROOM_MODE', 'token')
     if mode not in ('token', 'cache'):
         raise SystemExit('SCOPELET_HEADROOM_MODE must be token or cache.')
-    meta = {'upstream_commit': PIN, 'mode': mode, 'agent': agent,
+    meta = {'upstream_commit': options.source_commit, 'mode': mode, 'agent': agent,
             'integration': 'standalone proxy with native recovery MCP',
             'proxy_ready': False, 'agent_exit_code': None,
             'runner_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
@@ -122,11 +122,12 @@ def main():
         children.append(child)
         meta['agent_exit_code'] = child.wait()
         meta['stats_after'] = safe_stats(get_json(url + '/stats'))
-        before = meta['stats_before'].get('requests', {}).get('total', 0)
-        after = meta['stats_after'].get('requests', {}).get('total', 0)
-        meta['routing_verified'] = after > before
+        before = meta['stats_before'].get('requests', {}).get('total')
+        after = meta['stats_after'].get('requests', {}).get('total')
+        counters_known = all(type(value) is int and value >= 0 for value in (before, after))
+        meta['routing_verified'] = counters_known and after > before
         if not meta['routing_verified']:
-            print('Headroom received no requests; this is not a measured treatment.', file=sys.stderr)
+            print('Headroom routing is unverified (missing counters or no increase); this is not a measured treatment.', file=sys.stderr)
         return meta['agent_exit_code'] or (0 if meta['routing_verified'] else 125)
     finally:
         if meta['proxy_ready']:

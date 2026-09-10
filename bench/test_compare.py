@@ -1,6 +1,7 @@
 """Competitor harness checks without model calls."""
 import json
 import argparse
+import shlex
 from pathlib import Path
 import tempfile
 import unittest
@@ -23,6 +24,25 @@ def claude_call(command, output="", is_error=False, call_id="1", tool="Bash"):
 
 
 class CompareTests(unittest.TestCase):
+    def test_checks_sequence_recognizes_automatic_scopelet_and_chain(self):
+        binary = '/fixture/config/bin/scopelet'
+        before = shlex.join(['/bin/zsh', '-lc', shlex.join([binary, 'run', '--auto', '--', 'python3', 'checks.py'])])
+        after = shlex.join(['/bin/zsh', '-lc', shlex.join([binary, 'run', '--auto', '--timeout', '3600',
+                           '--compact-version', '2', '--', '/bin/sh', '-c',
+                           "'python3' 'checks.py' && 'python3' 'acceptance.py' && 'git' 'diff' '--check'"])])
+        raw = b'\n'.join(json.dumps({'type': 'item.completed', 'item': {'type': 'command_execution',
+                             'command': command, 'aggregated_output': output, 'exit_code': code}}).encode()
+                         for command, output, code in [(before, 'AssertionError: limit=0 must select', 1),
+                                                       (after, '[1201/1200] checks complete ... passed', 0)])
+        evidence = compare.adoption('codex', raw, 'task4')
+        self.assertEqual(evidence['checks_command_invocations'], 2)
+        self.assertTrue(evidence['checks_sequence_verified'])
+
+    def test_shell_wrapper_does_not_turn_printed_commands_into_invocations(self):
+        command = shlex.join(['scopelet', 'run', '--auto', '--', '/bin/sh', '-c', "printf '%s' 'python3 checks.py'"])
+        segments = compare._shell_segments('command_execution', command)
+        self.assertFalse(any(compare._is_checks_invocation(s) for s in segments))
+
     def test_randomized_plan_is_reproducible_and_complete(self):
         cases = compare.cases(["codex", "claude"], list(compare.ARMS), ["task4"], 2, 7)
         self.assertEqual(len(cases), 36)

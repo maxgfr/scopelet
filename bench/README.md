@@ -255,3 +255,70 @@ python3 bench/export_performance.py bench/runs/luna-performance-new \
 
 The [2026-09-10 report](../docs/performance-2026-09-10.md) separates offline
 measurements, live token accounting, failures and the default-version decision.
+
+## Current automatic comparison (0.3.0, Luna + Haiku)
+
+`current.py` compares automatic default Scopelet with native tools, RTK 0.48.0
+and Headroom 0.37.0. Unlike `compare.py`'s historical skill/manual treatments,
+it installs Scopelet hooks into each synthetic workspace and uses identical
+ordinary task prompts. Read the [predeclared protocol](../docs/current-comparison-plan.md).
+
+Use the release RTK binary plus `hooks/codex/rtk-awareness.md` from **that same
+release**. The release differs from the old pilot's development commit. Install
+`headroom-ai[proxy]==0.37.0` in a dedicated Python 3.13 environment. Record its
+installed distribution `RECORD` hash and dependency versions in a provenance
+JSON; the PyPI wheel's source commit is unknown, not inferred from the tag.
+
+```sh
+# Preview only: creates no files and makes no provider calls.
+python3 bench/current.py --out bench/runs/current-plan
+
+python3 bench/current.py --live --phase preflight \
+  --scopelet target/release/scopelet \
+  --rtk "$COMPARE_RTK" --awareness "$COMPARE_RTK_AWARENESS" \
+  --headroom "$COMPARE_HEADROOM" --provenance "$COMPARE_PROVENANCE" \
+  --out bench/runs/current
+python3 bench/current.py --live --phase main --out bench/runs/current
+python3 bench/current.py --live --phase followup \
+  --candidate target/release/scopelet --out bench/runs/current
+python3 bench/export_current.py bench/runs/current \
+  --out bench/results/current-comparison.json
+```
+
+The three phases share one locked, persistent ledger capped at 60 attempts.
+Started/interrupted attempts consume budget and are never rerun. Reinvocation
+continues with unattempted cells; inspect a stop before continuing. A failed
+preflight blocks dependent cells. Missing usage or a quota rejection stops the
+phase. Headroom/Codex is explicitly unmeasured; it is never replaced by native.
+Luna is pinned at low effort, Haiku at its default effort. No fallback model is
+selected. Existing authentication is reused without changing global settings.
+RTK's global audit writer is disabled. Hook lifecycle events, explicit calls,
+local database counts when readable, and proxy counters retain adoption evidence.
+
+Exports verify retained transcript hashes and omit prompts, grader text,
+commands, credentials, workspaces and private paths. Reported logical tokens
+include cache; Claude's USD estimate is not an invoice. A failed attempt with
+recoverable usage still contributes tokens, without inventing its missing grade.
+
+For the offline engine comparison against 0.3.0, pin the reference to v2:
+
+```sh
+python3 bench/performance.py --baseline "$COMPARE_SCOPELET" \
+  --baseline-version 2 --candidate target/release/scopelet \
+  --warmups 5 --repetitions 30 --stress --out bench/runs/current-engine
+
+# Run with the interpreter from the dedicated Headroom environment.
+"$COMPARE_HEADROOM_PYTHON" bench/content.py --scopelet "$COMPARE_SCOPELET" \
+  --rtk "$COMPARE_RTK" --out bench/runs/current-content
+```
+
+`content.py` measures shared inputs using Scopelet compression, RTK's default
+`read`, and Headroom's public compression API with ML disabled and recent-message
+protection set to zero. Its timings include CLI startup for Scopelet/RTK but use
+an imported Headroom library; they are **not** an equivalent engine-speed ranking.
+It also checks `rtk test` separately on a failing synthetic command. This is a
+specific deterministic Headroom configuration, not a proxy/session savings claim.
+Scopelet recovery follows the artifact manifest to the original blob; raw artifact
+JSON is not the original source bytes. Facts omitted from a view are graded again
+after recovery. A false roundtrip field for another tool means byte recovery was
+not verified, not that the transformed representation necessarily lost meaning.

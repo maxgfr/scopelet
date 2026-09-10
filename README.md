@@ -69,50 +69,24 @@ still require verification; shortening a response never justifies skipping check
 
 ## Measured results
 
-**52/52 Luna sessions passed:** 48 comparative sessions and four final-binary
-checks, including Codex code mode. The comparison requested `gpt-5.6-luna`, low
-effort, over three synthetic tasks with four repetitions per arm and no skill
-invocation.
+**Current 0.3.0 comparison:** 42 attempted sessions across three synthetic tasks, with two repetitions per configuration. Codex requested Luna at low effort; Claude Code used Haiku 4.5. All 41 graded main sessions pass. One RTK/Codex attempt lost its grade to a benchmark telemetry error; its tokens remain in the totals. Three integration preflights and eight targeted follow-ups bring the campaign to 53 attempts, below the 60-session cap.
 
-| Task | Default vs native | Caveman vs native | RTK vs native |
-| --- | ---: | ---: | ---: |
-| Small edit | +0.4% | -7.0% | +34.1% |
-| Noisy command | **-40.7%** | **-41.5%** | -29.5% |
-| JSONL aggregation | -16.0% | +1.9% | +10.4% |
-| Combined task mix | **-23.4%** | **-21.5%** | -2.4% |
+| Host / task | Scopelet vs native | RTK vs native | Headroom vs native |
+|---|---:|---:|---:|
+| Luna / Small edit | -27.2% | +0.9% | unmeasured |
+| Luna / Noisy command | -32.1% | +11.0% | unmeasured |
+| Luna / JSONL aggregation | -17.6% | +41.0% | unmeasured |
+| Haiku / Small edit | +0.2% | -9.1% | -32.3% |
+| Haiku / Noisy command | +1.8% | +4.8% | -3.0% |
+| Haiku / JSONL aggregation | -0.3% | -0.7% | +0.6% |
 
-These are **whole-session logical input plus output tokens**, including cached
-input, not billed cost or a universal savings guarantee. Compression activated
-on noisy commands; differences on the other tasks combine concise instructions
-with model variability. Caveman did not consistently beat default. RTK used its
-documented Codex awareness instructions; Headroom is unmeasured because the
-available adapter did not route Codex requests. No Claude Code model calls were
-made in this campaign; that adapter has offline contract checks here.
+These are **whole-session logical input plus output tokens**, including cached input, not billed cost. Two repetitions are exploratory: the report shows individual values, durations, available cost estimates and failures. On Haiku, Scopelet’s reported cost is 3.0% below native and Headroom’s is 27.1% above native, so token savings do not directly predict cost savings. Headroom/Codex remains unmeasured because authenticated routing through the available adapter is unverified.
 
-[Full report and variance](docs/luna-auto-2026-09-09.md) ·
-[Per-session evidence](bench/results/luna-auto-2026-09-09.json) ·
-[Installation verification](bench/results/install-0.2.0-2026-09-09.json)
+Scopelet’s value is strongest on noisy Codex output in this sample. It does not consistently beat native tools or Headroom across hosts and tasks. RTK’s specialized `test` wrapper is effective locally, while its automatic hook does not cover the custom Python test command used here. No new Rust runtime optimization is claimed; confirmed fixes improve the benchmark and its evidence.
 
-Earlier [released-0.1.3 comparisons](docs/fable-comparison-2026-09-09.md) found
-strong noisy-command savings on Haiku, but none on Fable where Claude Code
-already persisted large outputs. Headroom was the strongest general competitor
-there. Those measurements concern different versions and integrations.
+[Current report and limitations](docs/current-comparison-2026-09-10.md) · [Per-session evidence](bench/results/current-comparison-2026-09-10.json) · [Local compression and recovery](bench/results/current-content-2026-09-10.json)
 
-An [installed Fable 5.1 check](bench/results/fable-installed-0.2.1-2026-09-09.json)
-also exercised the real Claude Code user hooks without invoking the skill.
-An inline successful Bash result reached the model at **3,922 bytes instead of
-10,634**. Failed commands retained native error output. The check found and fixed
-double compression of outputs Claude had already saved to disk; those envelopes
-now pass through. These functional checks do not measure whole-session savings.
-A third Fable check passes with the fix and caveman enabled, preserving the exact
-warning and its negation. Its final reply remains verbose: caveman is a preference,
-not a hard response-length limit.
-
-The later [small-edit evaluation](docs/proportional-2026-09-09.md) adds Python,
-JavaScript and JSON tasks. An initial candidate failed one check and was revised;
-all nine follow-up sessions pass. The refined mix uses 12.2% fewer logical tokens
-than native and **0.1% more than 0.2.2**, with only one sample per cell. This does
-not establish a new small-edit savings claim. [Competitor mechanisms reviewed](docs/small-task-competitors-2026-09-09.md).
+Earlier measurements remain available: [Luna automatic-mode pilot](docs/luna-auto-2026-09-09.md), [Fable comparisons](docs/fable-comparison-2026-09-09.md), [small-edit evaluation](docs/proportional-2026-09-09.md), and [0.3.0 engine rollout](docs/performance-2026-09-10.md). They concern different versions or integrations and are not pooled into the current results.
 
 ## Exact queries and recovery
 
