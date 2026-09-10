@@ -23,6 +23,28 @@ test('every commit releases, preserving feature and breaking-change semantics', 
     logger, cwd:process.cwd(),
   }), 'major');
 });
+test('real merge commits do not block releases or hide invalid ordinary commits', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'scopelet-merge-release-'));
+  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  try {
+    git('init', '-b', 'main');
+    git('config', 'user.name', 'Release test');
+    git('config', 'user.email', 'release@example.invalid');
+    git('commit', '--allow-empty', '-m', 'chore: initial');
+    git('checkout', '-b', 'feature');
+    git('commit', '--allow-empty', '-m', 'feat: add capability');
+    const feature = git('rev-parse', 'HEAD');
+    git('checkout', 'main');
+    git('merge', '--no-ff', 'feature', '-m', 'Merge pull request #1 from example/feature');
+    const merge = { hash: git('rev-parse', 'HEAD'), message: 'Merge pull request #1 from example/feature' };
+    const context = { cwd: root, logger, commits: [merge, { hash: feature, message: 'feat: add capability' }] };
+    assert.equal(await plugin.analyzeCommits({}, context), 'minor');
+    assert.equal(await plugin.analyzeCommits({}, { ...context, commits: [merge] }), null);
+    git('commit', '--allow-empty', '-m', 'Merge pull request #2 from example/fake');
+    const fake = { hash: git('rev-parse', 'HEAD'), message: 'Merge pull request #2 from example/fake' };
+    await assert.rejects(plugin.analyzeCommits({}, { ...context, commits: [merge, fake] }), /Conventional Commit/);
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
 test('version synchronization changes release files without touching dependency versions', () => {
   const root=mkdtempSync(join(tmpdir(),'scopelet-release-'));
   try {

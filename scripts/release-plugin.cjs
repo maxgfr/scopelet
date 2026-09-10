@@ -1,17 +1,24 @@
 const fs = require('node:fs');
 const { execFileSync } = require('node:child_process');
 
-// Require Conventional Commits; every valid commit releases at least a patch.
+// Require Conventional Commits; every valid change releases at least a patch.
 exports.analyzeCommits = async (config, context) => {
-  if (!context.commits.length) return null;
-  for (const { message } of context.commits) {
+  const commits = context.commits.filter(({ message, hash }) => {
     const header = message.split(/\r?\n/, 1)[0];
-    if (!/^[a-z][a-z0-9-]*(?:\([^()\r\n]+\))?!?: \S.*$/.test(header)) {
-      throw new Error(`Expected a Conventional Commit (type(scope): description): ${header}`);
+    if (/^[a-z][a-z0-9-]*(?:\([^()\r\n]+\))?!?: \S.*$/.test(header)) return true;
+    // Git-generated merge messages are metadata. Check parentage instead of
+    // trusting a "Merge ..." prefix that an ordinary commit could also use.
+    if (typeof hash === 'string' && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(hash)) {
+      const parents = execFileSync('git', ['show', '-s', '--format=%P', hash, '--'], {
+        cwd: context.cwd, encoding: 'utf8'
+      }).trim().split(/\s+/).filter(Boolean);
+      if (parents.length > 1) return false;
     }
-  }
+    throw new Error(`Expected a Conventional Commit (type(scope): description): ${header}`);
+  });
+  if (!commits.length) return null;
   const { analyzeCommits } = await import('@semantic-release/commit-analyzer');
-  return await analyzeCommits({ preset: 'conventionalcommits' }, context) || 'patch';
+  return await analyzeCommits({ preset: 'conventionalcommits' }, { ...context, commits }) || 'patch';
 };
 exports.verifyRelease = async (config, { nextRelease }) => {
   const version = nextRelease.version;
