@@ -30,8 +30,8 @@ Your test suite prints 481 results. One of them matters.
 
 <table>
 <tr>
-<th width="50%">Without Scopelet · 17,571 bytes</th>
-<th width="50%">With Scopelet · 778 bytes</th>
+<th width="50%">Without Scopelet · 17,549 bytes</th>
+<th width="50%">With Scopelet · 756 bytes</th>
 </tr>
 <tr>
 <td valign="top">
@@ -65,7 +65,7 @@ Time:        84.113 s
 <td valign="top">
 
 ```
-[scopelet compact-v3 artifact:a5e3d840… scan_complete=true;
+[scopelet compact-v3 artifact:90da6b1f… scan_complete=true;
  recover: scopelet expand ID --find TEXT (or --manifest)]
 input:1-3
  > app@1.4.2 test
@@ -101,7 +101,7 @@ last one was. `display_complete=true` means nothing at all was dropped: every
 line of that log is either shown or folded into a counted group.
 
 This happens automatically, on the machine, with no second model call, no API
-key and no proxy. The original 17,571 bytes are still on disk, and the header
+key and no proxy. The original 17,549 bytes are still on disk, and the header
 tells the agent how to get any of them back.
 
 ## Why you want this
@@ -159,7 +159,7 @@ Every row is a real command output through `scopelet compress` at the default
 
 | What the command printed | Bytes in | Bytes to the model | Kept |
 | --- | ---: | ---: | ---: |
-| 480 passing tests, one failure | 17,571 | 778 | **95.6%** |
+| 480 passing tests, one failure | 17,549 | 756 | **95.7%** |
 | A retry loop hiding one fatal error | 28,039 | 421 | **98.5%** |
 | 1000 progress lines, then two diagnostics | 136,063 | 516 | **99.6%** |
 | The same log with CRLF endings | 137,031 | 472 | **99.7%** |
