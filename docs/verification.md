@@ -5,13 +5,17 @@ workloads. **It does not provide a universal token reduction.** Several small
 code tasks became more expensive. Use it selectively; ultra deliberately loses
 visible detail and requires recovery when that detail matters.
 
+The latest [0.3.0 comparison](current-comparison-2026-09-10.md) measures automatic
+integrations on Luna and Haiku. Its results supersede older numbers for that
+specific setup; historical campaigns below retain their original scope.
+
 ## Correctness and distribution
 
 - 93 Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path/span validation, budgets, cache cleanup, capture throughput and
   process behavior.
-- 71 offline benchmark-harness tests, including independent grading, cache usage,
-  tool-adoption false positives and immutable fixtures.
+- 93 offline benchmark-harness tests, including typed independent grading, complete cache usage,
+  automatic-chain trace recognition, proxy routing proof, attempt budgets and immutable fixtures.
 - 4 launcher tests and 5 release automation tests pass locally. The launcher
   also passed on Node 18.20.8 before this change; release tooling requires Node 24.10+.
 - Real codeindex 2.29.1/2.30.0 and webindex 1.18.10/1.19.4 adapter checks.

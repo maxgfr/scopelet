@@ -9,7 +9,7 @@ import headroom_proxy as proxy
 
 
 class ProxyTests(unittest.TestCase):
-    def invoke(self, requests, exit_code=0, config=True):
+    def invoke(self, requests, exit_code=0, config=True, before_stats=None):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             args = ['headroom_proxy.py', '--headroom', '/bin/headroom', 'claude', '-p', '--allowedTools', 'Bash']
@@ -25,7 +25,7 @@ class ProxyTests(unittest.TestCase):
             with patch.object(proxy.sys, 'argv', args), \
                     patch.object(proxy.Path, 'cwd', return_value=root), \
                     patch.object(proxy.signal, 'signal'), \
-                    patch.object(proxy, 'get_json', side_effect=[{}, {'requests': {'total': 0}}, stats, stats]), \
+                    patch.object(proxy, 'get_json', side_effect=[{}, {'requests': {'total': 0}} if before_stats is None else before_stats, stats, stats]), \
                     patch.object(proxy.subprocess, 'Popen', side_effect=[daemon, child]) as popen:
                 code = proxy.main()
             result = json.loads((root / '.headroom-comparison/summary.json').read_text())
@@ -44,9 +44,20 @@ class ProxyTests(unittest.TestCase):
         code, meta = self.invoke(2, config=False)
         self.assertEqual(code, 0)
         self.assertTrue(meta['routing_verified'])
+        self.assertIsNone(meta['upstream_commit'])
 
     def test_agent_success_without_proxy_requests_is_not_a_measurement(self):
         code, meta = self.invoke(0)
+        self.assertEqual(code, 125)
+        self.assertFalse(meta['routing_verified'])
+
+    def test_missing_initial_counter_is_not_assumed_zero(self):
+        code, meta = self.invoke(2, before_stats={})
+        self.assertEqual(code, 125)
+        self.assertFalse(meta['routing_verified'])
+
+    def test_boolean_counter_is_not_a_request_count(self):
+        code, meta = self.invoke(True)
         self.assertEqual(code, 125)
         self.assertFalse(meta['routing_verified'])
 

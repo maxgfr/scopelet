@@ -78,10 +78,13 @@ def run(options):
     binaries={}
     for name, source in [('baseline',options.baseline),('candidate',options.candidate)]:
         binaries[name]=frozen/name;shutil.copy2(source,binaries[name])
+    baseline_version = getattr(options, 'baseline_version', None)
+    comparison_arm = 'candidate_v2' if baseline_version == 2 else 'candidate'
     report={'kind':'offline process measurements; not model tokens','platform':platform.platform(),
+            'baseline_compact_version': baseline_version, 'comparison_arm': comparison_arm,
             'warmups':options.warmups,'repetitions':options.repetitions,'stress':options.stress,
             'cache_note':'cold means empty application cache, not flushed OS page cache',
-            'binary_sha256':{k:sha(p.read_bytes()) for k,p in binaries.items()},'cases':{},'v1_mismatches':[]}
+            'binary_sha256':{k:sha(p.read_bytes()) for k,p in binaries.items()},'cases':{},'v1_mismatches':[], 'output_mismatches':[]}
     with tempfile.TemporaryDirectory(prefix='scopelet-perf-') as temp:
         root=Path(temp);cases=fixtures(root/'fixtures',options.stress)
         if options.cases:
@@ -97,7 +100,7 @@ def run(options):
                     arms=['baseline','candidate','candidate_v2']
                     if rep%2:arms.reverse()
                     for arm in arms:
-                        binary=binaries['baseline' if arm=='baseline' else 'candidate'];version=None if arm=='baseline' else (2 if arm=='candidate_v2' else 1)
+                        binary=binaries['baseline' if arm=='baseline' else 'candidate'];version=baseline_version if arm=='baseline' else (2 if arm=='candidate_v2' else 1)
                         cache=root/f'cache-{arm}-{name}-{state}'
                         if state=='cold':shutil.rmtree(cache,ignore_errors=True)
                         actual_args=args
@@ -114,8 +117,11 @@ def run(options):
                             hashes[arm]=sample['stdout_sha256']
                         if rep==options.repetitions-1:
                             report['cases'][key][arm]['cache_bytes']=sum(p.stat().st_size for p in cache.rglob('*') if p.is_file())
-                    if rep>=0 and hashes['baseline']!=hashes['candidate']:
-                        report['v1_mismatches'].append({'case':key,'repetition':rep})
+                    if rep>=0 and hashes['baseline']!=hashes[comparison_arm]:
+                        mismatch = {'case':key,'repetition':rep}
+                        report['output_mismatches'].append(mismatch)
+                        if comparison_arm == 'candidate':
+                            report['v1_mismatches'].append(mismatch)
                 for cell in report['cases'][key].values():cell['summary']=summarize(cell['samples'])
                 print(json.dumps({'case':key,**{a:c['summary'] for a,c in report['cases'][key].items()}}),flush=True)
                 (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -125,12 +131,13 @@ def run(options):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--baseline',type=Path,required=True);p.add_argument('--candidate',type=Path,required=True)
+    p.add_argument('--baseline-version', type=int, choices=(1, 2), help='Pin the reference presentation; use 2 for released 0.3.0.')
     p.add_argument('--out',type=Path,required=True);p.add_argument('--repetitions',type=int,default=30)
     p.add_argument('--warmups',type=int,default=5);p.add_argument('--stress',action='store_true')
     p.add_argument('--cases',help='comma-separated subset for a component follow-up')
     options=p.parse_args()
     if options.repetitions<1 or options.warmups<0:p.error('positive repetitions and nonnegative warmups required')
     report=run(options)
-    if report['v1_mismatches'] or any(c['summary']['failures'] for case in report['cases'].values() for c in case.values()):raise SystemExit(1)
+    if report['output_mismatches'] or any(c['summary']['failures'] for case in report['cases'].values() for c in case.values()):raise SystemExit(1)
 
 if __name__=='__main__':main()
