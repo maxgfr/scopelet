@@ -178,8 +178,9 @@ whole-record selection. The complete-table path is lossless in both versions.
 
 V2 selection prioritizes boundary units, the first occurrence of distinct
 signal text, additional signals, context and ordinary units. Diagnostics in
-JSON are matched in string values, not field names. Distinctness uses exact
-text, without normalizing numbers or paths. Selection remains a heuristic:
+JSON are matched in string values, not field names. In v2, distinctness uses
+exact text, without normalizing numbers or paths; v3 folds repetitions and
+templates as described in its own section. Selection remains a heuristic:
 omissions stay explicit, the output stays within the byte budget, and originals
 remain recoverable. The output is restored to source order after selection.
 
@@ -219,3 +220,24 @@ The v3 header carries the artifact reference once; `ID` in its recovery hint
 refers to that reference. The footer reserve is the exact width of the widest
 footer the view can emit instead of a fixed margin, so the budget is spent on
 evidence.
+
+V3 text units are built from a display copy of each source line: terminal
+control sequences (CSI, OSC and two-byte escapes) are removed and only the last
+carriage-return segment of a rewritten line is kept. The copy never changes
+the number of lines, so `input:N` labels stay absolute and `expand --find`
+still searches the original bytes. A single line larger than the budget is cut
+on a character boundary behind `text_truncated bytes=N`, where N is the
+original line length without its terminator, so a giant line no longer forces
+the whole stream through unchanged. JSON records are still never split.
+
+Repetitions fold wherever they occur. `input:a-b repeat=N` (N = b−a+1) is a
+contiguous run of one text; `input:a repeat=N last=b` (N < b−a+1) is the same
+text at N dispersed lines, shown at its first occurrence; `input:a similar=N
+last=b` groups N lines that share a template after masking digit runs, hex
+runs of eight or more characters and whitespace runs. Only lines without a
+diagnostic fold by template: diagnostics fold with identical text only, so
+counters and identifiers in an error stay visible. When at least 90% of a
+record's lines (20 or more) sit in folded groups, its remaining singletons are
+promoted ahead of context, because the rare line among noise is usually the
+evidence being looked for. All of these markers are metadata, never bytes
+claimed to occur in the source.

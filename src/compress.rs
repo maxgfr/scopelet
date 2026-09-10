@@ -3,7 +3,7 @@ use crate::{clean, compact_table, encoding, model::*, sources::Parsed, store::St
 use anyhow::{Result, ensure};
 use std::{
     borrow::Cow,
-    collections::{BTreeSet, HashSet},
+    collections::{BTreeSet, HashMap, HashSet},
     path::PathBuf,
     sync::LazyLock,
 };
@@ -316,13 +316,23 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
 
 /// Compact-v3 text units work on display copies of the lines (terminal
 /// control sequences and carriage-return overwrites removed) while labels stay
-/// absolute source lines; oversized lines are cut instead of vetoing the view.
+/// absolute source lines. Identical lines fold into their first occurrence
+/// wherever they are; lines without a diagnostic fold with the lines sharing
+/// their template; oversized lines are cut instead of vetoing the view.
 fn text_units_v3<'a>(
     record: &'a Record,
     limit: usize,
     seen: &mut HashSet<String>,
     units: &mut Vec<Unit<'a>>,
 ) {
+    struct Group {
+        first: usize,
+        last: usize,
+        count: usize,
+        /// Every member is the same text (otherwise members share a template).
+        exact: bool,
+        nearby: bool,
+    }
     let lines: Vec<&str> = record.text.split_inclusive('\n').collect();
     let views: Vec<Cow<'a, str>> = lines.iter().map(|line| clean::line_view(line)).collect();
     let signals: Vec<bool> = views.iter().map(|view| SIGNAL.is_match(view)).collect();
@@ -334,14 +344,47 @@ fn text_units_v3<'a>(
     }
     nearby[..lines.len().min(3)].fill(true);
     nearby[lines.len().saturating_sub(5)..].fill(true);
-    let base = record.start_line.unwrap_or(1);
-    let mut i = 0;
-    while i < lines.len() {
-        let mut end = i + 1;
-        while end < lines.len() && views[end] == views[i] {
-            end += 1;
+
+    let mut groups: Vec<Group> = Vec::new();
+    let mut owner = Vec::with_capacity(lines.len());
+    let mut by_text: HashMap<&str, usize> = HashMap::new();
+    let mut by_template: HashMap<String, usize> = HashMap::new();
+    for (i, view) in views.iter().enumerate() {
+        // Diagnostics fold only with identical lines; their variable parts
+        // (counters, ids) are evidence and stay visible.
+        let slot = if signals[i] {
+            by_text.entry(view).or_insert(groups.len())
+        } else {
+            by_template
+                .entry(clean::template(view))
+                .or_insert(groups.len())
+        };
+        if *slot == groups.len() {
+            groups.push(Group {
+                first: i,
+                last: i,
+                count: 1,
+                exact: true,
+                nearby: nearby[i],
+            });
+        } else {
+            let group = &mut groups[*slot];
+            group.last = i;
+            group.count += 1;
+            group.exact &= views[group.first] == *view;
+            group.nearby |= nearby[i];
         }
-        let priority = if i == 0 || end == lines.len() {
+        owner.push(*slot);
+    }
+    let folded: usize = groups.iter().filter(|g| g.count > 1).map(|g| g.count).sum();
+    let mostly_folded = lines.len() >= 20 && folded * 10 >= lines.len() * 9;
+    let base = record.start_line.unwrap_or(1);
+    for (i, &slot) in owner.iter().enumerate() {
+        let group = &groups[slot];
+        if group.first != i {
+            continue;
+        }
+        let priority = if group.first == 0 || group.last + 1 == lines.len() {
             4
         } else if signals[i] {
             if seen.insert(views[i].to_string()) {
@@ -349,21 +392,23 @@ fn text_units_v3<'a>(
             } else {
                 2
             }
-        } else if nearby[i..end].iter().any(|&v| v) {
+        } else if group.count == 1 && mostly_folded {
+            // The rare line among folded noise is what the reader is after.
+            2
+        } else if group.nearby {
             1
         } else {
             0
         };
-        let label = if end == i + 1 {
-            format!("{}:{}", record.source, base + i)
+        let (a, b) = (base + group.first, base + group.last);
+        let label = if group.count == 1 {
+            format!("{}:{a}", record.source)
+        } else if group.exact && group.last + 1 - group.first == group.count {
+            format!("{}:{a}-{b} repeat={}", record.source, group.count)
+        } else if group.exact {
+            format!("{}:{a} repeat={} last={b}", record.source, group.count)
         } else {
-            format!(
-                "{}:{}-{} repeat={}",
-                record.source,
-                base + i,
-                base + end - 1,
-                end - i
-            )
+            format!("{}:{a} similar={} last={b}", record.source, group.count)
         };
         units.push(Unit::text_v3(
             record,
@@ -373,7 +418,6 @@ fn text_units_v3<'a>(
             priority,
             limit,
         ));
-        i = end;
     }
 }
 

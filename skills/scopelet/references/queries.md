@@ -169,6 +169,20 @@ recovery hint `scopelet expand ID --find TEXT` refers to that reference. It
 shares the JSON table forms of version 2 below. Versions 1 and 2 remain
 selectable with `--compact-version 1|2`.
 
+Text lines are shown as a cleaned display copy (terminal colours and
+carriage-return rewrites removed); labels stay absolute source lines and
+`expand` returns the original bytes. Markers are metadata, never source text:
+
+```
+input:2 repeat=1000 last=2000 error: retry failed   same text at 1000 lines, first shown
+input:100-599 repeat=500 unchanged                  contiguous run (N = b-a+1)
+input:1 similar=1000 last=1000 progress 0000: ...   1000 lines sharing a template (digits, long hex, spacing masked)
+input:7 text_truncated bytes=12000 éééé…            a line larger than the budget, cut on a character boundary
+```
+
+Diagnostics never fold by template, only with identical text. Use
+`expand ID --find TEXT` to read any folded or omitted line in full.
+
 ## Compact-v2
 
 ```sh

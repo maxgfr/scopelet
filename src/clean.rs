@@ -84,6 +84,43 @@ fn strip_escapes(text: &str) -> String {
     String::from_utf8(out).expect("removing ASCII bytes preserves UTF-8")
 }
 
+/// Key under which lines that differ only by counters, identifiers or
+/// alignment coincide: digit runs and hex runs of at least eight characters
+/// (containing a digit) become `#`, whitespace runs become one space.
+pub(crate) fn template(line: &str) -> String {
+    let mut out = String::with_capacity(line.len());
+    let mut chars = line.char_indices().peekable();
+    while let Some((start, c)) = chars.next() {
+        if c.is_whitespace() {
+            while chars.peek().is_some_and(|(_, c)| c.is_whitespace()) {
+                chars.next();
+            }
+            out.push(' ');
+        } else if c.is_ascii_alphanumeric() {
+            let mut end = start + 1;
+            while let Some(&(i, c)) = chars.peek() {
+                if !c.is_ascii_alphanumeric() {
+                    break;
+                }
+                end = i + 1;
+                chars.next();
+            }
+            let word = &line[start..end];
+            let digits = word.bytes().filter(u8::is_ascii_digit).count();
+            if digits == word.len()
+                || (word.len() >= 8 && digits > 0 && word.bytes().all(|b| b.is_ascii_hexdigit()))
+            {
+                out.push('#');
+            } else {
+                out.push_str(word);
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -97,5 +134,16 @@ mod tests {
         assert_eq!(line_view("\x1b]0;title\x07é\x1b[K\n"), "é");
         assert_eq!(line_view("\x1b(Bx"), "x");
         assert_eq!(line_view("\x1bMx"), "x");
+    }
+
+    #[test]
+    fn templates_mask_counters_ids_and_alignment_only() {
+        assert_eq!(
+            template("progress 0042: unchanged  x"),
+            "progress #: unchanged x"
+        );
+        assert_eq!(template("id=deadbeef01 name=added"), "id=# name=added");
+        assert_eq!(template("error: case 7 failed"), "error: case # failed");
+        assert_eq!(template("café 3"), "café #");
     }
 }

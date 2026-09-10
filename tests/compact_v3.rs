@@ -94,3 +94,71 @@ fn oversized_json_records_are_never_split() {
             .unwrap();
     assert_eq!(output.as_ref(), raw.as_bytes());
 }
+
+#[test]
+fn dispersed_repetitions_fold_into_their_first_occurrence() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw = format!(
+        "start\n{}fatal error: rare root cause\nend\n",
+        "error: retry failed\nworking\n".repeat(1000)
+    );
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    for expected in [
+        "input:1 start\n",
+        "input:2 repeat=1000 last=2000 error: retry failed\n",
+        "input:3 repeat=1000 last=2001 working\n",
+        "input:2002 fatal error: rare root cause\n",
+        "input:2003 end\n",
+        "[scopelet display_complete=true omitted_units=0;",
+    ] {
+        assert!(text.contains(expected), "{expected:?} missing in:\n{text}");
+    }
+    assert!(text.len() < 600, "{} bytes:\n{text}", text.len());
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
+#[test]
+fn template_folding_keeps_the_rare_line_visible_among_noise() {
+    let dir = tempfile::tempdir().unwrap();
+    let noise: String = (0..1000)
+        .map(|i| format!("progress {i:04}: {}\n", "unchanged ".repeat(12)))
+        .collect();
+    let half = noise.len() / 2;
+    let raw = format!(
+        "{}receipt audit-7139 amount=47 EUR{}\n{}",
+        &noise[..half],
+        " padding".repeat(20),
+        &noise[half..]
+    );
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    assert!(
+        text.contains("input:1 similar=1000 last=1001 progress 0000: unchanged "),
+        "{text}"
+    );
+    assert!(
+        text.contains("input:501 receipt audit-7139 amount=47 EUR padding"),
+        "{text}"
+    );
+    assert!(text.contains("omitted_units=0"), "{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
+#[test]
+fn crowded_distinct_diagnostics_keep_first_and_final_evidence() {
+    let dir = tempfile::tempdir().unwrap();
+    let middle = (0..1000)
+        .map(|i| format!("error: case {i} failed\n"))
+        .collect::<String>();
+    let raw = format!("running 1000 tests\n{middle}final status: 1000 failed; exit=7\n");
+    let text = compress_v3(dir.path(), raw.as_bytes(), 1024);
+    assert!(text.contains("input:1 running 1000 tests\n"), "{text}");
+    assert!(text.contains("input:2 error: case 0 failed\n"), "{text}");
+    assert!(
+        text.contains("input:1002 final status: 1000 failed; exit=7\n"),
+        "{text}"
+    );
+    assert!(
+        text.contains("display_complete=false omitted_units="),
+        "{text}"
+    );
+}
