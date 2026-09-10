@@ -520,3 +520,40 @@ fn terminal_view(line: &str) -> String {
         .unwrap_or("")
         .to_owned()
 }
+
+/// The most common real shape: one failing test among hundreds of passes.
+/// The failure's own detail is the reason the view exists, so it must survive
+/// the passes, which fold into a single line.
+#[test]
+fn one_failure_among_hundreds_of_passes_keeps_its_detail() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = String::from("> app@1.4.2 test\n> jest --runInBand\n\n");
+    for i in 0..240 {
+        raw.push_str(&format!("PASS  src/modules/module{i}.test.js\n"));
+    }
+    raw.push_str(
+        "FAIL  src/auth/session.test.js\n  \u{25cf} session \u{203a} refreshes an expiring token\n\n    expect(received).toBe(expected)\n\n    Expected: 1735689600\n    Received: 1735689599\n\n      at Object.<anonymous> (src/auth/session.test.js:42:31)\n",
+    );
+    for i in 240..480 {
+        raw.push_str(&format!("PASS  src/modules/module{i}.test.js\n"));
+    }
+    raw.push_str("\nTest Suites: 1 failed, 480 passed, 481 total\nTests:       1 failed, 1327 passed, 1328 total\n");
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    for expected in [
+        "FAIL  src/auth/session.test.js\n",
+        "Expected: 1735689600\n",
+        "Received: 1735689599\n",
+        "at Object.<anonymous> (src/auth/session.test.js:42:31)\n",
+        "Test Suites: 1 failed, 480 passed, 481 total\n",
+        "similar=480",
+    ] {
+        assert!(text.contains(expected), "{expected:?} missing in:\n{text}");
+    }
+    // Folding the passes is what leaves room for the failure.
+    assert!(
+        text.matches("PASS  src/modules").count() == 1,
+        "passes were not folded:\n{text}"
+    );
+    assert!(text.len() < 1200, "{} bytes:\n{text}", text.len());
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}

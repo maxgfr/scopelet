@@ -48,9 +48,11 @@ static STRONG: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r"(?i:\b(error|errors|failed|failure|panic|panicked|exception|traceback|fatal|assertionerror|caused by|test result|tests? passed|tests? failed)\b)|npm ERR!|^\s*(FAIL|FAILED|E {2,}|FATAL|×|✕|✗)").unwrap()
 });
 /// Advisory lines: shown once per template, never ahead of a diagnostic.
-static WEAK: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"(?i:\b(warning|warn|deprecated|deprecation)\b)|^\s*PASS\b").unwrap()
-});
+/// A passing test is not an advisory. Listing it here grouped every `PASS`
+/// line by exact text, which stopped a suite of passes from folding and let
+/// them crowd out the failure's own detail.
+static WEAK: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"(?i:\b(warning|warn|deprecated|deprecation)\b)").unwrap());
 /// Stack frames: context for a diagnostic, wherever they are.
 static FRAME: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r#"^\s+at .*\(.*:\d+:\d+\)|^\s+File ".*", line \d+"#).unwrap()
@@ -526,7 +528,11 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         } else if group.count == 1 && mostly_folded {
             // The rare line among folded noise is what the reader is after.
             2
-        } else if nearby || FRAME.is_match(&views[i]) {
+        } else if context[first] || FRAME.is_match(&views[i]) {
+            // A failure's own detail outranks the head and tail padding, which
+            // would otherwise fill the budget and leave only its first line.
+            2
+        } else if nearby {
             1
         } else {
             0

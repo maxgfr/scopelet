@@ -122,7 +122,14 @@ pub(crate) fn template_into(line: &str, out: &mut String) {
             {
                 out.push('#');
             } else {
-                out.push_str(word);
+                // A trailing counter inside a name (`module12`, `shard3`) is
+                // an index, not part of the name: `module12.test.js` and
+                // `module13.test.js` are the same line to a reader.
+                let stem = word.trim_end_matches(|c: char| c.is_ascii_digit());
+                out.push_str(stem);
+                if stem.len() < word.len() {
+                    out.push('#');
+                }
             }
         } else {
             out.push(c);
