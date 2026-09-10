@@ -1,15 +1,132 @@
-# Scopelet
+<p align="center">
+  <strong>Scopelet</strong><br>
+  Your agent reads a 17 KB test log to learn one thing. Send it the one thing.
+</p>
 
-Local, recoverable compression for **Codex and Claude Code**. Scopelet reduces
-noisy command output before it enters model context, keeps original bytes for
-recovery, and computes exact queries over large files. No extra model call, API
-key or proxy.
+<p align="center">
+  <a href="https://github.com/maxgfr/scopelet/releases"><img src="https://img.shields.io/github/v/release/maxgfr/scopelet?style=flat&color=blue" alt="Release"></a>
+  <a href="#license"><img src="https://img.shields.io/badge/license-MIT-green?style=flat" alt="MIT"></a>
+  <a href="#install"><img src="https://img.shields.io/badge/hosts-Codex_%2B_Claude_Code-orange?style=flat" alt="Codex and Claude Code"></a>
+  <a href="#the-numbers"><img src="https://img.shields.io/badge/no-extra_model_call-lightgrey?style=flat" alt="No extra model call"></a>
+  <a href="https://skills.sh/maxgfr/scopelet"><img src="https://skills.sh/b/maxgfr/scopelet"></a>
+</p>
 
-## Install and enable automatic mode
+<p align="center">
+  <a href="#see-it">See it</a> ·
+  <a href="#why-you-want-this">Why</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#the-numbers">Numbers</a> ·
+  <a href="#nothing-is-lost">Recovery</a> ·
+  <a href="#exact-queries">Queries</a> ·
+  <a href="#what-gets-compressed">Scope</a> ·
+  <a href="docs/design.md">Contracts</a>
+</p>
 
-Requires **Node.js 22.20+** for the `skills` installer. The bundled launcher itself
-supports Node 18+. Release binaries support macOS Intel/ARM and Linux Intel/ARM
-with Ubuntu 24.04-compatible glibc. Native Windows is not supported.
+---
+
+## See it
+
+Your test suite prints 481 results. One of them matters.
+
+<table>
+<tr>
+<th width="50%">Without Scopelet · 17,571 bytes</th>
+<th width="50%">With Scopelet · 778 bytes</th>
+</tr>
+<tr>
+<td valign="top">
+
+```
+> app@1.4.2 test
+> jest --runInBand
+
+PASS  src/modules/module0.test.js
+PASS  src/modules/module1.test.js
+PASS  src/modules/module2.test.js
+        ... 237 more PASS lines ...
+FAIL  src/auth/session.test.js
+  ● session › refreshes an expiring token
+
+    expect(received).toBe(expected)
+
+    Expected: 1735689600
+    Received: 1735689599
+
+      at Object.<anonymous> (src/auth/session.test.js:42:31)
+PASS  src/modules/module240.test.js
+        ... 239 more PASS lines ...
+
+Test Suites: 1 failed, 480 passed, 481 total
+Tests:       1 failed, 1327 passed, 1328 total
+Time:        84.113 s
+```
+
+</td>
+<td valign="top">
+
+```
+[scopelet compact-v3 artifact:a5e3d840… scan_complete=true;
+ recover: scopelet expand ID --find TEXT (or --manifest)]
+input:1-3
+ > app@1.4.2 test
+ > jest --runInBand
+
+input:4 similar=480 last=492 PASS  src/modules/module0.test.js
+input:244-252
+ FAIL  src/auth/session.test.js
+   ● session › refreshes an expiring token
+
+     expect(received).toBe(expected)
+
+     Expected: 1735689600
+     Received: 1735689599
+
+       at Object.<anonymous> (src/auth/session.test.js:42:31)
+input:493-496
+
+ Test Suites: 1 failed, 480 passed, 481 total
+ Tests:       1 failed, 1327 passed, 1328 total
+ Time:        84.113 s
+[scopelet display_complete=true omitted_units=0; gaps are
+ omitted, not evidence of absence]
+```
+
+</td>
+</tr>
+</table>
+
+The failure kept its expected value, its received value and its stack frame.
+The 480 passes became one line that still says there were 480 and where the
+last one was. `display_complete=true` means nothing at all was dropped: every
+line of that log is either shown or folded into a counted group.
+
+This happens automatically, on the machine, with no second model call, no API
+key and no proxy. The original 17,571 bytes are still on disk, and the header
+tells the agent how to get any of them back.
+
+## Why you want this
+
+Agents read far more than they write. Test output, build logs, `git diff`,
+JSON dumps: all of it enters the context window verbatim, and most of it is
+the same line five hundred times. That is the part of the bill nobody looks
+at, and it is also what pushes a session into compaction and makes the agent
+forget what it was doing.
+
+Scopelet sits on the hook your agent already has. When a command prints
+something large, it replaces the output with a bounded view before the model
+sees it, keeps the exact original bytes in a local content-addressed store,
+and puts the recovery command in the first line. The agent can always ask for
+the rest. It usually does not need to.
+
+What it is not: it does not call another model to summarize, it does not
+intercept API traffic, it does not rewrite your conversation history, and it
+does not touch small outputs at all.
+
+## Install
+
+Requires **Node.js 22.20+** for the `skills` installer. The bundled launcher
+itself supports Node 18+. Release binaries cover macOS Intel/ARM and Linux
+Intel/ARM with Ubuntu 24.04-compatible glibc. Native Windows is not supported.
 
 ```sh
 npx skills add maxgfr/scopelet --skill scopelet --global -a codex claude-code -y
@@ -31,7 +148,149 @@ For manual use only, run the first command and invoke `/scopelet <task>` in
 Claude Code or `$scopelet <task>` in Codex. Rust is not required for this setup.
 [Full setup and host coverage](skills/scopelet/references/setup.md).
 
-## Choose the response style
+## The numbers
+
+### Smaller
+
+Every row is a real command output through `scopelet compress` at the default
+4 KiB budget, cold cache, thirty repetitions. Reproduce with
+`bench/content.py`; the fixtures are pinned by SHA-256 and by
+`tests/content_gate.rs` in CI.
+
+| What the command printed | Bytes in | Bytes to the model | Kept |
+| --- | ---: | ---: | ---: |
+| 480 passing tests, one failure | 17,571 | 778 | **95.6%** |
+| A retry loop hiding one fatal error | 28,039 | 421 | **98.5%** |
+| 1000 progress lines, then two diagnostics | 136,063 | 516 | **99.6%** |
+| The same log with CRLF endings | 137,031 | 472 | **99.7%** |
+| A receipt buried in the middle of a log | 136,193 | 634 | **99.5%** |
+| A 1000-row JSON array | 171,834 | 4,061 | **97.6%** |
+| A 1000-row JSONL stream | 171,832 | 3,984 | **97.7%** |
+| One 12 KB line with no newline | 12,000 | 1,288 | **89.3%** |
+| A 32-byte command output | 32 | 32 | untouched |
+
+Small outputs are the last row on purpose. Under 2 KiB nothing happens at all,
+and above it a view is only substituted when it saves at least 512 bytes and
+20% including its own metadata. Scopelet declining to act is a normal outcome.
+
+Against the previous release, the cases that moved are the ones that were
+weak:
+
+| Case | 0.3.2 | Now |
+| --- | ---: | ---: |
+| Retry loop with one fatal error | 85.6% | **98.5%** |
+| Receipt buried mid-log | recoverable only, **not in the view** | **in the view** |
+| One 12 KB line | 0%, passed through whole | **89.3%** |
+| One failure among 480 passes | failure body missing | **failure body intact** |
+
+### Faster
+
+Median over thirty runs, cold application cache, macOS arm64.
+
+| Operation | 0.3.2 | Now |
+| --- | ---: | ---: |
+| Compress a 136 KB log | 35 ms | **6 ms** |
+| Repository query over 400 files | 1698 ms | **64 ms** |
+| Compress a 32 MiB stream | 179 ms | 182 ms |
+
+The repository query was spending its time in `F_FULLFSYNC` on every stored
+item. Both store writes now flush without forcing a full disk cache flush;
+publication is still a synced temporary renamed into place and every read is
+still checked against its content hash, so an interrupted write yields a
+missing or rejected item, never a wrong one.
+
+The 32 MiB row is the honest one. It is flat against 0.3.2 only because the
+storage win pays for a slower presentation: the same binary asked for the old
+format does that stream in 164 ms, so the new per-line work costs about 11%
+there. On a 3 MB log the same work is roughly 6 ms, in exchange for 3963 bytes
+of output becoming 663.
+
+> [!IMPORTANT]
+> **Bytes are not tokens, and none of the numbers above is a bill.** An
+> 18-session campaign on Claude Haiku found no functional regression and no
+> token regression it could detect, and it did **not** establish a token
+> saving: only one of the three tasks produced output large enough to compress
+> at all, and the run-to-run spread reached 1.77×, wider than every difference
+> measured. Whole-session cost depends on your host, model and task. Measure
+> your own setup before you tell anyone a percentage.
+> [Full accounting](docs/candidate-v3-2026-09-10.md) ·
+> [comparison against other tools](docs/current-comparison-2026-09-10.md).
+
+## Nothing is lost
+
+Every view links the artifact that holds the original bytes. Reading them back
+does not involve the model.
+
+```sh
+scopelet expand artifact:HASH --find 'Received:' --context 3
+scopelet expand artifact:HASH --manifest
+scopelet expand blob:HASH --start 240 --end 260
+scopelet expand blob:HASH --raw > original.log
+```
+
+Artifact IDs hash the complete dataset and blob IDs hash the original bytes, so
+recovery is byte-exact or it fails loudly. `--find` searches the saved
+originals, including evidence a query had already filtered out. A partial view
+cannot prove absence or an exhaustive count: recover the exact bytes before
+editing something you only saw a summary of.
+
+## Exact queries
+
+Filtering, grouping and counting a large file locally beats sending the file.
+
+```sh
+scopelet query --repo . --find validateToken --context 5
+scopelet query --file events.jsonl --format jsonl \
+  --filter /status --equals '"failed"' --group /suite --output compact
+scopelet run --auto -- npm test
+```
+
+For a standalone `scopelet` command, install with **Rust 1.88+**:
+
+```sh
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.3.3 --locked
+```
+
+Without Cargo, replace `scopelet` with
+`node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs"`. Keep native tools
+for small known files. Default JSON views use 16 KiB; `--mode ultra` uses 4 KiB
+and may abridge text. Budgets are bytes, not token estimates.
+[Query reference](skills/scopelet/references/queries.md).
+
+Optional [codeindex](https://github.com/maxgfr/codeindex) and
+[webindex](https://github.com/maxgfr/webindex) adapters add code relationships
+and document extraction. Files, logs, JSON and repository queries need neither.
+
+## What gets compressed
+
+Codex hooks wrap recognized noninteractive shell commands, including tests,
+builds, Python scripts and simple eligible `&&` chains. Claude Code hooks
+replace Bash output when the host supplies a supported result shape. Other
+tools, unsupported shell syntax, existing output wrappers and outputs the host
+has already persisted all pass through untouched. Small automatic outputs skip
+cache setup entirely, and Codex leaves a plain `cat` of a known regular file up
+to 2 KiB native.
+
+Inside a view, `compact-v3` reads each line the way a terminal would, dropping
+colour codes and keeping only the final state of a progress bar. Then:
+
+| Notation | Meaning |
+| --- | --- |
+| `input:42 text` | line 42, shown as displayed |
+| `input:10-14 repeat=5 text` | lines 10 to 14 are all this line |
+| `input:4 similar=480 last=492 text` | 480 lines share this shape, first at 4, last at 492 |
+| `input:7 text_truncated bytes=12000 prefix…` | one line too big for the budget, cut on a character boundary |
+| `input:40-44` then indented lines | lines 40 to 44 verbatim, one space of indent each |
+
+Line numbers are always absolute positions in the original. Markers are
+metadata: they are never bytes claimed to appear in your output. Selection
+keeps the first and last line, then the first occurrence of each distinct
+diagnostic, then repeats, warnings and the lines around a failure, filling
+from both ends so a final summary survives a flood of errors.
+`--compact-version 1|2` still produce the earlier formats byte for byte.
+[Contracts and limits](docs/design.md).
+
+## Response style
 
 | Mode | Behavior |
 | --- | --- |
@@ -46,80 +305,9 @@ node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" mode off
 ```
 
 Mode changes apply at the next prompt. They change neither the model nor its
-reasoning effort. Caveman is optional: shorter wording does not guarantee a
-cheaper whole session. Saved documents use normal prose.
-
-## What gets compressed
-
-Codex hooks wrap recognized noninteractive shell commands, including tests,
-builds, Python scripts and simple eligible `&&` chains. Claude Code hooks replace
-Bash output when the host supplies a supported result shape. Other tools,
-unsupported shell syntax and existing output wrappers pass through.
-
-Outputs up to 2 KiB stay byte-exact. Larger outputs are replaced only when the
-complete view saves at least 512 bytes and 20%, with a 4 KiB target per stream.
-Scopelet first factors repeated JSON keys without dropping values, then selects
-whole evidence units when needed. Repeated lines retain counts; omissions are
-explicit; original captured bytes remain recoverable. Exit status survives.
-
-The compact-v3 presentation is the default; `--compact-version 1|2` keep the
-earlier forms byte for byte. V3 reads terminal colours and progress rewrites as
-a terminal would, folds repeated and same-shaped lines wherever they occur,
-cuts a single oversized line instead of passing the whole stream through, and
-ranks diagnostics ahead of warnings and noise.
-[Measurements](docs/candidate-v3-2026-09-10.md).
-Already persisted host previews pass through. [Contracts and limits](docs/design.md).
-
-Small automatic outputs skip cache setup. Codex also leaves a plain `cat` of a
-known regular file up to 2 KiB native. Small edits keep their original bytes and
-still require verification; shortening a response never justifies skipping checks.
-
-## When Scopelet is useful
-
-Use Scopelet when test output, build logs or large JSON files would fill the
-agent's context. It gives the agent a bounded view of command output while
-keeping the original bytes available for recovery. Exact local queries can
-filter, group and count records before the result enters context.
-
-Small known files and short command outputs can stay native. Whole-session
-savings depend on the host, model and task; compression alone does not guarantee
-a lower bill.
-
-Benchmark results, methodology and limitations live in the
-[detailed comparison report](docs/current-comparison-2026-09-10.md).
-The [benchmark guide](bench/README.md) explains how to reproduce the measurements
-and where the recorded evidence is stored.
-
-## Exact queries and recovery
-
-For a standalone `scopelet` command, install with **Rust 1.88+**:
-
-```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.3.3 --locked
-scopelet query --repo . --find validateToken --context 5
-scopelet query --file events.jsonl --format jsonl --filter /status --equals '"failed"' --group /suite --output compact
-scopelet run --auto -- npm test
-```
-
-Without Cargo, replace `scopelet` with
-`node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs"`.
-Keep native tools for small known files. Compose filtering, projection, grouping
-and counting locally instead of sending an entire dataset to the model.
-
-```sh
-scopelet expand artifact:HASH --manifest
-scopelet expand blob:HASH --start 30 --end 70
-scopelet expand blob:HASH --raw > original.bin
-```
-
-A partial view cannot prove absence or an exhaustive count. Recover exact bytes
-before editing omitted evidence. CLI display options are separate from response
-preferences: default JSON views use 16 KiB; `--mode ultra` uses 4 KiB and may
-abridge text. Budgets are bytes, not token estimates. [Query reference](skills/scopelet/references/queries.md).
-
-Optional [codeindex](https://github.com/maxgfr/codeindex) and
-[webindex](https://github.com/maxgfr/webindex) adapters add code relationships and
-document extraction. Basic files, logs, JSON and repository queries need neither.
+reasoning effort. Shorter wording does not guarantee a cheaper whole session,
+and shortening a reply never justifies skipping verification. Saved documents
+use normal prose.
 
 ## Upgrade or remove
 
@@ -130,8 +318,9 @@ node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" doctor
 ```
 
 Reinstalling updates the pinned hook binary and preserves unrelated hooks.
-Restart current sessions and review changed hooks in Codex. Update project-local
-skill copies too if you use them; they can shadow the global installation.
+Restart current sessions and review changed hooks in Codex. Update
+project-local skill copies too if you use them; they can shadow the global
+installation.
 
 Remove hooks before removing the skill:
 
@@ -142,12 +331,14 @@ npx skills remove scopelet --global -a codex claude-code -y
 
 Uninstall preserves configuration backups and cached originals. Clean old
 artifacts separately with `clean --older-days 7`; references expire when their
-snapshots are removed. [Paths, backups and cleanup](skills/scopelet/references/setup.md).
+snapshots are removed.
+[Paths, backups and cleanup](skills/scopelet/references/setup.md).
 
 ## Automatic releases from semantic commits
 
-Push **Conventional Commits** to `main`; semantic-release determines the version
-and publishes binaries, checksums and the installable skill after CI succeeds.
+Push **Conventional Commits** to `main`; semantic-release determines the
+version and publishes binaries, checksums and the installable skill after CI
+succeeds.
 
 | Commit example | Version change |
 | --- | --- |
@@ -157,20 +348,25 @@ and publishes binaries, checksums and the installable skill after CI succeeds.
 | `docs: clarify installation`, `test: cover recovery`, `ci: verify packages` | Patch |
 
 Scopes work too: `fix(launcher): handle a missing cache`. Nonsemantic messages
-fail release validation. Use semantic titles when squash-merging. Every valid
-commit produces at least a patch; a push containing multiple commits produces
-one release with the highest applicable version change. The generated
-`chore(release): VERSION [skip ci]` commit avoids a release loop.
+fail release validation. **Use a semantic title when squash-merging**, because
+the squash title is the only message semantic-release sees: a branch whose
+commits include a `feat:` still ships as a patch if its squash title says
+`perf:`. Every valid commit produces at least a patch; a push containing
+multiple commits produces one release with the highest applicable version
+change. The generated `chore(release): VERSION [skip ci]` commit avoids a
+release loop.
 
 The [workflow](.github/workflows/release.yml) tests Linux/macOS and Rust 1.88,
 sets the next version before compilation, then checks the versioned launcher
-and both host installations on all four platforms. Cargo, the skill, its launcher
-and README install tag are synchronized. Publication stops if the branch or
-resolved version changed during the build. No npm or crates.io package is published.
+and both host installations on all four platforms. Cargo, the skill, its
+launcher and the README install tag are synchronized. Publication stops if the
+branch or resolved version changed during the build. No npm or crates.io
+package is published.
 
 ## Development checks
 
-Use Rust 1.88+, Python 3.9+ and Node 24.10+ for the development/release tooling.
+Use Rust 1.88+, Python 3.9+ and Node 24.10+ for the development and release
+tooling.
 
 ```sh
 cargo fmt --check
@@ -184,21 +380,31 @@ cargo build --release --locked
 python3 scripts/check_install.py --binary target/release/scopelet
 ```
 
-The installation check uses temporary host configurations, preserves unrelated
-hooks, exercises default/caveman/off, and verifies uninstall. It makes no model
-calls. [Benchmark reproduction](bench/README.md) requires explicit `--live` for
-model sessions. [Verification history](docs/verification.md) preserves earlier
-results and failures. [Engine and compact-v2 measurements](docs/performance-2026-09-10.md).
-[Compact-v3 measurements](docs/candidate-v3-2026-09-10.md).
-[Research and influences](docs/optimization-research-2026-09-09.md).
+`tests/content_gate.rs` holds the shared fixtures to a minimum reduction, the
+facts that must stay visible and byte-exact recovery, so a change that trades
+evidence for bytes fails in CI. `tests/compact_v3.rs` resolves every label of
+40 generated views against an independent model of what a terminal shows.
+`tests/performance_contracts.rs` pins the compact-v1 and compact-v2 bytes
+against the released 0.3.2. The installation check uses temporary host
+configurations and makes no model calls.
 
-MIT · [Issues and support](https://github.com/maxgfr/scopelet/issues)
+[Benchmark reproduction](bench/README.md) requires explicit `--live` for model
+sessions. [Verification history](docs/verification.md) preserves earlier
+results and failures.
+[Engine and compact-v2 measurements](docs/performance-2026-09-10.md) ·
+[compact-v3 measurements](docs/candidate-v3-2026-09-10.md) ·
+[research and influences](docs/optimization-research-2026-09-09.md).
 
 ## Manual skill invocation
 
-These skills run when explicitly invoked: `scopelet`. Use `$name` in Codex or `/name` in Claude Code and OpenCode (with the plugin namespace when installed as a Claude plugin).
+These skills run when explicitly invoked: `scopelet`. Use `$name` in Codex or
+`/name` in Claude Code and OpenCode (with the plugin namespace when installed
+as a Claude plugin).
 
-The skill bundle disables implicit selection in Codex and Claude Code. OpenCode V2 reads `metadata.opencode/autoinvoke: "false"`. For OpenCode V1, merge these entries into `permission.skill` in `~/.config/opencode/opencode.json` or the project configuration; retain unrelated permissions:
+The skill bundle disables implicit selection in Codex and Claude Code. OpenCode
+V2 reads `metadata.opencode/autoinvoke: "false"`. For OpenCode V1, merge these
+entries into `permission.skill` in `~/.config/opencode/opencode.json` or the
+project configuration; retain unrelated permissions:
 
 ```json
 {
@@ -210,4 +416,10 @@ The skill bundle disables implicit selection in Codex and Claude Code. OpenCode 
 }
 ```
 
-On OpenCode 1.18.30, these rules hide the skills from the agent and reject skill-tool loading, while explicit `/name` commands remain available. Installation with `skills add` does not apply this OpenCode V1 configuration.
+On OpenCode 1.18.30, these rules hide the skills from the agent and reject
+skill-tool loading, while explicit `/name` commands remain available.
+Installation with `skills add` does not apply this OpenCode V1 configuration.
+
+## License
+
+MIT · [Issues and support](https://github.com/maxgfr/scopelet/issues)
