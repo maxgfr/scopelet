@@ -157,7 +157,39 @@ This reads historical evidence after a local file changes. A new `query` on an
 artifact still checks freshness. Search conflicts with `--raw`, `--manifest`,
 `--start` and `--end`; use range expansion for a known line interval.
 
-## Compact-v2 (default)
+## Compact-v3 (default)
+
+```sh
+scopelet compress < build.log
+scopelet compress --compact-version 3 < build.log
+```
+
+Version 3 is the CLI/hook default. Its header names the artifact once and its
+recovery hint `scopelet expand ID --find TEXT` refers to that reference. It
+shares the JSON table forms of version 2 below. Versions 1 and 2 remain
+selectable with `--compact-version 1|2`.
+
+Text lines are shown as a cleaned display copy (terminal colours and
+carriage-return rewrites removed); labels stay absolute source lines and
+`expand` returns the original bytes. Markers are metadata, never source text:
+
+```
+input:2 repeat=1000 last=2000 error: retry failed   same text at 1000 lines, first shown
+input:100-599 repeat=500 unchanged                  contiguous run (N = b-a+1)
+input:1 similar=1000 last=1000 progress 0000: ...   1000 lines sharing a template (digits, long hex, spacing masked)
+input:7 text_truncated bytes=12000 éééé…            a line larger than the budget, cut on a character boundary
+input:40-44                                         range block: the next 5 lines, each prefixed by one space,
+ line 40 verbatim                                   are lines 40..44 in order (no repeat= on the header)
+```
+
+Diagnostics never fold by template, only with identical text. Selection keeps
+the first and last lines, then the first occurrence of each diagnostic
+template, then repeats, warnings and context, filling from both ends so the
+final summary survives; next to diagnostics, ordinary lines that cannot all
+fit stop at a quarter of the budget. Use
+`expand ID --find TEXT` to read any folded or omitted line in full.
+
+## Compact-v2
 
 ```sh
 scopelet compress --compact-version 2 < build.log
@@ -170,5 +202,5 @@ rows to source labels. `total_records` and `omitted_units` describe coverage,
 not a computed aggregate. Complete cells, exact numbers and missing/null
 semantics survive. A partial table cannot establish an exhaustive count.
 V2 prioritizes distinct diagnostics before repetitions, and links directly to
-saved-source search. Version 2 is the CLI/hook default; version 1 remains selectable with
-`--compact-version 1`; query and artifact JSON schemas remain version 1.
+saved-source search. Version 1 remains selectable with `--compact-version 1`;
+query and artifact JSON schemas remain version 1.

@@ -43,7 +43,7 @@ the external engine's envelope is retained separately.
 Limits: requests 1 MiB, 32 operations, each file 32 MiB, repository scan 20000
 files/128 MiB, stored item 256 MiB, command capture 32 MiB per stream, default
 command timeout 120 seconds (maximum 3600). New store directories are private on
-Unix; existing directory permissions are preserved; writes are atomic and content hashes are checked on reads. Storage subdirectories get local `.ignore` and `.gitignore` markers so ordinary searches and Git staging do not re-ingest saved evidence. Existing markers and read-only caches are preserved; marker creation is skipped when permissions forbid it; explicit no-ignore searches can still include the cache. Storage grows
+Unix; existing directory permissions are preserved; writes are atomic (a synced temporary renamed into place, data flushed to the device without forcing a full disk cache flush) and content hashes are checked on reads, so an interrupted write yields a missing or rejected item, never a wrong one. Storage subdirectories get local `.ignore` and `.gitignore` markers so ordinary searches and Git staging do not re-ingest saved evidence. Existing markers and read-only caches are preserved; marker creation is skipped when permissions forbid it; explicit no-ignore searches can still include the cache. Storage grows
 with distinct observations until explicit cleanup; no silent eviction expires
 active references. Cleanup retains blobs referenced by surviving artifacts, and
 paging an artifact does not store it again. Only content-hash-named files are
@@ -107,8 +107,10 @@ differ. Every key must exist in every row; missing fields never become null.
 Values retain JSON types and exact decimal numbers. If the full representation
 cannot fit, the engine selects whole records rather than clipping fields.
 Text presentation preserves first/final lines, then selects diagnostic lines
-before context and ordinary lines. Automatic compression passes through when
-no whole evidence unit fits; it never substitutes a recovery-only envelope.
+before context and ordinary lines. In v1 and v2, automatic compression passes
+through when no whole evidence unit fits; compact-v3 instead cuts a single
+oversized line on a character boundary and marks it (see below). No version
+substitutes a recovery-only envelope: every view carries source bytes.
 All originals remain available. Automatic detection of malformed JSONL falls
 back to text selection and never asserts an exact aggregate.
 
@@ -162,9 +164,10 @@ small/binary inputs and persisted previews perform no cache writes. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact v1 JSON
 serialization. A storage/compression failure returns native captured bytes.
-Explicit queries still report storage errors. Compact-v2 is the CLI and hook default following the bounded
-[Luna rollout comparison](performance-2026-09-10.md). Legacy library helpers
-`automatic` and `compact` retain v1 behavior.
+Explicit queries still report storage errors. Compact-v2 became the CLI and hook default following the bounded
+[Luna rollout comparison](performance-2026-09-10.md), and compact-v3 replaced it
+as the default (see below); v2 remains selectable and byte-identical. Legacy
+library helpers `automatic` and `compact` retain v1 behavior.
 
 `--compact-version 2` selects compact-v2; `SCOPELET_COMPACT_VERSION=2` selects it
 for automatic hooks too. An explicit CLI version takes precedence. Only `1` and
@@ -178,8 +181,9 @@ whole-record selection. The complete-table path is lossless in both versions.
 
 V2 selection prioritizes boundary units, the first occurrence of distinct
 signal text, additional signals, context and ordinary units. Diagnostics in
-JSON are matched in string values, not field names. Distinctness uses exact
-text, without normalizing numbers or paths. Selection remains a heuristic:
+JSON are matched in string values, not field names. In v2, distinctness uses
+exact text, without normalizing numbers or paths; v3 folds repetitions and
+templates as described in its own section. Selection remains a heuristic:
 omissions stay explicit, the output stays within the byte budget, and originals
 remain recoverable. The output is restored to source order after selection.
 
@@ -205,3 +209,63 @@ build/lint/typecheck scripts. The existing shell grammar and permission envelope
 remain in force. Watch/debug/interactive forms and unrecognized syntax stay
 native. Every eligible command executes once; stdout/stderr and process status
 remain independent of presentation.
+
+## Compact-v3
+
+Compact-v3 is the CLI and hook default. `--compact-version 3` and
+`SCOPELET_COMPACT_VERSION=3` select it explicitly; `1` and `2` remain
+selectable and their output stays byte-identical to the releases that
+introduced them (`tests/performance_contracts.rs` pins both against 0.3.2).
+Only `1`, `2` and `3` are accepted. The query and saved-dataset schemas remain
+version 1, and the complete-table and partial-table paths are shared with v2.
+
+The v3 header carries the artifact reference once; `ID` in its recovery hint
+refers to that reference. The footer reserve is the exact width of the widest
+footer the view can emit instead of a fixed margin, so the budget is spent on
+evidence.
+
+V3 text units are built from a display copy of each source line: terminal
+control sequences (CSI, OSC and two-byte escapes) are removed and only the last
+carriage-return segment of a rewritten line is kept. The copy never changes
+the number of lines, so `input:N` labels stay absolute and `expand --find`
+still searches the original bytes. A single line larger than the budget is cut
+on a character boundary behind `text_truncated bytes=N`, where N is the
+original line length without its terminator, so a giant line no longer forces
+the whole stream through unchanged. JSON records are still never split.
+
+Repetitions fold wherever they occur. `input:a-b repeat=N` (N = b−a+1) is a
+contiguous run of one text; `input:a repeat=N last=b` (N < b−a+1) is the same
+text at N dispersed lines, shown at its first occurrence; `input:a similar=N
+last=b` groups N lines that share a template after masking digit runs, hex
+runs of eight or more characters and whitespace runs. Only lines without a
+diagnostic fold by template: diagnostics fold with identical text only, so
+counters and identifiers in an error stay visible. When at least 90% of a
+record's lines (20 or more) sit in folded groups, its remaining singletons are
+promoted ahead of context, because the rare line among noise is usually the
+evidence being looked for. All of these markers are metadata, never bytes
+claimed to occur in the source.
+
+V3 ranks units in five tiers: the first and last line of a record; the first
+occurrence of each strong diagnostic template (`error`, `failed`, `panic`,
+`exception`, `traceback`, `fatal`, `npm ERR!`, `FAILED`, `✗`, test summaries
+and the like); repeated strong diagnostics, the first occurrence of each weak
+template (`warning`, `warn`, `deprecated`, `PASS`) and singleton lines of a
+mostly folded record; context (three lines before and eight after a strong
+diagnostic, stack frames, the head three and tail five lines); then ordinary
+lines. Each tier is filled alternately from the head and the tail so the final
+summary survives a flood of early diagnostics. When the view carries
+diagnostics and cannot show every ordinary line anyway, ordinary lines stop at
+a quarter of the available budget, so the view ends where the evidence does;
+an ordinary listing without diagnostics still fills the budget. Small
+repetitions inside a diagnostic's context stay in source order; massive
+repetition (eight lines or more) folds wherever it is. Vocabulary words match
+without regard to case, but anchored markers (`FAIL`, `FAILED`, `FATAL`,
+pytest's `E` prefix, `PASS`) must be upper case, so an ordinary line beginning
+with `e ` is not a diagnostic. Diagnostics in JSON records rank by the same
+vocabulary. The output is restored to source order.
+
+Three or more selected consecutive plain lines are shown as one range block:
+`input:a-b` on its own line, then each line prefixed by a single space, so
+line a+k is the k-th indented line. The label bytes this saves are spent on
+further evidence when it fits. A block header carries no `repeat=`, which
+distinguishes it from a contiguous run.

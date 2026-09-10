@@ -61,6 +61,13 @@ complete view saves at least 512 bytes and 20%, with a 4 KiB target per stream.
 Scopelet first factors repeated JSON keys without dropping values, then selects
 whole evidence units when needed. Repeated lines retain counts; omissions are
 explicit; original captured bytes remain recoverable. Exit status survives.
+
+The compact-v3 presentation is the default; `--compact-version 1|2` keep the
+earlier forms byte for byte. V3 reads terminal colours and progress rewrites as
+a terminal would, folds repeated and same-shaped lines wherever they occur,
+cuts a single oversized line instead of passing the whole stream through, and
+ranks diagnostics ahead of warnings and noise.
+[Measurements](docs/candidate-v3-2026-09-10.md).
 Already persisted host previews pass through. [Contracts and limits](docs/design.md).
 
 Small automatic outputs skip cache setup. Codex also leaves a plain `cat` of a
@@ -182,6 +189,7 @@ hooks, exercises default/caveman/off, and verifies uninstall. It makes no model
 calls. [Benchmark reproduction](bench/README.md) requires explicit `--live` for
 model sessions. [Verification history](docs/verification.md) preserves earlier
 results and failures. [Engine and compact-v2 measurements](docs/performance-2026-09-10.md).
+[Compact-v3 measurements](docs/candidate-v3-2026-09-10.md).
 [Research and influences](docs/optimization-research-2026-09-09.md).
 
 MIT · [Issues and support](https://github.com/maxgfr/scopelet/issues)

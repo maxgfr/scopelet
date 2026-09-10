@@ -79,6 +79,27 @@ class VersionComparisonTests(unittest.TestCase):
             self.assertEqual(report['output_mismatches'], [])
             self.assertIn('candidate', report['cases']['small/cold'])
 
+    def test_candidate_version_is_measured_only_by_the_candidate_arm(self):
+        from argparse import Namespace
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            binary = root / 'binary'; binary.write_bytes(b'frozen')
+            options = Namespace(out=root / 'out', baseline=binary, candidate=binary, baseline_version=2, candidate_version=3,
+                                warmups=0, repetitions=1, stress=False, cases='small')
+            seen = []
+            def fixture(path, stress):
+                path.mkdir(); source = path / 'small'; source.write_bytes(b'fixture')
+                return {'small': (['compress'], source)}
+            def measure(binary, args, source, cache, version):
+                seen.append(version); raw = str(version).encode()
+                return {'seconds': 0.01, 'rss_bytes': 1, 'exit_code': 0, 'stdout_sha256': performance.sha(raw), 'output_bytes': len(raw)}, raw
+            with patch.object(performance, 'fixtures', side_effect=fixture), patch.object(performance, 'measure', side_effect=measure), patch('builtins.print'):
+                report = performance.run(options)
+            self.assertEqual(sorted(seen), [2, 2, 2, 2, 3, 3])
+            self.assertEqual(report['candidate_compact_version'], 3)
+            self.assertEqual(report['output_mismatches'], [])
+
     def test_v2_output_mismatch_fails_command(self):
         from unittest.mock import patch
         with patch('sys.argv', ['performance.py', '--baseline', 'a', '--candidate', 'b', '--out', 'unused']), \
