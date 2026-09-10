@@ -15,6 +15,18 @@ const PLACEHOLDER: &str =
 static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r"(?i)\b(error|failed|failure|panic|panicked|exception|traceback|warning|assertionerror|caused by|test result|tests? passed|tests? failed)\b|^\s*(FAIL|PASS|E\s+|FATAL|×|✕)").unwrap()
 });
+/// Compact-v3 vocabulary: diagnostics and summaries that decide an outcome.
+static STRONG: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)\b(error|errors|failed|failure|panic|panicked|exception|traceback|fatal|assertionerror|caused by|test result|tests? passed|tests? failed)\b|npm ERR!|^\s*(FAIL|FAILED|E\s+|FATAL|×|✕|✗)").unwrap()
+});
+/// Advisory lines: shown once per template, never ahead of a diagnostic.
+static WEAK: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i)\b(warning|warn|deprecated|deprecation)\b|^\s*PASS\b").unwrap()
+});
+/// Stack frames: context for a diagnostic, wherever they are.
+static FRAME: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r#"^\s+at .*\(.*:\d+:\d+\)|^\s+File ".*", line \d+"#).unwrap()
+});
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, clap::ValueEnum)]
 pub enum Version {
@@ -164,6 +176,8 @@ struct Unit<'a> {
     prefix: String,
     size: usize,
     priority: u8,
+    /// Source line of a plain single-line unit that may join a range block.
+    block: Option<usize>,
 }
 fn digits(n: usize) -> usize {
     if n == 0 { 1 } else { n.ilog10() as usize + 1 }
@@ -177,6 +191,7 @@ impl<'a> Unit<'a> {
             prefix,
             size,
             priority,
+            block: None,
         }
     }
     /// Compact-v3 text unit; a line too large for the budget is cut on a
@@ -188,12 +203,16 @@ impl<'a> Unit<'a> {
         raw: &str,
         priority: u8,
         limit: usize,
+        block: Option<usize>,
     ) -> Self {
         let size = label.len() + 1 + view.len() + 1;
         let cap = limit.min(1024);
         let prefix = format!("{label} text_truncated bytes={} ", clean::body(raw).len());
         if size <= limit || prefix.len() + 1 >= cap {
-            return Self::text(record, label + " ", view, priority);
+            return Self {
+                block,
+                ..Self::text(record, label + " ", view, priority)
+            };
         }
         let cut = (0..=cap - prefix.len() - 1)
             .rev()
@@ -205,6 +224,7 @@ impl<'a> Unit<'a> {
             size: prefix.len() + cut + 1,
             prefix,
             priority,
+            block: None,
         }
     }
     fn append(&self, output: &mut String) {
@@ -223,19 +243,31 @@ impl<'a> Unit<'a> {
     }
 }
 
-fn signal_value(value: &serde_json::Value) -> Option<&str> {
+fn signal_value<'v>(value: &'v serde_json::Value, signal: &regex::Regex) -> Option<&'v str> {
     match value {
-        serde_json::Value::String(s) => SIGNAL.is_match(s).then_some(s),
-        serde_json::Value::Array(a) => a.iter().find_map(signal_value),
-        serde_json::Value::Object(o) => o.values().find_map(signal_value),
+        serde_json::Value::String(s) => signal.is_match(s).then_some(s),
+        serde_json::Value::Array(a) => a.iter().find_map(|v| signal_value(v, signal)),
+        serde_json::Value::Object(o) => o.values().find_map(|v| signal_value(v, signal)),
         _ => None,
     }
+}
+
+/// Diagnostic templates already shown, so later occurrences rank lower.
+#[derive(Default)]
+struct Seen {
+    strong: HashSet<String>,
+    weak: HashSet<String>,
 }
 
 fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
     let mut units = Vec::new();
     let mut distinct = BTreeSet::new();
-    let mut seen = HashSet::new();
+    let mut seen = Seen::default();
+    let signal = if version == Version::V3 {
+        &*STRONG
+    } else {
+        &*SIGNAL
+    };
     for (ordinal, record) in data.records.iter().enumerate() {
         if let Some(value) = &record.value {
             let priority = if version == Version::V1 {
@@ -246,7 +278,7 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
                 }
             } else if ordinal == 0 || ordinal + 1 == data.records.len() {
                 4
-            } else if let Some(signal) = signal_value(value) {
+            } else if let Some(signal) = signal_value(value, signal) {
                 if distinct.insert(signal) { 3 } else { 2 }
             } else {
                 0
@@ -257,6 +289,7 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
                 prefix: String::new(),
                 size: encoding::size(value, limit).unwrap_or(limit + 1) + record.source.len() + 3,
                 priority,
+                block: None,
             });
             continue;
         }
@@ -319,40 +352,45 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
 /// absolute source lines. Identical lines fold into their first occurrence
 /// wherever they are; lines without a diagnostic fold with the lines sharing
 /// their template; oversized lines are cut instead of vetoing the view.
-fn text_units_v3<'a>(
-    record: &'a Record,
-    limit: usize,
-    seen: &mut HashSet<String>,
-    units: &mut Vec<Unit<'a>>,
-) {
+fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &mut Vec<Unit<'a>>) {
     struct Group {
         first: usize,
         last: usize,
         count: usize,
         /// Every member is the same text (otherwise members share a template).
         exact: bool,
+        context: bool,
         nearby: bool,
     }
     let lines: Vec<&str> = record.text.split_inclusive('\n').collect();
+    let n = lines.len();
     let views: Vec<Cow<'a, str>> = lines.iter().map(|line| clean::line_view(line)).collect();
-    let signals: Vec<bool> = views.iter().map(|view| SIGNAL.is_match(view)).collect();
-    let mut nearby = vec![false; lines.len()];
-    for (i, &signal) in signals.iter().enumerate() {
-        if signal {
-            nearby[i.saturating_sub(3)..(i + 9).min(lines.len())].fill(true);
+    let strong: Vec<bool> = views.iter().map(|view| STRONG.is_match(view)).collect();
+    let weak: Vec<bool> = views
+        .iter()
+        .zip(&strong)
+        .map(|(view, &strong)| !strong && WEAK.is_match(view))
+        .collect();
+    // Context is the window around a diagnostic; head and tail lines only
+    // count for priority.
+    let mut context = vec![false; n];
+    for (i, &strong) in strong.iter().enumerate() {
+        if strong {
+            context[i.saturating_sub(3)..(i + 9).min(n)].fill(true);
         }
     }
-    nearby[..lines.len().min(3)].fill(true);
-    nearby[lines.len().saturating_sub(5)..].fill(true);
+    let mut nearby = context.clone();
+    nearby[..n.min(3)].fill(true);
+    nearby[n.saturating_sub(5)..].fill(true);
 
+    // Diagnostics group by exact text: their variable parts (counters, ids)
+    // are evidence and stay visible. Other lines group by template.
     let mut groups: Vec<Group> = Vec::new();
-    let mut owner = Vec::with_capacity(lines.len());
+    let mut owner = Vec::with_capacity(n);
     let mut by_text: HashMap<&str, usize> = HashMap::new();
     let mut by_template: HashMap<String, usize> = HashMap::new();
     for (i, view) in views.iter().enumerate() {
-        // Diagnostics fold only with identical lines; their variable parts
-        // (counters, ids) are evidence and stay visible.
-        let slot = if signals[i] {
+        let slot = if strong[i] || weak[i] {
             by_text.entry(view).or_insert(groups.len())
         } else {
             by_template
@@ -365,6 +403,7 @@ fn text_units_v3<'a>(
                 last: i,
                 count: 1,
                 exact: true,
+                context: context[i],
                 nearby: nearby[i],
             });
         } else {
@@ -372,43 +411,81 @@ fn text_units_v3<'a>(
             group.last = i;
             group.count += 1;
             group.exact &= views[group.first] == *view;
+            group.context |= context[i];
             group.nearby |= nearby[i];
         }
         owner.push(*slot);
     }
-    let folded: usize = groups.iter().filter(|g| g.count > 1).map(|g| g.count).sum();
-    let mostly_folded = lines.len() >= 20 && folded * 10 >= lines.len() * 9;
+    // A few repetitions inside a diagnostic's context stay in source order;
+    // massive repetition folds wherever it is.
+    let folds: Vec<bool> = groups
+        .iter()
+        .map(|g| g.count > 1 && (!g.context || g.count >= 8))
+        .collect();
+    let folded: usize = groups
+        .iter()
+        .zip(&folds)
+        .filter(|(_, folds)| **folds)
+        .map(|(g, _)| g.count)
+        .sum();
+    let mostly_folded = n >= 20 && folded * 10 >= n * 9;
     let base = record.start_line.unwrap_or(1);
-    for (i, &slot) in owner.iter().enumerate() {
+    let mut i = 0;
+    while i < n {
+        let slot = owner[i];
         let group = &groups[slot];
-        if group.first != i {
-            continue;
-        }
-        let priority = if group.first == 0 || group.last + 1 == lines.len() {
+        let (first, last, count, exact, nearby) = if folds[slot] {
+            if group.first != i {
+                i += 1;
+                continue;
+            }
+            (
+                group.first,
+                group.last,
+                group.count,
+                group.exact,
+                group.nearby,
+            )
+        } else {
+            // Unfolded members still merge with contiguous identical lines.
+            let mut j = i;
+            while j + 1 < n && owner[j + 1] == slot && views[j + 1] == views[i] {
+                j += 1;
+            }
+            (i, j, j + 1 - i, true, nearby[i..=j].iter().any(|&v| v))
+        };
+        let priority = if first == 0 || last + 1 == n {
             4
-        } else if signals[i] {
-            if seen.insert(views[i].to_string()) {
+        } else if strong[i] {
+            // The first diagnostic of each template, then its variants.
+            if seen.strong.insert(clean::template(&views[i])) {
                 3
             } else {
                 2
             }
+        } else if weak[i] {
+            if seen.weak.insert(clean::template(&views[i])) {
+                2
+            } else {
+                1
+            }
         } else if group.count == 1 && mostly_folded {
             // The rare line among folded noise is what the reader is after.
             2
-        } else if group.nearby {
+        } else if nearby || FRAME.is_match(&views[i]) {
             1
         } else {
             0
         };
-        let (a, b) = (base + group.first, base + group.last);
-        let label = if group.count == 1 {
+        let (a, b) = (base + first, base + last);
+        let label = if count == 1 {
             format!("{}:{a}", record.source)
-        } else if group.exact && group.last + 1 - group.first == group.count {
-            format!("{}:{a}-{b} repeat={}", record.source, group.count)
-        } else if group.exact {
-            format!("{}:{a} repeat={} last={b}", record.source, group.count)
+        } else if exact && last + 1 - first == count {
+            format!("{}:{a}-{b} repeat={count}", record.source)
+        } else if exact {
+            format!("{}:{a} repeat={count} last={b}", record.source)
         } else {
-            format!("{}:{a} similar={} last={b}", record.source, group.count)
+            format!("{}:{a} similar={count} last={b}", record.source)
         };
         units.push(Unit::text_v3(
             record,
@@ -417,7 +494,89 @@ fn text_units_v3<'a>(
             lines[i],
             priority,
             limit,
+            (count == 1).then_some(a),
         ));
+        i = if folds[slot] { i + 1 } else { last + 1 };
+    }
+}
+
+/// Compact-v3 selection: tiers are filled alternately from the head and the
+/// tail so the final summary survives a flood of early diagnostics, and
+/// ordinary lines never take more than a quarter of the budget.
+fn select_v3(units: &[Unit<'_>], available: usize) -> Vec<usize> {
+    let mut selected = vec![false; units.len()];
+    let mut used = 0;
+    for priority in [4, 3, 2, 1, 0] {
+        let tier: Vec<usize> = (0..units.len())
+            .filter(|&i| units[i].priority == priority)
+            .collect();
+        let mut order = Vec::with_capacity(tier.len());
+        let (mut head, mut tail) = (0, tier.len());
+        while head < tail {
+            order.push(tier[head]);
+            head += 1;
+            if head < tail {
+                tail -= 1;
+                order.push(tier[tail]);
+            }
+        }
+        let cap = if priority == 0 {
+            available / 4
+        } else {
+            available
+        };
+        let mut tier_used = 0;
+        for i in order {
+            let size = units[i].size;
+            if size <= available.saturating_sub(used) && tier_used + size <= cap {
+                selected[i] = true;
+                used += size;
+                tier_used += size;
+            }
+        }
+    }
+    selected
+        .into_iter()
+        .enumerate()
+        .filter_map(|(i, yes)| yes.then_some(i))
+        .collect()
+}
+
+fn consecutive(a: &Unit<'_>, b: &Unit<'_>) -> bool {
+    match (a.block, b.block) {
+        (Some(x), Some(y)) => std::ptr::eq(a.record, b.record) && y == x + 1,
+        _ => false,
+    }
+}
+
+/// Compact-v3 rendering: three or more consecutive plain lines become one
+/// `source:a-b` block whose lines are indented by a single space.
+fn render_v3(units: &[Unit<'_>], selected: &[usize], output: &mut String) {
+    let mut i = 0;
+    while i < selected.len() {
+        let mut j = i;
+        while j + 1 < selected.len() && consecutive(&units[selected[j]], &units[selected[j + 1]]) {
+            j += 1;
+        }
+        if j - i >= 2 {
+            let (first, last) = (&units[selected[i]], &units[selected[j]]);
+            output.push_str(&format!(
+                "{}:{}-{}\n",
+                first.record.source,
+                first.block.unwrap(),
+                last.block.unwrap()
+            ));
+            for &k in &selected[i..=j] {
+                output.push(' ');
+                output.push_str(units[k].line.as_deref().unwrap());
+                output.push('\n');
+            }
+        } else {
+            for &k in &selected[i..=j] {
+                units[k].append(output);
+            }
+        }
+        i = j + 1;
     }
 }
 
@@ -521,10 +680,31 @@ fn view(
         // No table row fits: recompute ordinary-record costs before falling back.
         units = self::units(data, available, version);
     }
-    let selected = select(&units, available);
-    for &i in &selected {
-        units[i].append(&mut output);
-    }
+    let selected = if version == Version::V3 {
+        let mut selected = select_v3(&units, available);
+        let mut body = String::new();
+        render_v3(&units, &selected, &mut body);
+        // Range blocks cost less than the per-line labels selection counted;
+        // spend that slack on more evidence when it still fits.
+        let slack = available.saturating_sub(body.len());
+        if slack > 0 {
+            let more = select_v3(&units, available + slack);
+            let mut extended = String::new();
+            render_v3(&units, &more, &mut extended);
+            if more.len() > selected.len() && extended.len() <= available {
+                selected = more;
+                body = extended;
+            }
+        }
+        output.push_str(&body);
+        selected
+    } else {
+        let selected = select(&units, available);
+        for &i in &selected {
+            units[i].append(&mut output);
+        }
+        selected
+    };
     output.push_str(&footer(units.len() - selected.len()));
     ensure!(output.len() <= budget, "compact metadata exceeds budget");
     Ok((output, selected.len()))

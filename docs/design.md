@@ -241,3 +241,24 @@ record's lines (20 or more) sit in folded groups, its remaining singletons are
 promoted ahead of context, because the rare line among noise is usually the
 evidence being looked for. All of these markers are metadata, never bytes
 claimed to occur in the source.
+
+V3 ranks units in five tiers: the first and last line of a record; the first
+occurrence of each strong diagnostic template (`error`, `failed`, `panic`,
+`exception`, `traceback`, `fatal`, `npm ERR!`, `FAILED`, `✗`, test summaries
+and the like); repeated strong diagnostics, the first occurrence of each weak
+template (`warning`, `warn`, `deprecated`, `PASS`) and singleton lines of a
+mostly folded record; context (three lines before and eight after a strong
+diagnostic, stack frames, the head three and tail five lines); then ordinary
+lines. Each tier is filled alternately from the head and the tail so the final
+summary survives a flood of early diagnostics, and ordinary lines never take
+more than a quarter of the available budget, so a view stops when the evidence
+does. Small repetitions inside a diagnostic's context stay in source order;
+massive repetition (eight lines or more) folds wherever it is. Diagnostics in
+JSON records rank by the same vocabulary. The output is restored to source
+order.
+
+Three or more selected consecutive plain lines are shown as one range block:
+`input:a-b` on its own line, then each line prefixed by a single space, so
+line a+k is the k-th indented line. The label bytes this saves are spent on
+further evidence when it fits. A block header carries no `repeat=`, which
+distinguishes it from a contiguous run.

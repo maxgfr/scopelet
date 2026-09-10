@@ -178,9 +178,14 @@ input:2 repeat=1000 last=2000 error: retry failed   same text at 1000 lines, fir
 input:100-599 repeat=500 unchanged                  contiguous run (N = b-a+1)
 input:1 similar=1000 last=1000 progress 0000: ...   1000 lines sharing a template (digits, long hex, spacing masked)
 input:7 text_truncated bytes=12000 éééé…            a line larger than the budget, cut on a character boundary
+input:40-44                                         range block: the next 5 lines, each prefixed by one space,
+ line 40 verbatim                                   are lines 40..44 in order (no repeat= on the header)
 ```
 
-Diagnostics never fold by template, only with identical text. Use
+Diagnostics never fold by template, only with identical text. Selection keeps
+the first and last lines, then the first occurrence of each diagnostic
+template, then repeats, warnings and context, filling from both ends so the
+final summary survives; ordinary lines stop at a quarter of the budget. Use
 `expand ID --find TEXT` to read any folded or omitted line in full.
 
 ## Compact-v2

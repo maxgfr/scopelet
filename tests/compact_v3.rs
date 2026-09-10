@@ -151,14 +151,148 @@ fn crowded_distinct_diagnostics_keep_first_and_final_evidence() {
         .collect::<String>();
     let raw = format!("running 1000 tests\n{middle}final status: 1000 failed; exit=7\n");
     let text = compress_v3(dir.path(), raw.as_bytes(), 1024);
-    assert!(text.contains("input:1 running 1000 tests\n"), "{text}");
-    assert!(text.contains("input:2 error: case 0 failed\n"), "{text}");
+    assert!(text.contains("running 1000 tests\n"), "{text}");
+    assert!(text.contains(" error: case 0 failed\n"), "{text}");
+    assert!(text.contains(" error: case 999 failed\n"), "{text}");
     assert!(
-        text.contains("input:1002 final status: 1000 failed; exit=7\n"),
+        text.contains("final status: 1000 failed; exit=7\n"),
         "{text}"
     );
     assert!(
         text.contains("display_complete=false omitted_units="),
         "{text}"
     );
+}
+
+fn noise_lines(count: usize) -> String {
+    (0..count)
+        .map(|i| format!("compiling unit {i}\n"))
+        .collect()
+}
+
+#[test]
+fn diagnostic_vocabulary_and_frames_survive_noise() {
+    let dir = tempfile::tempdir().unwrap();
+    let facts = [
+        "error[E0308]: mismatched types",
+        "error TS2322: Type 'string' is not assignable",
+        "npm ERR! code ELIFECYCLE",
+        "FAILED tests/test_alpha.py::test_beta - AssertionError",
+        "    at Object.<anonymous> (/app/src/index.js:10:5)",
+        "  File \"/app/main.py\", line 12, in <module>",
+        "fatal: not a git repository",
+        "✗ 3 of 12 checks",
+    ];
+    let mut raw = String::new();
+    for fact in facts {
+        raw.push_str(&noise_lines(400));
+        raw.push_str(fact);
+        raw.push('\n');
+    }
+    raw.push_str(&noise_lines(400));
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    for fact in facts {
+        assert!(text.contains(fact), "{fact:?} missing in:\n{text}");
+    }
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
+#[test]
+fn warnings_do_not_evict_errors_from_a_small_budget() {
+    let dir = tempfile::tempdir().unwrap();
+    let warnings: String = (0..300)
+        .map(|i| format!("warning: unused variable `w{i}`\n"))
+        .collect();
+    let errors: String = (0..300)
+        .map(|i| format!("error: cannot find value `v{i}` in this scope\n"))
+        .collect();
+    let raw = format!("compiling\n{warnings}{errors}done\n");
+    let text = compress_v3(dir.path(), raw.as_bytes(), 1024);
+    let errors_shown = text.matches("error: cannot find").count();
+    let warnings_shown = text.matches("warning: unused").count();
+    assert!(errors_shown >= 5, "{errors_shown} errors in:\n{text}");
+    assert!(warnings_shown <= 1, "{warnings_shown} warnings in:\n{text}");
+}
+
+#[test]
+fn the_final_summary_survives_a_flood_of_failures() {
+    let dir = tempfile::tempdir().unwrap();
+    let failures: String = (0..500)
+        .map(|i| format!("test module::case_{i} ... FAILED\n"))
+        .collect();
+    let raw = format!(
+        "running 500 tests\n{failures}\nfailures:\n\ntest result: FAILED. 0 passed; 500 failed; 0 ignored\n\nerror: test failed, to rerun pass `--lib`\n"
+    );
+    let text = compress_v3(dir.path(), raw.as_bytes(), 1024);
+    assert!(
+        text.contains("test result: FAILED. 0 passed; 500 failed; 0 ignored\n"),
+        "{text}"
+    );
+    assert!(text.contains("test module::case_0 ... FAILED\n"), "{text}");
+    assert!(
+        text.contains("test module::case_499 ... FAILED\n"),
+        "{text}"
+    );
+}
+
+#[test]
+fn contiguous_selected_lines_form_a_range_block_with_derivable_labels() {
+    let dir = tempfile::tempdir().unwrap();
+    let context = [
+        "  --> src/lib.rs:12:9",
+        "   |",
+        "12 |     let total = alpha + beta;",
+        "   |                         ^^^^ not found in this scope",
+        "   |",
+        "help: a local variable with a similar name exists",
+        "   |",
+        "12 |     let total = alpha + gamma;",
+    ];
+    let raw = format!(
+        "{}error[E0425]: cannot find value\n{}\n{}",
+        noise_lines(500),
+        context.join("\n"),
+        noise_lines(500)
+    );
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    let lines: Vec<&str> = text.lines().collect();
+    let header = lines
+        .iter()
+        .position(|l| l.starts_with("input:501-"))
+        .unwrap_or_else(|| panic!("no range block in:\n{text}"));
+    let (a, b) = lines[header]
+        .strip_prefix("input:")
+        .unwrap()
+        .split_once('-')
+        .unwrap();
+    let (a, b): (usize, usize) = (a.parse().unwrap(), b.parse().unwrap());
+    assert!(b - a >= 2, "{text}");
+    let source: Vec<&str> = raw.lines().collect();
+    for (k, line) in lines[header + 1..=header + 1 + b - a].iter().enumerate() {
+        let body = line
+            .strip_prefix(' ')
+            .unwrap_or_else(|| panic!("{line:?} in:\n{text}"));
+        assert_eq!(body, source[a - 1 + k], "line {} in:\n{text}", a + k);
+    }
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
+#[test]
+fn ordinary_lines_are_capped_so_noise_does_not_fill_the_budget() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw: String = (0..1000)
+        .map(|i: usize| {
+            let word: String = i
+                .to_string()
+                .chars()
+                .map(|c| (b'a' + (c as u8 - b'0')) as char)
+                .collect();
+            format!("{word} unit ready\n")
+        })
+        .collect();
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    assert!(text.contains("omitted_units="), "{text}");
+    assert!(!text.contains("omitted_units=0"), "{text}");
+    assert!(text.len() < 2048, "{} bytes:\n{text}", text.len());
+    assert!(text.contains("input:1-"), "{text}");
 }
