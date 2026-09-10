@@ -557,3 +557,97 @@ fn one_failure_among_hundreds_of_passes_keeps_its_detail() {
     assert!(text.len() < 1200, "{} bytes:\n{text}", text.len());
     assert_eq!(original(dir.path(), &text), raw.as_bytes());
 }
+
+/// Shapes agents actually run, beyond the synthetic fixtures. The Jest case
+/// that this file already covers was found by hand, not by the fixture set,
+/// so the tools whose output an agent reads all day get their own gate: the
+/// evidence that decides the outcome has to survive, and the noise around it
+/// has to fold.
+#[test]
+fn real_tool_output_keeps_the_evidence_that_decides_the_outcome() {
+    let mut cases: Vec<(&str, String, Vec<&str>)> = Vec::new();
+
+    let mut cargo: String = (0..300)
+        .map(|i| format!("   Compiling crate_{i} v0.{i}.1\n"))
+        .collect();
+    cargo.push_str("warning: unused variable: `ctx`\n --> src/handler.rs:88:9\n  |\n88 |     let ctx = build();\n  |         ^^^ help: prefix with underscore: `_ctx`\n\n");
+    cargo.push_str("error[E0599]: no method named `finish` found for struct `Builder`\n   --> src/handler.rs:120:22\n    |\n120 |     let out = builder.finish();\n    |                      ^^^^^^ method not found in `Builder`\n\n");
+    cargo.extend((300..420).map(|i| format!("   Compiling crate_{i} v0.{i}.1\n")));
+    cargo.push_str(
+        "error: could not compile `app` (bin \"app\") due to 1 previous error; 1 warning emitted\n",
+    );
+    cases.push((
+        "cargo build",
+        cargo,
+        vec![
+            "error[E0599]",
+            "no method named `finish`",
+            "could not compile",
+            "warning: unused variable",
+        ],
+    ));
+
+    let mut tsc: Vec<String> = (0..400)
+        .map(|i| format!("src/components/Widget{i}.tsx:{i}:5 - checked"))
+        .collect();
+    tsc.insert(
+        200,
+        "src/api/client.ts(45,7): error TS2322: Type 'string' is not assignable to type 'number'."
+            .into(),
+    );
+    tsc.push("Found 1 error in src/api/client.ts:45".into());
+    cases.push((
+        "tsc",
+        tsc.join("\n") + "\n",
+        vec!["TS2322", "not assignable", "Found 1 error"],
+    ));
+
+    let mut pytest: String = (0..400)
+        .map(|i| {
+            format!(
+                "tests/test_mod{i}.py::test_case_{i} PASSED                    [ {:2}%]\n",
+                i / 5
+            )
+        })
+        .collect();
+    pytest.push_str("tests/test_auth.py::test_refresh FAILED                      [100%]\n\n=================================== FAILURES ===================================\n");
+    pytest.push_str(">       assert token.expires_at == 1735689600\nE       assert 1735689599 == 1735689600\n\ntests/test_auth.py:42: AssertionError\n");
+    pytest.push_str("FAILED tests/test_auth.py::test_refresh - assert 1735689599 == 1735689600\n======================== 1 failed, 400 passed in 12.4s =========================\n");
+    cases.push((
+        "pytest -v",
+        pytest,
+        vec![
+            "1735689599 == 1735689600",
+            "AssertionError",
+            "1 failed, 400 passed",
+        ],
+    ));
+
+    let mut diff = String::from(
+        "diff --git a/src/auth.rs b/src/auth.rs\nindex 1a2b3c4..5d6e7f8 100644\n--- a/src/auth.rs\n+++ b/src/auth.rs\n@@ -40,7 +40,7 @@ impl Session {\n     fn is_expired(&self, now: u64) -> bool {\n-        self.expires_at > now\n+        self.expires_at >= now\n     }\n",
+    );
+    for f in 0..60 {
+        diff.push_str(&format!("diff --git a/src/gen/mod{f}.rs b/src/gen/mod{f}.rs\nindex aaa{f}..bbb{f} 100644\n--- a/src/gen/mod{f}.rs\n+++ b/src/gen/mod{f}.rs\n@@ -1,3 +1,3 @@\n-pub const BUILD: u32 = 1;\n+pub const BUILD: u32 = 2;\n \n"));
+    }
+    cases.push((
+        "git diff",
+        diff,
+        vec!["+        self.expires_at >= now", "a/src/auth.rs"],
+    ));
+
+    for (name, raw, facts) in cases {
+        let dir = tempfile::tempdir().unwrap();
+        let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+        for fact in &facts {
+            assert!(text.contains(fact), "{name}: {fact:?} missing in:\n{text}");
+        }
+        // Half the budget or better, otherwise the noise was not folded.
+        assert!(
+            text.len() * 2 <= raw.len(),
+            "{name}: {} bytes from {}",
+            text.len(),
+            raw.len()
+        );
+        assert_eq!(original(dir.path(), &text), raw.as_bytes(), "{name}");
+    }
+}
