@@ -162,9 +162,10 @@ small/binary inputs and persisted previews perform no cache writes. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact v1 JSON
 serialization. A storage/compression failure returns native captured bytes.
-Explicit queries still report storage errors. Compact-v2 is the CLI and hook default following the bounded
-[Luna rollout comparison](performance-2026-09-10.md). Legacy library helpers
-`automatic` and `compact` retain v1 behavior.
+Explicit queries still report storage errors. Compact-v2 became the CLI and hook default following the bounded
+[Luna rollout comparison](performance-2026-09-10.md), and compact-v3 replaced it
+as the default (see below); v2 remains selectable and byte-identical. Legacy
+library helpers `automatic` and `compact` retain v1 behavior.
 
 `--compact-version 2` selects compact-v2; `SCOPELET_COMPACT_VERSION=2` selects it
 for automatic hooks too. An explicit CLI version takes precedence. Only `1` and
@@ -253,10 +254,13 @@ lines. Each tier is filled alternately from the head and the tail so the final
 summary survives a flood of early diagnostics. When the view carries
 diagnostics and cannot show every ordinary line anyway, ordinary lines stop at
 a quarter of the available budget, so the view ends where the evidence does;
-an ordinary listing without diagnostics still fills the budget. Small repetitions inside a diagnostic's context stay in source order;
-massive repetition (eight lines or more) folds wherever it is. Diagnostics in
-JSON records rank by the same vocabulary. The output is restored to source
-order.
+an ordinary listing without diagnostics still fills the budget. Small
+repetitions inside a diagnostic's context stay in source order; massive
+repetition (eight lines or more) folds wherever it is. Vocabulary words match
+without regard to case, but anchored markers (`FAIL`, `FAILED`, `FATAL`,
+pytest's `E` prefix, `PASS`) must be upper case, so an ordinary line beginning
+with `e ` is not a diagnostic. Diagnostics in JSON records rank by the same
+vocabulary. The output is restored to source order.
 
 Three or more selected consecutive plain lines are shown as one range block:
 `input:a-b` on its own line, then each line prefixed by a single space, so
