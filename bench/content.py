@@ -14,6 +14,10 @@ import tempfile
 import time
 
 
+# Facts expected only after recovery: the view shows a cut line with a marker.
+RECOVERY_ONLY = {'giant_unicode_line'}
+
+
 def fixtures():
     noise = ''.join(f'progress {i:04d}: ' + 'unchanged ' * 12 + '\n' for i in range(1000))
     rows = [{'id': i, 'status': 'failed' if i == 643 else 'passed',
@@ -69,7 +73,8 @@ def measure(args):
         for name, (original, facts) in fixtures().items():
             source = root / (name + ('.json' if name == 'json' else '.txt'))
             source.write_bytes(original)
-            report['cases'][name] = {'input_bytes': len(original), 'sha256': hashlib.sha256(original).hexdigest(), 'facts': facts if name != 'giant_unicode_line' else ['entire giant line'], 'arms': {}}
+            report['cases'][name] = {'input_bytes': len(original), 'sha256': hashlib.sha256(original).hexdigest(), 'facts': facts if name not in RECOVERY_ONLY else ['entire giant line'],
+                                     'facts_expected': 'after recovery' if name in RECOVERY_ONLY else 'in view', 'arms': {}}
             for state in ('cold', 'warm'):
                 for arm in ('scopelet', 'rtk', 'headroom'):
                     cache = root / f'{arm}-{state}'

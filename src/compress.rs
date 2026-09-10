@@ -1,7 +1,12 @@
 //! Recoverable presentation. Selection borrows evidence; storage follows acceptance.
-use crate::{compact_table, encoding, model::*, sources::Parsed, store::Store};
+use crate::{clean, compact_table, encoding, model::*, sources::Parsed, store::Store};
 use anyhow::{Result, ensure};
-use std::{borrow::Cow, collections::BTreeSet, path::PathBuf, sync::LazyLock};
+use std::{
+    borrow::Cow,
+    collections::{BTreeSet, HashSet},
+    path::PathBuf,
+    sync::LazyLock,
+};
 
 pub const DEFAULT_BUDGET: usize = 4096;
 pub const SMALL: usize = 2048;
@@ -153,29 +158,58 @@ fn footer(omitted: usize) -> String {
 
 struct Unit<'a> {
     record: &'a Record,
-    line: Option<&'a str>,
-    start: usize,
-    end: usize,
+    /// Displayed text of a text unit; JSON units serialize their value.
+    line: Option<Cow<'a, str>>,
+    /// Label and metadata before the text, including the separating space.
+    prefix: String,
     size: usize,
     priority: u8,
 }
 fn digits(n: usize) -> usize {
     if n == 0 { 1 } else { n.ilog10() as usize + 1 }
 }
-impl Unit<'_> {
+impl<'a> Unit<'a> {
+    fn text(record: &'a Record, prefix: String, line: Cow<'a, str>, priority: u8) -> Self {
+        let size = prefix.len() + line.len() + usize::from(!line.ends_with('\n'));
+        Self {
+            record,
+            line: Some(line),
+            prefix,
+            size,
+            priority,
+        }
+    }
+    /// Compact-v3 text unit; a line too large for the budget is cut on a
+    /// character boundary behind a `text_truncated bytes=N` marker.
+    fn text_v3(
+        record: &'a Record,
+        label: String,
+        view: Cow<'a, str>,
+        raw: &str,
+        priority: u8,
+        limit: usize,
+    ) -> Self {
+        let size = label.len() + 1 + view.len() + 1;
+        let cap = limit.min(1024);
+        let prefix = format!("{label} text_truncated bytes={} ", clean::body(raw).len());
+        if size <= limit || prefix.len() + 1 >= cap {
+            return Self::text(record, label + " ", view, priority);
+        }
+        let cut = (0..=cap - prefix.len() - 1)
+            .rev()
+            .find(|&i| view.is_char_boundary(i))
+            .unwrap();
+        Self {
+            record,
+            line: Some(Cow::Owned(view[..cut].to_owned())),
+            size: prefix.len() + cut + 1,
+            prefix,
+            priority,
+        }
+    }
     fn append(&self, output: &mut String) {
-        if let Some(line) = self.line {
-            if self.end == self.start + 1 {
-                output.push_str(&format!("{}:{} ", self.record.source, self.start));
-            } else {
-                output.push_str(&format!(
-                    "{}:{}-{} repeat={} ",
-                    self.record.source,
-                    self.start,
-                    self.end - 1,
-                    self.end - self.start
-                ));
-            }
+        if let Some(line) = &self.line {
+            output.push_str(&self.prefix);
             output.push_str(line);
             if !line.ends_with('\n') {
                 output.push('\n');
@@ -201,6 +235,7 @@ fn signal_value(value: &serde_json::Value) -> Option<&str> {
 fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
     let mut units = Vec::new();
     let mut distinct = BTreeSet::new();
+    let mut seen = HashSet::new();
     for (ordinal, record) in data.records.iter().enumerate() {
         if let Some(value) = &record.value {
             let priority = if version == Version::V1 {
@@ -219,11 +254,14 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
             units.push(Unit {
                 record,
                 line: None,
-                start: 0,
-                end: 0,
+                prefix: String::new(),
                 size: encoding::size(value, limit).unwrap_or(limit + 1) + record.source.len() + 3,
                 priority,
             });
+            continue;
+        }
+        if version == Version::V3 {
+            text_units_v3(record, limit, &mut seen, &mut units);
             continue;
         }
         let lines: Vec<_> = record.text.split_inclusive('\n').collect();
@@ -258,31 +296,85 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
             } else {
                 0
             };
-            let start_line = base + i;
-            let end_line = base + end;
-            let range_size = digits(start_line)
-                + if end == i + 1 {
-                    0
-                } else {
-                    1 + digits(end_line - 1) + 8 + digits(end - i)
-                };
-            let size = record.source.len()
-                + 2
-                + range_size
-                + line.len()
-                + usize::from(!line.ends_with('\n'));
-            units.push(Unit {
-                record,
-                line: Some(line),
-                start: start_line,
-                end: end_line,
-                size,
-                priority,
-            });
+            let prefix = if end == i + 1 {
+                format!("{}:{} ", record.source, base + i)
+            } else {
+                format!(
+                    "{}:{}-{} repeat={} ",
+                    record.source,
+                    base + i,
+                    base + end - 1,
+                    end - i
+                )
+            };
+            units.push(Unit::text(record, prefix, Cow::Borrowed(line), priority));
             i = end;
         }
     }
     units
+}
+
+/// Compact-v3 text units work on display copies of the lines (terminal
+/// control sequences and carriage-return overwrites removed) while labels stay
+/// absolute source lines; oversized lines are cut instead of vetoing the view.
+fn text_units_v3<'a>(
+    record: &'a Record,
+    limit: usize,
+    seen: &mut HashSet<String>,
+    units: &mut Vec<Unit<'a>>,
+) {
+    let lines: Vec<&str> = record.text.split_inclusive('\n').collect();
+    let views: Vec<Cow<'a, str>> = lines.iter().map(|line| clean::line_view(line)).collect();
+    let signals: Vec<bool> = views.iter().map(|view| SIGNAL.is_match(view)).collect();
+    let mut nearby = vec![false; lines.len()];
+    for (i, &signal) in signals.iter().enumerate() {
+        if signal {
+            nearby[i.saturating_sub(3)..(i + 9).min(lines.len())].fill(true);
+        }
+    }
+    nearby[..lines.len().min(3)].fill(true);
+    nearby[lines.len().saturating_sub(5)..].fill(true);
+    let base = record.start_line.unwrap_or(1);
+    let mut i = 0;
+    while i < lines.len() {
+        let mut end = i + 1;
+        while end < lines.len() && views[end] == views[i] {
+            end += 1;
+        }
+        let priority = if i == 0 || end == lines.len() {
+            4
+        } else if signals[i] {
+            if seen.insert(views[i].to_string()) {
+                3
+            } else {
+                2
+            }
+        } else if nearby[i..end].iter().any(|&v| v) {
+            1
+        } else {
+            0
+        };
+        let label = if end == i + 1 {
+            format!("{}:{}", record.source, base + i)
+        } else {
+            format!(
+                "{}:{}-{} repeat={}",
+                record.source,
+                base + i,
+                base + end - 1,
+                end - i
+            )
+        };
+        units.push(Unit::text_v3(
+            record,
+            label,
+            views[i].clone(),
+            lines[i],
+            priority,
+            limit,
+        ));
+        i = end;
+    }
 }
 
 fn select(units: &[Unit<'_>], available: usize) -> Vec<usize> {

@@ -1,5 +1,6 @@
 pub mod adapters;
 pub mod benchmark;
+mod clean;
 pub mod commands;
 mod compact_table;
 pub mod compress;

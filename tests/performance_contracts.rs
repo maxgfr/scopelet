@@ -22,13 +22,17 @@ fn artifact(text: &str) -> &str {
 #[test]
 fn rejected_compression_never_opens_a_store() {
     let dir = tempfile::tempdir().unwrap();
-    for version in [Version::V1, Version::V2] {
+    for version in [Version::V1, Version::V2, Version::V3] {
         for raw in [
             b"small\r\n".to_vec(),
             vec![255; 5000],
             "é".repeat(5000).into_bytes(),
             format!("<persisted-output>{}", "x".repeat(6000)).into_bytes(),
         ] {
+            // V3 cuts an oversized line instead of rejecting the whole view.
+            if version == Version::V3 && raw.starts_with("é".as_bytes()) {
+                continue;
+            }
             let path = dir.path().join("must-not-exist");
             assert_eq!(
                 &*compress::automatic_lazy(&raw, Some(path.clone()), 4096, version).unwrap(),

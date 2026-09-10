@@ -23,3 +23,7 @@ class ContentTests(unittest.TestCase):
             exact, recovered = content.recovery(Path('/bin/scopelet'), Path('/cache'), ('artifact:' + 'a' * 64).encode(), b'original')
         self.assertFalse(exact)
         self.assertIsNone(recovered)
+
+    def test_only_the_giant_line_is_expected_after_recovery(self):
+        self.assertEqual(content.RECOVERY_ONLY, {'giant_unicode_line'})
+        self.assertTrue(content.RECOVERY_ONLY <= set(content.fixtures()))
