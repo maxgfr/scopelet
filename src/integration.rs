@@ -386,10 +386,10 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         let command = format!(
             "{} run --auto --timeout 3600 {} -- {}",
             quote(&binary.to_string_lossy()),
-            if version == compress::Version::V2 {
-                "--compact-version 2"
-            } else {
-                "--compact-version 1"
+            match version {
+                compress::Version::V1 => "--compact-version 1",
+                compress::Version::V2 => "--compact-version 2",
+                compress::Version::V3 => "--compact-version 3",
             },
             args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" ")
         );

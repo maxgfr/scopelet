@@ -23,7 +23,7 @@ struct Cli {
     cache_dir: Option<PathBuf>,
     #[command(subcommand)]
     command: Cmd,
-    /// Compact text representation; defaults to SCOPELET_COMPACT_VERSION or 2.
+    /// Compact text representation; defaults to SCOPELET_COMPACT_VERSION or 3.
     #[arg(long, global = true, value_enum)]
     compact_version: Option<compress::Version>,
 }

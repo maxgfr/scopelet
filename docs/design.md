@@ -205,3 +205,17 @@ build/lint/typecheck scripts. The existing shell grammar and permission envelope
 remain in force. Watch/debug/interactive forms and unrecognized syntax stay
 native. Every eligible command executes once; stdout/stderr and process status
 remain independent of presentation.
+
+## Compact-v3
+
+Compact-v3 is the CLI and hook default. `--compact-version 3` and
+`SCOPELET_COMPACT_VERSION=3` select it explicitly; `1` and `2` remain
+selectable and their output stays byte-identical to the releases that
+introduced them (`tests/performance_contracts.rs` pins both against 0.3.2).
+Only `1`, `2` and `3` are accepted. The query and saved-dataset schemas remain
+version 1, and the complete-table and partial-table paths are shared with v2.
+
+The v3 header carries the artifact reference once; `ID` in its recovery hint
+refers to that reference. The footer reserve is the exact width of the widest
+footer the view can emit instead of a fixed margin, so the budget is spent on
+evidence.

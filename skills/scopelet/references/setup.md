@@ -128,10 +128,12 @@ copies too; they can shadow the global skill.
 
 ## Compact version and additional commands
 
-Compact-v2 is the default. Set `SCOPELET_COMPACT_VERSION=1` in the agent process
-environment to restore v1 for installed hooks; unset it or set `2` to use v2.
-Direct CLI calls can override it with `--compact-version 1|2`. V2 adds partial JSON tables and broader
-diagnostic coverage; see [queries.md](queries.md) for exact recovery semantics.
+Compact-v3 is the default. Set `SCOPELET_COMPACT_VERSION=1` or `2` in the agent
+process environment to restore an earlier presentation for installed hooks;
+unset it or set `3` to use v3. Direct CLI calls can override it with
+`--compact-version 1|2|3`. V2 added partial JSON tables and broader diagnostic
+coverage; v3 adds a leaner envelope; see [queries.md](queries.md) for exact
+recovery semantics.
 The JSON query interface and old saved artifacts remain compatible.
 
 Codex also recognizes simple `rg`/`grep`, Git diff/log/show/status without forced

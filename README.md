@@ -61,6 +61,8 @@ complete view saves at least 512 bytes and 20%, with a 4 KiB target per stream.
 Scopelet first factors repeated JSON keys without dropping values, then selects
 whole evidence units when needed. Repeated lines retain counts; omissions are
 explicit; original captured bytes remain recoverable. Exit status survives.
+The compact-v3 presentation is the default; `--compact-version 1|2` keep the
+earlier forms byte for byte.
 Already persisted host previews pass through. [Contracts and limits](docs/design.md).
 
 Small automatic outputs skip cache setup. Codex also leaves a plain `cat` of a

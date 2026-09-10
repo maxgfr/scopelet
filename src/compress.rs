@@ -15,9 +15,11 @@ static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
 pub enum Version {
     #[value(name = "1")]
     V1,
-    #[default]
     #[value(name = "2")]
     V2,
+    #[default]
+    #[value(name = "3")]
+    V3,
 }
 impl Version {
     pub fn configured(explicit: Option<Self>) -> Result<Self> {
@@ -27,9 +29,14 @@ impl Version {
         match std::env::var("SCOPELET_COMPACT_VERSION") {
             Ok(v) if v == "1" => Ok(Self::V1),
             Ok(v) if v == "2" => Ok(Self::V2),
+            Ok(v) if v == "3" => Ok(Self::V3),
             Err(std::env::VarError::NotPresent) => Ok(Self::default()),
-            _ => anyhow::bail!("SCOPELET_COMPACT_VERSION must be 1 or 2"),
+            _ => anyhow::bail!("SCOPELET_COMPACT_VERSION must be 1, 2 or 3"),
         }
+    }
+    /// Partial JSON tables with indices and provenance (everything after v1).
+    fn tables(self) -> bool {
+        self != Self::V1
     }
 }
 
@@ -128,6 +135,11 @@ fn header(data: &Dataset, artifact: &str, version: Version) -> String {
         ),
         Version::V2 => format!(
             "[scopelet compact-v2 {artifact} scan_complete={}; recover: scopelet expand {artifact} --find TEXT (or --manifest)]\n",
+            data.scan_complete
+        ),
+        // ID refers to the artifact reference above: the id is not repeated.
+        Version::V3 => format!(
+            "[scopelet compact-v3 {artifact} scan_complete={}; recover: scopelet expand ID --find TEXT (or --manifest)]\n",
             data.scan_complete
         ),
     }
@@ -317,7 +329,14 @@ fn view(
         "compact input exceeds 100000 units; use an explicit query"
     );
     let mut output = header(data, artifact, version);
-    let available = budget.saturating_sub(output.len() + 160);
+    // V3 reserves exactly the widest footer it can emit; earlier versions keep
+    // their fixed reserve so their bytes stay identical.
+    let reserve = if version == Version::V3 {
+        footer(count).len()
+    } else {
+        160
+    };
+    let available = budget.saturating_sub(output.len() + reserve);
     let uniform = compact_table::uniform(data);
     if uniform {
         let indices: Vec<_> = (0..data.records.len()).collect();
@@ -326,7 +345,7 @@ fn view(
         if let Some(table) = compact_table::encode(
             data,
             &indices,
-            version == Version::V2,
+            version.tables(),
             budget.saturating_sub(output.len() + tail.len()),
         ) {
             output.push_str(&table);
@@ -335,7 +354,7 @@ fn view(
         }
     }
     let mut units = units(data, available, version);
-    if uniform && version == Version::V2 {
+    if uniform && version.tables() {
         // Exact row costs include positional provenance. Fixed schema/envelope costs
         // are counted by the same serializer as the final table.
         if let Some(empty) = compact_table::encode(data, &[], true, available) {

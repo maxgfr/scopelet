@@ -439,14 +439,17 @@ fn standalone_compression_preserves_interruption_exit_status() {
 }
 
 #[test]
-fn compact_defaults_to_v2_and_explicit_version_overrides_environment() {
+fn compact_defaults_to_v3_and_explicit_version_overrides_environment() {
     use assert_cmd::Command;
     let dir = tempfile::tempdir().unwrap();
     let raw = "working\n".repeat(1000);
     for (env, explicit, expected) in [
-        (None, None, "2"),
+        (None, None, "3"),
         (Some("1"), None, "1"),
+        (Some("2"), None, "2"),
+        (Some("3"), None, "3"),
         (Some("2"), Some("1"), "1"),
+        (Some("1"), Some("3"), "3"),
         (Some("invalid"), Some("2"), "2"),
     ] {
         let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
@@ -464,4 +467,71 @@ fn compact_defaults_to_v2_and_explicit_version_overrides_environment() {
                 .starts_with(&format!("[scopelet compact-v{expected} "))
         );
     }
+}
+
+/// Earlier presentations are frozen: their bytes match the released 0.3.2
+/// binary for the shared `repeated_errors` and `diagnostics` fixtures.
+#[test]
+fn legacy_compact_versions_stay_byte_identical_and_unknown_versions_fail() {
+    use assert_cmd::Command;
+    let dir = tempfile::tempdir().unwrap();
+    let noise: String = (0..1000)
+        .map(|i| format!("progress {i:04}: {}\n", "unchanged ".repeat(12)))
+        .collect();
+    let repeated = format!(
+        "start\n{}fatal error: rare root cause\nend\n",
+        "error: retry failed\nworking\n".repeat(1000)
+    );
+    let diagnostics =
+        format!("{noise}error: audit-7139 amount=47\nwarning: do NOT disable validation\n");
+    for (raw, version, expected) in [
+        (
+            &repeated,
+            "1",
+            "bb884d78540a83e3bc9087edd56fb366c6be7d2f1ee299c2aa49863f7f3c411a",
+        ),
+        (
+            &repeated,
+            "2",
+            "53dc151cc137265353fa3e71ccaa4a893afd2f886a1f4a1532d30da04430b75e",
+        ),
+        (
+            &diagnostics,
+            "1",
+            "84111908c22fba4007dfaf56fd18a2edb6e2757d3fc351e2e685bd2a1fe01ab4",
+        ),
+        (
+            &diagnostics,
+            "2",
+            "b9449d6f073b2ebdd07b7ed30e077f5d3150b299403d7e8ac9f90e19a5c87eae",
+        ),
+    ] {
+        let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
+        let result = cmd
+            .args(["--cache-dir", dir.path().to_str().unwrap()])
+            .args(["--compact-version", version, "compress"])
+            .env_remove("SCOPELET_COMPACT_VERSION")
+            .write_stdin(raw.as_bytes())
+            .assert()
+            .success();
+        assert_eq!(
+            scopelet::store::digest(&result.get_output().stdout),
+            expected,
+            "compact-v{version} output drifted"
+        );
+    }
+    Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
+        .args(["--compact-version", "4", "compress"])
+        .write_stdin(repeated.as_bytes())
+        .assert()
+        .failure();
+    let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
+    let out = cmd
+        .args(["--cache-dir", dir.path().to_str().unwrap(), "compress"])
+        .env("SCOPELET_COMPACT_VERSION", "4")
+        .write_stdin(repeated.as_bytes())
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("must be 1, 2 or 3"));
 }
