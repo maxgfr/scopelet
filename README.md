@@ -248,7 +248,7 @@ scopelet run --auto -- npm test
 For a standalone `scopelet` command, install with **Rust 1.88+**:
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.3.3 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.3.4 --locked
 ```
 
 Without Cargo, replace `scopelet` with
