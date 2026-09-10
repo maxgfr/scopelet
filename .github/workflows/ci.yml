@@ -37,6 +37,8 @@ jobs:
       - run: python3 scripts/install_ci_webindex.py "$RUNNER_TEMP/scopelet-adapters"
       - run: echo "$RUNNER_TEMP/scopelet-adapters" >> "$GITHUB_PATH"
       - run: python3 scripts/check_adapters.py target/debug/scopelet
+      - run: cargo build --release --locked
+      - run: python3 scripts/check_readme.py --binary target/release/scopelet
   msrv:
     runs-on: ubuntu-24.04
     steps:

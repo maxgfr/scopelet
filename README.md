@@ -31,7 +31,7 @@ Your test suite prints 481 results. One of them matters.
 <table>
 <tr>
 <th width="50%">Without Scopelet · 17,549 bytes</th>
-<th width="50%">With Scopelet · 756 bytes</th>
+<th width="50%">With Scopelet · 760 bytes</th>
 </tr>
 <tr>
 <td valign="top">
@@ -159,7 +159,7 @@ Every row is a real command output through `scopelet compress` at the default
 
 | What the command printed | Bytes in | Bytes to the model | Kept |
 | --- | ---: | ---: | ---: |
-| 480 passing tests, one failure | 17,549 | 756 | **95.7%** |
+| 480 passing tests, one failure | 17,549 | 760 | **95.7%** |
 | A retry loop hiding one fatal error | 28,039 | 421 | **98.5%** |
 | 1000 progress lines, then two diagnostics | 136,063 | 516 | **99.6%** |
 | The same log with CRLF endings | 137,031 | 472 | **99.7%** |
@@ -378,6 +378,7 @@ npm ci --ignore-scripts
 npm test
 cargo build --release --locked
 python3 scripts/check_install.py --binary target/release/scopelet
+python3 scripts/check_readme.py --binary target/release/scopelet
 ```
 
 `tests/content_gate.rs` holds the shared fixtures to a minimum reduction, the
@@ -385,8 +386,10 @@ facts that must stay visible and byte-exact recovery, so a change that trades
 evidence for bytes fails in CI. `tests/compact_v3.rs` resolves every label of
 40 generated views against an independent model of what a terminal shows.
 `tests/performance_contracts.rs` pins the compact-v1 and compact-v2 bytes
-against the released 0.3.2. The installation check uses temporary host
-configurations and makes no model calls.
+against the released 0.3.2. `scripts/check_readme.py` rebuilds every fixture in
+the reduction table above and fails if a figure has drifted from what the
+binary produces, counting bytes rather than characters. The installation check
+uses temporary host configurations and makes no model calls.
 
 [Benchmark reproduction](bench/README.md) requires explicit `--live` for model
 sessions. [Verification history](docs/verification.md) preserves earlier
