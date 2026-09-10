@@ -10,6 +10,32 @@ use std::{
 
 pub const DEFAULT_BUDGET: usize = 4096;
 pub const SMALL: usize = 2048;
+
+// Compact-v3 tuning. These are judgement calls, not derived constants: they
+// were chosen to behave well on the shared fixtures in `bench/content.py` and
+// are pinned by `tests/content_gate.rs`, so changing one has to be re-measured
+// there rather than argued from first principles.
+//
+/// Longest prefix kept of a line cut by the budget. Matches the ultra-mode cut
+/// in `render.rs` so both abridgements look the same to a reader.
+const TRUNCATED_PREFIX: usize = 1024;
+/// A repeated line inside a diagnostic's context stays in source order below
+/// this count, so a short stutter next to an error still reads as a sequence.
+const FOLD_IN_CONTEXT: usize = 8;
+/// Smallest record in which "almost everything repeats" is a meaningful claim.
+const FOLD_MAJORITY_MIN_LINES: usize = 20;
+/// Share of a record that must be folded before its singletons are promoted,
+/// in tenths.
+const FOLD_MAJORITY_TENTHS: usize = 9;
+/// Share of the budget ordinary lines may take beside diagnostics they cannot
+/// all fit into, as a divisor.
+const ORDINARY_SHARE: usize = 4;
+/// Consecutive plain lines needed before a range block pays for its header.
+const BLOCK_MIN_LINES: usize = 3;
+/// Passes that re-spend the bytes range blocks saved. Each pass can only add
+/// units, and rendering is measured after each, so this bounds work rather
+/// than correctness.
+const REFILL_PASSES: usize = 4;
 const PLACEHOLDER: &str =
     "artifact:0000000000000000000000000000000000000000000000000000000000000000";
 static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
@@ -208,7 +234,7 @@ impl<'a> Unit<'a> {
         block: Option<usize>,
     ) -> Self {
         let size = label.len() + 1 + view.len() + 1;
-        let cap = limit.min(1024);
+        let cap = limit.min(TRUNCATED_PREFIX);
         let prefix = format!("{label} text_truncated bytes={} ", clean::body(raw).len());
         if size <= limit || prefix.len() + 1 >= cap {
             return Self {
@@ -259,6 +285,17 @@ fn signal_value<'v>(value: &'v serde_json::Value, signal: &regex::Regex) -> Opti
 struct Seen {
     strong: HashSet<String>,
     weak: HashSet<String>,
+}
+
+/// Whether this line is the first of its template, recording it if so. The
+/// key is copied into the set only when it is new.
+fn first_of_template(seen: &mut HashSet<String>, line: &str, key: &mut String) -> bool {
+    clean::template_into(line, key);
+    if seen.contains(key.as_str()) {
+        return false;
+    }
+    seen.insert(key.clone());
+    true
 }
 
 fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
@@ -391,13 +428,28 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     let mut owner = Vec::with_capacity(n);
     let mut by_text: HashMap<&str, usize> = HashMap::new();
     let mut by_template: HashMap<String, usize> = HashMap::new();
+    // One reusable buffer: a template key is only copied when it is new, so a
+    // scan over many same-shaped lines allocates once, not once per line.
+    let mut key = String::new();
     for (i, view) in views.iter().enumerate() {
-        let slot = if strong[i] || weak[i] {
+        // Identical text always shares a group, and identical text has an
+        // identical template, so the exact-text hit skips building one. On a
+        // log of repeated lines that is every line after the first.
+        let slot = if let Some(&slot) = by_text.get(view.as_ref()) {
+            &mut { slot }
+        } else if strong[i] || weak[i] {
             by_text.entry(view).or_insert(groups.len())
         } else {
-            by_template
-                .entry(clean::template(view))
-                .or_insert(groups.len())
+            clean::template_into(view, &mut key);
+            let slot = match by_template.get(key.as_str()) {
+                Some(&slot) => slot,
+                None => {
+                    by_template.insert(key.clone(), groups.len());
+                    groups.len()
+                }
+            };
+            by_text.insert(view, slot);
+            &mut { slot }
         };
         if *slot == groups.len() {
             groups.push(Group {
@@ -422,7 +474,7 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     // massive repetition folds wherever it is.
     let folds: Vec<bool> = groups
         .iter()
-        .map(|g| g.count > 1 && (!g.context || g.count >= 8))
+        .map(|g| g.count > 1 && (!g.context || g.count >= FOLD_IN_CONTEXT))
         .collect();
     let folded: usize = groups
         .iter()
@@ -430,7 +482,7 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         .filter(|(_, folds)| **folds)
         .map(|(g, _)| g.count)
         .sum();
-    let mostly_folded = n >= 20 && folded * 10 >= n * 9;
+    let mostly_folded = n >= FOLD_MAJORITY_MIN_LINES && folded * 10 >= n * FOLD_MAJORITY_TENTHS;
     let base = record.start_line.unwrap_or(1);
     let mut i = 0;
     while i < n {
@@ -460,13 +512,13 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
             4
         } else if strong[i] {
             // The first diagnostic of each template, then its variants.
-            if seen.strong.insert(clean::template(&views[i])) {
+            if first_of_template(&mut seen.strong, &views[i], &mut key) {
                 3
             } else {
                 2
             }
         } else if weak[i] {
-            if seen.weak.insert(clean::template(&views[i])) {
+            if first_of_template(&mut seen.weak, &views[i], &mut key) {
                 2
             } else {
                 1
@@ -529,7 +581,7 @@ fn select_v3(units: &[Unit<'_>], available: usize, budget: usize) -> Vec<usize> 
         }
         let total: usize = tier.iter().map(|&i| units[i].size).sum();
         let cap = if priority == 0 && diagnostics && total > available.saturating_sub(used) {
-            budget / 4
+            budget / ORDINARY_SHARE
         } else {
             available
         };
@@ -566,7 +618,7 @@ fn render_v3(units: &[Unit<'_>], selected: &[usize], output: &mut String) {
         while j + 1 < selected.len() && consecutive(&units[selected[j]], &units[selected[j + 1]]) {
             j += 1;
         }
-        if j - i >= 2 {
+        if j + 1 - i >= BLOCK_MIN_LINES {
             let (first, last) = (&units[selected[i]], &units[selected[j]]);
             output.push_str(&format!(
                 "{}:{}-{}\n",
@@ -696,7 +748,7 @@ fn view(
         // Spend that slack on more evidence, re-measuring the rendered bytes
         // each time and keeping only a pass that still fits the budget.
         let mut extra = 0;
-        for _ in 0..4 {
+        for _ in 0..REFILL_PASSES {
             let slack = available.saturating_sub(body.len());
             if slack == 0 {
                 break;

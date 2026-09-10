@@ -310,3 +310,213 @@ fn ordinary_lines_are_capped_only_when_diagnostics_cannot_show_them_all() {
     assert!(text.len() > 3500, "{} bytes:\n{text}", text.len());
     assert!(!text.contains("omitted_units=0"), "{text}");
 }
+
+/// Deterministic pseudo-random generator; no dependency, reproducible failures.
+struct Rng(u64);
+impl Rng {
+    fn next(&mut self) -> u64 {
+        self.0 = self
+            .0
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        self.0 >> 33
+    }
+    fn below(&mut self, n: usize) -> usize {
+        (self.next() as usize) % n
+    }
+}
+
+/// A mix of the shapes v3 treats specially: repeats, escapes, carriage-return
+/// rewrites, oversized lines, diagnostics, non-ASCII and near-identical lines.
+fn generated_input(seed: u64, lines: usize) -> String {
+    let mut rng = Rng(seed);
+    let mut out = String::new();
+    for i in 0..lines {
+        match rng.below(9) {
+            0 => out.push_str("building the workspace\n"),
+            1 => out.push_str(&format!("progress {:05}: {}\n", i, "unchanged ".repeat(3))),
+            2 => out.push_str(&format!("\x1b[31merror\x1b[0m: case {i} failed\n")),
+            3 => out.push_str(&format!("  at handler (/app/src/i{i}.js:{i}:5)\n")),
+            4 => out.push_str(&format!("10%\r60%\rdone {i}\n")),
+            5 => out.push_str(&format!("warning: unused symbol s{i}\n")),
+            6 => out.push_str(&format!("café {} é\n", "é".repeat(rng.below(40)))),
+            7 => out.push_str(&format!("{}\n", "w".repeat(rng.below(6000)))),
+            _ => out.push_str(&format!("record {:08x} ready\n", rng.next())),
+        }
+    }
+    out
+}
+
+/// Every label in a v3 view resolves to the source line it names, and the text
+/// beside it is exactly what a terminal would have shown for that line (or a
+/// prefix of it when the line is marked truncated). A label that pointed
+/// somewhere else would be a lie the reader cannot detect.
+#[test]
+fn every_label_resolves_to_the_line_it_names() {
+    let (mut views, mut units) = (0usize, 0usize);
+    for seed in 0..40u64 {
+        let raw = generated_input(seed, 60 + (seed as usize % 400));
+        if raw.len() <= 2048 {
+            continue;
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let output =
+            compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 4096, Version::V3)
+                .unwrap();
+        let text = std::str::from_utf8(&output).unwrap();
+        if text == raw {
+            continue; // Passthrough keeps the original bytes; nothing to check.
+        }
+        assert_eq!(original(dir.path(), text), raw.as_bytes(), "seed {seed}");
+        let source: Vec<String> = raw.split_inclusive('\n').map(terminal_view).collect();
+        let mut block: Option<(usize, usize)> = None;
+        for line in text.lines() {
+            if line.starts_with("[scopelet ") {
+                continue;
+            }
+            if let Some(rest) = line.strip_prefix(' ') {
+                let (at, end) = block.expect("indented line outside a range block");
+                assert!(at <= end, "seed {seed}: block overran its header");
+                assert_eq!(source[at - 1], rest, "seed {seed}: block line {at}");
+                block = Some((at + 1, end));
+                continue;
+            }
+            let (label, body) = match line.split_once(' ') {
+                Some((label, body)) => (label, Some(body)),
+                None => (line, None),
+            };
+            let numbers = label
+                .strip_prefix("input:")
+                .expect("every unit is labelled");
+            if body.is_none() {
+                let (a, b) = numbers.split_once('-').expect("a block header is a range");
+                block = Some((a.parse().unwrap(), b.parse().unwrap()));
+                continue;
+            }
+            let mut shown = body.unwrap();
+            let start: usize = numbers
+                .split_once('-')
+                .map_or(numbers, |(a, _)| a)
+                .parse()
+                .unwrap();
+            // Strip the metadata tokens the notation may place before the text.
+            let mut truncated = None;
+            loop {
+                let token = shown.split_once(' ').map_or(shown, |(t, _)| t);
+                let counted = |t: &str, name: &str| {
+                    t.strip_prefix(name)
+                        .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+                };
+                if counted(token, "repeat=")
+                    || counted(token, "similar=")
+                    || counted(token, "last=")
+                {
+                    shown = shown.split_once(' ').unwrap().1;
+                } else if token == "text_truncated" {
+                    let rest = shown.split_once(' ').unwrap().1;
+                    let (bytes, text) = rest.split_once(' ').unwrap();
+                    truncated = Some(
+                        bytes
+                            .strip_prefix("bytes=")
+                            .unwrap()
+                            .parse::<usize>()
+                            .unwrap(),
+                    );
+                    shown = text;
+                    break;
+                } else {
+                    break;
+                }
+            }
+            let full = &source[start - 1];
+            if let Some(bytes) = truncated {
+                assert!(full.starts_with(shown), "seed {seed}: line {start} prefix");
+                assert!(bytes >= shown.len(), "seed {seed}: line {start} byte count");
+                continue;
+            }
+            assert_eq!(*full, shown, "seed {seed}: line {start}");
+            units += 1;
+        }
+        views += 1;
+        assert!(
+            block.is_none_or(|(at, end)| at == end + 1),
+            "seed {seed}: block header promised lines that were not emitted"
+        );
+    }
+    // A property test that checked nothing would also report success.
+    assert!(views >= 35, "only {views} inputs reached the engine");
+    assert!(units >= 600, "only {units} labels were resolved");
+}
+
+/// What a terminal leaves on screen for one source line: the same rule the
+/// engine applies, restated independently so the test does not assert the
+/// implementation against itself.
+fn terminal_view(line: &str) -> String {
+    let body = line.strip_suffix('\n').unwrap_or(line);
+    let body = body.strip_suffix('\r').unwrap_or(body);
+    let mut out = String::new();
+    let mut chars = body.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c != '\x1b' {
+            out.push(c);
+            continue;
+        }
+        match chars.peek() {
+            Some('[') => {
+                chars.next();
+                while chars
+                    .peek()
+                    .is_some_and(|c| ('\u{30}'..='\u{3f}').contains(c))
+                {
+                    chars.next();
+                }
+                while chars
+                    .peek()
+                    .is_some_and(|c| ('\u{20}'..='\u{2f}').contains(c))
+                {
+                    chars.next();
+                }
+                if chars
+                    .peek()
+                    .is_some_and(|c| ('\u{40}'..='\u{7e}').contains(c))
+                {
+                    chars.next();
+                }
+            }
+            Some(']') => {
+                chars.next();
+                while let Some(c) = chars.next() {
+                    if c == '\u{7}' {
+                        break;
+                    }
+                    if c == '\x1b' && chars.peek() == Some(&'\\') {
+                        chars.next();
+                        break;
+                    }
+                }
+            }
+            Some(&c) if ('\u{20}'..='\u{2f}').contains(&c) => {
+                while chars
+                    .peek()
+                    .is_some_and(|c| ('\u{20}'..='\u{2f}').contains(c))
+                {
+                    chars.next();
+                }
+                if chars
+                    .peek()
+                    .is_some_and(|c| ('\u{30}'..='\u{7e}').contains(c))
+                {
+                    chars.next();
+                }
+            }
+            Some(&c) if ('\u{40}'..='\u{5f}').contains(&c) => {
+                chars.next();
+            }
+            _ => {}
+        }
+    }
+    out.rsplit('\r')
+        .find(|segment| !segment.is_empty())
+        .unwrap_or("")
+        .to_owned()
+}

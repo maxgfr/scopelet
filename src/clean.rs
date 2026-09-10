@@ -87,8 +87,18 @@ fn strip_escapes(text: &str) -> String {
 /// Key under which lines that differ only by counters, identifiers or
 /// alignment coincide: digit runs and hex runs of at least eight characters
 /// (containing a digit) become `#`, whitespace runs become one space.
+#[cfg(test)]
 pub(crate) fn template(line: &str) -> String {
-    let mut out = String::with_capacity(line.len());
+    let mut out = String::new();
+    template_into(line, &mut out);
+    out
+}
+
+/// `template` into a caller-owned buffer, so a scan over many lines allocates
+/// once instead of once per line.
+pub(crate) fn template_into(line: &str, out: &mut String) {
+    out.clear();
+    out.reserve(line.len());
     let mut chars = line.char_indices().peekable();
     while let Some((start, c)) = chars.next() {
         if c.is_whitespace() {
@@ -118,7 +128,6 @@ pub(crate) fn template(line: &str) -> String {
             out.push(c);
         }
     }
-    out
 }
 
 #[cfg(test)]
