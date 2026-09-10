@@ -107,8 +107,10 @@ differ. Every key must exist in every row; missing fields never become null.
 Values retain JSON types and exact decimal numbers. If the full representation
 cannot fit, the engine selects whole records rather than clipping fields.
 Text presentation preserves first/final lines, then selects diagnostic lines
-before context and ordinary lines. Automatic compression passes through when
-no whole evidence unit fits; it never substitutes a recovery-only envelope.
+before context and ordinary lines. In v1 and v2, automatic compression passes
+through when no whole evidence unit fits; compact-v3 instead cuts a single
+oversized line on a character boundary and marks it (see below). No version
+substitutes a recovery-only envelope: every view carries source bytes.
 All originals remain available. Automatic detection of malformed JSONL falls
 back to text selection and never asserts an exact aggregate.
 
