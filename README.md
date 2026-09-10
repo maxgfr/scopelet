@@ -67,26 +67,21 @@ Small automatic outputs skip cache setup. Codex also leaves a plain `cat` of a
 known regular file up to 2 KiB native. Small edits keep their original bytes and
 still require verification; shortening a response never justifies skipping checks.
 
-## Measured results
+## When Scopelet is useful
 
-**Current 0.3.0 comparison:** 42 attempted sessions across three synthetic tasks, with two repetitions per configuration. Codex requested Luna at low effort; Claude Code used Haiku 4.5. All 41 graded main sessions pass. One RTK/Codex attempt lost its grade to a benchmark telemetry error; its tokens remain in the totals. Three integration preflights and eight targeted follow-ups bring the campaign to 53 attempts, below the 60-session cap.
+Use Scopelet when test output, build logs or large JSON files would fill the
+agent's context. It gives the agent a bounded view of command output while
+keeping the original bytes available for recovery. Exact local queries can
+filter, group and count records before the result enters context.
 
-| Host / task | Scopelet vs native | RTK vs native | Headroom vs native |
-|---|---:|---:|---:|
-| Luna / Small edit | -27.2% | +0.9% | unmeasured |
-| Luna / Noisy command | -32.1% | +11.0% | unmeasured |
-| Luna / JSONL aggregation | -17.6% | +41.0% | unmeasured |
-| Haiku / Small edit | +0.2% | -9.1% | -32.3% |
-| Haiku / Noisy command | +1.8% | +4.8% | -3.0% |
-| Haiku / JSONL aggregation | -0.3% | -0.7% | +0.6% |
+Small known files and short command outputs can stay native. Whole-session
+savings depend on the host, model and task; compression alone does not guarantee
+a lower bill.
 
-These are **whole-session logical input plus output tokens**, including cached input, not billed cost. Two repetitions are exploratory: the report shows individual values, durations, available cost estimates and failures. On Haiku, Scopelet’s reported cost is 3.0% below native and Headroom’s is 27.1% above native, so token savings do not directly predict cost savings. Headroom/Codex remains unmeasured because authenticated routing through the available adapter is unverified.
-
-Scopelet’s value is strongest on noisy Codex output in this sample. It does not consistently beat native tools or Headroom across hosts and tasks. RTK’s specialized `test` wrapper is effective locally, while its automatic hook does not cover the custom Python test command used here. No new Rust runtime optimization is claimed; confirmed fixes improve the benchmark and its evidence.
-
-[Current report and limitations](docs/current-comparison-2026-09-10.md) · [Per-session evidence](bench/results/current-comparison-2026-09-10.json) · [Local compression and recovery](bench/results/current-content-2026-09-10.json)
-
-Earlier measurements remain available: [Luna automatic-mode pilot](docs/luna-auto-2026-09-09.md), [Fable comparisons](docs/fable-comparison-2026-09-09.md), [small-edit evaluation](docs/proportional-2026-09-09.md), and [0.3.0 engine rollout](docs/performance-2026-09-10.md). They concern different versions or integrations and are not pooled into the current results.
+Benchmark results, methodology and limitations live in the
+[detailed comparison report](docs/current-comparison-2026-09-10.md).
+The [benchmark guide](bench/README.md) explains how to reproduce the measurements
+and where the recorded evidence is stored.
 
 ## Exact queries and recovery
 

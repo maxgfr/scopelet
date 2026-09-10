@@ -16,6 +16,15 @@ Headroom received requests in every measured Claude session. Codex/Headroom rema
 
 Numbers are arithmetic means of logical input plus output tokens. Cached input is included; reasoning is already part of output and is not added again. Percentages compare each task with its own native control.
 
+How to read the tables:
+
+- **Native** is the same task and host/model without Scopelet, RTK or Headroom.
+- **A minus sign means fewer tokens consumed.** For example, `-27.2%` means the session used 27.2% fewer tokens than native.
+- **A plus sign means more tokens consumed.** For example, `+41.0%` means the session used 41.0% more tokens than native. It is an increase, not a saving.
+- **Unmeasured means no verified measurement is available.** Here, the adapter could not establish authenticated Codex routing through Headroom. It does not mean zero savings or a failed task.
+
+Lower token usage is preferable when task correctness is preserved. These percentages describe tokens, not answer quality, execution speed or billed cost. Values near zero indicate little observed difference; two repetitions cannot establish a reliable small advantage.
+
 ### Codex / Luna low
 
 | Task | Native | Scopelet | RTK | Headroom |
