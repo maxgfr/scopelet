@@ -185,7 +185,8 @@ input:40-44                                         range block: the next 5 line
 Diagnostics never fold by template, only with identical text. Selection keeps
 the first and last lines, then the first occurrence of each diagnostic
 template, then repeats, warnings and context, filling from both ends so the
-final summary survives; ordinary lines stop at a quarter of the budget. Use
+final summary survives; next to diagnostics, ordinary lines that cannot all
+fit stop at a quarter of the budget. Use
 `expand ID --find TEXT` to read any folded or omitted line in full.
 
 ## Compact-v2

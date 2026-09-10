@@ -16,12 +16,14 @@ static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r"(?i)\b(error|failed|failure|panic|panicked|exception|traceback|warning|assertionerror|caused by|test result|tests? passed|tests? failed)\b|^\s*(FAIL|PASS|E\s+|FATAL|×|✕)").unwrap()
 });
 /// Compact-v3 vocabulary: diagnostics and summaries that decide an outcome.
+/// Anchored markers stay case-sensitive: their convention is upper case, and
+/// matching them loosely turns any line starting with `e ` into a diagnostic.
 static STRONG: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"(?i)\b(error|errors|failed|failure|panic|panicked|exception|traceback|fatal|assertionerror|caused by|test result|tests? passed|tests? failed)\b|npm ERR!|^\s*(FAIL|FAILED|E\s+|FATAL|×|✕|✗)").unwrap()
+    regex::Regex::new(r"(?i:\b(error|errors|failed|failure|panic|panicked|exception|traceback|fatal|assertionerror|caused by|test result|tests? passed|tests? failed)\b)|npm ERR!|^\s*(FAIL|FAILED|E {2,}|FATAL|×|✕|✗)").unwrap()
 });
 /// Advisory lines: shown once per template, never ahead of a diagnostic.
 static WEAK: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"(?i)\b(warning|warn|deprecated|deprecation)\b|^\s*PASS\b").unwrap()
+    regex::Regex::new(r"(?i:\b(warning|warn|deprecated|deprecation)\b)|^\s*PASS\b").unwrap()
 });
 /// Stack frames: context for a diagnostic, wherever they are.
 static FRAME: LazyLock<regex::Regex> = LazyLock::new(|| {
@@ -501,11 +503,16 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
 }
 
 /// Compact-v3 selection: tiers are filled alternately from the head and the
-/// tail so the final summary survives a flood of early diagnostics, and
-/// ordinary lines never take more than a quarter of the budget.
-fn select_v3(units: &[Unit<'_>], available: usize) -> Vec<usize> {
+/// tail so the final summary survives a flood of early diagnostics. When the
+/// view carries diagnostics and cannot show every ordinary line anyway,
+/// ordinary lines stop at a quarter of `budget`, so the view ends where the
+/// evidence does instead of filling up with noise. `available` may exceed
+/// `budget` on a second pass that spends range-block savings, which must not
+/// raise that ceiling.
+fn select_v3(units: &[Unit<'_>], available: usize, budget: usize) -> Vec<usize> {
     let mut selected = vec![false; units.len()];
     let mut used = 0;
+    let diagnostics = units.iter().any(|u| matches!(u.priority, 2 | 3));
     for priority in [4, 3, 2, 1, 0] {
         let tier: Vec<usize> = (0..units.len())
             .filter(|&i| units[i].priority == priority)
@@ -520,8 +527,9 @@ fn select_v3(units: &[Unit<'_>], available: usize) -> Vec<usize> {
                 order.push(tier[tail]);
             }
         }
-        let cap = if priority == 0 {
-            available / 4
+        let total: usize = tier.iter().map(|&i| units[i].size).sum();
+        let cap = if priority == 0 && diagnostics && total > available.saturating_sub(used) {
+            budget / 4
         } else {
             available
         };
@@ -681,20 +689,27 @@ fn view(
         units = self::units(data, available, version);
     }
     let selected = if version == Version::V3 {
-        let mut selected = select_v3(&units, available);
+        let mut selected = select_v3(&units, available, available);
         let mut body = String::new();
         render_v3(&units, &selected, &mut body);
-        // Range blocks cost less than the per-line labels selection counted;
-        // spend that slack on more evidence when it still fits.
-        let slack = available.saturating_sub(body.len());
-        if slack > 0 {
-            let more = select_v3(&units, available + slack);
+        // Range blocks cost less than the per-line labels selection counted.
+        // Spend that slack on more evidence, re-measuring the rendered bytes
+        // each time and keeping only a pass that still fits the budget.
+        let mut extra = 0;
+        for _ in 0..4 {
+            let slack = available.saturating_sub(body.len());
+            if slack == 0 {
+                break;
+            }
+            let more = select_v3(&units, available + extra + slack, available);
             let mut extended = String::new();
             render_v3(&units, &more, &mut extended);
-            if more.len() > selected.len() && extended.len() <= available {
-                selected = more;
-                body = extended;
+            if more.len() <= selected.len() || extended.len() > available {
+                break;
             }
+            extra += slack;
+            selected = more;
+            body = extended;
         }
         output.push_str(&body);
         selected

@@ -250,9 +250,10 @@ template (`warning`, `warn`, `deprecated`, `PASS`) and singleton lines of a
 mostly folded record; context (three lines before and eight after a strong
 diagnostic, stack frames, the head three and tail five lines); then ordinary
 lines. Each tier is filled alternately from the head and the tail so the final
-summary survives a flood of early diagnostics, and ordinary lines never take
-more than a quarter of the available budget, so a view stops when the evidence
-does. Small repetitions inside a diagnostic's context stay in source order;
+summary survives a flood of early diagnostics. When the view carries
+diagnostics and cannot show every ordinary line anyway, ordinary lines stop at
+a quarter of the available budget, so the view ends where the evidence does;
+an ordinary listing without diagnostics still fills the budget. Small repetitions inside a diagnostic's context stay in source order;
 massive repetition (eight lines or more) folds wherever it is. Diagnostics in
 JSON records rank by the same vocabulary. The output is restored to source
 order.

@@ -277,10 +277,8 @@ fn contiguous_selected_lines_form_a_range_block_with_derivable_labels() {
     assert_eq!(original(dir.path(), &text), raw.as_bytes());
 }
 
-#[test]
-fn ordinary_lines_are_capped_so_noise_does_not_fill_the_budget() {
-    let dir = tempfile::tempdir().unwrap();
-    let raw: String = (0..1000)
+fn distinct_lines(count: usize) -> String {
+    (0..count)
         .map(|i: usize| {
             let word: String = i
                 .to_string()
@@ -289,10 +287,26 @@ fn ordinary_lines_are_capped_so_noise_does_not_fill_the_budget() {
                 .collect();
             format!("{word} unit ready\n")
         })
-        .collect();
+        .collect()
+}
+
+#[test]
+fn ordinary_lines_are_capped_only_when_diagnostics_cannot_show_them_all() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw = format!(
+        "{}error: unit zulu failed\n{}",
+        distinct_lines(500),
+        distinct_lines(500)
+    );
     let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
-    assert!(text.contains("omitted_units="), "{text}");
+    assert!(text.contains(" error: unit zulu failed\n"), "{text}");
     assert!(!text.contains("omitted_units=0"), "{text}");
     assert!(text.len() < 2048, "{} bytes:\n{text}", text.len());
     assert!(text.contains("input:1-"), "{text}");
+
+    // An ordinary listing without diagnostics still fills the budget.
+    let listing = distinct_lines(1000);
+    let text = compress_v3(dir.path(), listing.as_bytes(), 4096);
+    assert!(text.len() > 3500, "{} bytes:\n{text}", text.len());
+    assert!(!text.contains("omitted_units=0"), "{text}");
 }
