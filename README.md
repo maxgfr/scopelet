@@ -170,27 +170,30 @@ and both switches are yours.
 
 ### Smaller
 
-Every row is a real command output through `scopelet compress` at the default
-4 KiB budget, cold cache, thirty repetitions. Reproduce with
-`bench/content.py`; the fixtures are pinned by SHA-256 and by
-`tests/content_gate.rs` in CI, and `scripts/check_readme.py` fails the build if
-any figure below drifts from what the binary produces.
+Each row is a real command output that hides one fact an agent needs: a
+failing test, a fatal error after a thousand retries, a receipt in the middle
+of a log. **Printed** is what the command wrote. **Read** is what reaches the
+model instead, at the default 4 KiB budget. The difference is on disk, and any
+line of it is one `expand` away. A view is only useful if the fact is still in
+it, so the second column says what survived.
 
-| What the command printed | Bytes in | Bytes to the model | Kept |
-| --- | ---: | ---: | ---: |
-| 480 passing tests, one failure | 17,549 | 760 | **95.7%** |
-| A retry loop hiding one fatal error | 28,039 | 421 | **98.5%** |
-| 1000 progress lines, then two diagnostics | 136,063 | 516 | **99.6%** |
-| The same log with CRLF endings | 137,031 | 472 | **99.7%** |
-| A receipt buried in the middle of a log | 136,193 | 634 | **99.5%** |
-| A 1000-row JSON array | 171,834 | 4,061 | **97.6%** |
-| A 1000-row JSONL stream | 171,832 | 3,984 | **97.7%** |
-| One 12 KB line with no newline | 12,000 | 1,288 | **89.3%** |
-| A 32-byte command output | 32 | 32 | untouched |
+| What the command printed | What the agent reads instead | Printed | Read | Removed |
+| --- | --- | ---: | ---: | ---: |
+| 480 passing tests, one failure | The failing test with its expected value, received value and stack frame; the 480 passes as one line marked `similar=480` | 17,549 | 760 | **95.7%** |
+| A retry loop hiding one fatal error | `error: retry failed` once, marked `repeat=1000`, then the single fatal line with its line number | 28,039 | 421 | **98.5%** |
+| 1000 progress lines, then two diagnostics | Both diagnostics word for word; the progress as one line marked `similar=1000` | 136,063 | 516 | **99.6%** |
+| The same log with CRLF endings | The same view; the original `\r\n` bytes stay intact on disk | 137,031 | 472 | **99.7%** |
+| A receipt buried in the middle of a log | The receipt line at `input:501`, amount and currency exact | 136,193 | 634 | **99.5%** |
+| A 1000-row JSON array | A table with the first rows, the one row whose status is `failed`, and the last row; the 21-digit integer exact, every other row counted | 171,834 | 4,061 | **97.6%** |
+| A 1000-row JSONL stream | The same table, each row tagged with its position in the stream | 171,832 | 3,984 | **97.7%** |
+| One 12 KB line with no newline | Its first 1.2 KB behind a `text_truncated bytes=12000` marker | 12,000 | 1,288 | **89.3%** |
+| A 32-byte command output | The 32 bytes exactly as printed | 32 | 32 | untouched |
 
 Small outputs are the last row on purpose. Under 2 KiB nothing happens at all,
 and above it a view is only substituted when it saves at least 512 bytes and
 20% including its own metadata. Scopelet declining to act is a normal outcome.
+Every figure is measured by `scripts/check_readme.py` on the shipped binary,
+and the fixtures are pinned by SHA-256 in `tests/content_gate.rs`.
 [Benchmark reproduction](bench/README.md) ·
 [what is verified](docs/verification.md).
 

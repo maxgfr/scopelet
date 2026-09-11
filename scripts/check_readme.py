@@ -79,17 +79,21 @@ def fixtures() -> dict[str, bytes]:
 
 
 def claimed(readme: str) -> dict[str, tuple[int, int, str]]:
-    """Parse the README rows as (input bytes, output bytes, kept)."""
+    """Parse the README rows as (printed bytes, read bytes, removed).
+
+    The label is the first cell and the three figures are the last three, so
+    the explanatory column in between can be reworded freely.
+    """
     claims = {}
     for line in readme.splitlines():
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        if len(cells) != 4 or cells[0].startswith(("-", "What")):
+        if len(cells) < 4 or cells[0].startswith(("-", "What")):
             continue
-        label, size_in, size_out, kept = cells
+        label, (size_in, size_out, removed) = cells[0], cells[-3:]
         digits = lambda text: text.replace(",", "")
         if not digits(size_in).isdigit() or not digits(size_out).isdigit():
             continue
-        claims[label] = (int(digits(size_in)), int(digits(size_out)), kept.strip("*"))
+        claims[label] = (int(digits(size_in)), int(digits(size_out)), removed.strip("*"))
     return claims
 
 
