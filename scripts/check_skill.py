@@ -17,6 +17,12 @@ assert len(text.encode()) <= 1536, 'keep the entrypoint under 1.5 KiB'
 version = re.search(r'^version = "([^"]+)"$', (root / 'Cargo.toml').read_text(), re.M).group(1)
 assert f'version: "{version}"' in front
 assert f"const version = '{version}'" in (skill / 'scripts/scopelet.mjs').read_text()
+# Automatic by design: every host may pick the skill on its own. Manual is the
+# user's opt-out, documented in the README, never the shipped default.
+assert not re.search(r'^disable-model-invocation:\s*true\s*$', front, re.M), 'Claude Code must be allowed to load the skill'
+assert not re.search(r"opencode/autoinvoke:\s*['\"]?false", front), 'OpenCode must be allowed to advertise the skill'
+policy = (skill / 'agents/openai.yaml').read_text()
+assert re.search(r'^policy:\s*\n(?:[ \t]+[^\n]*\n)*?[ \t]+allow_implicit_invocation:\s*true\s*$', policy, re.M), 'Codex must be allowed to invoke the skill implicitly'
 for link in re.findall(r'\]\(([^)]+)\)', text):
     if not link.startswith('https://'):
         assert (skill / link).is_file(), link
