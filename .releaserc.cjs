@@ -6,7 +6,8 @@ module.exports = {
     ['@semantic-release/release-notes-generator', { preset: 'conventionalcommits' }],
     ['@semantic-release/git', {
       assets: ['Cargo.toml', 'Cargo.lock', 'skills/scopelet/SKILL.md',
-        'skills/scopelet/scripts/scopelet.mjs', 'skills/scopelet/references/setup.md', 'README.md'],
+        'skills/scopelet/scripts/scopelet.mjs', 'skills/scopelet/references/setup.md', 'README.md',
+        'bench/results/content.json', 'bench/results/performance.json'],
       message: 'chore(release): ${nextRelease.version} [skip ci]'
     }],
     ['@semantic-release/github', {

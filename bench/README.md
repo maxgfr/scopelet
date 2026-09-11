@@ -65,6 +65,12 @@ python3 bench/performance.py --binary released=/path/to/scopelet-0.5.0 \
 `speed-table` markers. Only the shipped version's numbers are kept: an older
 version's figures are deleted, not archived.
 
+The release workflow runs it on the macOS arm64 runner against the versioned
+release binary, and the release commit carries the two reports and the README
+table it produced. Every published version therefore ships with its own
+figures, measured on the same class of machine each time. Run it locally to
+preview a change; the numbers that count are the release's.
+
 ```sh
 cargo build --release --locked
 python3 bench/publish.py --scopelet target/release/scopelet

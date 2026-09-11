@@ -70,6 +70,18 @@ jobs:
       - run: target/${{ matrix.target }}/release/scopelet bench
       - name: Verify the versioned launcher and all three host installations
         run: python3 scripts/check_install.py --binary target/${{ matrix.target }}/release/scopelet
+      - name: Measure this version and rewrite the README speed table
+        if: matrix.target == 'aarch64-apple-darwin'
+        run: python3 bench/publish.py --scopelet target/${{ matrix.target }}/release/scopelet
+      - uses: actions/upload-artifact@v4
+        if: matrix.target == 'aarch64-apple-darwin'
+        with:
+          name: benchmarks
+          path: |
+            README.md
+            bench/results/content.json
+            bench/results/performance.json
+          if-no-files-found: error
       - name: Stage binary and observed version
         env:
           TARGET: ${{ matrix.target }}
@@ -93,8 +105,14 @@ jobs:
           fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
+          pattern: '*-*'
           path: dist
           merge-multiple: true
+      - name: Take this version's benchmark figures into the release commit
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmarks
+          path: .
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
