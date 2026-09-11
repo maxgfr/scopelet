@@ -144,8 +144,24 @@ Restart active agent sessions. In Codex, review and trust the new hooks through
 After activation, ordinary prompts use the hooks without `/scopelet` or
 `$scopelet`. Use `--agent codex` or `--agent claude` to enable only one host.
 
-For manual use only, run the first command and invoke `/scopelet <task>` in
-Claude Code or `$scopelet <task>` in Codex. Rust is not required for this setup.
+### Automatic or manual
+
+Scopelet is **automatic by default**: the hooks compress on every large output,
+with no invocation and no decision from the model. Manual is always available,
+and both switches are yours.
+
+- **Skip the hooks entirely.** Run only the first command and invoke
+  `/scopelet <task>` in Claude Code or `$scopelet <task>` in Codex. Rust is not
+  required for this setup.
+- **Stop automatic compression later.** `mode off` keeps the hooks installed and
+  idle; `uninstall --agent all` removes them and leaves the skill.
+- **Hide the skill from the model.** The shipped skill is model-invocable, so an
+  agent can reach the queries below on its own. To make it explicit-only, add
+  `disable-model-invocation: true` to `SKILL.md` for Claude Code, set
+  `allow_implicit_invocation: false` in `agents/openai.yaml` for Codex, and set
+  `metadata.opencode/autoinvoke: 'false'` for OpenCode. Reinstalling restores
+  the shipped default.
+
 [Full setup and host coverage](skills/scopelet/references/setup.md).
 
 ## The numbers
@@ -155,7 +171,8 @@ Claude Code or `$scopelet <task>` in Codex. Rust is not required for this setup.
 Every row is a real command output through `scopelet compress` at the default
 4 KiB budget, cold cache, thirty repetitions. Reproduce with
 `bench/content.py`; the fixtures are pinned by SHA-256 and by
-`tests/content_gate.rs` in CI.
+`tests/content_gate.rs` in CI, and `scripts/check_readme.py` fails the build if
+any figure below drifts from what the binary produces.
 
 | What the command printed | Bytes in | Bytes to the model | Kept |
 | --- | ---: | ---: | ---: |
@@ -172,38 +189,28 @@ Every row is a real command output through `scopelet compress` at the default
 Small outputs are the last row on purpose. Under 2 KiB nothing happens at all,
 and above it a view is only substituted when it saves at least 512 bytes and
 20% including its own metadata. Scopelet declining to act is a normal outcome.
-
-Against the previous release, the cases that moved are the ones that were
-weak:
-
-| Case | 0.3.2 | Now |
-| --- | ---: | ---: |
-| Retry loop with one fatal error | 85.6% | **98.5%** |
-| Receipt buried mid-log | recoverable only, **not in the view** | **in the view** |
-| One 12 KB line | 0%, passed through whole | **89.3%** |
-| One failure among 480 passes | failure body missing | **failure body intact** |
+[Benchmark reproduction](bench/README.md) ·
+[verification history](docs/verification.md).
 
 ### Faster
 
 Median over thirty runs, cold application cache, macOS arm64.
 
-| Operation | 0.3.2 | Now |
-| --- | ---: | ---: |
-| Compress a 136 KB log | 35 ms | **6 ms** |
-| Repository query over 400 files | 1698 ms | **64 ms** |
-| Compress a 32 MiB stream | 179 ms | 182 ms |
+| Operation | Median |
+| --- | ---: |
+| Compress a 136 KB log | **6 ms** |
+| Repository query over 400 files | **64 ms** |
+| Compress a 32 MiB stream | 182 ms |
 
-The repository query was spending its time in `F_FULLFSYNC` on every stored
-item. Both store writes now flush without forcing a full disk cache flush;
-publication is still a synced temporary renamed into place and every read is
-still checked against its content hash, so an interrupted write yields a
+Repository queries no longer force a full disk cache flush on every stored
+item. Publication is still a synced temporary renamed into place and every read
+is still checked against its content hash, so an interrupted write yields a
 missing or rejected item, never a wrong one.
 
-The 32 MiB row is the honest one. It is flat against 0.3.2 only because the
-storage win pays for a slower presentation: the same binary asked for the old
-format does that stream in 164 ms, so the new per-line work costs about 11%
-there. On a 3 MB log the same work is roughly 6 ms, in exchange for 3963 bytes
-of output becoming 663.
+The 32 MiB row is the honest one. The same binary asked for the older compact
+format does that stream in 164 ms, so the per-line presentation work costs
+about 11% there. On a 3 MB log the same work is roughly 6 ms, in exchange for
+3963 bytes of output becoming 663.
 
 > [!IMPORTANT]
 > **Bytes are not tokens, and none of the numbers above is a bill.** An
@@ -333,95 +340,6 @@ Uninstall preserves configuration backups and cached originals. Clean old
 artifacts separately with `clean --older-days 7`; references expire when their
 snapshots are removed.
 [Paths, backups and cleanup](skills/scopelet/references/setup.md).
-
-## Automatic releases from semantic commits
-
-Push **Conventional Commits** to `main`; semantic-release determines the
-version and publishes binaries, checksums and the installable skill after CI
-succeeds.
-
-| Commit example | Version change |
-| --- | --- |
-| `fix: preserve exit status` | Patch |
-| `feat: add a query operation` | Minor |
-| `feat!: change the output contract` or a `BREAKING CHANGE:` footer | Major |
-| `docs: clarify installation`, `test: cover recovery`, `ci: verify packages` | Patch |
-
-Scopes work too: `fix(launcher): handle a missing cache`. Nonsemantic messages
-fail release validation. **Use a semantic title when squash-merging**, because
-the squash title is the only message semantic-release sees: a branch whose
-commits include a `feat:` still ships as a patch if its squash title says
-`perf:`. Every valid commit produces at least a patch; a push containing
-multiple commits produces one release with the highest applicable version
-change. The generated `chore(release): VERSION [skip ci]` commit avoids a
-release loop.
-
-The [workflow](.github/workflows/release.yml) tests Linux/macOS and Rust 1.88,
-sets the next version before compilation, then checks the versioned launcher
-and both host installations on all four platforms. Cargo, the skill, its
-launcher and the README install tag are synchronized. Publication stops if the
-branch or resolved version changed during the build. No npm or crates.io
-package is published.
-
-## Development checks
-
-Use Rust 1.88+, Python 3.9+ and Node 24.10+ for the development and release
-tooling.
-
-```sh
-cargo fmt --check
-cargo clippy --all-targets --locked -- -D warnings
-cargo test --locked
-python3 scripts/check_skill.py --pack
-python3 -m unittest discover -s bench -p 'test_*.py'
-npm ci --ignore-scripts
-npm test
-cargo build --release --locked
-python3 scripts/check_install.py --binary target/release/scopelet
-python3 scripts/check_readme.py --binary target/release/scopelet
-```
-
-`tests/content_gate.rs` holds the shared fixtures to a minimum reduction, the
-facts that must stay visible and byte-exact recovery, so a change that trades
-evidence for bytes fails in CI. `tests/compact_v3.rs` resolves every label of
-40 generated views against an independent model of what a terminal shows.
-`tests/performance_contracts.rs` pins the compact-v1 and compact-v2 bytes
-against the released 0.3.2. `scripts/check_readme.py` rebuilds every fixture in
-the reduction table above and fails if a figure has drifted from what the
-binary produces, counting bytes rather than characters. The installation check
-uses temporary host configurations and makes no model calls.
-
-[Benchmark reproduction](bench/README.md) requires explicit `--live` for model
-sessions. [Verification history](docs/verification.md) preserves earlier
-results and failures.
-[Engine and compact-v2 measurements](docs/performance-2026-09-10.md) ·
-[compact-v3 measurements](docs/candidate-v3-2026-09-10.md) ·
-[research and influences](docs/optimization-research-2026-09-09.md).
-
-## Manual skill invocation
-
-These skills run when explicitly invoked: `scopelet`. Use `$name` in Codex or
-`/name` in Claude Code and OpenCode (with the plugin namespace when installed
-as a Claude plugin).
-
-The skill bundle disables implicit selection in Codex and Claude Code. OpenCode
-V2 reads `metadata.opencode/autoinvoke: "false"`. For OpenCode V1, merge these
-entries into `permission.skill` in `~/.config/opencode/opencode.json` or the
-project configuration; retain unrelated permissions:
-
-```json
-{
-  "permission": {
-    "skill": {
-      "scopelet": "deny"
-    }
-  }
-}
-```
-
-On OpenCode 1.18.30, these rules hide the skills from the agent and reject
-skill-tool loading, while explicit `/name` commands remain available.
-Installation with `skills add` does not apply this OpenCode V1 configuration.
 
 ## License
 

@@ -5,8 +5,7 @@ license: MIT
 metadata:
   author: maxgfr
   version: "0.3.7"
-  opencode/autoinvoke: 'false'
-disable-model-invocation: true
+  opencode/autoinvoke: 'true'
 ---
 
 # Scopelet
