@@ -27,9 +27,11 @@ Ubuntu 24.04 and macOS 14 for every pull request and pre-release push:
 ## On the shipped binary
 
 Two offline probes described in [bench/README.md](../bench/README.md) produce
-the figures quoted in the README. Their reports live in `bench/results/`,
-named by version and date, and record the binary's SHA-256, the platform and
-every sample.
+the figures quoted in the README. `bench/publish.py` runs them on the release
+binary and replaces `bench/results/content.json` and
+`bench/results/performance.json`; each records the binary's version and
+SHA-256, the platform and every sample. Only the shipped version's figures are
+kept.
 
 - `content.py`: eight realistic outputs; bytes in and out, cold and warm
   timings, every fact still visible or recoverable, original bytes round-trip

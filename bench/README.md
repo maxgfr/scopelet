@@ -28,7 +28,7 @@ python3 bench/content.py --scopelet target/release/scopelet --out bench/runs/con
 ```
 
 `tests/content_gate.rs` mirrors the same fixtures byte for byte and pins them to
-the SHA-256 values recorded in `bench/results/content-*.json`, so a compressor
+the SHA-256 values recorded in `bench/results/content.json`, so a compressor
 change that silently drops a diagnostic fails `cargo test`. The README
 reduction table is checked against the binary by `scripts/check_readme.py`.
 
@@ -57,13 +57,21 @@ python3 bench/performance.py --binary released=/path/to/scopelet-0.5.0 \
   --binary candidate=target/release/scopelet --stress --out bench/runs/candidate
 ```
 
-## Publishing a run
+## Publishing a release's figures
 
-Copy `report.json` from the run directory into `bench/results/` with the
-version and date in its name, then update the README figures and the
-`content_gate.rs` path. Timings are descriptive: other activity on the machine
-was not controlled, and only the medians are quoted.
+`publish.py` runs both probes on one binary, replaces everything under
+`bench/results/` with the two fresh reports (`content.json`,
+`performance.json`) and rewrites the README speed table between its
+`speed-table` markers. Only the shipped version's numbers are kept: an older
+version's figures are deleted, not archived.
 
 ```sh
+cargo build --release --locked
+python3 bench/publish.py --scopelet target/release/scopelet
 python3 -m unittest discover -s bench -p 'test_*.py'
 ```
+
+Timings are descriptive: other activity on the machine was not controlled, and
+only the medians are quoted. `tests/content_gate.rs` reads
+`bench/results/content.json`, so a publish that changes a fixture fails the
+build until the Rust mirror is updated too.

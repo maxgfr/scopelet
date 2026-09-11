@@ -16,7 +16,7 @@ pub(crate) fn body(line: &str) -> &str {
 /// sequences removed and only the last carriage-return overwrite kept.
 pub(crate) fn line_view(line: &str) -> Cow<'_, str> {
     let body = body(line);
-    if !body.bytes().any(|b| b == 0x1b || b == b'\r') {
+    if memchr::memchr2(0x1b, b'\r', body.as_bytes()).is_none() {
         return Cow::Borrowed(body);
     }
     let stripped = strip_escapes(body);
@@ -99,23 +99,21 @@ pub(crate) fn template(line: &str) -> String {
 pub(crate) fn template_into(line: &str, out: &mut String) {
     out.clear();
     out.reserve(line.len());
-    let mut chars = line.char_indices().peekable();
-    while let Some((start, c)) = chars.next() {
-        if c.is_whitespace() {
-            while chars.peek().is_some_and(|(_, c)| c.is_whitespace()) {
-                chars.next();
+    let bytes = line.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if let Some(width) = whitespace_at(line, i) {
+            i += width;
+            while let Some(width) = whitespace_at(line, i) {
+                i += width;
             }
             out.push(' ');
-        } else if c.is_ascii_alphanumeric() {
-            let mut end = start + 1;
-            while let Some(&(i, c)) = chars.peek() {
-                if !c.is_ascii_alphanumeric() {
-                    break;
-                }
-                end = i + 1;
-                chars.next();
+        } else if bytes[i].is_ascii_alphanumeric() {
+            let start = i;
+            while i < bytes.len() && bytes[i].is_ascii_alphanumeric() {
+                i += 1;
             }
-            let word = &line[start..end];
+            let word = &line[start..i];
             let digits = word.bytes().filter(u8::is_ascii_digit).count();
             if digits == word.len()
                 || (word.len() >= 8 && digits > 0 && word.bytes().all(|b| b.is_ascii_hexdigit()))
@@ -131,15 +129,98 @@ pub(crate) fn template_into(line: &str, out: &mut String) {
                     out.push('#');
                 }
             }
+        } else if bytes[i].is_ascii() {
+            out.push(bytes[i] as char);
+            i += 1;
         } else {
+            let c = line[i..].chars().next().unwrap();
             out.push(c);
+            i += c.len_utf8();
         }
     }
+}
+
+/// Width in bytes of the whitespace character starting at `i`, if any. ASCII
+/// is decided from the byte; anything else is decoded so Unicode whitespace
+/// (no-break space, ideographic space, ...) collapses exactly as before.
+fn whitespace_at(line: &str, i: usize) -> Option<usize> {
+    let byte = *line.as_bytes().get(i)?;
+    if byte.is_ascii() {
+        // The ASCII members of `char::is_whitespace`: tab through carriage
+        // return (vertical tab and form feed included) and space.
+        return matches!(byte, 0x09..=0x0D | b' ').then_some(1);
+    }
+    let c = line[i..].chars().next()?;
+    c.is_whitespace().then_some(c.len_utf8())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The character-by-character template this byte scan replaced.
+    fn reference_template(line: &str) -> String {
+        let mut out = String::new();
+        let mut chars = line.char_indices().peekable();
+        while let Some((start, c)) = chars.next() {
+            if c.is_whitespace() {
+                while chars.peek().is_some_and(|(_, c)| c.is_whitespace()) {
+                    chars.next();
+                }
+                out.push(' ');
+            } else if c.is_ascii_alphanumeric() {
+                let mut end = start + 1;
+                while let Some(&(i, c)) = chars.peek() {
+                    if !c.is_ascii_alphanumeric() {
+                        break;
+                    }
+                    end = i + 1;
+                    chars.next();
+                }
+                let word = &line[start..end];
+                let digits = word.bytes().filter(u8::is_ascii_digit).count();
+                if digits == word.len()
+                    || (word.len() >= 8
+                        && digits > 0
+                        && word.bytes().all(|b| b.is_ascii_hexdigit()))
+                {
+                    out.push('#');
+                } else {
+                    let stem = word.trim_end_matches(|c: char| c.is_ascii_digit());
+                    out.push_str(stem);
+                    if stem.len() < word.len() {
+                        out.push('#');
+                    }
+                }
+            } else {
+                out.push(c);
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn byte_template_matches_the_character_template() {
+        let cases = [
+            "",
+            "plain words here",
+            "  leading\t\x0B\x0Cmixed \r spaces  ",
+            "\x1c\x1d\x1e\x1f control bytes stay",
+            "module12.test.js took 42 ms (0x00ff00aa1234)",
+            "deadbeef 12345678 abc12345 a1 é1 1é",
+            "no-break\u{a0}space and\u{3000}ideographic\u{2028}separator",
+            "\u{85}next line\u{85}\u{85}twice",
+            "émoji 🎉 then 日本語 words 3 times",
+            "tab\tvt\x0Bff\x0Ccr\rnl\nend",
+            "unicode digits ٣٤ are not ascii 34",
+            "trailing counters shard3 build007 v2",
+        ];
+        for line in cases {
+            let mut out = String::new();
+            template_into(line, &mut out);
+            assert_eq!(out, reference_template(line), "{line:?}");
+        }
+    }
 
     #[test]
     fn views_drop_terminators_escapes_and_overwritten_segments() {
