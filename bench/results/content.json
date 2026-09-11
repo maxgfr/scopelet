@@ -4,8 +4,8 @@
   "repetitions": 30,
   "warmups": 5,
   "timing_note": "elapsed includes process startup; cold clears the application cache, not the OS page cache",
-  "binary_sha256": "974baf53d0f5bb20c91406edfd98aca4441f3d9fa3c3e8019d5e84fa050c084a",
-  "binary_version": "scopelet 0.5.3",
+  "binary_sha256": "c16490eb80ff912cdd4d90b3cfc00916301d28c6212788f93f39c0169964e561",
+  "binary_version": "scopelet 0.5.4",
   "cases": {
     "small": {
       "input_bytes": 32,
@@ -16,186 +16,186 @@
       "facts_expected": "in view",
       "states": {
         "cold": {
-          "median_seconds": 0.002873707999995645,
-          "p95_seconds": 0.006163082999989911,
+          "median_seconds": 0.0023974375000079817,
+          "p95_seconds": 0.003005749999999807,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.0033589999999890097,
+              "seconds": 0.002375250000000051,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0028601250000122036,
+              "seconds": 0.0023306669999669793,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002748290999988967,
+              "seconds": 0.002379666000024372,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002815916999992396,
+              "seconds": 0.0029336249999687425,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002801374999990003,
+              "seconds": 0.002768124999988686,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002786916000019346,
+              "seconds": 0.0024814579999770103,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0026582080000139285,
+              "seconds": 0.0023849170000289632,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0029686660000152187,
+              "seconds": 0.002343749999965894,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0028872909999790863,
+              "seconds": 0.0026378750000048967,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0026860419999934493,
+              "seconds": 0.0027511670000421873,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0029220000000123036,
+              "seconds": 0.002636624999979631,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0030393330000038077,
+              "seconds": 0.0024610000000393484,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0027781250000202817,
+              "seconds": 0.002365333999989616,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0027768340000022818,
+              "seconds": 0.002456999999992604,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002767957999992632,
+              "seconds": 0.0023573339999529708,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002959750000002259,
+              "seconds": 0.00242545800000471,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0032347920000006525,
+              "seconds": 0.0024028750000297805,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0026952499999879365,
+              "seconds": 0.002321332999997594,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003041374999980917,
+              "seconds": 0.0024053750000234686,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003108000000025868,
+              "seconds": 0.0023444579999818416,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0026144580000107,
+              "seconds": 0.0023016249999727734,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0026533749999941847,
+              "seconds": 0.002352041999984067,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.00256454200001599,
+              "seconds": 0.0027533749999975043,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002554208000020708,
+              "seconds": 0.002709750000008171,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.005100709000004144,
+              "seconds": 0.002391999999986183,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.006157749999999851,
+              "seconds": 0.0023395420000156264,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0061987919999921814,
+              "seconds": 0.002362625000046137,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0061316250000231776,
+              "seconds": 0.00232195899997123,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.006163082999989911,
+              "seconds": 0.003005749999999807,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.006029082999987168,
+              "seconds": 0.003238000000010288,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
@@ -212,186 +212,186 @@
           "original_byte_roundtrip_verified": true
         },
         "warm": {
-          "median_seconds": 0.0032579370000007657,
-          "p95_seconds": 0.006413792000017793,
+          "median_seconds": 0.002482499499990354,
+          "p95_seconds": 0.002974957999981598,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.0031789159999959793,
+              "seconds": 0.002716416999987814,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003336958000005552,
+              "seconds": 0.0025666249999858337,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003045250000013766,
+              "seconds": 0.002502750000019205,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0027144589999750224,
+              "seconds": 0.0028154169999652368,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0026110829999765883,
+              "seconds": 0.0025361250000059954,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002745999999973492,
+              "seconds": 0.0025477919999730148,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0028716250000115906,
+              "seconds": 0.0026957919999972546,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0027470420000099693,
+              "seconds": 0.0024900409999872863,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0025723329999891575,
+              "seconds": 0.0023432920000345803,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.002524207999982764,
+              "seconds": 0.002346708999994007,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0026074579999999514,
+              "seconds": 0.0023869579999882262,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0026640829999848847,
+              "seconds": 0.002387624999983018,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0027634169999828373,
+              "seconds": 0.0026379170000154772,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0031569159999946805,
+              "seconds": 0.002586249999978918,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0035454169999979968,
+              "seconds": 0.0024589589999663986,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0037917919999870264,
+              "seconds": 0.00235520900002939,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003657625000016651,
+              "seconds": 0.0023875840000187054,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0037266660000057072,
+              "seconds": 0.0023600839999744494,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0035453749999874162,
+              "seconds": 0.0024058329999547823,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003588874999991276,
+              "seconds": 0.0030477090000431417,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0037830409999912717,
+              "seconds": 0.002974957999981598,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.00340254200000345,
+              "seconds": 0.0024290409999707663,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003022791000006464,
+              "seconds": 0.002407125000047472,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003566708000022345,
+              "seconds": 0.0024749579999934213,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.0028635000000178934,
+              "seconds": 0.002396207999993294,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.003573458000005303,
+              "seconds": 0.0026027910000152588,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.006204083000000082,
+              "seconds": 0.0025043750000008913,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.005886333000006516,
+              "seconds": 0.0024709169999823644,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.006413792000017793,
+              "seconds": 0.002366666999989775,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
             },
             {
-              "seconds": 0.006508542000005946,
+              "seconds": 0.002684499999986656,
               "output_bytes": 32,
               "exit_code": 0,
               "sha256": "3948cf17e53fa728d956914a9749aa391034e8bf2ab9c939cb199797c2a79e25"
@@ -419,186 +419,186 @@
       "facts_expected": "in view",
       "states": {
         "cold": {
-          "median_seconds": 0.006995228999997494,
-          "p95_seconds": 0.008074541000013369,
+          "median_seconds": 0.00625237500000253,
+          "p95_seconds": 0.006807208999987324,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.006647500000013906,
+              "seconds": 0.006592500000010659,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006748958000002858,
+              "seconds": 0.005852957999991304,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007207542000003286,
+              "seconds": 0.006152249999956894,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0074389579999945,
+              "seconds": 0.006124333999991904,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006837999999987687,
+              "seconds": 0.006248167000023841,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.00690029199998321,
+              "seconds": 0.006169957999986764,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007060084000016786,
+              "seconds": 0.0063344580000261885,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007062042000001156,
+              "seconds": 0.00655616699998518,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006787583000004815,
+              "seconds": 0.006662874999960877,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007100666000013689,
+              "seconds": 0.0058574579999799425,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007292542000016056,
+              "seconds": 0.005953332999979466,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007089042000018253,
+              "seconds": 0.005667417000040587,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.008074541000013369,
+              "seconds": 0.005917916999976569,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007964958000002298,
+              "seconds": 0.005941040999971392,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.008121541999997817,
+              "seconds": 0.0066312090000337776,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0074511250000171,
+              "seconds": 0.006807208999987324,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0070710829999995894,
+              "seconds": 0.00651604199998701,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.00666175000000635,
+              "seconds": 0.006470332999981565,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0068582909999861386,
+              "seconds": 0.006670750000012049,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0069691250000119,
+              "seconds": 0.006400125000027401,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006996958000001996,
+              "seconds": 0.006278707999967992,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006775791999984904,
+              "seconds": 0.005941957999993974,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007149167000022771,
+              "seconds": 0.0062565829999812195,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0069934999999929914,
+              "seconds": 0.00616666600001281,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006789542000007032,
+              "seconds": 0.006361957999956758,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006694374999995034,
+              "seconds": 0.00613824999999224,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007199291999995694,
+              "seconds": 0.005916167000009409,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0067458340000143835,
+              "seconds": 0.00617445900002167,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006794832999986511,
+              "seconds": 0.00685075000001234,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006840250000010428,
+              "seconds": 0.006695125000021562,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
@@ -617,186 +617,186 @@
           "original_byte_roundtrip_verified": true
         },
         "warm": {
-          "median_seconds": 0.0060133749999948805,
-          "p95_seconds": 0.007289249999985259,
+          "median_seconds": 0.005861291999991636,
+          "p95_seconds": 0.018080792000034762,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.005629457999987153,
+              "seconds": 0.018080792000034762,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005674499999997806,
+              "seconds": 0.011485083000025043,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005721917000016674,
+              "seconds": 0.02078433400004087,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005832166999994115,
+              "seconds": 0.008733209000013176,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0060346669999944424,
+              "seconds": 0.00816312500001004,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.00677904200000512,
+              "seconds": 0.008094166999967456,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006957499999998618,
+              "seconds": 0.005472750000024007,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.00696891699999469,
+              "seconds": 0.005222792000040499,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007063041999998632,
+              "seconds": 0.00579837499998348,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007144209000017554,
+              "seconds": 0.0057441249999783395,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006609374999982265,
+              "seconds": 0.0060453749999851425,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006058499999994638,
+              "seconds": 0.006051667000008365,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005639374999987012,
+              "seconds": 0.0058402089999844975,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006109208999987459,
+              "seconds": 0.006172042000002875,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005728666999999632,
+              "seconds": 0.005321165999987443,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005783165999986295,
+              "seconds": 0.004944040999987465,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005841416999999183,
+              "seconds": 0.004865750000021762,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006347041999987368,
+              "seconds": 0.005632665999996789,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006401625000023614,
+              "seconds": 0.005063790999997764,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005866792000006171,
+              "seconds": 0.005174082999985785,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005526291999984778,
+              "seconds": 0.005427624999981617,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005448666000006597,
+              "seconds": 0.004985667000028116,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006199750000007498,
+              "seconds": 0.005023209000000861,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005764042000009795,
+              "seconds": 0.0058866250000164655,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005975041999988662,
+              "seconds": 0.006001249999997071,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.0059920829999953185,
+              "seconds": 0.006365999999957239,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.005895750000007638,
+              "seconds": 0.005926417000011952,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.006202917000024399,
+              "seconds": 0.00588900000002468,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007766790999994555,
+              "seconds": 0.005882374999998774,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
             },
             {
-              "seconds": 0.007289249999985259,
+              "seconds": 0.005398707999972885,
               "output_bytes": 516,
               "exit_code": 0,
               "sha256": "6771ce8d1bb03af5abdf936d0c424b8a182fda86d60fe38382f4c7576ee5c98e"
@@ -825,186 +825,186 @@
       "facts_expected": "in view",
       "states": {
         "cold": {
-          "median_seconds": 0.0057496040000160065,
-          "p95_seconds": 0.0069780000000037035,
+          "median_seconds": 0.0046069580000107635,
+          "p95_seconds": 0.00698983400002362,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.0069780000000037035,
+              "seconds": 0.004978458000039154,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.006477082999992945,
+              "seconds": 0.009092541999962123,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.006466041999999561,
+              "seconds": 0.00698983400002362,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.006474792000005891,
+              "seconds": 0.005565042000000631,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.006026708000007375,
+              "seconds": 0.005399249999982203,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.00709604200000058,
+              "seconds": 0.005484082999998918,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.006078250000001617,
+              "seconds": 0.005089416000032543,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.006514874999993481,
+              "seconds": 0.004610291000005873,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.0059106669999948735,
+              "seconds": 0.004603625000015654,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.00560104100000558,
+              "seconds": 0.005104250000044885,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005606084000021383,
+              "seconds": 0.004789542000025904,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.006679708999996592,
+              "seconds": 0.004744207999976879,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.0061436249999928805,
+              "seconds": 0.005096457999968607,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.006058292000005849,
+              "seconds": 0.00471308300001283,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005709875000007969,
+              "seconds": 0.004521749999980784,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005839874999992389,
+              "seconds": 0.004564291999997749,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005524165999986508,
+              "seconds": 0.004442458000028182,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005632291000011946,
+              "seconds": 0.004346582999971815,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.00552933299999836,
+              "seconds": 0.004312792000007448,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005789333000024044,
+              "seconds": 0.004687124999975367,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005236792000005153,
+              "seconds": 0.004328999999984262,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005247875000009117,
+              "seconds": 0.004419499999983145,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004876208000013094,
+              "seconds": 0.004577791999963665,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.00532624999999598,
+              "seconds": 0.004450915999996141,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005191166000003022,
+              "seconds": 0.004198125000016262,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005339708999997583,
+              "seconds": 0.004408375000025444,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005499624999998787,
+              "seconds": 0.004512165999983608,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005516415999977653,
+              "seconds": 0.004327790999980152,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005338249999994105,
+              "seconds": 0.004466124999964904,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.005812999999989188,
+              "seconds": 0.004833416999986184,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
@@ -1021,186 +1021,186 @@
           "original_byte_roundtrip_verified": true
         },
         "warm": {
-          "median_seconds": 0.004227353999993966,
-          "p95_seconds": 0.0048066670000253,
+          "median_seconds": 0.0037035830000036185,
+          "p95_seconds": 0.004323250000027201,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.004872833000007404,
+              "seconds": 0.003517375000001266,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004504166999993231,
+              "seconds": 0.003971833999969476,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004221207999989929,
+              "seconds": 0.004095042000017202,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.0048066670000253,
+              "seconds": 0.003711082999984683,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004376583000009759,
+              "seconds": 0.0035325419999594487,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004099540999987994,
+              "seconds": 0.003997625000010885,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004482874999979458,
+              "seconds": 0.003696083000022554,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004176207999989856,
+              "seconds": 0.0034907080000152746,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004187874999985297,
+              "seconds": 0.003503582999996979,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004309124999991809,
+              "seconds": 0.004014165999990382,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004706375000012031,
+              "seconds": 0.003689000000008491,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004591582999978527,
+              "seconds": 0.003575708000028044,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004652041000014151,
+              "seconds": 0.0035125830000311,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004201165999973,
+              "seconds": 0.0038177089999749114,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004198291999983894,
+              "seconds": 0.0040550410000150805,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.00393566700000747,
+              "seconds": 0.0036665000000084547,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004004291000001103,
+              "seconds": 0.003487749999976586,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004234499999995478,
+              "seconds": 0.0036042080000129317,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004233499999998003,
+              "seconds": 0.0037587080000207607,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004048124999997071,
+              "seconds": 0.004323250000027201,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004186167000000296,
+              "seconds": 0.0052633750000268265,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004348457999981292,
+              "seconds": 0.0038109170000097947,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004152500000003556,
+              "seconds": 0.0040310419999514124,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004316584000008561,
+              "seconds": 0.004040332999977636,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004261041999995996,
+              "seconds": 0.003559915999971963,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.003989500000017188,
+              "seconds": 0.003427083000019593,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004091625000000931,
+              "seconds": 0.003985999999997603,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004210707999988017,
+              "seconds": 0.0037557919999926526,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004012041999999383,
+              "seconds": 0.0034304579999684393,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
             },
             {
-              "seconds": 0.004644624999997404,
+              "seconds": 0.003483708000032948,
               "output_bytes": 421,
               "exit_code": 0,
               "sha256": "0794fcaa304f52c62de8add15b52b98ed6d35d011f39768412e012dcc6e26310"
@@ -1228,186 +1228,186 @@
       "facts_expected": "in view",
       "states": {
         "cold": {
-          "median_seconds": 0.008248645999998416,
-          "p95_seconds": 0.00957045900000253,
+          "median_seconds": 0.007017750000017031,
+          "p95_seconds": 0.007382583000037357,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.00822924999999941,
+              "seconds": 0.006865000000004784,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007990832999979602,
+              "seconds": 0.007382583000037357,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008931250000017599,
+              "seconds": 0.006871959000022798,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008101999999979625,
+              "seconds": 0.007160666000004312,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007964791999995668,
+              "seconds": 0.006830792000016572,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007979250000005322,
+              "seconds": 0.007209166999984973,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008158124999994243,
+              "seconds": 0.006973333000019011,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008599708000019746,
+              "seconds": 0.006649791000029381,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00795891699999629,
+              "seconds": 0.0067375419999962105,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007839000000018359,
+              "seconds": 0.0067965000000071996,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00827704200000312,
+              "seconds": 0.007318833999988783,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008007667000015317,
+              "seconds": 0.006882875000030708,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007883332999995218,
+              "seconds": 0.007048583000027975,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008268041999997422,
+              "seconds": 0.0068425410000259035,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008018915999997489,
+              "seconds": 0.007134000000007745,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008006125000008524,
+              "seconds": 0.006937791000041216,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008404541999993853,
+              "seconds": 0.007026875000008204,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00861804199999483,
+              "seconds": 0.007618374999992739,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.009033333000019184,
+              "seconds": 0.007075792000023284,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008967124999998077,
+              "seconds": 0.007207375000007232,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00957045900000253,
+              "seconds": 0.0069217500000036125,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00912404199999628,
+              "seconds": 0.007297332999996797,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00946491600001309,
+              "seconds": 0.007161416999963421,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008461291999992682,
+              "seconds": 0.006849791999968602,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008656124999987469,
+              "seconds": 0.007008625000025859,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.04161912500001108,
+              "seconds": 0.007035457999961636,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008345208999998022,
+              "seconds": 0.007315374999961932,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008226707999995142,
+              "seconds": 0.00685229199996229,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008078249999982745,
+              "seconds": 0.007103041999982906,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00819166700000551,
+              "seconds": 0.006987875000049826,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
@@ -1426,186 +1426,186 @@
           "original_byte_roundtrip_verified": true
         },
         "warm": {
-          "median_seconds": 0.00719370800000263,
-          "p95_seconds": 0.008229709000005414,
+          "median_seconds": 0.006118125499995131,
+          "p95_seconds": 0.00652533299995639,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.007152791999999408,
+              "seconds": 0.006278209000015522,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007400875000001861,
+              "seconds": 0.00599162499997874,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00718612500000404,
+              "seconds": 0.006446291000031579,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.006892416999988882,
+              "seconds": 0.006362583999987237,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007171667000022808,
+              "seconds": 0.005983042000025307,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007190916000013203,
+              "seconds": 0.006286583000019164,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.006819374999992078,
+              "seconds": 0.0060038750000330765,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007362290999992638,
+              "seconds": 0.00614695799998799,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007235417000003963,
+              "seconds": 0.006429000000025553,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007064208000002736,
+              "seconds": 0.006164834000003339,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.0071964999999920565,
+              "seconds": 0.006602500000042255,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008050292000007175,
+              "seconds": 0.006179041999985202,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008315207999999075,
+              "seconds": 0.006253334000007271,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008156124999999292,
+              "seconds": 0.006296208000037495,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008229709000005414,
+              "seconds": 0.00652533299995639,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007353624999979047,
+              "seconds": 0.006059250000021166,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.006996458999992683,
+              "seconds": 0.0061247919999800615,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.00699087500001383,
+              "seconds": 0.005890582999995786,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.006774124999992637,
+              "seconds": 0.006090416999995796,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.0070126669999979185,
+              "seconds": 0.006107791999966139,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.0067113340000162225,
+              "seconds": 0.005824667000013051,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007500791999973444,
+              "seconds": 0.0061114590000102,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007104625000010856,
+              "seconds": 0.006089667000026111,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007346041999994668,
+              "seconds": 0.005846165999969344,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007210499999985132,
+              "seconds": 0.00634879199998295,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.0073086670000179765,
+              "seconds": 0.006104707999952552,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.006653084000021181,
+              "seconds": 0.005939124999997603,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.006829041999992569,
+              "seconds": 0.006362042000034762,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.007604541000006293,
+              "seconds": 0.005924582999966788,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
             },
             {
-              "seconds": 0.008173540999990792,
+              "seconds": 0.006033833000003597,
               "output_bytes": 4061,
               "exit_code": 0,
               "sha256": "c9661253ce6d83910e4a56f384b2f95e919f1c95dd7eaa33960f8336be1728ee"
@@ -1635,186 +1635,186 @@
       "facts_expected": "in view",
       "states": {
         "cold": {
-          "median_seconds": 0.00818887450000716,
-          "p95_seconds": 0.009188667000017858,
+          "median_seconds": 0.006923562500020353,
+          "p95_seconds": 0.007333749999986594,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.00829900000002226,
+              "seconds": 0.00729324999997516,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007919500000014068,
+              "seconds": 0.007333749999986594,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007985499999989543,
+              "seconds": 0.007146583000007922,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008932666999982075,
+              "seconds": 0.006977957999993123,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.00821312499999749,
+              "seconds": 0.00682449999999335,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007862083000020448,
+              "seconds": 0.00927637499995626,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008146084000003384,
+              "seconds": 0.007065667000006215,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008196791000017356,
+              "seconds": 0.0068482920000292324,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007896041999998715,
+              "seconds": 0.00669912499995462,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008225334000002249,
+              "seconds": 0.007273666999992656,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008076250000016216,
+              "seconds": 0.006750375000024178,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008063415999998824,
+              "seconds": 0.00688091600000007,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008101374999995414,
+              "seconds": 0.006876832999978433,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007966833000011775,
+              "seconds": 0.0068880409999678704,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008065708000003724,
+              "seconds": 0.00707341700001507,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008229666999994834,
+              "seconds": 0.006671417000006841,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008060415999977977,
+              "seconds": 0.00732408400000395,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008716375000005883,
+              "seconds": 0.006940792000023066,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.009225583000016968,
+              "seconds": 0.006671708999988368,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.009188667000017858,
+              "seconds": 0.007157708000022467,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008180957999996963,
+              "seconds": 0.006663542000012512,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008517957999998771,
+              "seconds": 0.006607125000016367,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007836125000011407,
+              "seconds": 0.0065579159999629155,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.00826399999999694,
+              "seconds": 0.007130125000003318,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008136500000006208,
+              "seconds": 0.00689799999997831,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007892583000000286,
+              "seconds": 0.006906333000017639,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008300375000004578,
+              "seconds": 0.006867250000027525,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008268417000010686,
+              "seconds": 0.007048666000002868,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008782584000016413,
+              "seconds": 0.007254499999987729,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.009071292000015774,
+              "seconds": 0.006972791999999117,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
@@ -1833,186 +1833,186 @@
           "original_byte_roundtrip_verified": true
         },
         "warm": {
-          "median_seconds": 0.007012208499986627,
-          "p95_seconds": 0.008252084000019977,
+          "median_seconds": 0.006255895999998984,
+          "p95_seconds": 0.006790874999978769,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.006760500000012826,
+              "seconds": 0.006025833000023795,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006841667000003326,
+              "seconds": 0.006088874999989002,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006848790999981702,
+              "seconds": 0.006463208000013765,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007514416000020674,
+              "seconds": 0.00605462499999021,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008252084000019977,
+              "seconds": 0.006295083999987128,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.008374583999994911,
+              "seconds": 0.006293167000023914,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007805750000017042,
+              "seconds": 0.005965917000025911,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006844374999985803,
+              "seconds": 0.006531832999996823,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007033541999987847,
+              "seconds": 0.006583750000004329,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007005416999987801,
+              "seconds": 0.006147958000042308,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.0070706660000041666,
+              "seconds": 0.006790874999978769,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006989917000026935,
+              "seconds": 0.006183249999992313,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007236624999990227,
+              "seconds": 0.006082666999986941,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.00671825000000581,
+              "seconds": 0.006773083000041424,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007181915999979083,
+              "seconds": 0.00772866699998076,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.0072556249999991,
+              "seconds": 0.006706874999963475,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.00727741700001161,
+              "seconds": 0.006376416999955836,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.0070189999999854535,
+              "seconds": 0.0062775420000207305,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.00681154200000833,
+              "seconds": 0.006234249999977237,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.00774308399999768,
+              "seconds": 0.005871749999982967,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007158292000013944,
+              "seconds": 0.006510375000004842,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006537750000006781,
+              "seconds": 0.0061920409999629555,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006887000000006083,
+              "seconds": 0.006015332999993461,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007282416000009562,
+              "seconds": 0.0065324999999916145,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006890416000004507,
+              "seconds": 0.00604445799996256,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006943042000017385,
+              "seconds": 0.006404458000019986,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.007064708000001474,
+              "seconds": 0.006309958000031202,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006983084000012241,
+              "seconds": 0.006159292000006644,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006761458999989145,
+              "seconds": 0.0061478329999999914,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
             },
             {
-              "seconds": 0.006764375000017253,
+              "seconds": 0.006078166000008878,
               "output_bytes": 3984,
               "exit_code": 0,
               "sha256": "0d840918bf0199ab4902bee6c0908cd6836755c8281f6bae655495e02a6099a5"
@@ -2041,186 +2041,186 @@
       "facts_expected": "in view",
       "states": {
         "cold": {
-          "median_seconds": 0.006975291999992805,
-          "p95_seconds": 0.007906542000000627,
+          "median_seconds": 0.006138833499989005,
+          "p95_seconds": 0.06458762500000148,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.007489958000007846,
+              "seconds": 0.007296042000007219,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007092916999994259,
+              "seconds": 0.006960541000012199,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006804291999998213,
+              "seconds": 0.0061838750000333675,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006971583999984432,
+              "seconds": 0.005841541999984656,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007445334000010462,
+              "seconds": 0.005876625000041713,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006987124999994876,
+              "seconds": 0.00616708400002608,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006759957999975086,
+              "seconds": 0.005691082999987884,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.0068778749999864885,
+              "seconds": 0.006097875000023123,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.00693775000002006,
+              "seconds": 0.005859375,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006641583000003948,
+              "seconds": 0.006398417000013978,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.00913470800000482,
+              "seconds": 0.12933441699999548,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007822957999991331,
+              "seconds": 0.059028791999992336,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006767291999977942,
+              "seconds": 0.025998207999975875,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007053166000019928,
+              "seconds": 0.006399125000029926,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006867749999997841,
+              "seconds": 0.06458762500000148,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006601625000001832,
+              "seconds": 0.06017420800003492,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006939875000000484,
+              "seconds": 0.0066457500000183245,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006935666000003948,
+              "seconds": 0.006036749999964286,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.0068525419999900805,
+              "seconds": 0.006029666000017642,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007046542000011868,
+              "seconds": 0.005758124999999836,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007821000000006961,
+              "seconds": 0.005844292000006135,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007906542000000627,
+              "seconds": 0.005943709000007402,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007896541999997453,
+              "seconds": 0.00812074999998913,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007309125000006134,
+              "seconds": 0.007225584000025265,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006979000000001179,
+              "seconds": 0.00611058299995193,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006701332999995202,
+              "seconds": 0.005935666000027595,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006865542000014102,
+              "seconds": 0.005698083000027054,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007207708000009916,
+              "seconds": 0.0065182910000203265,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006852500000007922,
+              "seconds": 0.005845874999977241,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.007211874999995871,
+              "seconds": 0.005972083000017392,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
@@ -2237,186 +2237,186 @@
           "original_byte_roundtrip_verified": true
         },
         "warm": {
-          "median_seconds": 0.005949624999999514,
-          "p95_seconds": 0.006995584000009103,
+          "median_seconds": 0.004984166999975059,
+          "p95_seconds": 0.005531708000034996,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.006124083000003111,
+              "seconds": 0.0050712500000145155,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005854625000011993,
+              "seconds": 0.005531708000034996,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006090833000001794,
+              "seconds": 0.004940583999996306,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005554791999998088,
+              "seconds": 0.005211916999996902,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005516959000004817,
+              "seconds": 0.0053050829999961024,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005982541999998148,
+              "seconds": 0.004874458000017512,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006231208000002653,
+              "seconds": 0.00547087500001453,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005916708000000881,
+              "seconds": 0.005253083000013703,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005817541999988407,
+              "seconds": 0.004874833000030776,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005639292000012119,
+              "seconds": 0.005021499999998014,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006116916999985733,
+              "seconds": 0.004919707999988532,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005860750000010739,
+              "seconds": 0.004893458000026385,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005623250000013513,
+              "seconds": 0.00506825000002209,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006548667000004116,
+              "seconds": 0.004834916999982397,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.00715870799999152,
+              "seconds": 0.004827207999994698,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006995584000009103,
+              "seconds": 0.005358124999986558,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006607833000003893,
+              "seconds": 0.00503166699996882,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005653584000015144,
+              "seconds": 0.00479987500000334,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.0065754590000040025,
+              "seconds": 0.004950792000045112,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.0064544999999895936,
+              "seconds": 0.004854249999993954,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.00617641700000604,
+              "seconds": 0.004884291999985635,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005713165999992498,
+              "seconds": 0.005707250000000386,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006120167000005949,
+              "seconds": 0.004946125000003576,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005713374999999132,
+              "seconds": 0.004940250000004198,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.00562704099999678,
+              "seconds": 0.0050315830000045025,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005631208000011156,
+              "seconds": 0.005162208000001556,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.0060758749999934025,
+              "seconds": 0.005106333000014729,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.006016999999985728,
+              "seconds": 0.004981499999985317,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.005671374999991485,
+              "seconds": 0.0049868339999648015,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
             },
             {
-              "seconds": 0.0055165420000093945,
+              "seconds": 0.004910666000000674,
               "output_bytes": 634,
               "exit_code": 0,
               "sha256": "9a714818289f0506d2e428ae5be5634d610fd4611cf7acdd1127f413dc5bb8e3"
@@ -2443,186 +2443,186 @@
       "facts_expected": "after recovery",
       "states": {
         "cold": {
-          "median_seconds": 0.005514478999998573,
-          "p95_seconds": 0.006879208000015069,
+          "median_seconds": 0.004610229000007848,
+          "p95_seconds": 0.00519929099999672,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.005286208999990549,
+              "seconds": 0.004932041000017762,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005294458000008717,
+              "seconds": 0.005259749999993346,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005393207999986771,
+              "seconds": 0.004929583999967235,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.03002633299999502,
+              "seconds": 0.00446583300004022,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005521208000004663,
+              "seconds": 0.0046379590000356075,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.006879208000015069,
+              "seconds": 0.00487162500002114,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.006574833000001945,
+              "seconds": 0.0043870000000083564,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.006567500000016935,
+              "seconds": 0.0043834160000528755,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.006732875000011518,
+              "seconds": 0.005070332999991933,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.0060536670000033155,
+              "seconds": 0.0046614159999762705,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005670792000017855,
+              "seconds": 0.004510290999974131,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005175125000022263,
+              "seconds": 0.0047927079999681155,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005804499999982227,
+              "seconds": 0.004526958999974795,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005258875000009766,
+              "seconds": 0.004465457999970113,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005308250000013004,
+              "seconds": 0.004559833000030267,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005072041999994781,
+              "seconds": 0.0046090000000162945,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005702834000004486,
+              "seconds": 0.004837209000015719,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005574416999991172,
+              "seconds": 0.004588458999990053,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005436292000013054,
+              "seconds": 0.00504879200002506,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.0055741660000023785,
+              "seconds": 0.004524665999952049,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005598582999994051,
+              "seconds": 0.004582749999997304,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005325499999997874,
+              "seconds": 0.004578041000002031,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005416166000003386,
+              "seconds": 0.0044370419999495425,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005246084000020801,
+              "seconds": 0.004353458000025512,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005521666999982244,
+              "seconds": 0.004723083999977007,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005507749999992484,
+              "seconds": 0.00519929099999672,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005631208000011156,
+              "seconds": 0.004611457999999402,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005181249999992588,
+              "seconds": 0.004849291000027733,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005065999999999349,
+              "seconds": 0.004690874999994321,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005358999999998559,
+              "seconds": 0.004569500000002336,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
@@ -2639,186 +2639,186 @@
           "original_byte_roundtrip_verified": true
         },
         "warm": {
-          "median_seconds": 0.004489958499988234,
-          "p95_seconds": 0.0054942499999981464,
+          "median_seconds": 0.003768749999977672,
+          "p95_seconds": 0.004170917000010377,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.004491624999985788,
+              "seconds": 0.0037579999999479696,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004488291999990679,
+              "seconds": 0.003675417000010839,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004073582999978953,
+              "seconds": 0.0036753329999896778,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004525083000004315,
+              "seconds": 0.003948874999991858,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005429916999986517,
+              "seconds": 0.004170917000010377,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005610916999984283,
+              "seconds": 0.0040559999999914,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.005313332999975273,
+              "seconds": 0.0037784169999781625,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.00547262499998169,
+              "seconds": 0.004107959000009487,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.0054942499999981464,
+              "seconds": 0.003844874999970216,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004597833000019591,
+              "seconds": 0.0037045409999905132,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004360667000014473,
+              "seconds": 0.003709415999992416,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004430208000002267,
+              "seconds": 0.0040961670000001504,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004168583000023318,
+              "seconds": 0.003788541999995232,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.0042715830000190635,
+              "seconds": 0.0037177090000000135,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.0042684580000127426,
+              "seconds": 0.0038168749999840657,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004271708000004537,
+              "seconds": 0.003690582999979597,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004442957999998498,
+              "seconds": 0.003717332999997325,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004225957999977936,
+              "seconds": 0.003885541999977704,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004390042000011363,
+              "seconds": 0.0036155000000235304,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004333333000005268,
+              "seconds": 0.003569165999977031,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004543708999989349,
+              "seconds": 0.004314709000027506,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.0046260409999945296,
+              "seconds": 0.003953082999998969,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004632250000014437,
+              "seconds": 0.003670416999966619,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004657875000020795,
+              "seconds": 0.003585750000013377,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004183750000009923,
+              "seconds": 0.0036610409999866533,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004843166000000565,
+              "seconds": 0.004141291999985697,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.0046330419999947026,
+              "seconds": 0.0037590829999771813,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004623374999994212,
+              "seconds": 0.00379979199999525,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004377292000015132,
+              "seconds": 0.003693416000032812,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
             },
             {
-              "seconds": 0.004152040999997553,
+              "seconds": 0.00407470900000817,
               "output_bytes": 1288,
               "exit_code": 0,
               "sha256": "063d02eab74da1c6f71434458f56ba1530e0a4993d7affd86fbe24a276638ef4"
@@ -2845,186 +2845,186 @@
       "facts_expected": "in view",
       "states": {
         "cold": {
-          "median_seconds": 0.007015146000014738,
-          "p95_seconds": 0.00799158300000613,
+          "median_seconds": 0.006177563000022701,
+          "p95_seconds": 0.007639957999970193,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.006665541999979041,
+              "seconds": 0.007639957999970193,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.00717508299999281,
+              "seconds": 0.00652500000001055,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006964374999995471,
+              "seconds": 0.005993208000006689,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007039582999993854,
+              "seconds": 0.0062000840000564494,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007626832999989119,
+              "seconds": 0.006351375000008375,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.00810329199998705,
+              "seconds": 0.005879332999995768,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.00799158300000613,
+              "seconds": 0.006687083999963761,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007798750000006294,
+              "seconds": 0.0059303749999912725,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007149708000014243,
+              "seconds": 0.006347457999993367,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006869208000011895,
+              "seconds": 0.006411916999979894,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007365167000017436,
+              "seconds": 0.006027458000005481,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0075333329999978105,
+              "seconds": 0.006396875000007185,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006876125000019329,
+              "seconds": 0.00567483300000049,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0068422919999875376,
+              "seconds": 0.00586300000003348,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006995375000002468,
+              "seconds": 0.0058367080000039095,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007334459000020388,
+              "seconds": 0.005978040999991663,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0067254580000053465,
+              "seconds": 0.006275042000027042,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007068250000003218,
+              "seconds": 0.006038250000017342,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006927916999984518,
+              "seconds": 0.005781000000013137,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007268999999979542,
+              "seconds": 0.005899541000019326,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007034917000027008,
+              "seconds": 0.006143208000025879,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007130000000017844,
+              "seconds": 0.0072420000000192886,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006802042000003894,
+              "seconds": 0.00784745800001474,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006948416999989604,
+              "seconds": 0.007084166999959507,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.00677337499999453,
+              "seconds": 0.006962750000013784,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006793000000016036,
+              "seconds": 0.006912499999998545,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006634999999988622,
+              "seconds": 0.006292916999996123,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.007177624999997079,
+              "seconds": 0.005996833000040169,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006921500000004244,
+              "seconds": 0.006155041999988953,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006806250000011005,
+              "seconds": 0.0058824159999630865,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
@@ -3041,186 +3041,186 @@
           "original_byte_roundtrip_verified": true
         },
         "warm": {
-          "median_seconds": 0.005747125000013398,
-          "p95_seconds": 0.006685167000000547,
+          "median_seconds": 0.005191062000022839,
+          "p95_seconds": 0.006306666000000405,
           "failures": 0,
           "samples": [
             {
-              "seconds": 0.005743666000000758,
+              "seconds": 0.005112166999992951,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0057465830000182905,
+              "seconds": 0.005050083000014638,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005803165999992643,
+              "seconds": 0.004929624999988391,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005822916999989047,
+              "seconds": 0.005208707999997841,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005551917000019557,
+              "seconds": 0.005740958000046703,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005659166999976151,
+              "seconds": 0.005122959000004812,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0058100839999895015,
+              "seconds": 0.0051215409999940675,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005904999999984284,
+              "seconds": 0.0057696659999919575,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006008332999982713,
+              "seconds": 0.005321041999991394,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005564542000001893,
+              "seconds": 0.005249999999989541,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.00550333300000716,
+              "seconds": 0.005762417000028108,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005837958000000754,
+              "seconds": 0.00496375000000171,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0053986250000264135,
+              "seconds": 0.00569554200001221,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005713708000001816,
+              "seconds": 0.005370916999993369,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005869249999989279,
+              "seconds": 0.007564416999969126,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005806249999977808,
+              "seconds": 0.006306666000000405,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0056269589999828895,
+              "seconds": 0.005675125000038861,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0056970419999800015,
+              "seconds": 0.0052490410000132215,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005747667000008505,
+              "seconds": 0.005079665999971894,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005677374999976337,
+              "seconds": 0.005173416000047837,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006685167000000547,
+              "seconds": 0.005290166999998291,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005902833000021701,
+              "seconds": 0.005082958000002691,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005626083000009885,
+              "seconds": 0.005163249999952768,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005590582999985827,
+              "seconds": 0.005136041000014302,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005711375000004182,
+              "seconds": 0.004906209000012041,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005772082999982331,
+              "seconds": 0.0049727500000358305,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.005972749999983762,
+              "seconds": 0.005958416999988003,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.0056868329999986145,
+              "seconds": 0.005119832999980645,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006665749999996251,
+              "seconds": 0.005143332999978156,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"
             },
             {
-              "seconds": 0.006987584000000879,
+              "seconds": 0.005249041999945803,
               "output_bytes": 472,
               "exit_code": 0,
               "sha256": "df1ddf1b4f9cc624fe20bfd4f2685b6b293f28cbfa922b77fd563ea7f95207be"

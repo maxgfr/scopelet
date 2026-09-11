@@ -22,7 +22,7 @@ trust step. First installation enables default mode.
 Invoke `/scopelet <task>` in Claude Code or OpenCode, `$scopelet <task>` in Codex.
 Explicit invocation accesses advanced queries; installed hooks run independently.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
-The launcher installs Scopelet **0.5.3** into the user's cache, downloading the
+The launcher installs Scopelet **0.5.4** into the user's cache, downloading the
 matching macOS/Linux release from github.com and verifying its SHA-256. Node 18+
 is sufficient for the launcher itself. The launcher alone changes no agent
 settings; `install` explicitly installs user hooks.
@@ -32,7 +32,7 @@ In the commands below, replace `scopelet` with
 An independently installed binary is also supported:
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.5.3 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.5.4 --locked
 ```
 
 Optional adapters are external dependencies, not bundled copies:
