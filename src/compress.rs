@@ -1,12 +1,12 @@
 //! Recoverable presentation. Selection borrows evidence; storage follows acceptance.
 use crate::{clean, compact_table, encoding, model::*, sources::Parsed, store::Store};
 use anyhow::{Result, ensure};
-use std::{
-    borrow::Cow,
-    collections::{BTreeSet, HashMap, HashSet},
-    path::PathBuf,
-    sync::LazyLock,
-};
+use std::{borrow::Cow, collections::BTreeSet, path::PathBuf, sync::LazyLock};
+
+/// Line texts and templates are hashed by the megabyte; the default
+/// hasher is built for untrusted keys and costs several times more.
+type HashMap<K, V> = foldhash::HashMap<K, V>;
+type HashSet<K> = foldhash::HashSet<K>;
 
 pub const DEFAULT_BUDGET: usize = 4096;
 pub const SMALL: usize = 2048;
@@ -406,12 +406,27 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     let lines: Vec<&str> = record.text.split_inclusive('\n').collect();
     let n = lines.len();
     let views: Vec<Cow<'a, str>> = lines.iter().map(|line| clean::line_view(line)).collect();
-    let strong: Vec<bool> = views.iter().map(|view| STRONG.is_match(view)).collect();
-    let weak: Vec<bool> = views
+    // Identical text is classified once: `first[i]` is the earliest line with
+    // this exact view, and it carries the vocabulary matches and, later, the
+    // group for every repetition. A log of the same line five hundred times
+    // runs the diagnostic patterns once, not five hundred times.
+    let mut by_text: HashMap<&str, usize> = HashMap::default();
+    let first: Vec<usize> = views
         .iter()
-        .zip(&strong)
-        .map(|(view, &strong)| !strong && WEAK.is_match(view))
+        .enumerate()
+        .map(|(i, view)| *by_text.entry(view.as_ref()).or_insert(i))
         .collect();
+    let mut strong = vec![false; n];
+    let mut weak = vec![false; n];
+    for i in 0..n {
+        if first[i] == i {
+            strong[i] = STRONG.is_match(&views[i]);
+            weak[i] = !strong[i] && WEAK.is_match(&views[i]);
+        } else {
+            strong[i] = strong[first[i]];
+            weak[i] = weak[first[i]];
+        }
+    }
     // Context is the window around a diagnostic; head and tail lines only
     // count for priority.
     let mut context = vec![false; n];
@@ -428,19 +443,21 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     // are evidence and stay visible. Other lines group by template.
     let mut groups: Vec<Group> = Vec::new();
     let mut owner = Vec::with_capacity(n);
-    let mut by_text: HashMap<&str, usize> = HashMap::new();
-    let mut by_template: HashMap<String, usize> = HashMap::new();
+    // The group of each first occurrence; repetitions look it up by index.
+    let mut slot_of_first: Vec<Option<usize>> = vec![None; n];
+    let mut by_template: HashMap<String, usize> = HashMap::default();
     // One reusable buffer: a template key is only copied when it is new, so a
     // scan over many same-shaped lines allocates once, not once per line.
     let mut key = String::new();
     for (i, view) in views.iter().enumerate() {
         // Identical text always shares a group, and identical text has an
-        // identical template, so the exact-text hit skips building one. On a
-        // log of repeated lines that is every line after the first.
-        let slot = if let Some(&slot) = by_text.get(view.as_ref()) {
-            &mut { slot }
+        // identical template, so a repetition skips building one. On a log of
+        // repeated lines that is every line after the first.
+        let slot = if let Some(slot) = slot_of_first[first[i]] {
+            slot
         } else if strong[i] || weak[i] {
-            by_text.entry(view).or_insert(groups.len())
+            slot_of_first[i] = Some(groups.len());
+            groups.len()
         } else {
             clean::template_into(view, &mut key);
             let slot = match by_template.get(key.as_str()) {
@@ -450,10 +467,10 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
                     groups.len()
                 }
             };
-            by_text.insert(view, slot);
-            &mut { slot }
+            slot_of_first[i] = Some(slot);
+            slot
         };
-        if *slot == groups.len() {
+        if slot == groups.len() {
             groups.push(Group {
                 first: i,
                 last: i,
@@ -463,14 +480,14 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
                 nearby: nearby[i],
             });
         } else {
-            let group = &mut groups[*slot];
+            let group = &mut groups[slot];
             group.last = i;
             group.count += 1;
             group.exact &= views[group.first] == *view;
             group.context |= context[i];
             group.nearby |= nearby[i];
         }
-        owner.push(*slot);
+        owner.push(slot);
     }
     // A few repetitions inside a diagnostic's context stay in source order;
     // massive repetition folds wherever it is.
