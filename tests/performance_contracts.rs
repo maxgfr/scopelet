@@ -55,14 +55,27 @@ fn streaming_serialization_preserves_hashes_and_rejects_corruption() {
         .put("artifact", &serde_json::to_vec(&value).unwrap())
         .unwrap();
     assert_eq!(store.put_json(&value).unwrap(), expected);
-    fs::write(
-        dir.path()
-            .join("artifacts")
-            .join(expected.split_once(':').unwrap().1),
-        b"corrupted",
-    )
-    .unwrap();
-    assert!(store.put_json(&value).is_err());
+    let path = dir
+        .path()
+        .join("artifacts")
+        .join(expected.split_once(':').unwrap().1);
+    let serialized = store.get(&expected).unwrap();
+    // A truncated artifact is an interrupted publication: republishing repairs it.
+    fs::write(&path, b"corrupted").unwrap();
+    assert_eq!(store.put_json(&value).unwrap(), expected);
+    assert_eq!(store.get(&expected).unwrap(), serialized);
+    // Same-length damage is reused by address and rejected on the read that matters.
+    let mut altered = serialized.clone();
+    altered[0] ^= 1;
+    fs::write(&path, &altered).unwrap();
+    assert_eq!(store.put_json(&value).unwrap(), expected);
+    assert!(
+        store
+            .get(&expected)
+            .unwrap_err()
+            .to_string()
+            .contains("integrity")
+    );
 }
 
 #[test]

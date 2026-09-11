@@ -1,324 +1,69 @@
-# Agent comparisons
+# Benchmarks
 
-`run.py` provides synthetic fixtures, immutable external graders, native controls,
-provider usage normalization and process-group timeouts. `compare.py` adds full
-competitor skills, manual RTK wrapping and an explicit Headroom proxy adapter.
-No provider calls occur without `--live`. Output directories must be empty:
-completed evidence is never overwritten.
+Two offline probes measure the binary that ships. Neither calls a model, needs
+an API key, or talks to the network. Both refuse to overwrite an existing output
+directory: completed evidence is never replaced in place.
 
-Read the [declared protocol](../docs/direct-comparison-plan.md) and
-[completed pilot](../docs/direct-comparison-2026-09-09.md) before interpreting results.
+Earlier live-agent campaigns (Codex Luna, Claude Haiku and Fable pilots against
+Caveman, Ponytail, RTK and Headroom, on Scopelet 0.1.x–0.3.x with the manual
+skill) were removed once the engine, the default presentation and the
+installation model had all changed. Their numbers described binaries that no
+longer exist. Whole-session token accounting depends on the host, the model and
+the task; measure your own setup before quoting a percentage.
 
-## Dependencies and frozen inputs
+## Content: does the view keep the facts?
 
-Install/authenticate Codex and Claude Code normally. The recorded pilot used
-Codex 0.153.4 with GPT-5.6-Luna (low) and Claude Code 2.1.263 with Haiku 4.5.
-The Codex model is configured in `run.py`; the Claude model and effort are
-`compare.py` options (`--model`, default `claude-fable-5-1`; `--effort`, default
-`high`; `--claude-bin` to pin the executable). Compare within an agent/model,
-not across the two. Host instructions can still affect results. Runs use
-temporary isolated Git workspaces, project skills and scoped
-environment/configuration overrides. `CLAUDE_CODE_EFFORT_LEVEL` and
-`ANTHROPIC_*` routing variables are removed from every child environment.
-Competitor hooks are loaded only per run (`--plugin-dir` for Caveman/Ponytail,
-`--settings` for the RTK hook); no global agent settings change. Plugin marker
-files (`~/.claude/.caveman-active`, `~/.claude/.ponytail-active`) and RTK's
-`~/.local/share/rtk/hook-audit.log` are written under the real `HOME` because an
-isolated `CLAUDE_CONFIG_DIR` loses OAuth authentication; remove them afterwards.
-
-Clone the competitors outside this repository and check out these revisions:
-
-| Repository | Revision |
-|---|---|
-| headroomlabs-ai/headroom | e67b3c8a29443a60d6b0018fb22f525c5cd7e709 |
-| juliusbrussee/caveman | 15581d14007fd01fb3f132016741962f34936ca2 |
-| dietrichgebert/ponytail | 356918eba965ee1eac64bd3a7f0dd02108350de5 |
-| rtk-ai/rtk | 8e9aa04cb2afb189747fac4e36bec2254ddd0564 |
-| maxgfr/scopelet (original pilot) | d7f114c0e6ce44f34856ee1bd395a59d138f66f7 (v0.1.1) |
-
-For the Haiku pilot use the full `skills/caveman` and `skills/ponytail`
-directories (`--caveman-skill`, `--ponytail-skill`); for the Fable comparison
-pass the whole checkouts as plugins (`--caveman-plugin`, `--ponytail-plugin`;
-each must contain `.claude-plugin/plugin.json`). Build RTK with
-`cargo build --release --locked` in its checkout (the pinned commit declares
-crate version 0.42.4). Headroom 0.37.0 was installed from the pinned checkout in
-a Python 3.13 virtual environment. Use the published Scopelet 0.1.1 binary and
-tagged skill for the original pilot, and the published 0.1.3 binary plus the
-v0.1.3 skill for the Fable comparison. Report hardware/build changes.
-
-The harness copies binaries, complete skills and Python prefix files into each
-campaign's `frozen/` directory before starting. Headroom's executable/venv stays
-external; record its source revision and do not change the installation during a
-campaign. SHA-256 hashes and CLI versions are recorded automatically. Supply
-`--source-commits-json` with the revisions above as an additional provenance field.
-
-## Run the matrix
-
-Set these shell variables to the corresponding local paths: `COMPARE_SCOPELET`,
-`COMPARE_SKILL`, `COMPARE_CAVEMAN`, `COMPARE_PONYTAIL`, `COMPARE_RTK` and
-`COMPARE_HEADROOM`. Native executable variables must point to files; skill
-variables must point to directories containing `SKILL.md`.
+`content.py` runs `scopelet compress` on eight realistic outputs: a 136 KB
+progress log with two diagnostics at the end, a retry loop hiding one fatal
+error, the same log with CRLF endings, a receipt buried in the middle, a
+1000-row JSON array, a 1000-row JSONL stream, a 12 KB single line and a 32-byte
+output. For every fixture it records bytes in and out, cold and warm timings,
+whether every fact is visible in the view, and whether the original bytes come
+back through the artifact manifest and source blob. It exits non-zero when a
+fact or a byte is lost.
 
 ```sh
-python3 bench/compare.py --dry-run --tasks task4,task2,task3 --out bench/runs/plan
-
-python3 bench/compare.py --live --agents claude --tasks task4,task2,task3 \
-  --scopelet-binary "$COMPARE_SCOPELET" --scopelet-skill "$COMPARE_SKILL" \
-  --caveman-skill "$COMPARE_CAVEMAN" --ponytail-skill "$COMPARE_PONYTAIL" \
-  --rtk-binary "$COMPARE_RTK" --headroom-binary "$COMPARE_HEADROOM" \
-  --headroom-prefix-json '["python3","bench/headroom_proxy.py","--headroom","{headroom}"]' \
-  --out bench/runs/comparison-claude
-
-python3 bench/compare.py --live --agents codex --tasks task4,task2,task3 \
-  --arms native,concise,scopelet,scopelet-ultra,scopelet-caveman,caveman,ponytail,rtk \
-  --scopelet-binary "$COMPARE_SCOPELET" --scopelet-skill "$COMPARE_SKILL" \
-  --caveman-skill "$COMPARE_CAVEMAN" --ponytail-skill "$COMPARE_PONYTAIL" \
-  --rtk-binary "$COMPARE_RTK" --out bench/runs/comparison-codex
+cargo build --release --locked
+python3 bench/content.py --scopelet target/release/scopelet --out bench/runs/content
 ```
 
-Default seed is 20260909 and default repetitions are one. Increase repetitions
-and declare the new protocol before measuring. Random order does not make a
-single repetition statistically reliable. The revised-skill follow-up uses
-`--arms concise,scopelet-ultra --repetitions 2 --seed 20260910` and a separately
-frozen 0.1.2 skill/binary.
+`tests/content_gate.rs` mirrors the same fixtures byte for byte and pins them to
+the SHA-256 values recorded in `bench/results/content-*.json`, so a compressor
+change that silently drops a diagnostic fails `cargo test`. The README
+reduction table is checked against the binary by `scripts/check_readme.py`.
 
-## Fable 5.1 comparison
+## Performance: how fast, how much memory?
 
-The [declared protocol](../docs/fable-comparison-plan.md) runs Claude Code
-2.1.266 with `claude-fable-5-1` at high effort: nine arms, three tasks, two
-repetitions, seed 20260911, 900 s timeout. Preflights use the same command with
-`--tasks task3 --repetitions 1` and a separate output directory.
+`performance.py` measures one or more binaries on the same synthetic workloads:
+a 3 MB log, a 12,000-row JSONL table, an aggregate query over it, a 400-file
+repository search, a paged recovery from a stored original and, with
+`--stress`, a stream just under the 32 MiB capture limit. Each case runs with a
+cold application cache and a warm one, five warmups and thirty measured
+repetitions by default. Wall time and peak resident size come from
+`/usr/bin/time`. The OS page cache is not flushed.
 
 ```sh
-python3 bench/compare.py --live --agents claude --tasks task4,task2,task3 \
-  --repetitions 2 --seed 20260911 --timeout 900 \
-  --model claude-fable-5-1 --effort high --claude-bin /opt/homebrew/bin/claude \
-  --scopelet-binary "$COMPARE_SCOPELET" --scopelet-skill skills/scopelet \
-  --caveman-plugin "$COMPARE_CAVEMAN_CHECKOUT" --ponytail-plugin "$COMPARE_PONYTAIL_CHECKOUT" \
-  --rtk-binary "$COMPARE_RTK" --rtk-integration hook \
-  --headroom-binary "$COMPARE_HEADROOM" \
-  --headroom-prefix-json '["python3","bench/headroom_proxy.py","--headroom","{headroom}"]' \
-  --source-commits-json '{"caveman":"15581d14...","rtk":"8e9aa04c...","headroom":"e67b3c8a...","ponytail":"356918eb...","scopelet":"v0.1.3"}' \
-  --out bench/runs/fable-comparison-20260909
+python3 bench/performance.py --binary release=target/release/scopelet --stress \
+  --out bench/runs/performance
 ```
 
-`--rtk-integration hook` injects RTK's documented PreToolUse hook through
-`--settings` and keeps the native prompt; `manual` reproduces the pilot's
-wrapper guidance. Per-run results record the model observed in the `init`
-event, every model in `modelUsage`, `model_mismatch`, turns, API duration,
-Claude Code's list-basis cost estimate, hook lifecycle events, RTK audit
-actions, tool errors, the task4 check sequence and cache-marker presence.
-`scripts/summarize_traces.py <campaign>` prints a local audit of ordered tool
-calls; it is for reading raw traces, not for publishing.
+To compare a candidate against a released build, pass two arms. They alternate
+order every repetition, and every arm must produce identical bytes on every
+case: a candidate that changes the output fails the run instead of looking
+faster.
 
-## Proxy verification
+```sh
+python3 bench/performance.py --binary released=/path/to/scopelet-0.5.0 \
+  --binary candidate=target/release/scopelet --stress --out bench/runs/candidate
+```
 
-`headroom_proxy.py` is the portable version of the pilot's private adapter, with
-an explicit executable path and a new fail-closed routing check. It launches a
-local token-mode proxy, configures only the child Claude process and enables
-Headroom's recovery MCP. It returns 125 if the agent succeeds without increasing
-the proxy request counter. Agent failures preserve their status. All children
-remain in the campaign process group for timeout cleanup. Set
-`SCOPELET_HEADROOM_MODE=cache` only for a separately labeled cache-mode study.
+## Publishing a run
 
-Codex routing was not verified with this environment's authentication after four
-preflight attempts, so the portable adapter rejects Codex rather than producing
-false Headroom measurements. This is an environment-specific unmeasured cell,
-not an upstream compatibility verdict. The original pilot adapter hashes are
-retained in the results; this portable adapter has a different hash.
-
-## Inspect and export
+Copy `report.json` from the run directory into `bench/results/` with the
+version and date in its name, then update the README figures and the
+`content_gate.rs` path. Timings are descriptive: other activity on the machine
+was not controlled, and only the medians are quoted.
 
 ```sh
 python3 -m unittest discover -s bench -p 'test_*.py'
-python3 scripts/export_comparison.py bench/runs/comparison-claude \
-  bench/runs/comparison-codex --out bench/results/my-comparison.json
 ```
-
-Reports retain failed runs, unknown usage, wall-clock duration, cache fields,
-fixture hashes and adoption counters. The external grader checks the final
-workspace against pristine checks and rejects modified fixtures. Tool counts do
-not prove required command order, skill compliance or semantic fidelity. Review
-raw traces when those matter. A returned view's mode can differ from the requested
-arm, and an exact expansion can intentionally use default mode.
-
-Raw transcripts, prompts, generated workspaces and proxy logs remain under
-ignored `bench/runs/`. Export only inspected summaries. Logical session input
-includes cached input; it is not a price calculation. Competitor compression
-estimates and byte reductions are separate measurements.
-
-## Automatic-mode pilot: Codex Luna only
-
-`auto.py` fixes `gpt-5.6-luna` at low effort and compares ordinary task prompts
-without invoking a skill. It uses the immutable synthetic fixtures and external
-functional grader from `run.py`. Four repetitions across three tasks and five
-arms form 60 planned cells. Headroom remains unmeasured because the available
-proxy adapter rejects Codex; RTK uses its upstream Codex awareness document.
-Missing integrations do not consume model sessions or become native results.
-
-```sh
-python3 bench/auto.py --out bench/runs/luna-plan
-python3 bench/auto.py --live --binary target/release/scopelet \
-  --rtk /absolute/path/to/pinned/rtk \
-  --rtk-awareness /absolute/path/to/pinned/rtk-awareness-full.md \
-  --out bench/runs/luna-auto --max-attempts 48
-```
-
-The executable and competitor instructions are frozen before measurement.
-Each attempt is persisted before launch, failures remain in reports, and missing
-usage stops the campaign for inspection. Reports include raw stream hashes,
-reported input/output/cache usage, task grade, commands and adoption evidence.
-Four available arms consume 48 sessions; any extra validation must keep the
-whole first-phase total under 60. No Claude CLI, auxiliary model, or API proxy
-fallback is allowed. Local Codex authentication is copied into each private
-fixture and deleted before archiving; raw traces remain local under `bench/runs`.
-
-Export inspected, path-free summaries with typed completed-tool audits:
-
-```sh
-python3 bench/export_auto.py bench/runs/luna-auto bench/results/luna-auto.json
-```
-
-Use `--tasks task4 --arms default caveman --repetitions 1 --max-attempts 2`
-for a separate final-binary smoke; add `--code-mode` for Codex's experimental
-code mode. These are separate treatments, never pooled into the primary matrix.
-The maximum applies per invocation; count every campaign toward the user budget.
-
-## Proportional small-edit checks
-
-`proportional.py` compares native, a frozen released binary and a frozen candidate
-on Python normalization, JavaScript nullish defaults and a JSON configuration
-edit. Identical prompts, independent graders, preserved fixtures and raw usage
-make correctness failures visible alongside tokens. The JSON grader distinguishes
-zero from false; the JavaScript grader checks values beyond the visible test.
-Two repetitions produce 18 sessions, run at most two at a time. A missing-usage
-batch stops the campaign. Raw workspaces and authentication stay private; local
-auth copies are removed before workspace archival.
-
-```sh
-python3 bench/proportional.py --released /path/to/released/scopelet \
-  --candidate target/release/scopelet --out bench/runs/proportional-plan
-python3 bench/proportional.py --live --released /path/to/released/scopelet \
-  --candidate target/release/scopelet --out bench/runs/proportional-live
-```
-
-Use a new directory for every revision. Keep earlier failures and distinguish
-candidate hashes; do not pool revised candidates into an earlier comparison.
-This small sample is exploratory, not a claim of universal savings.
-
-## Engine and compact-v2 performance
-
-`performance.py` compares frozen release binaries offline, with five warmups
-and thirty measurements per cell by default. It alternates native process
-invocations of baseline v1, candidate v1 and candidate v2. Cold means an empty
-application cache; the OS page cache is not flushed. It reports wall time,
-maximum process RSS, output hashes, failures and retained cache bytes. V1 output
-mismatches fail the campaign. `--stress` adds a capture just below 32 MiB.
-
-```sh
-python3 bench/performance.py --baseline /path/to/baseline --candidate target/release/scopelet \
-  --stress --out bench/runs/performance-new
-```
-
-`performance_live.py` is a separate Luna-only pilot: five tasks, three arms
-(native, frozen baseline, candidate v2), two repetitions, 30 attempts maximum.
-It uses `gpt-5.6-luna` at low effort, isolated synthetic workspaces and scoped
-hooks. No retry or model fallback occurs. Quota rejection or missing usage stops
-the campaign; failed sessions remain in the report. Existing harness usage
-normalization and independent graders are reused. Global skills are disabled.
-The native arm uses native tools; the two Scopelet arms receive the same brief
-availability instruction and retain their respective hooks. The recovery task
-provides native text versus a saved compact view backed by immutable originals.
-Raw traces and temporary authentication stay local; authentication is removed
-before archiving a workspace. Reports do not equate logical tokens with bills.
-
-```sh
-python3 bench/performance_live.py --baseline /path/to/baseline --candidate target/release/scopelet \
-  --out bench/runs/luna-performance-plan
-python3 bench/performance_live.py --live --baseline /path/to/baseline --candidate target/release/scopelet \
-  --out bench/runs/luna-performance-new
-```
-
-The rollout gate for v2 is no functional regression and at least 10% fewer
-whole-session logical input plus output tokens than baseline on the combined
-four evidence-heavy tasks. An incomplete campaign does not pass this gate.
-The completed 2026-09-10 comparison passed this gate; v2 is now the CLI/hook
-default. Both versions remain explicitly selectable.
-
-Export the completed campaign for publication with verified raw-trace hashes and
-a whitelist excluding prompts, commands, authentication and personal paths:
-
-```sh
-python3 bench/export_performance.py bench/runs/luna-performance-new \
-  bench/results/performance-luna-new.json
-```
-
-The [2026-09-10 report](../docs/performance-2026-09-10.md) separates offline
-measurements, live token accounting, failures and the default-version decision.
-
-## Current automatic comparison (0.3.0, Luna + Haiku)
-
-`current.py` compares automatic default Scopelet with native tools, RTK 0.48.0
-and Headroom 0.37.0. Unlike `compare.py`'s historical skill/manual treatments,
-it installs Scopelet hooks into each synthetic workspace and uses identical
-ordinary task prompts. Read the [predeclared protocol](../docs/current-comparison-plan.md).
-
-Use the release RTK binary plus `hooks/codex/rtk-awareness.md` from **that same
-release**. The release differs from the old pilot's development commit. Install
-`headroom-ai[proxy]==0.37.0` in a dedicated Python 3.13 environment. Record its
-installed distribution `RECORD` hash and dependency versions in a provenance
-JSON; the PyPI wheel's source commit is unknown, not inferred from the tag.
-
-```sh
-# Preview only: creates no files and makes no provider calls.
-python3 bench/current.py --out bench/runs/current-plan
-
-python3 bench/current.py --live --phase preflight \
-  --scopelet target/release/scopelet \
-  --rtk "$COMPARE_RTK" --awareness "$COMPARE_RTK_AWARENESS" \
-  --headroom "$COMPARE_HEADROOM" --provenance "$COMPARE_PROVENANCE" \
-  --out bench/runs/current
-python3 bench/current.py --live --phase main --out bench/runs/current
-python3 bench/current.py --live --phase followup \
-  --candidate target/release/scopelet --out bench/runs/current
-python3 bench/export_current.py bench/runs/current \
-  --out bench/results/current-comparison.json
-```
-
-The three phases share one locked, persistent ledger capped at 60 attempts.
-Started/interrupted attempts consume budget and are never rerun. Reinvocation
-continues with unattempted cells; inspect a stop before continuing. A failed
-preflight blocks dependent cells. Missing usage or a quota rejection stops the
-phase. Headroom/Codex is explicitly unmeasured; it is never replaced by native.
-Luna is pinned at low effort, Haiku at its default effort. No fallback model is
-selected. Existing authentication is reused without changing global settings.
-RTK's global audit writer is disabled. Hook lifecycle events, explicit calls,
-local database counts when readable, and proxy counters retain adoption evidence.
-
-Exports verify retained transcript hashes and omit prompts, grader text,
-commands, credentials, workspaces and private paths. Reported logical tokens
-include cache; Claude's USD estimate is not an invoice. A failed attempt with
-recoverable usage still contributes tokens, without inventing its missing grade.
-
-For the offline engine comparison against 0.3.0, pin the reference to v2:
-
-```sh
-python3 bench/performance.py --baseline "$COMPARE_SCOPELET" \
-  --baseline-version 2 --candidate target/release/scopelet \
-  --warmups 5 --repetitions 30 --stress --out bench/runs/current-engine
-
-# Run with the interpreter from the dedicated Headroom environment.
-"$COMPARE_HEADROOM_PYTHON" bench/content.py --scopelet "$COMPARE_SCOPELET" \
-  --rtk "$COMPARE_RTK" --out bench/runs/current-content
-```
-
-`content.py` measures shared inputs using Scopelet compression, RTK's default
-`read`, and Headroom's public compression API with ML disabled and recent-message
-protection set to zero. Its timings include CLI startup for Scopelet/RTK but use
-an imported Headroom library; they are **not** an equivalent engine-speed ranking.
-It also checks `rtk test` separately on a failing synthetic command. This is a
-specific deterministic Headroom configuration, not a proxy/session savings claim.
-Scopelet recovery follows the artifact manifest to the original blob; raw artifact
-JSON is not the original source bytes. Facts omitted from a view are graded again
-after recovery. A false roundtrip field for another tool means byte recovery was
-not verified, not that the transformed representation necessarily lost meaning.
