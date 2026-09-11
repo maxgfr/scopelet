@@ -10,7 +10,8 @@ fn cli(dir: &std::path::Path) -> Command {
         .env("SCOPELET_CONFIG_DIR", dir.join("config"))
         .env("SCOPELET_CACHE_DIR", dir.join("cache"))
         .env("CODEX_HOME", dir.join("codex"))
-        .env("CLAUDE_CONFIG_DIR", dir.join("claude"));
+        .env("CLAUDE_CONFIG_DIR", dir.join("claude"))
+        .env("OPENCODE_CONFIG_DIR", dir.join("opencode"));
     command
 }
 #[test]
@@ -398,4 +399,150 @@ fn crowded_diagnostics_keep_first_and_final_evidence() {
     assert!(text.contains("final status: 1000 failed; exit=7"));
     assert!(text.contains("display_complete=false"));
     assert!(text.len() <= 1024);
+}
+
+fn opencode_plugin(dir: &std::path::Path) -> std::path::PathBuf {
+    dir.join("opencode/plugin/scopelet.js")
+}
+#[test]
+fn opencode_install_is_idempotent_reversible_and_never_replaces_a_foreign_plugin() {
+    let dir = tempfile::tempdir().unwrap();
+    let plugin = opencode_plugin(dir.path());
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    let installed = fs::read_to_string(&plugin).unwrap();
+    assert!(installed.contains("ScopeletPlugin"));
+    assert!(
+        installed
+            .contains(&serde_json::to_string(&dir.path().join("config/bin/scopelet")).unwrap())
+    );
+    assert!(!installed.contains("__SCOPELET_"));
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(&plugin).unwrap(), installed);
+    assert!(!dir.path().join("config/backups").exists());
+    let doctor = cli(dir.path()).arg("doctor").output().unwrap();
+    let health: Value = serde_json::from_slice(&doctor.stdout).unwrap();
+    let hosts = health["integration"]["hosts"].as_array().unwrap();
+    assert_eq!(hosts.len(), 3);
+    assert_eq!(hosts[2]["host"], "opencode");
+    assert_eq!(hosts[2]["hooks_configured"], true);
+    cli(dir.path())
+        .args(["uninstall", "--agent", "opencode"])
+        .assert()
+        .success();
+    assert!(!plugin.exists());
+    assert!(dir.path().join("opencode/plugin").is_dir());
+    let foreign = "export const OtherPlugin = async () => ({});\n";
+    fs::write(&plugin, foreign).unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "all"])
+        .assert()
+        .failure();
+    assert_eq!(fs::read_to_string(&plugin).unwrap(), foreign);
+    cli(dir.path())
+        .args(["uninstall", "--agent", "all"])
+        .assert()
+        .failure();
+    assert!(plugin.exists());
+}
+#[test]
+fn opencode_hook_compresses_large_bash_output_and_carries_the_mode() {
+    let dir = tempfile::tempdir().unwrap();
+    let large = json!({"hook_event_name":"ToolOutput","tool_name":"Bash","tool_input":{"command":"npm test"},"tool_response":{"output":"noise\n".repeat(2000)}});
+    let out = hook(dir.path(), "opencode", large.clone());
+    let text = out["output"].as_str().unwrap();
+    assert!(text.contains("[scopelet compact-v1"));
+    assert!(text.len() < 6000);
+    let mut small = large.clone();
+    small["tool_response"]["output"] = json!("x".repeat(2048));
+    assert_eq!(hook(dir.path(), "opencode", small), json!({}));
+    let mut wrapped = large.clone();
+    wrapped["tool_input"]["command"] = json!("scopelet run -- npm test");
+    assert_eq!(hook(dir.path(), "opencode", wrapped), json!({}));
+    let mut other_tool = large.clone();
+    other_tool["tool_name"] = json!("Read");
+    assert_eq!(hook(dir.path(), "opencode", other_tool), json!({}));
+    let system = json!({"hook_event_name":"SystemPrompt","session_id":"s1"});
+    assert!(
+        hook(dir.path(), "opencode", system.clone())["system"]
+            .as_str()
+            .unwrap()
+            .contains("Scopelet auto")
+    );
+    // Unlike hook context on the other hosts, the system prompt is rebuilt every step.
+    assert_ne!(hook(dir.path(), "opencode", system.clone()), json!({}));
+    cli(dir.path()).args(["mode", "caveman"]).assert().success();
+    assert!(
+        hook(dir.path(), "opencode", system.clone())["system"]
+            .as_str()
+            .unwrap()
+            .contains("telegraphic")
+    );
+    cli(dir.path()).args(["mode", "off"]).assert().success();
+    assert_eq!(hook(dir.path(), "opencode", system), json!({}));
+    assert_eq!(hook(dir.path(), "opencode", large), json!({}));
+}
+#[test]
+fn opencode_plugin_file_drives_the_binary_from_node() {
+    let Some(node) = std::env::var_os("PATH").and_then(|path| {
+        std::env::split_paths(&path)
+            .map(|p| p.join("node"))
+            .find(|p| p.is_file())
+    }) else {
+        eprintln!("node not found; skipping the plugin smoke test");
+        return;
+    };
+    let dir = tempfile::tempdir().unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    let plugin = opencode_plugin(dir.path());
+    let script = format!(
+        r#"import {{ ScopeletPlugin }} from {};
+const hooks = await ScopeletPlugin({{ directory: process.cwd() }});
+const output = {{ title: "npm test", output: "noise\n".repeat(2000), metadata: {{}} }};
+await hooks["tool.execute.after"]({{ tool: "bash", sessionID: "s1", callID: "c1", args: {{ command: "npm test" }} }}, output);
+const small = {{ title: "ls", output: "fine\n", metadata: {{}} }};
+await hooks["tool.execute.after"]({{ tool: "bash", sessionID: "s1", callID: "c2", args: {{ command: "ls" }} }}, small);
+const system = {{ system: ["base"] }};
+await hooks["experimental.chat.system.transform"]({{ sessionID: "s1" }}, system);
+console.log(JSON.stringify({{ compressed: output.output, small: small.output, title: output.title, system }}));
+"#,
+        serde_json::to_string(&plugin).unwrap()
+    );
+    let entry = dir.path().join("smoke.mjs");
+    fs::write(&entry, script).unwrap();
+    let out = std::process::Command::new(node)
+        .arg(&entry)
+        .env("SCOPELET_CACHE_DIR", dir.path().join("cache"))
+        .env("SCOPELET_COMPACT_VERSION", "1")
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let result: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(
+        result["compressed"]
+            .as_str()
+            .unwrap()
+            .contains("[scopelet compact-v1")
+    );
+    assert_eq!(result["small"], "fine\n");
+    assert_eq!(result["title"], "npm test");
+    assert_eq!(result["system"]["system"][0], "base");
+    assert!(
+        result["system"]["system"][1]
+            .as_str()
+            .unwrap()
+            .contains("Scopelet auto")
+    );
 }

@@ -6,7 +6,7 @@
 <p align="center">
   <a href="https://github.com/maxgfr/scopelet/releases"><img src="https://img.shields.io/github/v/release/maxgfr/scopelet?style=flat&color=blue" alt="Release"></a>
   <a href="#license"><img src="https://img.shields.io/badge/license-MIT-green?style=flat" alt="MIT"></a>
-  <a href="#install"><img src="https://img.shields.io/badge/hosts-Codex_%2B_Claude_Code-orange?style=flat" alt="Codex and Claude Code"></a>
+  <a href="#install"><img src="https://img.shields.io/badge/hosts-Claude_Code_%2B_Codex_%2B_OpenCode-orange?style=flat" alt="Claude Code, Codex and OpenCode"></a>
   <a href="#the-numbers"><img src="https://img.shields.io/badge/no-extra_model_call-lightgrey?style=flat" alt="No extra model call"></a>
   <a href="https://skills.sh/maxgfr/scopelet"><img src="https://skills.sh/b/maxgfr/scopelet"></a>
 </p>
@@ -129,20 +129,22 @@ itself supports Node 18+. Release binaries cover macOS Intel/ARM and Linux
 Intel/ARM with Ubuntu 24.04-compatible glibc. Native Windows is not supported.
 
 ```sh
-npx skills add maxgfr/scopelet --skill scopelet --global -a codex claude-code -y
+npx skills add maxgfr/scopelet --skill scopelet --global -a codex claude-code opencode -y
 node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" install --agent all
 node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" doctor
 ```
 
 The first command installs the skill. The second downloads its pinned release,
-checks SHA-256, and installs the automatic hooks with **default mode enabled**.
-The third reports the installed binary and `hooks_configured` for both agents.
-The skill installer does **not** put a `scopelet` command on your PATH.
+checks SHA-256, and installs the automatic hooks for Claude Code, Codex and
+OpenCode with **default mode enabled**. The third reports the installed binary
+and `hooks_configured` for all three hosts. The skill installer does **not**
+put a `scopelet` command on your PATH.
 
 Restart active agent sessions. In Codex, review and trust the new hooks through
 `/hooks` when prompted; `doctor` checks configuration, not interactive trust.
-After activation, ordinary prompts use the hooks without `/scopelet` or
-`$scopelet`. Use `--agent codex` or `--agent claude` to enable only one host.
+OpenCode picks its plugin up at startup with no trust step. After activation,
+ordinary prompts use the hooks without `/scopelet` or `$scopelet`. Use
+`--agent claude`, `--agent codex` or `--agent opencode` to enable one host.
 
 ### Automatic or manual
 
@@ -151,8 +153,8 @@ with no invocation and no decision from the model. Manual is always available,
 and both switches are yours.
 
 - **Skip the hooks entirely.** Run only the first command and invoke
-  `/scopelet <task>` in Claude Code or `$scopelet <task>` in Codex. Rust is not
-  required for this setup.
+  `/scopelet <task>` in Claude Code or OpenCode, `$scopelet <task>` in Codex.
+  Rust is not required for this setup.
 - **Stop automatic compression later.** `mode off` keeps the hooks installed and
   idle; `uninstall --agent all` removes them and leaves the skill.
 - **Hide the skill from the model.** The shipped skill is model-invocable, so an
@@ -272,9 +274,11 @@ and document extraction. Files, logs, JSON and repository queries need neither.
 
 Codex hooks wrap recognized noninteractive shell commands, including tests,
 builds, Python scripts and simple eligible `&&` chains. Claude Code hooks
-replace Bash output when the host supplies a supported result shape. Other
-tools, unsupported shell syntax, existing output wrappers and outputs the host
-has already persisted all pass through untouched. Small automatic outputs skip
+replace Bash output when the host supplies a supported result shape. The
+OpenCode plugin replaces the `bash` tool's output from `tool.execute.after`
+under the same thresholds. Other tools, unsupported shell syntax, existing
+output wrappers and outputs the host has already persisted all pass through
+untouched. Small automatic outputs skip
 cache setup entirely, and Codex leaves a plain `cat` of a known regular file up
 to 2 KiB native.
 
@@ -333,7 +337,7 @@ Remove hooks before removing the skill:
 
 ```sh
 node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" uninstall --agent all
-npx skills remove scopelet --global -a codex claude-code -y
+npx skills remove scopelet --global -a codex claude-code opencode -y
 ```
 
 Uninstall preserves configuration backups and cached originals. Clean old

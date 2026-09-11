@@ -68,7 +68,7 @@ jobs:
       - run: cargo test --locked --target ${{ matrix.target }}
       - run: cargo build --release --locked --target ${{ matrix.target }}
       - run: target/${{ matrix.target }}/release/scopelet bench
-      - name: Verify the versioned launcher and both host installations
+      - name: Verify the versioned launcher and all three host installations
         run: python3 scripts/check_install.py --binary target/${{ matrix.target }}/release/scopelet
       - name: Stage binary and observed version
         env:

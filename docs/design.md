@@ -141,6 +141,11 @@ fields. Results carrying a nonempty `persistedOutputPath` or positive
 `persistedOutputSize` pass through before Claude renders its own preview, so the
 host cannot truncate an already compressed view again. Failure events without
 a replaceable result and unknown host/tool shapes pass through unchanged.
+OpenCode has no hook protocol; a generated plugin file mutates the `bash`
+tool's `output` string in place from `tool.execute.after`, under the same
+thresholds, by calling the pinned binary. Any plugin or binary failure leaves
+the native output untouched, and the mode text reaches the model through the
+system prompt on every step rather than through per-session hook context.
 
 A Codex AND-list (`cmd && cmd`) of at most eight individually recognized simple
 commands is supported. It is reconstructed from quoted argv in `/bin/sh`;

@@ -16,8 +16,14 @@ use std::{
 pub enum Agent {
     Claude,
     Codex,
+    Opencode,
     All,
 }
+const HOSTS: [Agent; 3] = [Agent::Claude, Agent::Codex, Agent::Opencode];
+/// OpenCode loads every `plugin/*.js` under its config directory; this marker
+/// is how install and uninstall recognise the file as ours.
+const PLUGIN_MARKER: &str = "ScopeletPlugin";
+const PLUGIN_TEMPLATE: &str = include_str!("opencode_plugin.js");
 #[derive(Clone, Copy, Default, clap::ValueEnum, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Preference {
@@ -88,8 +94,47 @@ fn host_file(agent: Agent) -> Result<PathBuf> {
             .map(PathBuf::from)
             .unwrap_or_else(|| home.join(".codex"))
             .join("hooks.json"),
+        // OpenCode honours OPENCODE_CONFIG_DIR, then the XDG config root.
+        Agent::Opencode => std::env::var_os("OPENCODE_CONFIG_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                std::env::var_os("XDG_CONFIG_HOME")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| home.join(".config"))
+                    .join("opencode")
+            })
+            .join("plugin")
+            .join("scopelet.js"),
         Agent::All => anyhow::bail!("select one host"),
     })
+}
+fn host_name(agent: Agent) -> &'static str {
+    match agent {
+        Agent::Claude => "claude",
+        Agent::Codex => "codex",
+        Agent::Opencode => "opencode",
+        Agent::All => "all",
+    }
+}
+fn plugin_source(config: &Path, binary: &Path) -> Result<String> {
+    Ok(PLUGIN_TEMPLATE
+        .replace(
+            "__SCOPELET_BINARY__",
+            &serde_json::to_string(&binary.to_string_lossy())?,
+        )
+        .replace(
+            "__SCOPELET_CONFIG__",
+            &serde_json::to_string(&config.to_string_lossy())?,
+        ))
+}
+fn backup(config: &Path, name: &str, bytes: &[u8], extension: &str) -> Result<()> {
+    let path = config
+        .join("backups")
+        .join(format!("{name}-{}.{extension}", digest(bytes)));
+    if !path.exists() {
+        write_atomic(&path, bytes)?;
+    }
+    Ok(())
 }
 fn quote(text: &str) -> String {
     format!("'{}'", text.replace('\'', "'\\''"))
@@ -120,7 +165,7 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
         }
     }
     let agents = if agent == Agent::All {
-        vec![Agent::Claude, Agent::Codex]
+        HOSTS.to_vec()
     } else {
         vec![agent]
     };
@@ -132,14 +177,34 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
             Err(e) => return Err(e.into()),
         };
+        let name = host_name(agent);
+        if agent == Agent::Opencode {
+            // A whole file rather than a JSON entry: never touch a plugin that
+            // is not ours, and keep the same backup discipline as the others.
+            ensure!(
+                old.as_deref()
+                    .is_none_or(|b| String::from_utf8_lossy(b).contains(PLUGIN_MARKER)),
+                "refusing to replace {}: not a Scopelet plugin",
+                path.display()
+            );
+            let rendered = plugin_source(&config, &binary)?;
+            if remove {
+                if let Some(bytes) = &old {
+                    backup(&config, name, bytes, "js")?;
+                    fs::remove_file(&path)?;
+                }
+            } else if old.as_deref() != Some(rendered.as_bytes()) {
+                if let Some(bytes) = &old {
+                    backup(&config, name, bytes, "js")?;
+                }
+                write_atomic(&path, rendered.as_bytes())?;
+            }
+            paths.push(path);
+            continue;
+        }
         let mut value: Value = match &old {
             Some(b) => serde_json::from_slice(b).context("invalid existing host configuration")?,
             None => json!({}),
-        };
-        let name = if agent == Agent::Codex {
-            "codex"
-        } else {
-            "claude"
         };
         let command = format!(
             "SCOPELET_CONFIG_DIR={} {} hook {name}",
@@ -196,12 +261,7 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
             != Some(&value)
         {
             if let Some(bytes) = &old {
-                let backup = config
-                    .join("backups")
-                    .join(format!("{name}-{}.json", digest(bytes)));
-                if !backup.exists() {
-                    write_atomic(&backup, bytes)?;
-                }
+                backup(&config, name, bytes, "json")?;
             }
             if old.is_some() || !remove {
                 write_atomic(&path, &updated)?;
@@ -216,18 +276,25 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
 pub fn doctor() -> Value {
     let config = root().ok();
     let binary = config.as_ref().map(|p| p.join("bin/scopelet"));
-    let files: Vec<_> = [Agent::Claude, Agent::Codex].into_iter().map(|agent| {
+    let files: Vec<_> = HOSTS.into_iter().map(|agent| {
         let path = host_file(agent).ok();
-        let name = if agent == Agent::Codex { "codex" } else { "claude" };
-        let event = if agent == Agent::Codex { "PreToolUse" } else { "PostToolUse" };
-        let value = path.as_ref().and_then(|p| fs::read(p).ok()).and_then(|b| serde_json::from_slice::<Value>(&b).ok());
-        let command = config.as_ref().zip(binary.as_ref()).map(|(c,b)| format!("SCOPELET_CONFIG_DIR={} {} hook {name}", quote(&c.to_string_lossy()), quote(&b.to_string_lossy())));
-        let configured = value.as_ref().zip(command.as_ref()).is_some_and(|(v,c)| {
-            ["SessionStart", "UserPromptSubmit", event].iter().all(|e| v["hooks"][e].as_array().is_some_and(|groups| groups.iter().any(|group| owned(group,c))))
-        });
+        let name = host_name(agent);
+        let bytes = path.as_ref().and_then(|p| fs::read(p).ok());
+        let configured = if agent == Agent::Opencode {
+            // The plugin is ours and points at the binary this doctor knows.
+            let rendered = config.as_ref().zip(binary.as_ref()).and_then(|(c, b)| plugin_source(c, b).ok());
+            bytes.as_deref().zip(rendered.as_deref()).is_some_and(|(b, r)| b == r.as_bytes())
+        } else {
+            let event = if agent == Agent::Codex { "PreToolUse" } else { "PostToolUse" };
+            let value = bytes.as_deref().and_then(|b| serde_json::from_slice::<Value>(b).ok());
+            let command = config.as_ref().zip(binary.as_ref()).map(|(c,b)| format!("SCOPELET_CONFIG_DIR={} {} hook {name}", quote(&c.to_string_lossy()), quote(&b.to_string_lossy())));
+            value.as_ref().zip(command.as_ref()).is_some_and(|(v,c)| {
+                ["SessionStart", "UserPromptSubmit", event].iter().all(|e| v["hooks"][e].as_array().is_some_and(|groups| groups.iter().any(|group| owned(group,c))))
+            })
+        };
         json!({"host":name,"config":path,"hooks_configured":configured,"config_exists":path.as_ref().is_some_and(|p|p.is_file())})
     }).collect();
-    json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash PostToolUse; Codex simple noninteractive Bash PreToolUse; hook trust and host versions must be verified"})
+    json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash PostToolUse; Codex simple noninteractive Bash PreToolUse; OpenCode bash tool.execute.after plugin; hook trust and host versions must be verified"})
 }
 
 /// A deliberately small shell grammar. Any expansion, pipeline or control operator passes through.
@@ -333,7 +400,10 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
         return Ok(json!({}));
     }
     write_atomic(&state, &current)?;
-    let text = match mode {
+    Ok(json!({"hookSpecificOutput":{"hookEventName":name,"additionalContext":guidance(mode)}}))
+}
+fn guidance(mode: Preference) -> &'static str {
+    match mode {
         Preference::Default => {
             "Scopelet auto: for routine edits, inspect relevant code and existing checks; preserve their intended behavior and verify the change. Report outcome and validation in 1–3 short sentences. Expand for requested detail, uncertainty or next steps. Recover partial evidence when needed."
         }
@@ -341,8 +411,38 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
             "Scopelet caveman: routine replies target 30 words, telegraphic, in the user's language. Preserve errors, qualifications, negation, numbers and next actions; exceed the target when needed or requested. Inspect relevant code and existing checks; verify intended behavior. Documents use normal prose. Recover partial evidence when needed."
         }
         Preference::Off => "Scopelet is off. Resume normal tools and response style.",
+    }
+}
+/// OpenCode's plugin sends two events: a system-prompt pass (rebuilt on every
+/// model step, so no per-session state) and one bash result to compress.
+fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Result<Value> {
+    let name = event["hook_event_name"].as_str().unwrap_or("");
+    if mode == Preference::Off {
+        return Ok(json!({}));
+    }
+    if name == "SystemPrompt" {
+        return Ok(json!({"system": guidance(mode)}));
+    }
+    if name != "ToolOutput" || event["tool_name"] != "Bash" {
+        return Ok(json!({}));
+    }
+    if event["tool_input"]["command"]
+        .as_str()
+        .is_some_and(|s| s.contains("scopelet") || s.contains("rtk"))
+    {
+        return Ok(json!({}));
+    }
+    let Some(raw) = event["tool_response"]["output"].as_str() else {
+        return Ok(json!({}));
     };
-    Ok(json!({"hookSpecificOutput":{"hookEventName":name,"additionalContext":text}}))
+    if raw.len() <= compress::SMALL || raw.len() > MAX_INPUT {
+        return Ok(json!({}));
+    }
+    let small = compress::automatic_lazy(raw.as_bytes(), None, 4096, version)?;
+    if small.as_ref() == raw.as_bytes() {
+        return Ok(json!({}));
+    }
+    Ok(json!({"output": String::from_utf8(small.into_owned())?}))
 }
 pub fn hook_stdin(agent: Agent) -> Result<Value> {
     hook_stdin_version(agent, compress::Version::configured(None)?)
@@ -362,6 +462,9 @@ pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
 }
 fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Result<Value> {
     let mode = preference()?;
+    if agent == Agent::Opencode {
+        return opencode(event, mode, version);
+    }
     let name = event["hook_event_name"].as_str().unwrap_or("");
     if matches!(name, "SessionStart" | "UserPromptSubmit") {
         return context(event, mode);

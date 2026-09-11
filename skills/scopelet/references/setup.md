@@ -1,9 +1,9 @@
 # Setup
 
-Install globally for both agents (Node 22.20+ for the skills installer):
+Install globally for all three hosts (Node 22.20+ for the skills installer):
 
 ```sh
-npx skills add maxgfr/scopelet --skill scopelet --global -a codex claude-code -y
+npx skills add maxgfr/scopelet --skill scopelet --global -a codex claude-code opencode -y
 ```
 
 For automatic operation, activate the downloaded binary directly through the
@@ -14,11 +14,12 @@ node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" install --agent all
 node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" doctor
 ```
 
-Check `binary_installed` and both `hooks_configured` values. Restart existing
-sessions and review new hooks with Codex `/hooks`; configuration checks cannot
-verify interactive trust. First installation enables default mode.
+Check `binary_installed` and the three `hooks_configured` values. Restart
+existing sessions and review new hooks with Codex `/hooks`; configuration checks
+cannot verify interactive trust. OpenCode loads the plugin at startup with no
+trust step. First installation enables default mode.
 
-Invoke `/scopelet <task>` in Claude Code or `$scopelet <task>` in Codex.
+Invoke `/scopelet <task>` in Claude Code or OpenCode, `$scopelet <task>` in Codex.
 Explicit invocation accesses advanced queries; installed hooks run independently.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
 The launcher installs Scopelet **0.4.1** into the user's cache, downloading the
@@ -57,7 +58,7 @@ ordinary searches and Git staging, including when the cache is inside a reposito
 Existing ignore rules and read-only caches are preserved; unwritable directories
 may lack these markers; explicit no-ignore searches can still include it.
 
-Remove the skill using `npx skills remove scopelet --global -a codex claude-code -y`; remove
+Remove the skill using `npx skills remove scopelet --global -a codex claude-code opencode -y`; remove
 a Cargo install with `cargo uninstall scopelet`. The launcher cache can be
 deleted separately. Remove automatic hooks first with `scopelet uninstall --agent all`.
 The binary and local cache can be removed separately. Scopelet configures no
@@ -74,13 +75,24 @@ scopelet mode off
 scopelet uninstall --agent all
 ```
 
-Install accepts `claude`, `codex`, or `all`. It copies the resolved binary to
-`$XDG_CONFIG_HOME/scopelet/bin/scopelet` (otherwise `~/.config/scopelet`), merges
-user hooks, and backs up replaced configuration bytes. `SCOPELET_CONFIG_DIR`
+Install accepts `claude`, `codex`, `opencode`, or `all`. It copies the resolved
+binary to `$XDG_CONFIG_HOME/scopelet/bin/scopelet` (otherwise `~/.config/scopelet`),
+merges user hooks, and backs up replaced configuration bytes. `SCOPELET_CONFIG_DIR`
 overrides that root. Reinstall after upgrading the binary. Existing sessions
 need restarting; in Codex review the hooks with `/hooks` when prompted.
-Mode changes apply at the next prompt. `off` leaves hooks installed but disables
-compression; uninstall removes only matching Scopelet hooks and keeps backups.
+
+OpenCode has no hooks file: install writes a self-contained plugin to
+`plugin/scopelet.js` under `OPENCODE_CONFIG_DIR`, otherwise
+`$XDG_CONFIG_HOME/opencode` (`~/.config/opencode`). The plugin calls the pinned
+binary from `tool.execute.after` for the `bash` tool and adds the mode text to
+the system prompt on every step, so a mode change applies immediately there.
+Install refuses to replace a plugin file it did not write, and uninstall removes
+only its own file; backups land in the Scopelet config directory like the
+others.
+
+Mode changes apply at the next prompt (the next model step in OpenCode). `off`
+leaves hooks installed but disables compression; uninstall removes only
+matching Scopelet hooks and keeps backups.
 
 Default asks for relevant code and existing checks to be inspected before a
 routine edit is verified, then reports outcome and validation in 1–3 short
@@ -90,6 +102,12 @@ language. Required information or requested detail can exceed these targets;
 saved documents use normal prose. These are preferences, not output truncation
 or changes to the model's reasoning effort.
 
+OpenCode's plugin replaces the `bash` tool's `output` string in place when the
+same thresholds apply; other tools, MCP results and failures pass through, and
+any plugin or binary error leaves the native output untouched. OpenCode caps
+long output before the plugin sees it and writes the whole result to its
+`tool-output` directory; the view keeps that "Full output saved to" line, so
+`expand` recovers what OpenCode handed over and the file holds the rest.
 Claude Code uses `PostToolUse.updatedToolOutput` for Bash results with known
 stdout/stderr fields. Other fields survive unchanged. Failure events without a
 replaceable output, images and unknown envelopes pass through. Codex uses
