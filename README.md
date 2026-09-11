@@ -196,22 +196,26 @@ and above it a view is only substituted when it saves at least 512 bytes and
 
 ### Faster
 
-Median over thirty runs, cold application cache, macOS arm64, measured by
-`bench/performance.py` and `bench/content.py` on the shipped binary.
+<!-- speed-table:start -->
+Median over 30 runs, cold application cache, macOS arm64, Scopelet
+0.5.1, measured by `bench/publish.py` on the binary that shipped.
 
 | Operation | Median |
 | --- | ---: |
 | Compress a 136 KB log | **5 ms** |
-| Compress a 3 MB log | **26 ms** |
-| Repository query over 400 files | **58 ms** |
-| Compress a 32 MiB stream | 175 ms |
+| Compress a 3 MB log | **15 ms** |
+| Repository query over 400 files | **57 ms** |
+| Compress a 32 MiB stream | **62 ms** |
+<!-- speed-table:end -->
+
+These figures are replaced on every release: `bench/publish.py` measures the
+new binary, writes the two reports under `bench/results/` and rewrites this
+table. No older version's numbers are kept anywhere in the repository.
 
 Every stored item is a synced temporary renamed into place, and every read is
 checked against its content hash, so an interrupted write yields a missing or
-rejected item, never a wrong one. Sending the same output twice now reuses the
-stored original by address instead of reading and re-hashing it: the 32 MiB
-stream takes 172 ms on a warm cache where it used to take 287 ms and 33 MB
-more memory.
+rejected item, never a wrong one. Sending the same output twice reuses the
+stored original by address instead of reading and re-hashing it.
 
 > [!IMPORTANT]
 > **Bytes are not tokens, and none of the numbers above is a bill.** Earlier
