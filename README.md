@@ -198,14 +198,14 @@ and above it a view is only substituted when it saves at least 512 bytes and
 
 <!-- speed-table:start -->
 Median over 30 runs, cold application cache, macOS arm64, Scopelet
-0.5.1, measured by `bench/publish.py` on the binary that shipped.
+0.5.3, measured by `bench/publish.py` on the binary that shipped.
 
 | Operation | Median |
 | --- | ---: |
-| Compress a 136 KB log | **5 ms** |
-| Compress a 3 MB log | **15 ms** |
-| Repository query over 400 files | **57 ms** |
-| Compress a 32 MiB stream | **62 ms** |
+| Compress a 136 KB log | **7 ms** |
+| Compress a 3 MB log | **29 ms** |
+| Repository query over 400 files | **86 ms** |
+| Compress a 32 MiB stream | 117 ms |
 <!-- speed-table:end -->
 
 These figures are replaced on every release: `bench/publish.py` measures the
@@ -259,7 +259,7 @@ scopelet run --auto -- npm test
 For a standalone `scopelet` command, install with **Rust 1.88+**:
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v0.5.2 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v0.5.3 --locked
 ```
 
 Without Cargo, replace `scopelet` with
