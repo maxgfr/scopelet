@@ -146,6 +146,23 @@ OpenCode picks its plugin up at startup with no trust step. After activation,
 ordinary prompts use the hooks without `/scopelet` or `$scopelet`. Use
 `--agent claude`, `--agent codex` or `--agent opencode` to enable one host.
 
+### Homebrew
+
+The same macOS and Linux binary ships in a tap. This is the one install that
+puts a `scopelet` command on your PATH, and it needs no Node at all: the binary
+installs its own hooks.
+
+```sh
+brew install maxgfr/tap/scopelet
+scopelet install --agent all
+scopelet doctor
+```
+
+`install` copies the binary to `~/.config/scopelet/bin/scopelet` and points the
+hooks at that copy, so re-run it after `brew upgrade scopelet`. The formula
+carries the binary only: add the skill with the `npx skills add` line above if
+you also want `/scopelet` and `$scopelet`.
+
 ### Automatic or manual
 
 Scopelet is **automatic by default**: the hooks compress on every large output,

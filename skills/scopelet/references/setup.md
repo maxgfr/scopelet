@@ -32,8 +32,14 @@ In the commands below, replace `scopelet` with
 An independently installed binary is also supported:
 
 ```sh
+brew install maxgfr/tap/scopelet
 cargo install --git https://github.com/maxgfr/scopelet --tag v0.5.4 --locked
 ```
+
+Homebrew is the one install that puts `scopelet` on PATH and needs no Node.
+`scopelet install --agent all` then copies that binary to
+`~/.config/scopelet/bin/scopelet`, which the hooks call, so re-run it after
+`brew upgrade scopelet`. The formula does not carry the skill.
 
 Optional adapters are external dependencies, not bundled copies:
 
