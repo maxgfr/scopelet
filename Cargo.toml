@@ -1,6 +1,6 @@
 [package]
 name = "scopelet"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 rust-version = "1.88"
 description = "Compute before you send: bounded evidence for coding agents"
