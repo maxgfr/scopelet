@@ -177,9 +177,7 @@ impl Store {
         let hash = hash_json(value, temp.as_file_mut())?;
         let id = format!("artifact:{hash}");
         let path = self.location(&id)?;
-        if path.exists() {
-            self.verify(&id)?;
-            self.touch(&id)?;
+        if self.reuse(&path, temp.as_file().metadata()?.len())? {
             return Ok(id);
         }
         flush(temp.as_file())?;
@@ -190,6 +188,34 @@ impl Store {
             self.verify(&id)?;
         }
         Ok(id)
+    }
+
+    /// Reuse an already published item instead of re-reading it.
+    ///
+    /// The path is the item's content address, so a regular file of the right
+    /// length is the item; every read still checks the hash, so a damaged file
+    /// is rejected when it is used, never returned. Re-reading and re-hashing
+    /// it here cost as much as the original capture (a second pass over a
+    /// 32 MiB stream) for a check that reads already make. A file of the wrong
+    /// length is an interrupted or truncated publication: drop it and let the
+    /// caller publish the complete item again.
+    fn reuse(&self, path: &Path, length: u64) -> Result<bool> {
+        let metadata = match fs::symlink_metadata(path) {
+            Ok(metadata) => metadata,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+            Err(error) => return Err(error.into()),
+        };
+        ensure!(
+            !metadata.file_type().is_symlink(),
+            "cache item is a symlink"
+        );
+        ensure!(metadata.is_file(), "cache item is not a regular file");
+        if metadata.len() != length {
+            fs::remove_file(path)?;
+            return Ok(false);
+        }
+        fs::File::open(path)?.set_modified(SystemTime::now())?;
+        Ok(true)
     }
 
     fn verify(&self, id: &str) -> Result<()> {
@@ -274,9 +300,7 @@ impl Store {
         );
         let id = format!("{kind}:{}", digest(bytes));
         let path = self.location(&id)?;
-        if path.exists() {
-            ensure!(self.get(&id)? == bytes, "cache integrity mismatch");
-            fs::File::open(&path)?.set_modified(SystemTime::now())?;
+        if self.reuse(&path, bytes.len() as u64)? {
             return Ok(id);
         }
         let mut temp = tempfile::Builder::new()

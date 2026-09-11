@@ -43,7 +43,7 @@ the external engine's envelope is retained separately.
 Limits: requests 1 MiB, 32 operations, each file 32 MiB, repository scan 20000
 files/128 MiB, stored item 256 MiB, command capture 32 MiB per stream, default
 command timeout 120 seconds (maximum 3600). New store directories are private on
-Unix; existing directory permissions are preserved; writes are atomic (a synced temporary renamed into place, data flushed to the device without forcing a full disk cache flush) and content hashes are checked on reads, so an interrupted write yields a missing or rejected item, never a wrong one. Storage subdirectories get local `.ignore` and `.gitignore` markers so ordinary searches and Git staging do not re-ingest saved evidence. Existing markers and read-only caches are preserved; marker creation is skipped when permissions forbid it; explicit no-ignore searches can still include the cache. Storage grows
+Unix; existing directory permissions are preserved; writes are atomic (a synced temporary renamed into place, data flushed to the device without forcing a full disk cache flush) and content hashes are checked on reads, so an interrupted write yields a missing or rejected item, never a wrong one. Publishing bytes that are already stored reuses the existing item by address and length without re-reading it; a stored item of the wrong length is replaced. Storage subdirectories get local `.ignore` and `.gitignore` markers so ordinary searches and Git staging do not re-ingest saved evidence. Existing markers and read-only caches are preserved; marker creation is skipped when permissions forbid it; explicit no-ignore searches can still include the cache. Storage grows
 with distinct observations until explicit cleanup; no silent eviction expires
 active references. Cleanup retains blobs referenced by surviving artifacts, and
 paging an artifact does not store it again. Only content-hash-named files are
@@ -169,14 +169,14 @@ small/binary inputs and persisted previews perform no cache writes. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact v1 JSON
 serialization. A storage/compression failure returns native captured bytes.
-Explicit queries still report storage errors. Compact-v2 became the CLI and hook default following the bounded
-[Luna rollout comparison](performance-2026-09-10.md), and compact-v3 replaced it
-as the default (see below); v2 remains selectable and byte-identical. Legacy
+Explicit queries still report storage errors. Compact-v2 became the CLI and hook default after a bounded live rollout
+comparison, and compact-v3 replaced it as the default (see below); v2 remains
+selectable and byte-identical. Legacy
 library helpers `automatic` and `compact` retain v1 behavior.
 
 `--compact-version 2` selects compact-v2; `SCOPELET_COMPACT_VERSION=2` selects it
-for automatic hooks too. An explicit CLI version takes precedence. Only `1` and
-`2` are accepted. Version 2 retains complete tables when they fit, otherwise
+for automatic hooks too. An explicit CLI version takes precedence. Only `1`, `2`
+and `3` are accepted. Version 2 retains complete tables when they fit, otherwise
 selects whole rows with `indices` (zero-based dataset positions), `total_records`
 and positional `record_sources` when source labels differ. Columns require
 identical keys across every row, including missing/null distinctions. Selected

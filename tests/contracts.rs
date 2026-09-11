@@ -149,6 +149,37 @@ fn corrupt_snapshot_is_rejected() {
 }
 
 #[test]
+fn republishing_stored_bytes_reuses_the_item_and_replaces_a_truncated_one() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(Some(dir.path().to_path_buf())).unwrap();
+    let bytes = b"original evidence\n".repeat(64);
+    let id = store.put("blob", &bytes).unwrap();
+    let path = dir.path().join("blobs").join(id.split(':').nth(1).unwrap());
+    let published = fs::metadata(&path).unwrap().modified().unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    // Same address and length: the item is reused and marked as used.
+    assert_eq!(store.put("blob", &bytes).unwrap(), id);
+    assert!(fs::metadata(&path).unwrap().modified().unwrap() > published);
+    assert_eq!(store.get(&id).unwrap(), bytes);
+    // An interrupted publication leaves a short file: it is replaced, not trusted.
+    fs::write(&path, &bytes[..7]).unwrap();
+    assert_eq!(store.put("blob", &bytes).unwrap(), id);
+    assert_eq!(store.get(&id).unwrap(), bytes);
+    // A same-length corruption is still caught where it matters: on read.
+    let mut altered = bytes.clone();
+    altered[0] ^= 1;
+    fs::write(&path, &altered).unwrap();
+    assert_eq!(store.put("blob", &bytes).unwrap(), id);
+    assert!(
+        store
+            .get(&id)
+            .unwrap_err()
+            .to_string()
+            .contains("integrity")
+    );
+}
+
+#[test]
 fn empty_results_are_complete_with_a_saved_artifact() {
     let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join("x.json");
