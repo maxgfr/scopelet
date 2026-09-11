@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Offline release-binary comparisons. No models. Fresh, immutable output directory."""
+"""Offline engine measurements. No models. Fresh, immutable output directory.
+
+Measures one or more Scopelet binaries on the same synthetic workloads: a 3 MB
+log, a 12,000-row JSONL table, an aggregate query, a 400-file repository search,
+a paged recovery from a stored original and, with --stress, a stream just under
+the 32 MiB capture limit. Arms alternate order every repetition so neither
+binary always runs on a warm OS cache. Wall time and peak resident size come
+from /usr/bin/time. Every arm must produce identical bytes on every case, so a
+candidate that changes the output fails the run instead of looking faster.
+"""
 from __future__ import annotations
 import argparse
 import hashlib
@@ -48,10 +57,9 @@ def fixtures(root, stress=False):
     return cases
 
 
-def measure(binary, args, stdin, cache, version):
+def measure(binary, args, stdin, cache):
     command=[str(binary),'--cache-dir',str(cache),*args]
     env=os.environ.copy();env.pop('SCOPELET_COMPACT_VERSION',None)
-    if version is not None:command+=['--compact-version',str(version)]
     timer=['/usr/bin/time','-l'] if platform.system()=='Darwin' else ['/usr/bin/time','-v']
     start=time.perf_counter()
     with open(stdin or os.devnull,'rb') as source:
@@ -72,20 +80,34 @@ def summarize(samples):
             'failures':sum(s['exit_code'] != 0 for s in samples),'samples':len(samples)}
 
 
+def binary_version(path):
+    return subprocess.run([str(path),'--version'],capture_output=True,text=True,timeout=30).stdout.strip()
+
+
+def parse_arm(text):
+    """`NAME=PATH`, or a bare path named after its file."""
+    name, sep, path = text.partition('=')
+    if not sep:
+        name, path = Path(text).name, text
+    if not name or not path:
+        raise argparse.ArgumentTypeError(f'expected NAME=PATH, got {text!r}')
+    return name, Path(path)
+
+
 def run(options):
     out=options.out.resolve();out.mkdir(parents=True,exist_ok=False)
     frozen=out/'frozen';frozen.mkdir()
+    names=[name for name,_ in options.binary]
+    if len(set(names))!=len(names):raise ValueError('arm names must be unique')
     binaries={}
-    for name, source in [('baseline',options.baseline),('candidate',options.candidate)]:
+    for name, source in options.binary:
         binaries[name]=frozen/name;shutil.copy2(source,binaries[name])
-    baseline_version = getattr(options, 'baseline_version', None)
-    candidate_version = getattr(options, 'candidate_version', None) or 1
-    comparison_arm = 'candidate_v2' if baseline_version == 2 else 'candidate'
+    versions={name:binary_version(path) for name,path in binaries.items()}
     report={'kind':'offline process measurements; not model tokens','platform':platform.platform(),
-            'baseline_compact_version': baseline_version, 'candidate_compact_version': candidate_version, 'comparison_arm': comparison_arm,
-            'warmups':options.warmups,'repetitions':options.repetitions,'stress':options.stress,
+            'arms':names,'warmups':options.warmups,'repetitions':options.repetitions,'stress':options.stress,
             'cache_note':'cold means empty application cache, not flushed OS page cache',
-            'binary_sha256':{k:sha(p.read_bytes()) for k,p in binaries.items()},'cases':{},'v1_mismatches':[], 'output_mismatches':[]}
+            'binary_sha256':{k:sha(p.read_bytes()) for k,p in binaries.items()},'binary_version':versions,
+            'cases':{},'output_mismatches':[]}
     with tempfile.TemporaryDirectory(prefix='scopelet-perf-') as temp:
         root=Path(temp);cases=fixtures(root/'fixtures',options.stress)
         if options.cases:
@@ -96,12 +118,11 @@ def run(options):
         for name,(args,stdin) in cases.items():
             for state in ['cold','warm']:
                 key=f'{name}/{state}';report['cases'][key]={}
-                hashes={}
                 for rep in range(-options.warmups,options.repetitions):
-                    arms=['baseline','candidate','candidate_v2']
+                    arms=list(names)
                     if rep%2:arms.reverse()
+                    hashes={}
                     for arm in arms:
-                        binary=binaries['baseline' if arm=='baseline' else 'candidate'];version=baseline_version if arm=='baseline' else (2 if arm=='candidate_v2' else candidate_version)
                         cache=root/f'cache-{arm}-{name}-{state}'
                         if state=='cold':shutil.rmtree(cache,ignore_errors=True)
                         actual_args=args
@@ -110,19 +131,16 @@ def run(options):
                             (cache/'blobs').mkdir(parents=True,exist_ok=True)
                             (cache/'blobs'/blob).write_bytes(raw)
                             actual_args=['expand','blob:'+blob,'--start','70000','--end','70004']
-                        sample,stdout=measure(binary,actual_args,stdin,cache,version)
+                        sample,stdout=measure(binaries[arm],actual_args,stdin,cache)
                         if sample['exit_code']:
                             (out/f'{name}-{state}-{arm}-failure.stdout').write_bytes(stdout)
+                        hashes[arm]=sample['stdout_sha256']
                         if rep>=0:
                             report['cases'][key].setdefault(arm,{'samples':[]})['samples'].append(sample)
-                            hashes[arm]=sample['stdout_sha256']
                         if rep==options.repetitions-1:
                             report['cases'][key][arm]['cache_bytes']=sum(p.stat().st_size for p in cache.rglob('*') if p.is_file())
-                    if rep>=0 and hashes['baseline']!=hashes[comparison_arm]:
-                        mismatch = {'case':key,'repetition':rep}
-                        report['output_mismatches'].append(mismatch)
-                        if comparison_arm == 'candidate':
-                            report['v1_mismatches'].append(mismatch)
+                    if rep>=0 and len(set(hashes.values()))>1:
+                        report['output_mismatches'].append({'case':key,'repetition':rep,'stdout_sha256':hashes})
                 for cell in report['cases'][key].values():cell['summary']=summarize(cell['samples'])
                 print(json.dumps({'case':key,**{a:c['summary'] for a,c in report['cases'][key].items()}}),flush=True)
                 (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -130,10 +148,9 @@ def run(options):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--baseline',type=Path,required=True);p.add_argument('--candidate',type=Path,required=True)
-    p.add_argument('--baseline-version', type=int, choices=(1, 2, 3), help='Pin the reference presentation; use 2 for released 0.3.0.')
-    p.add_argument('--candidate-version', type=int, choices=(1, 2, 3), default=1, help='Presentation measured by the candidate arm; candidate_v2 always measures 2.')
+    p=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument('--binary',type=parse_arm,action='append',required=True,metavar='NAME=PATH',
+                   help='an arm to measure; repeat to compare binaries on identical inputs')
     p.add_argument('--out',type=Path,required=True);p.add_argument('--repetitions',type=int,default=30)
     p.add_argument('--warmups',type=int,default=5);p.add_argument('--stress',action='store_true')
     p.add_argument('--cases',help='comma-separated subset for a component follow-up')

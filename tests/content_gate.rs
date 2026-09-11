@@ -137,7 +137,7 @@ fn fixtures() -> BTreeMap<&'static str, Fixture> {
 fn recorded_hashes() -> BTreeMap<String, String> {
     let path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/bench/results/current-content-2026-09-10.json"
+        "/bench/results/content-2026-09-11.json"
     );
     let report: serde_json::Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
     report["cases"]

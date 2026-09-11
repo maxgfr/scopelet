@@ -192,38 +192,36 @@ Small outputs are the last row on purpose. Under 2 KiB nothing happens at all,
 and above it a view is only substituted when it saves at least 512 bytes and
 20% including its own metadata. Scopelet declining to act is a normal outcome.
 [Benchmark reproduction](bench/README.md) ·
-[verification history](docs/verification.md).
+[what is verified](docs/verification.md).
 
 ### Faster
 
-Median over thirty runs, cold application cache, macOS arm64.
+Median over thirty runs, cold application cache, macOS arm64, measured by
+`bench/performance.py` and `bench/content.py` on the shipped binary.
 
 | Operation | Median |
 | --- | ---: |
-| Compress a 136 KB log | **6 ms** |
-| Repository query over 400 files | **64 ms** |
-| Compress a 32 MiB stream | 182 ms |
+| Compress a 136 KB log | **5 ms** |
+| Compress a 3 MB log | **26 ms** |
+| Repository query over 400 files | **58 ms** |
+| Compress a 32 MiB stream | 175 ms |
 
-Repository queries no longer force a full disk cache flush on every stored
-item. Publication is still a synced temporary renamed into place and every read
-is still checked against its content hash, so an interrupted write yields a
-missing or rejected item, never a wrong one.
-
-The 32 MiB row is the honest one. The same binary asked for the older compact
-format does that stream in 164 ms, so the per-line presentation work costs
-about 11% there. On a 3 MB log the same work is roughly 6 ms, in exchange for
-3963 bytes of output becoming 663.
+Every stored item is a synced temporary renamed into place, and every read is
+checked against its content hash, so an interrupted write yields a missing or
+rejected item, never a wrong one. Sending the same output twice now reuses the
+stored original by address instead of reading and re-hashing it: the 32 MiB
+stream takes 172 ms on a warm cache where it used to take 287 ms and 33 MB
+more memory.
 
 > [!IMPORTANT]
-> **Bytes are not tokens, and none of the numbers above is a bill.** An
-> 18-session campaign on Claude Haiku found no functional regression and no
-> token regression it could detect, and it did **not** establish a token
-> saving: only one of the three tasks produced output large enough to compress
-> at all, and the run-to-run spread reached 1.77×, wider than every difference
-> measured. Whole-session cost depends on your host, model and task. Measure
-> your own setup before you tell anyone a percentage.
-> [Full accounting](docs/candidate-v3-2026-09-10.md) ·
-> [comparison against other tools](docs/current-comparison-2026-09-10.md).
+> **Bytes are not tokens, and none of the numbers above is a bill.** Earlier
+> live-agent campaigns found no functional regression but could not measure a
+> token saving above their own run-to-run noise, and they ran against binaries
+> that no longer ship, so they were removed rather than kept as stale evidence.
+> Whole-session cost depends on your host, model and task. Measure your own
+> setup before you tell anyone a percentage.
+> [What is verified](docs/verification.md) ·
+> [benchmark reproduction](bench/README.md).
 
 ## Nothing is lost
 
