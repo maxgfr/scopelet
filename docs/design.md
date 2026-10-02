@@ -14,7 +14,12 @@ Source loading owns scope and freshness. A dataset carries full records,
 snapshots, the number of examined files/streams and observed skip counts.
 Filesystem ignores define the search domain; ignored descendants are not
 enumerated and their count is not guessed. Read failures and resource caps make
-the scan incomplete. External syntactic indexes and document extractors do not
+the scan incomplete. A repository is enumerated in path order from metadata,
+and the file and byte caps apply in that order; files are then read, checked,
+hashed and searched on up to eight worker threads (`SCOPELET_WORKERS` sets the
+count) and assembled in path order, so the result and its artifact ID do not
+depend on scheduling. Every scanned file gets a snapshot naming its content
+hash, but only a file that produced a record has its original stored. External syntactic indexes and document extractors do not
 certify completeness, so their datasets explicitly say so.
 
 Operations own transformations. A count is the number of records at that stage,
@@ -51,8 +56,15 @@ records, so saving a query over it stores a self-contained schema-1 artifact.
 `expand --manifest` reports `artifact_schema_version` when it is not 1. An
 older binary rejects a schema-2 artifact (`missing field records`) rather than
 misreading it. `expand` retrieves an immutable snapshot; an artifact used as a
-new query source checks all recorded local source hashes first. A changed or
+new query source checks recorded local source hashes first. A changed or
 deleted local source fails that query, while its old blob remains recoverable.
+When every record was read straight from a local file (a repository scan),
+only those files must be unchanged; another scanned file that changed is
+counted in `skipped.changed_since_scan` with a note. Computed records and
+extractions depend on every source, which must all be unchanged. Recovery
+search reads an original that was not stored from its local file while that
+file still has the recorded hash; otherwise it counts
+`skipped.snapshot_not_retained` and marks the search incomplete.
 Web extraction snapshots describe extracted text, not original HTML/PDF bytes;
 the external engine's envelope is retained separately.
 

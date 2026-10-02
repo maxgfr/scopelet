@@ -40,62 +40,80 @@ pub(crate) fn load_search(
                 .follow_links(false)
                 .sort_by_file_path(|a, b| a.cmp(b));
             data.notes.push("Scope excludes hidden, ignored and binary files; symlinks are not followed. Counts describe this scope, not every file on disk.".into());
-            let mut bytes = 0;
+            // Enumerate in path order from metadata alone; the caps apply in
+            // that order, so the scanned scope never depends on timing.
+            let mut candidates = Vec::new();
+            let (mut files, mut bytes) = (0usize, 0u64);
+            let mut interrupted = false;
             for entry in walk.build() {
                 if cancel.load(std::sync::atomic::Ordering::SeqCst) {
-                    data.incomplete("scan interrupted".into());
+                    interrupted = true;
                     break;
                 }
                 let entry = match entry {
                     Ok(e) => e,
                     Err(_) => {
-                        data.skip("unreadable_entry");
-                        data.incomplete("some entries could not be read".into());
+                        candidates.push(Candidate::Entry);
                         continue;
                     }
                 };
                 if !entry.file_type().is_some_and(|t| t.is_file()) {
                     continue;
                 }
-                if data.examined >= 20000 || bytes >= 128 * 1024 * 1024 {
-                    data.incomplete(
-                        "scan stopped at 20000 files or 128 MiB; narrow the scope".into(),
-                    );
+                if files >= 20000 || bytes >= 128 * 1024 * 1024 {
+                    candidates.push(Candidate::Capped);
                     break;
                 }
-                data.examined += 1;
-                let raw = match read_bounded(entry.path(), MAX_INPUT) {
-                    Ok(raw) => raw,
-                    Err(_) => {
-                        data.skip("unreadable_or_oversize");
-                        data.incomplete("some files unreadable or over 32 MiB".into());
-                        continue;
-                    }
-                };
-                bytes += raw.len();
-                if raw.contains(&0) || std::str::from_utf8(&raw).is_err() {
-                    data.skip("binary_or_non_utf8");
-                    continue;
-                }
-                let name = entry
-                    .path()
-                    .strip_prefix(&root)?
-                    .to_string_lossy()
-                    .into_owned();
-                let mut file = Dataset::default();
-                ingest(
-                    &mut file,
-                    store,
-                    &name,
-                    raw,
-                    Some(entry.path().to_string_lossy().into_owned()),
-                    Format::Text,
-                )?;
-                data.snapshots.extend(file.snapshots);
-                data.records.extend(match search {
-                    Some(search) => search.apply(file.records),
-                    None => file.records,
+                files += 1;
+                // Oversize files are not read and never counted toward the cap.
+                let size = entry
+                    .metadata()
+                    .map(|m| m.len())
+                    .ok()
+                    .filter(|&s| s <= MAX_INPUT as u64);
+                bytes += size.unwrap_or(0);
+                candidates.push(Candidate::File {
+                    name: entry
+                        .path()
+                        .strip_prefix(&root)?
+                        .to_string_lossy()
+                        .into_owned(),
+                    path: entry.into_path(),
+                    readable: size.is_some(),
                 });
+            }
+            let outcomes = scan(&candidates, store, search, &cancel)?;
+            for (candidate, outcome) in candidates.into_iter().zip(outcomes) {
+                match (candidate, outcome) {
+                    (Candidate::Entry, _) => {
+                        data.skip("unreadable_entry");
+                        data.incomplete("some entries could not be read".into());
+                    }
+                    (Candidate::Capped, _) => data.incomplete(
+                        "scan stopped at 20000 files or 128 MiB; narrow the scope".into(),
+                    ),
+                    (Candidate::File { .. }, None) => {
+                        interrupted = true;
+                        break;
+                    }
+                    (Candidate::File { .. }, Some(outcome)) => {
+                        data.examined += 1;
+                        match outcome {
+                            Outcome::Unreadable => {
+                                data.skip("unreadable_or_oversize");
+                                data.incomplete("some files unreadable or over 32 MiB".into());
+                            }
+                            Outcome::Binary => data.skip("binary_or_non_utf8"),
+                            Outcome::Text { snapshot, records } => {
+                                data.snapshots.push(snapshot);
+                                data.records.extend(records);
+                            }
+                        }
+                    }
+                }
+            }
+            if interrupted {
+                data.incomplete("scan interrupted".into());
             }
         }
         Source::File { path, format } => {
@@ -115,15 +133,47 @@ pub(crate) fn load_search(
             let id = &store.resolve(id)?;
             if id.starts_with("artifact:") {
                 data = store.dataset(id)?;
+                // Records must still describe their sources. A scanned file
+                // that contributed no record only widens the scope; its
+                // change is reported, not fatal.
+                let used: std::collections::BTreeSet<&str> = data
+                    .records
+                    .iter()
+                    .filter_map(|r| r.blob.as_deref())
+                    .collect();
+                // Only records read straight from local files (a repository
+                // scan) are independent of the other files. A computed record
+                // (a count, a group) or an extraction depends on every source.
+                let local: std::collections::BTreeSet<&str> = data
+                    .snapshots
+                    .iter()
+                    .filter(|s| s.local_path.is_some())
+                    .map(|s| s.blob.as_str())
+                    .collect();
+                let strict = !data
+                    .records
+                    .iter()
+                    .all(|r| r.blob.as_deref().is_some_and(|b| local.contains(b)));
+                let mut changed = 0;
                 for s in &data.snapshots {
                     if let Some(path) = &s.local_path {
                         let unchanged = read_bounded(Path::new(path), MAX_INPUT)
                             .is_ok_and(|raw| s.blob.ends_with(&crate::store::digest(&raw)));
+                        if unchanged {
+                            continue;
+                        }
                         ensure!(
-                            unchanged,
+                            !strict && !used.contains(s.blob.as_str()),
                             "source changed or unavailable: {path}; re-run the source query, or expand the original blob explicitly"
                         );
+                        changed += 1;
                     }
+                }
+                for _ in 0..changed {
+                    data.skip("changed_since_scan");
+                }
+                if changed > 0 {
+                    data.notes.push("Some scanned files without a matching record changed since the scan; re-run the source query to include them.".into());
                 }
             } else {
                 ingest(&mut data, store, id, store.get(id)?, None, Format::Text)?;
@@ -135,6 +185,136 @@ pub(crate) fn load_search(
         }
     }
     Ok(data)
+}
+
+/// One entry of a repository walk, in path order.
+enum Candidate {
+    /// The walker could not read an entry.
+    Entry,
+    /// The file or byte cap was reached here; nothing after it is scanned.
+    Capped,
+    File {
+        name: String,
+        path: std::path::PathBuf,
+        /// Its metadata was read and it is at most 32 MiB.
+        readable: bool,
+    },
+}
+
+enum Outcome {
+    Unreadable,
+    Binary,
+    Text {
+        snapshot: Snapshot,
+        records: Vec<Record>,
+    },
+}
+
+/// Worker threads for a repository scan: `SCOPELET_WORKERS` (1 to 8), else
+/// the available parallelism up to 8.
+fn workers() -> usize {
+    std::env::var("SCOPELET_WORKERS")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or_else(|| std::thread::available_parallelism().map_or(1, usize::from))
+        .clamp(1, 8)
+}
+
+/// Read, verify, hash and search the files on worker threads; outcomes come
+/// back in candidate order, `None` for a file skipped after cancellation.
+/// Every snapshot names its content hash, but only a file that produced a
+/// record has its original stored.
+fn scan(
+    candidates: &[Candidate],
+    store: &Store,
+    search: Option<&crate::search::Search>,
+    cancel: &AtomicBool,
+) -> Result<Vec<Option<Outcome>>> {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let next = AtomicUsize::new(0);
+    let work = || -> Result<Vec<(usize, Outcome)>> {
+        let mut done = Vec::new();
+        loop {
+            let i = next.fetch_add(1, Ordering::Relaxed);
+            let Some(candidate) = candidates.get(i) else {
+                return Ok(done);
+            };
+            if cancel.load(Ordering::SeqCst) {
+                return Ok(done);
+            }
+            if let Candidate::File {
+                name,
+                path,
+                readable,
+            } = candidate
+            {
+                done.push((i, file_outcome(name, path, *readable, store, search)?));
+            }
+        }
+    };
+    let threads = workers().min(candidates.len().max(1));
+    let batches: Vec<Result<Vec<(usize, Outcome)>>> = if threads == 1 {
+        vec![work()]
+    } else {
+        std::thread::scope(|scope| {
+            let handles: Vec<_> = (0..threads).map(|_| scope.spawn(work)).collect();
+            handles
+                .into_iter()
+                .map(|h| {
+                    h.join()
+                        .unwrap_or_else(|_| Err(anyhow::anyhow!("scan worker panicked")))
+                })
+                .collect()
+        })
+    };
+    let mut outcomes: Vec<Option<Outcome>> = candidates.iter().map(|_| None).collect();
+    for batch in batches {
+        for (i, outcome) in batch? {
+            outcomes[i] = Some(outcome);
+        }
+    }
+    Ok(outcomes)
+}
+
+fn file_outcome(
+    name: &str,
+    path: &Path,
+    readable: bool,
+    store: &Store,
+    search: Option<&crate::search::Search>,
+) -> Result<Outcome> {
+    let raw = match readable.then(|| read_bounded(path, MAX_INPUT)) {
+        Some(Ok(raw)) => raw,
+        _ => return Ok(Outcome::Unreadable),
+    };
+    if raw.contains(&0) {
+        return Ok(Outcome::Binary);
+    }
+    let Ok(text) = String::from_utf8(raw) else {
+        return Ok(Outcome::Binary);
+    };
+    let blob = format!("blob:{}", crate::store::digest(text.as_bytes()));
+    let snapshot = Snapshot {
+        source: name.into(),
+        blob: blob.clone(),
+        bytes: text.len(),
+        local_path: Some(path.to_string_lossy().into_owned()),
+    };
+    // The original is kept only when the file contributes a record.
+    if search.is_none_or(|s| s.matches(&text)) {
+        store.put("blob", text.as_bytes())?;
+    } else {
+        return Ok(Outcome::Text {
+            snapshot,
+            records: Vec::new(),
+        });
+    }
+    let records = Parsed::Text(text).records(name, blob);
+    let records = match search {
+        Some(search) => search.apply(records),
+        None => records,
+    };
+    Ok(Outcome::Text { snapshot, records })
 }
 
 pub fn ingest(

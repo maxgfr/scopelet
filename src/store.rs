@@ -443,6 +443,11 @@ impl Store {
         references_in(&self.get(id)?)
     }
 
+    /// Whether an item is present (without verifying its bytes).
+    pub fn contains(&self, id: &str) -> bool {
+        self.location(id).is_ok_and(|path| path.is_file())
+    }
+
     /// Mark an item as used so age-based cleanup does not drop it mid-session.
     /// Best effort: a read-only cache stays readable, it only ages.
     pub fn touch(&self, id: &str) {

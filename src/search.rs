@@ -59,19 +59,23 @@ impl Search {
             |set| set.is_match(text),
         )
     }
+    /// Whether a record with this searchable content is kept.
+    pub(crate) fn matches(&self, content: &str) -> bool {
+        if self.all {
+            self.set.as_ref().map_or_else(
+                || self.patterns.iter().all(|p| p.is_match(content)),
+                |set| set.matches(content).len() == self.patterns.len(),
+            )
+        } else {
+            self.any(content)
+        }
+    }
+
     pub(crate) fn apply(&self, records: Vec<Record>) -> Vec<Record> {
         let mut out = Vec::new();
         for mut r in records {
             let content = r.searchable_ref();
-            let matched = if self.all {
-                self.set.as_ref().map_or_else(
-                    || self.patterns.iter().all(|p| p.is_match(&content)),
-                    |set| set.matches(&content).len() == self.patterns.len(),
-                )
-            } else {
-                self.any(&content)
-            };
-            if !matched {
+            if !self.matches(&content) {
                 continue;
             }
             if r.value.is_some()

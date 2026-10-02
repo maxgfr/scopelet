@@ -1,5 +1,10 @@
 //! Explicit recovery searches immutable originals, never the current filesystem.
-use crate::{model::*, render::View, search::Search, store::Store};
+use crate::{
+    model::*,
+    render::View,
+    search::Search,
+    store::{MAX_INPUT, Store, digest, read_bounded},
+};
 use anyhow::{Context, Result, ensure};
 use std::collections::BTreeSet;
 
@@ -41,12 +46,31 @@ pub fn search(
         data.snapshots.retain(|s| s.source == source);
     }
     let mut seen = BTreeSet::new();
+    let mut not_retained = 0;
     for snapshot in &data.snapshots {
         if !seen.insert((&snapshot.source, &snapshot.blob)) {
             continue;
         }
-        let raw = store.get(&snapshot.blob)?;
-        store.touch(&snapshot.blob);
+        let raw = if store.contains(&snapshot.blob) {
+            let raw = store.get(&snapshot.blob)?;
+            store.touch(&snapshot.blob);
+            raw
+        } else {
+            // A repository scan keeps only the originals of files that
+            // matched; the local file serves while it still has those bytes.
+            let current = snapshot
+                .local_path
+                .as_deref()
+                .and_then(|path| read_bounded(std::path::Path::new(path), MAX_INPUT).ok())
+                .filter(|raw| snapshot.blob.ends_with(&digest(raw)));
+            match current {
+                Some(raw) => raw,
+                None => {
+                    not_retained += 1;
+                    continue;
+                }
+            }
+        };
         let text =
             String::from_utf8(raw).context("saved source is not UTF-8; expand --raw instead")?;
         let record = Record {
@@ -60,6 +84,12 @@ pub fn search(
             text_truncated: false,
         };
         data.records.extend(search.apply(vec![record]));
+    }
+    if not_retained > 0 {
+        for _ in 0..not_retained {
+            data.skip("snapshot_not_retained");
+        }
+        data.incomplete("Some scanned files had no match, so their originals were not kept, and they changed since: they were not searched.".into());
     }
     data.notes.push("Immutable original snapshot search; does not assert the sources are still current. Matches are text windows, not structured JSON records.".into());
     Ok(data)

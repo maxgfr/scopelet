@@ -108,7 +108,11 @@ removes the output limit and should be redirected to disk for large originals.
 
 A new query can use `{"type":"artifact","id":"artifact:HASH"}` to operate on
 the full saved result. This checks local source hashes; changed/deleted sources
-require a fresh query. Explicit `expand` reads the immutable old snapshot.
+require a fresh query. A repository scan stores originals only for files that
+matched: reusing it requires those files unchanged (other changed files are
+counted in `skipped.changed_since_scan`), and `expand --find` reads an
+unmatched file from disk while it still has its scanned hash. Explicit
+`expand` reads the immutable old snapshot.
 
 ## Commands
 
