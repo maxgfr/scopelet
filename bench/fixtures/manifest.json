@@ -50,14 +50,14 @@
   },
   "git_diff": {
     "profile": "git",
-    "min_reduction": 65,
+    "min_reduction": 62,
     "visible": true,
     "facts": ["+        self.expires_at >= now", "diff --git a/src/auth.rs b/src/auth.rs", "+        gross - self.discount", "diff --git a/src/billing/invoice.rs b/src/billing/invoice.rs"],
     "pending_facts": []
   },
   "git_log_p": {
     "profile": "git",
-    "min_reduction": 80,
+    "min_reduction": 62,
     "visible": true,
     "facts": ["commit 6b3216fdaeeb975729fae923d5a4fd12aabfe228", "Fix token expiry off-by-one", "+        self.expires_at >= now"],
     "pending_facts": []
@@ -99,9 +99,9 @@
   },
   "rust_large": {
     "profile": "fileread",
-    "min_reduction": 87,
+    "min_reduction": 20,
     "visible": true,
-    "facts": ["\n }\n", "\n \n"],
-    "pending_facts": ["pub fn install(agent: Agent, remove: bool) -> Result<Value> {", "fn simple_args(command: &str) -> Option<Vec<String>> {"]
+    "facts": ["\n }\n", "\n \n", "pub fn install(agent: Agent, remove: bool) -> Result<Value> {"],
+    "pending_facts": []
   }
 }

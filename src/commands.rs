@@ -1,32 +1,142 @@
 //! The deliberately small noninteractive command grammar shared by integrations.
 use std::path::Path;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// What a recognized command produces, which sets how much of it a
+/// compact-v3 view keeps.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
 pub enum Profile {
+    /// Builds, tests, linters and type checkers: the outcome and its evidence.
     Tests,
+    /// Searches and listings.
     Search,
     Git,
-    Text,
+    /// Reading a file or a slice of one.
+    FileRead,
+    /// Service and container logs.
+    Logs,
+}
+
+impl Profile {
+    /// The name `run --auto --profile` takes.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Tests => "tests",
+            Self::Search => "search",
+            Self::Git => "git",
+            Self::FileRead => "file-read",
+            Self::Logs => "logs",
+        }
+    }
+    /// Compact-v3 byte target for this output.
+    pub fn budget(self) -> usize {
+        match self {
+            Self::Tests => 4 * 1024,
+            Self::Search | Self::Git | Self::Logs => 8 * 1024,
+            Self::FileRead => 16 * 1024,
+        }
+    }
+    /// Outputs up to this size stay byte-exact: a source file of ordinary
+    /// size is read whole.
+    pub fn small(self) -> usize {
+        match self {
+            Self::FileRead => 16 * 1024,
+            _ => crate::compress::SMALL,
+        }
+    }
+}
+
+fn name(arg: &str) -> &str {
+    Path::new(arg)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(arg)
+}
+
+/// Scopelet itself, or another wrapper whose output is already shaped.
+pub fn is_wrapper(args: &[String]) -> bool {
+    args.first()
+        .is_some_and(|a| matches!(name(a), "scopelet" | "rtk"))
+        || args.get(1).is_some_and(|a| a.ends_with("scopelet.mjs"))
+}
+
+/// The profile of the first recognized command in a command line, for hosts
+/// that compress after the fact; None when it does not parse or names none.
+pub fn classify(command: &str) -> Option<Profile> {
+    crate::shell::parse(command)?
+        .commands()
+        .find_map(|simple| profile(&simple.argv))
+}
+
+/// Whether a command line runs Scopelet or another output wrapper, whose
+/// output is already shaped. A line outside the parsed subset is checked
+/// word by word.
+pub fn invokes_wrapper(command: &str) -> bool {
+    match crate::shell::parse(command) {
+        Some(script) => script.commands().any(|simple| is_wrapper(&simple.argv)),
+        None => command
+            .split_whitespace()
+            .any(|word| matches!(name(word), "scopelet" | "rtk") || word.ends_with("scopelet.mjs")),
+    }
+}
+
+/// Tools run through `npx`, `bunx`, `pnpm exec` or `uv run` that are known
+/// to finish on their own and report an outcome.
+fn known_tool(args: &[String]) -> bool {
+    let second = args.get(1).map(String::as_str).unwrap_or("");
+    match args.first().map(|a| name(a)) {
+        Some("jest" | "tsc" | "eslint" | "pytest" | "mypy" | "ruff") => true,
+        Some("vitest") => second == "run",
+        Some("prettier") => args.iter().any(|a| a == "--check"),
+        Some("playwright") => second == "test",
+        _ => false,
+    }
+}
+
+/// `-f`, `-F` or `--follow`: the command never ends on its own.
+fn follows(args: &[String]) -> bool {
+    args.iter()
+        .any(|a| matches!(a.as_str(), "-f" | "-F") || a.starts_with("--follow"))
 }
 
 pub fn profile(args: &[String]) -> Option<Profile> {
-    let name = Path::new(args.first()?).file_name()?.to_str()?;
+    let name = name(args.first()?);
     let second = args.get(1).map(String::as_str).unwrap_or("");
-    if args.iter().any(|a| {
-        a.contains("scopelet")
-            || a.contains("rtk")
-            || matches!(a.as_str(), "--watch" | "--pdb" | "--interactive")
-            || a.starts_with("--watch=")
-    }) {
+    let has = |flag: &str| args.iter().any(|a| a == flag);
+    if is_wrapper(args)
+        || args.iter().any(|a| {
+            matches!(a.as_str(), "--watch" | "--pdb" | "--interactive") || a.starts_with("--watch=")
+        })
+    {
         return None;
     }
+    let tests = Some(Profile::Tests);
     match name {
-        "cargo" if matches!(second, "test" | "check" | "clippy" | "build") => Some(Profile::Tests),
-        "python3" if second.ends_with(".py") && !args.iter().any(|a| a == "-i") => {
-            Some(Profile::Tests)
+        "cargo" => match second {
+            "test" | "check" | "clippy" | "build" | "nextest" | "doc" => tests,
+            "fmt" if has("--check") => tests,
+            _ => None,
+        },
+        "python" | "python3" => {
+            if has("-i") {
+                None
+            } else if second == "-m" {
+                matches!(
+                    args.get(2).map(String::as_str),
+                    Some("pytest" | "unittest" | "mypy")
+                )
+                .then_some(Profile::Tests)
+            } else {
+                second.ends_with(".py").then_some(Profile::Tests)
+            }
         }
-        "pytest" if !args.iter().any(|a| a == "-w") => Some(Profile::Tests),
-        "npm" | "pnpm" | "yarn" if !args.iter().any(|a| matches!(a.as_str(), "-w" | "-i")) => {
+        "pytest" | "mypy" => tests,
+        "ruff" if matches!(second, "check" | "format") && (second == "check" || has("--check")) => {
+            tests
+        }
+        "npm" | "pnpm" | "yarn" if !has("-i") => {
+            if name == "pnpm" && second == "exec" {
+                return known_tool(&args[2..]).then_some(Profile::Tests);
+            }
             let script = if second == "run" {
                 args.get(2).map(String::as_str).unwrap_or("")
             } else {
@@ -34,14 +144,25 @@ pub fn profile(args: &[String]) -> Option<Profile> {
             };
             matches!(script, "test" | "build" | "lint" | "typecheck").then_some(Profile::Tests)
         }
-        "go" if second == "test" => Some(Profile::Tests),
+        "npx" | "bunx" => known_tool(&args[1..]).then_some(Profile::Tests),
+        "uv" if second == "run" => known_tool(&args[2..]).then_some(Profile::Tests),
+        "bun" if second == "test" => tests,
+        "make" if matches!(second, "test" | "check" | "build" | "lint") => tests,
+        "go" if matches!(second, "test" | "build" | "vet") => tests,
+        "gradle" | "gradlew" | "mvn" | "mvnw" | "dotnet"
+            if args[1..]
+                .iter()
+                .any(|a| matches!(a.as_str(), "test" | "build" | "check" | "verify")) =>
+        {
+            tests
+        }
         "node"
             if second == "--test"
                 && !args
                     .iter()
                     .any(|a| a.starts_with("--inspect") || a == "-i" || a == "--watch-path") =>
         {
-            Some(Profile::Tests)
+            tests
         }
         "rg" if args.len() >= 2
             && !args.iter().any(|a| a == "--pre" || a.starts_with("--pre=")) =>
@@ -49,22 +170,54 @@ pub fn profile(args: &[String]) -> Option<Profile> {
             Some(Profile::Search)
         }
         "grep" if args.len() >= 3 => Some(Profile::Search),
+        "find"
+            if !args.iter().any(|a| {
+                matches!(
+                    a.as_str(),
+                    "-delete" | "-exec" | "-execdir" | "-ok" | "-okdir" | "-fls"
+                ) || a.starts_with("-fprint")
+            }) =>
+        {
+            Some(Profile::Search)
+        }
+        "ls" if args[1..]
+            .iter()
+            .any(|a| a.starts_with('-') && !a.starts_with("--") && a.contains('R')) =>
+        {
+            Some(Profile::Search)
+        }
+        "tree" => Some(Profile::Search),
         "git" => {
-            let command = if second == "--no-pager" {
-                args.get(2).map(String::as_str).unwrap_or("")
-            } else {
-                second
-            };
-            (matches!(command, "diff" | "log" | "show" | "status")
-                && !args.iter().any(|a| {
-                    matches!(
-                        a.as_str(),
-                        "--paginate" | "-p" | "--ext-diff" | "--textconv" | "--interactive"
-                    )
-                }))
+            // Options before the subcommand: `-p`/`--paginate` there starts a pager.
+            let mut rest = &args[1..];
+            while let Some(first) = rest.first() {
+                match first.as_str() {
+                    "--no-pager" => rest = &rest[1..],
+                    "-C" | "-c" if rest.len() > 1 => rest = &rest[2..],
+                    _ => break,
+                }
+            }
+            let command = rest.first().map(String::as_str).unwrap_or("");
+            (matches!(
+                command,
+                "diff" | "log" | "show" | "status" | "blame" | "grep"
+            ) && !rest.iter().any(|a| {
+                matches!(
+                    a.as_str(),
+                    "--paginate" | "--ext-diff" | "--textconv" | "--interactive"
+                )
+            }))
             .then_some(Profile::Git)
         }
-        "cat" if args.len() == 2 && !second.starts_with('-') => Some(Profile::Text),
+        "docker" | "kubectl" if second == "logs" && !follows(args) => Some(Profile::Logs),
+        "jq" if args.len() >= 3 => Some(Profile::Logs),
+        "cat" | "nl" if args.len() == 2 && !second.starts_with('-') => Some(Profile::FileRead),
+        "head" | "tail"
+            if args.len() >= 2 && !args[args.len() - 1].starts_with('-') && !follows(args) =>
+        {
+            Some(Profile::FileRead)
+        }
+        "sed" if args.len() >= 4 && filter(args).is_some() => Some(Profile::FileRead),
         _ => None,
     }
 }

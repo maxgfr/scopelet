@@ -317,6 +317,9 @@ fn supported_command_profiles_are_bounded_and_noninteractive() {
         "npm run lint",
         "pnpm build",
         "yarn typecheck",
+        "git log -p",
+        "cargo fmt --check",
+        "python3 -m pytest",
     ] {
         let args = command
             .split_whitespace()
@@ -331,6 +334,9 @@ fn supported_command_profiles_are_bounded_and_noninteractive() {
         "python3 script.py -i",
         "rg --pre=command needle",
         "scopelet run --auto -- npm test",
+        "git -p log",
+        "find . -delete",
+        "sed -i s/a/b/ file",
     ] {
         let args = command
             .split_whitespace()

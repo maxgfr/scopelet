@@ -52,8 +52,12 @@ enum Cmd {
     },
     /// Adaptively compress stdin; small or unsuitable inputs remain byte-exact.
     Compress {
-        #[arg(long, default_value_t = compress::DEFAULT_BUDGET)]
-        max_bytes: usize,
+        /// Byte target (default 4096, or the profile's).
+        #[arg(long)]
+        max_bytes: Option<usize>,
+        /// The kind of output, as for run --auto.
+        #[arg(long, value_enum)]
+        profile: Option<scopelet::commands::Profile>,
     },
     /// Compose search, filtering and aggregation. Request schema: skills/scopelet/references/queries.md
     Query {
@@ -114,7 +118,7 @@ enum Cmd {
     /// Run once, preserve original stdout/stderr, and return bounded excerpts.
     Run {
         /// Adaptive stream output for automatic hooks; preserve small outputs verbatim.
-        #[arg(long, conflicts_with_all = ["focus", "format", "mode", "max_bytes", "output"])]
+        #[arg(long, conflicts_with_all = ["focus", "format", "mode", "output"])]
         auto: bool,
         #[arg(long, value_enum, default_value = "json")]
         output: Output,
@@ -122,6 +126,11 @@ enum Cmd {
         mode: Mode,
         #[arg(long)]
         max_bytes: Option<usize>,
+        /// With --auto: the kind of output, which sets the compact-v3 budget
+        /// (unless --max-bytes is given) and, for file-read, reads the output
+        /// as a file rather than as an outcome.
+        #[arg(long, value_enum, requires = "auto")]
+        profile: Option<scopelet::commands::Profile>,
         #[arg(long, default_value_t = 120)]
         timeout: u64,
         #[arg(long, value_enum, default_value = "text")]
@@ -353,9 +362,15 @@ fn execute(cli: Cli) -> Result<i32> {
         auto: true,
         command,
         timeout,
+        max_bytes,
+        profile,
         ..
     } = &cli.command
     {
+        ensure!(
+            max_bytes.is_none_or(|b| (1024..=1024 * 1024).contains(&b)),
+            "max_bytes must be 1024..1048576"
+        );
         ensure!(
             *timeout > 0 && *timeout <= 3600,
             "timeout must be 1..3600 seconds"
@@ -368,10 +383,11 @@ fn execute(cli: Cli) -> Result<i32> {
         )?;
         let code = process::exit_code(&result);
         for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
-            let output = compress::automatic_lazy(
+            let output = compress::automatic_profile(
                 bytes,
                 cli.cache_dir.clone(),
-                compress::DEFAULT_BUDGET,
+                *profile,
+                *max_bytes,
                 compact_version,
             )
             .unwrap_or(std::borrow::Cow::Borrowed(bytes));
@@ -388,9 +404,9 @@ fn execute(cli: Cli) -> Result<i32> {
         }
         return Ok(code);
     }
-    if let Cmd::Compress { max_bytes } = cli.command {
+    if let Cmd::Compress { max_bytes, profile } = cli.command {
         ensure!(
-            (1024..=1024 * 1024).contains(&max_bytes),
+            max_bytes.is_none_or(|b| (1024..=1024 * 1024).contains(&b)),
             "max_bytes must be 1024..1048576"
         );
         let mut bytes = Vec::new();
@@ -398,8 +414,9 @@ fn execute(cli: Cli) -> Result<i32> {
             .take(MAX_INPUT as u64 + 1)
             .read_to_end(&mut bytes)?;
         ensure!(bytes.len() <= MAX_INPUT, "input exceeds 32 MiB");
-        let output = compress::automatic_lazy(&bytes, cli.cache_dir, max_bytes, compact_version)
-            .unwrap_or(std::borrow::Cow::Borrowed(&bytes));
+        let output =
+            compress::automatic_profile(&bytes, cli.cache_dir, profile, max_bytes, compact_version)
+                .unwrap_or(std::borrow::Cow::Borrowed(&bytes));
         std::io::stdout().write_all(&output)?;
         return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
             130
@@ -542,6 +559,7 @@ fn execute(cli: Cli) -> Result<i32> {
         }
         Cmd::Run {
             auto: _,
+            profile: _,
             output,
             mode,
             max_bytes,

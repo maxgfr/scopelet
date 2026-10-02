@@ -1,5 +1,6 @@
 //! Host adapters and reversible installation. No model/network calls.
 use crate::{
+    commands::Profile,
     compress,
     store::{MAX_INPUT, digest},
 };
@@ -303,11 +304,12 @@ pub fn doctor() -> Value {
 /// `cd DIR &&`, `|| true`, or a read-only filter after a pipe), and its
 /// output must not already be bounded by a final `head`, `tail`, `wc` or
 /// `grep -c`/`-l`/`-q`.
-fn command_args(command: &str) -> Option<Vec<String>> {
+fn command_args(command: &str) -> Option<(Vec<String>, Profile)> {
     use crate::shell::{Joint, Plan};
     let script = crate::shell::parse(command)?;
     let last = script.steps.len() - 1;
-    let mut recognized = false;
+    // The profile of the first recognized command sets the output budget.
+    let mut recognized: Option<Profile> = None;
     for (i, (joint, pipeline)) in script.steps.iter().enumerate() {
         let first = &pipeline[0];
         if *joint == Joint::OrTrue {
@@ -327,15 +329,15 @@ fn command_args(command: &str) -> Option<Vec<String>> {
             }
             continue;
         }
-        if !eligible(&first.argv)
-            || !first
-                .env
-                .iter()
-                .all(|(name, _)| crate::commands::safe_env(name))
+        let profile = crate::commands::profile(&first.argv)?;
+        if !first
+            .env
+            .iter()
+            .all(|(name, _)| crate::commands::safe_env(name))
         {
             return None;
         }
-        recognized = true;
+        recognized.get_or_insert(profile);
         for filter in &pipeline[1..] {
             if !filter.env.is_empty() {
                 return None;
@@ -348,10 +350,8 @@ fn command_args(command: &str) -> Option<Vec<String>> {
             return None;
         }
     }
-    if !recognized {
-        return None;
-    }
-    Some(match script.plan() {
+    let profile = recognized?;
+    let argv = match script.plan() {
         Plan::Direct(argv) => argv,
         Plan::AndList(commands) => {
             let script = commands
@@ -362,16 +362,15 @@ fn command_args(command: &str) -> Option<Vec<String>> {
             vec!["/bin/sh".into(), "-c".into(), script]
         }
         Plan::Shell => vec!["/bin/sh".into(), "-c".into(), command.into()],
-    })
-}
-
-fn eligible(args: &[String]) -> bool {
-    crate::commands::profile(args).is_some()
+    };
+    Some((argv, profile))
 }
 // This is only a compression bypass: native execution still reads the file,
 // including changes after this metadata check, and enforces host permissions.
-fn small_file_read(args: &[String], event: &Value) -> bool {
-    if args.len() != 2 || Path::new(&args[0]).file_name().and_then(|n| n.to_str()) != Some("cat") {
+/// `small` is the exact-size threshold of the command's profile.
+fn small_file_read(args: &[String], small: usize, event: &Value) -> bool {
+    let reader = Path::new(&args[0]).file_name().and_then(|n| n.to_str());
+    if args.len() != 2 || !matches!(reader, Some("cat" | "nl")) {
         return false;
     }
     let file = Path::new(&args[1]);
@@ -389,7 +388,7 @@ fn small_file_read(args: &[String], event: &Value) -> bool {
         }
         Path::new(cwd).join(file)
     };
-    fs::metadata(path).is_ok_and(|meta| meta.is_file() && meta.len() <= compress::SMALL as u64)
+    fs::metadata(path).is_ok_and(|meta| meta.is_file() && meta.len() <= small as u64)
 }
 
 /// Remove per-session context markers older than `older_days`; how many.
@@ -445,6 +444,15 @@ fn guidance(mode: Preference) -> &'static str {
         Preference::Off => "Scopelet is off. Resume normal tools and response style.",
     }
 }
+/// The recognized profile of a command line and the size up to which its
+/// output stays exact: the profile's in compact-v3, the default otherwise.
+fn limits(command: &str, version: compress::Version) -> (Option<Profile>, usize) {
+    match crate::commands::classify(command) {
+        Some(profile) if version == compress::Version::V3 => (Some(profile), profile.small()),
+        profile => (profile, compress::SMALL),
+    }
+}
+
 /// OpenCode's plugin sends two events: a system-prompt pass (rebuilt on every
 /// model step, so no per-session state) and one bash result to compress.
 fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Result<Value> {
@@ -458,19 +466,18 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
     if name != "ToolOutput" || event["tool_name"] != "Bash" {
         return Ok(json!({}));
     }
-    if event["tool_input"]["command"]
-        .as_str()
-        .is_some_and(|s| s.contains("scopelet") || s.contains("rtk"))
-    {
+    let command = event["tool_input"]["command"].as_str().unwrap_or("");
+    if crate::commands::invokes_wrapper(command) {
         return Ok(json!({}));
     }
     let Some(raw) = event["tool_response"]["output"].as_str() else {
         return Ok(json!({}));
     };
-    if raw.len() <= compress::SMALL || raw.len() > MAX_INPUT {
+    let (profile, small) = limits(command, version);
+    if raw.len() <= small || raw.len() > MAX_INPUT {
         return Ok(json!({}));
     }
-    let small = compress::automatic_lazy(raw.as_bytes(), None, compress::DEFAULT_BUDGET, version)?;
+    let small = compress::automatic_profile(raw.as_bytes(), None, profile, None, version)?;
     if small.as_ref() == raw.as_bytes() {
         return Ok(json!({}));
     }
@@ -511,10 +518,16 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         let Some(command) = event["tool_input"]["command"].as_str() else {
             return Ok(json!({}));
         };
-        let Some(args) = command_args(command) else {
+        let Some((args, profile)) = command_args(command) else {
             return Ok(json!({}));
         };
-        if small_file_read(&args, event) {
+        // Profile thresholds, like budgets, apply to compact-v3 only.
+        let small = if version == compress::Version::V3 {
+            profile.small()
+        } else {
+            compress::SMALL
+        };
+        if small_file_read(&args, small, event) {
             return Ok(json!({}));
         }
         let binary = std::env::current_exe()?;
@@ -522,9 +535,11 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             "{} run --auto --timeout 3600 {} -- {}",
             quote(&binary.to_string_lossy()),
             match version {
-                compress::Version::V1 => "--compact-version 1",
-                compress::Version::V2 => "--compact-version 2",
-                compress::Version::V3 => "--compact-version 3",
+                compress::Version::V1 => "--compact-version 1".to_owned(),
+                compress::Version::V2 => "--compact-version 2".to_owned(),
+                // Each profile has its own budget, in v3 only.
+                compress::Version::V3 =>
+                    format!("--compact-version 3 --profile {}", profile.name()),
             },
             args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" ")
         );
@@ -535,12 +550,11 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         );
     }
     if agent == Agent::Claude && name == "PostToolUse" {
-        if event["tool_input"]["command"]
-            .as_str()
-            .is_some_and(|s| s.contains("scopelet") || s.contains("rtk"))
-        {
+        let command = event["tool_input"]["command"].as_str().unwrap_or("");
+        if crate::commands::invokes_wrapper(command) {
             return Ok(json!({}));
         }
+        let (profile, small) = limits(command, version);
         let mut output = event["tool_response"].clone();
         if output["isImage"] == true
             || !output["stdout"].is_string()
@@ -563,7 +577,7 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         if ["stdout", "stderr"].iter().all(|stream| {
             output[stream]
                 .as_str()
-                .is_some_and(|text| text.len() <= compress::SMALL)
+                .is_some_and(|text| text.len() <= small)
         }) {
             return Ok(json!({}));
         }
@@ -573,8 +587,7 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             if raw.len() > MAX_INPUT {
                 return Ok(json!({}));
             }
-            let small =
-                compress::automatic_lazy(raw.as_bytes(), None, compress::DEFAULT_BUDGET, version)?;
+            let small = compress::automatic_profile(raw.as_bytes(), None, profile, None, version)?;
             if small.as_ref() != raw.as_bytes() {
                 output[stream] = json!(String::from_utf8(small.into_owned())?);
                 changed = true;

@@ -140,9 +140,10 @@ known regular file up to 2 KiB native; missing paths, unknown working directorie
 and larger files retain the normal command path. The host still reads the file
 and enforces its permissions, so a subsequent file change is not hidden.
 
-Compression leaves outputs up to 2 KiB intact. Larger outputs are replaced only
-if the complete replacement saves at least 20% and 512 bytes, with a 4 KiB target
-per stream. Repetitions have counts; selected lines stay exact; omissions and
+Compression leaves outputs up to 2 KiB intact (16 KiB for a recognized file
+read). Larger outputs are replaced only if the complete replacement saves at
+least 20% and 512 bytes, with a 4 KiB target per stream, or the recognized
+command's target in compact-v3. Repetitions have counts; selected lines stay exact; omissions and
 immutable recovery references are explicit. A host-truncated input cannot be
 restored to bytes the compressor never received. Existing persisted-output
 previews and Scopelet output pass through. Capture is bounded at 32 MiB per
@@ -178,9 +179,22 @@ coverage; v3 adds a leaner envelope; see [queries.md](queries.md) for exact
 recovery semantics.
 The JSON query interface and old saved artifacts remain compatible.
 
-Codex also recognizes simple `rg`/`grep`, Git diff/log/show/status without forced
-pagination, `go test`, `node --test`, and package-manager build/lint/typecheck
-scripts. Shell pipelines and unsupported syntax still run natively. Recognition
+Hooks recognize builds, tests and checks (`cargo test|check|clippy|build|nextest|doc`,
+`cargo fmt --check`, `pytest`, `python -m pytest|unittest|mypy`, Python scripts,
+`npm`/`pnpm`/`yarn` test/build/lint/typecheck, `bun test`, `make
+test|check|build|lint`, `go test|build|vet`, `ruff`, `mypy`, Gradle/Maven/.NET
+test or build, `node --test`, and `jest`, `vitest run`, `tsc`, `eslint`,
+`prettier --check` or `playwright test` through `npx`, `bunx`, `pnpm exec` or
+`uv run`); searches and listings (`rg`, `grep`, `find` without
+`-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree`); Git `diff`, `log` (with
+`-p`), `show`, `status`, `blame` and `grep` without a pager; logs (`docker
+logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
+`nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
+`rtk` are recognized by the program they run, not by a substring.
+In compact-v3 each kind has its own byte target: 4 KiB for tests, 8 KiB for
+searches, Git and logs, 16 KiB for file reads, which also stay exact up to
+16 KiB so an ordinary source file is read whole. Unsupported syntax still runs
+natively. Recognition
 permits wrapping; it does not guarantee compression. Outputs are replaced only
 when the complete view clears the existing savings gate. Rejected compression
 now avoids opening the cache as well as leaving the output unchanged.

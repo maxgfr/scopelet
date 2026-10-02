@@ -139,7 +139,7 @@ pub fn detect(text: &str) -> Format {
 }
 
 pub fn automatic(bytes: &[u8], store: &Store, budget: usize) -> Result<Vec<u8>> {
-    automatic_with(bytes, budget, Version::V1, || Ok(store.clone())).map(Cow::into_owned)
+    automatic_with(bytes, budget, Version::V1, false, || Ok(store.clone())).map(Cow::into_owned)
 }
 
 /// The store factory is not invoked for a rejected or ineligible substitution.
@@ -149,13 +149,32 @@ pub fn automatic_lazy<'a>(
     budget: usize,
     version: Version,
 ) -> Result<Cow<'a, [u8]>> {
-    automatic_with(bytes, budget, version, || Store::open(path))
+    automatic_with(bytes, budget, version, false, || Store::open(path))
 }
 
+/// `automatic_lazy` for the output of a recognized command: its profile's
+/// budget unless `budget` is given and, for a file read, no diagnostic
+/// ranking (a word like `error` in source code is not an outcome). Profiles
+/// only shape compact-v3; earlier versions keep their defaults.
+pub fn automatic_profile<'a>(
+    bytes: &'a [u8],
+    path: Option<PathBuf>,
+    profile: Option<crate::commands::Profile>,
+    budget: Option<usize>,
+    version: Version,
+) -> Result<Cow<'a, [u8]>> {
+    let profile = profile.filter(|_| version == Version::V3);
+    let reading = profile == Some(crate::commands::Profile::FileRead);
+    let budget = budget.unwrap_or(profile.map_or(DEFAULT_BUDGET, |p| p.budget()));
+    automatic_with(bytes, budget, version, reading, || Store::open(path))
+}
+
+/// `reading`: the bytes are a file being read, not a command's outcome.
 fn automatic_with(
     bytes: &[u8],
     budget: usize,
     version: Version,
+    reading: bool,
     store: impl FnOnce() -> Result<Store>,
 ) -> Result<Cow<'_, [u8]>> {
     ensure!(
@@ -185,7 +204,15 @@ fn automatic_with(
     };
     data.notes
         .push("Bytes supplied to the compressor; completeness before capture is unknown.".into());
-    let (mut result, shown) = view(&data, PLACEHOLDER, budget, version, Some(text), max_lines)?;
+    let (mut result, shown) = view(
+        &data,
+        PLACEHOLDER,
+        budget,
+        version,
+        Some(text),
+        max_lines,
+        reading,
+    )?;
     if shown == 0 || result.len() + 512 > bytes.len() || result.len() * 5 > bytes.len() * 4 {
         return Ok(Cow::Borrowed(bytes));
     }
@@ -231,7 +258,7 @@ pub fn compact_version(
     budget: usize,
     version: Version,
 ) -> Result<String> {
-    let (mut text, _) = view(data, PLACEHOLDER, budget, version, None, MAX_LINES)?;
+    let (mut text, _) = view(data, PLACEHOLDER, budget, version, None, MAX_LINES, false)?;
     let id = store.put_json(data)?;
     let end = text.find('\n').unwrap() + 1;
     text.replace_range(..end, &header(data, &id, version));
@@ -451,7 +478,7 @@ fn first_of_template(seen: &mut HashSet<String>, line: &str, key: &mut String) -
     true
 }
 
-fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
+fn units(data: &Dataset, limit: usize, version: Version, reading: bool) -> Vec<Unit<'_>> {
     let mut units = Vec::new();
     let mut distinct = BTreeSet::new();
     let mut seen = Seen::default();
@@ -488,7 +515,7 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
             continue;
         }
         if version == Version::V3 {
-            text_units_v3(record, limit, &mut seen, &mut units);
+            text_units_v3(record, limit, reading, &mut seen, &mut units);
             continue;
         }
         let lines: Vec<_> = record.text.split_inclusive('\n').collect();
@@ -575,7 +602,15 @@ impl Bits {
 ///
 /// Line indices are `u32` (a capture is at most 32 MiB) and flags are bits,
 /// so the working set stays near the units themselves on a large input.
-fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &mut Vec<Unit<'a>>) {
+///
+/// `reading`: a file read ranks no line as a diagnostic.
+fn text_units_v3<'a>(
+    record: &'a Record,
+    limit: usize,
+    reading: bool,
+    seen: &mut Seen,
+    units: &mut Vec<Unit<'a>>,
+) {
     const NONE: u32 = u32::MAX;
     struct Group {
         first: u32,
@@ -611,9 +646,9 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     for i in 0..n {
         let origin = first[i] as usize;
         if origin == i {
-            if diagnostic(&STRONG, &views[i]) {
+            if !reading && diagnostic(&STRONG, &views[i]) {
                 strong.set(i);
-            } else if diagnostic(&WEAK, &views[i]) {
+            } else if !reading && diagnostic(&WEAK, &views[i]) {
                 weak.set(i);
             } else if is_trivial(&views[i]) {
                 trivial.set(i);
@@ -1246,6 +1281,7 @@ fn view(
     version: Version,
     original: Option<&str>,
     max_units: usize,
+    reading: bool,
 ) -> Result<(String, usize)> {
     ensure!(
         (512..=1024 * 1024).contains(&budget),
@@ -1291,7 +1327,7 @@ fn view(
             return Ok((output, indices.len()));
         }
     }
-    let mut units = units(data, available, version);
+    let mut units = units(data, available, version, reading);
     if uniform && version.tables() {
         // Exact row costs include positional provenance. Fixed schema/envelope costs
         // are counted by the same serializer as the final table.
@@ -1321,7 +1357,7 @@ fn view(
             }
         }
         // No table row fits: recompute ordinary-record costs before falling back.
-        units = self::units(data, available, version);
+        units = self::units(data, available, version, reading);
     }
     let selected = if version == Version::V3 {
         let (body, selected) = fill_v3(&units, available);
@@ -1345,7 +1381,7 @@ fn view(
             let available = budget.saturating_sub(output.len() + footer(lines).len());
             let mut seen = Seen::default();
             let mut units = Vec::new();
-            text_units_v3(&record, available, &mut seen, &mut units);
+            text_units_v3(&record, available, reading, &mut seen, &mut units);
             let (body, selected) = fill_v3(&units, available);
             output.push_str(&body);
             output.push_str(&footer(units.len() - selected.len()));

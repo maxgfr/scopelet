@@ -164,7 +164,9 @@ the spec interface's validation behavior. All shortcuts conflict with `--spec`.
 `compress` detects valid JSON/JSONL conservatively and otherwise selects text;
 it never computes an aggregate from malformed rows. Invalid UTF-8 passes through.
 `run --auto` preserves small stdout and stderr byte-for-byte and the process
-exit code; it cannot be combined with selection/mode/budget flags.
+exit code; it takes `--max-bytes` and `--profile tests|search|git|file-read|logs`
+(the hooks' budgets, see setup.md) but no selection or mode flags. `compress`
+takes the same two options.
 
 ## Search saved originals directly
 

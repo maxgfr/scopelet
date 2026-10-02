@@ -155,8 +155,9 @@ substitutes a recovery-only envelope: every view carries source bytes.
 All originals remain available. Automatic detection of malformed JSONL falls
 back to text selection and never asserts an exact aggregate.
 
-Automatic inputs up to 2048 bytes remain unchanged. Larger inputs have a 4096
-byte target per stream and need both 512 bytes and 20% savings including all
+Automatic inputs up to 2048 bytes remain unchanged (16 KiB for a recognized
+file read in compact-v3). Larger inputs have a 4096 byte target per stream (in
+compact-v3, the recognized command's profile target) and need both 512 bytes and 20% savings including all
 metadata before replacement. Non-UTF-8 input, existing Scopelet output and host
 persisted-output previews remain unchanged. Inputs over 100000 lines (250000
 in compact-v3, whose lighter units keep the peak resident size under 128 MB at
@@ -278,10 +279,26 @@ boundaries; missing, invalid or unwritable indexes fall back to reconstruction.
 Larger sources use bounded sequential range selection. Cleanup removes aged
 indexes and indexes whose original blob is gone, preserving foreign files.
 
-The shared command classifier also recognizes simple `rg`/`grep`, non-paginated
-Git diff/log/show/status, `go test`, `node --test`, and package-manager
-build/lint/typecheck scripts. The existing shell grammar and permission envelope
-remain in force. Watch/debug/interactive forms and unrecognized syntax stay
+The shared command classifier recognizes builds, tests and checks (`cargo test|check|clippy|build|nextest|doc`,
+`cargo fmt --check`, `pytest`, `python -m pytest|unittest|mypy`, Python scripts,
+`npm`/`pnpm`/`yarn` test/build/lint/typecheck, `bun test`, `make
+test|check|build|lint`, `go test|build|vet`, `ruff`, `mypy`, Gradle/Maven/.NET
+test or build, `node --test`, and `jest`, `vitest run`, `tsc`, `eslint`,
+`prettier --check` or `playwright test` through `npx`, `bunx`, `pnpm exec` or
+`uv run`); searches and listings (`rg`, `grep`, `find` without
+`-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree`); Git `diff`, `log` (with
+`-p`), `show`, `status`, `blame` and `grep` without a pager; logs (`docker
+logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
+`nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
+`rtk` are recognized by the program they run, not by a substring.
+Each recognized command has a profile that sets its compact-v3 byte target:
+4 KiB for tests, 8 KiB for searches, Git and logs, 16 KiB for file reads. A
+file read also stays exact up to 16 KiB, and it is not ranked by diagnostic
+words (a string saying `error` in source code is not an outcome). Hooks take
+the profile from the parsed command (Codex passes `run --auto --profile`;
+Claude Code and OpenCode classify the command after the fact); earlier compact
+versions keep the 4 KiB target and 2 KiB threshold. The shell grammar and
+permission envelope remain in force. Watch/debug/interactive forms and unrecognized syntax stay
 native. Every eligible command executes once; stdout/stderr and process status
 remain independent of presentation.
 

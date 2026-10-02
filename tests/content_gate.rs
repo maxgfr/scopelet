@@ -9,6 +9,7 @@
 //! original bytes must remain recoverable from the store. Pending facts are
 //! what a planned change should make visible: they are reported, not enforced.
 use scopelet::{
+    commands::Profile,
     compress::{self, Version},
     model::Dataset,
     sources,
@@ -47,6 +48,18 @@ struct Fixture {
     facts_visible: bool,
     /// Facts a planned change should make visible: reported, never enforced.
     pending: Vec<String>,
+    /// The command profile that produced it, which sets the v3 budget.
+    profile: Option<Profile>,
+}
+
+impl Fixture {
+    /// The byte target and exact-size threshold hooks use for this output.
+    fn limits(&self) -> (usize, usize) {
+        self.profile
+            .map_or((compress::DEFAULT_BUDGET, compress::SMALL), |p| {
+                (p.budget(), p.small())
+            })
+    }
 }
 
 /// Real tool outputs described by `bench/fixtures/manifest.json`.
@@ -74,6 +87,14 @@ fn file_fixtures() -> BTreeMap<String, Fixture> {
                 minimum_reduction: spec["min_reduction"].as_f64(),
                 facts_visible: spec["visible"].as_bool().unwrap(),
                 pending: strings(&spec["pending_facts"]),
+                profile: spec["profile"].as_str().map(|p| match p {
+                    "tests" => Profile::Tests,
+                    "search" => Profile::Search,
+                    "git" => Profile::Git,
+                    "fileread" => Profile::FileRead,
+                    "logs" => Profile::Logs,
+                    other => panic!("{name}: unknown profile {other}"),
+                }),
             };
             (name.clone(), fixture)
         })
@@ -119,6 +140,7 @@ fn fixtures() -> BTreeMap<&'static str, Fixture> {
                 minimum_reduction: minimum,
                 facts_visible: visible,
                 pending: Vec::new(),
+                profile: None,
             },
         );
     };
@@ -227,13 +249,20 @@ fn source_form(fact: &str) -> String {
 
 /// Pending facts missing from the view, or an error when a gate fails.
 fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<String>, String> {
-    let output = compress::automatic_lazy(
-        &fixture.bytes,
-        Some(cache.to_path_buf()),
-        compress::DEFAULT_BUDGET,
-        Version::default(),
-    )
-    .map_err(|e| format!("{name}: {e:#}"))?;
+    let (budget, small) = fixture.limits();
+    // Hooks leave an output up to its profile's threshold untouched.
+    let output = if fixture.bytes.len() <= small {
+        std::borrow::Cow::Borrowed(fixture.bytes.as_slice())
+    } else {
+        compress::automatic_profile(
+            &fixture.bytes,
+            Some(cache.to_path_buf()),
+            fixture.profile,
+            None,
+            Version::default(),
+        )
+        .map_err(|e| format!("{name}: {e:#}"))?
+    };
     let shown = String::from_utf8_lossy(&output);
     let pending = fixture
         .pending
@@ -247,11 +276,10 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
         }
         return Ok(pending);
     };
-    if output.len() > compress::DEFAULT_BUDGET {
+    if output.len() > budget {
         return Err(format!(
-            "{name}: {} bytes exceed the {} byte budget (passthrough)",
+            "{name}: {} bytes exceed the {budget} byte budget (passthrough)",
             output.len(),
-            compress::DEFAULT_BUDGET
         ));
     }
     let reduction = 100.0 * (1.0 - output.len() as f64 / fixture.bytes.len() as f64);

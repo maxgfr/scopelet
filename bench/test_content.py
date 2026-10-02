@@ -47,6 +47,12 @@ class ContentTests(unittest.TestCase):
             self.assertTrue(spec['facts'] or spec['pending_facts'], name)
             self.assertIn(spec['profile'], {None, 'tests', 'search', 'git', 'fileread', 'logs'}, name)
 
+    def test_file_fixtures_are_compressed_with_their_profile(self):
+        self.assertEqual(content.profile_args('rust_large'), ['--profile', 'file-read'])
+        self.assertEqual(content.profile_args('cargo_test'), ['--profile', 'tests'])
+        self.assertEqual(content.profile_args('kubectl_json'), [])
+        self.assertEqual(content.profile_args('diagnostics'), [])
+
     def test_block_notation_facts_map_to_their_source_lines(self):
         self.assertEqual(content.source_form('\n }\n \n'), '\n}\n\n')
         self.assertEqual(content.source_form('error: x'), 'error: x')

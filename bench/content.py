@@ -46,6 +46,16 @@ def source_form(fact):
     return fact.replace('\n ', '\n')
 
 
+# Manifest profile names as `scopelet compress --profile` takes them.
+PROFILES = {'tests': 'tests', 'search': 'search', 'git': 'git', 'logs': 'logs', 'fileread': 'file-read'}
+
+
+def profile_args(name):
+    """`--profile P` for a fixture produced by a recognized command."""
+    spec = file_fixtures().get(name)
+    return ['--profile', PROFILES[spec['profile']]] if spec and spec['profile'] else []
+
+
 def fixtures():
     return {**synthetic_fixtures(),
             **{name: (spec['bytes'], spec['facts']) for name, spec in file_fixtures().items()}}
@@ -127,7 +137,7 @@ def measure(binary, out, warmups, repetitions):
                         shutil.rmtree(cache, ignore_errors=True)
                     cache.mkdir(exist_ok=True)
                     started = time.perf_counter()
-                    result = subprocess.run([str(binary), '--cache-dir', str(cache), 'compress'], input=original,
+                    result = subprocess.run([str(binary), '--cache-dir', str(cache), 'compress', *profile_args(name)], input=original,
                                             capture_output=True, timeout=120)
                     elapsed = time.perf_counter() - started
                     output = result.stdout
