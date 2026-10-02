@@ -263,22 +263,27 @@ never promoted as the rare line of a mostly folded record.
 
 V3 ranks units in five tiers: the first and last line of a record; the first
 occurrence of each strong diagnostic template (`error`, `failed`, `panic`,
-`exception`, `traceback`, `fatal`, `npm ERR!`, `FAILED`, `✗`, test summaries
-and the like); repeated strong diagnostics, the first occurrence of each weak
-template (`warning`, `warn`, `deprecated`, `PASS`) and singleton lines of a
-mostly folded record; context (three lines before and eight after a strong
-diagnostic, stack frames, the head three and tail five lines); then ordinary
-lines. Each tier is filled alternately from the head and the tail so the final
+`exception`, `traceback`, `fatal`, `npm ERR!`, `FAILED`, Go's `--- FAIL`, `✗`,
+`✖`, error and exception type names such as `TypeError` or
+`NullPointerException`, test summaries and the like); repeated strong
+diagnostics, the first occurrence of each weak template (`warning`, `warn`,
+`deprecated`) and singleton lines of a mostly folded record; context (three
+lines before and eight after a strong diagnostic, stack frames of JavaScript,
+Python, Java and Go, rustc's `-->` locations, the head three and tail five
+lines); then ordinary lines. A vocabulary word inside a name does not count:
+a match within a whitespace-delimited token that contains `/` or `::`, or
+ends with a file extension, is a path or an identifier (`src/error.rs`,
+`Error::new`, `failure.py`), not an outcome. Each tier is filled alternately from the head and the tail so the final
 summary survives a flood of early diagnostics. When the view carries
 diagnostics and cannot show every ordinary line anyway, ordinary lines stop at
 a quarter of the available budget, so the view ends where the evidence does;
 an ordinary listing without diagnostics still fills the budget. Small
 repetitions inside a diagnostic's context stay in source order; massive
 repetition (eight lines or more) folds wherever it is. Vocabulary words match
-without regard to case, but anchored markers (`FAIL`, `FAILED`, `FATAL`,
-pytest's `E` prefix, `PASS`) must be upper case, so an ordinary line beginning
-with `e ` is not a diagnostic. Diagnostics in JSON records rank by the same
-vocabulary. The output is restored to source order.
+without regard to case on ASCII word boundaries, but anchored markers (`FAIL`,
+`FAILED`, `FATAL`, pytest's `E` prefix) and type names must keep their
+capitals, so an ordinary line beginning with `e ` is not a diagnostic.
+Diagnostics in JSON string values rank by the same vocabulary and veto. The output is restored to source order.
 
 Three or more selected consecutive plain lines are shown as one range block:
 `input:a-b` on its own line, then each line prefixed by a single space, so

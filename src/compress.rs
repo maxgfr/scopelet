@@ -48,19 +48,47 @@ static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
 /// Compact-v3 vocabulary: diagnostics and summaries that decide an outcome.
 /// Anchored markers stay case-sensitive: their convention is upper case, and
 /// matching them loosely turns any line starting with `e ` into a diagnostic.
+/// So do error and exception type names (`TypeError`, `KeyError`,
+/// `NullPointerException`), whose convention is a capitalized identifier.
+/// Word boundaries are ASCII: the vocabulary is ASCII, and Unicode boundaries
+/// cost a slower engine on every line.
 static STRONG: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"(?i:\b(error|errors|failed|failure|panic|panicked|exception|traceback|fatal|assertionerror|caused by|test result|tests? passed|tests? failed)\b)|npm ERR!|^\s*(FAIL|FAILED|E {2,}|FATAL|×|✕|✗)").unwrap()
+    regex::Regex::new(r"(?i:(?-u:\b)(error|errors|failed|failure|panic|panicked|exception|traceback|fatal|assertionerror|caused by|test result|tests? passed|tests? failed)(?-u:\b))|(?-u:\b)[A-Z][A-Za-z]*(Error|Exception)(?-u:\b)|npm ERR!|^\s*(FAIL|FAILED|--- FAIL|E {2,}|FATAL|×|✕|✗|✖)").unwrap()
 });
 /// Advisory lines: shown once per template, never ahead of a diagnostic.
 /// A passing test is not an advisory. Listing it here grouped every `PASS`
 /// line by exact text, which stopped a suite of passes from folding and let
 /// them crowd out the failure's own detail.
-static WEAK: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"(?i:\b(warning|warn|deprecated|deprecation)\b)").unwrap());
-/// Stack frames: context for a diagnostic, wherever they are.
-static FRAME: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r#"^\s+at .*\(.*:\d+:\d+\)|^\s+File ".*", line \d+"#).unwrap()
+static WEAK: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i:(?-u:\b)(warning|warn|deprecated|deprecation)(?-u:\b))").unwrap()
 });
+/// Stack frames: context for a diagnostic, wherever they are. JavaScript and
+/// Python frames, Java's `at pkg.Class.method(File.java:N)`, Go's
+/// `file.go:N +0x1d` and rustc's `--> file:line:col` locations.
+static FRAME: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r#"^\s+at .*\(.*:\d+:\d+\)|^\s+File ".*", line \d+|^\s+at [\w$.<>/-]+\([^()]*\)\s*$|\.go:\d+ \+0x[0-9a-f]+|^\s*--> \S+:\d+:\d+"#).unwrap()
+});
+/// A file extension at the end of a token: `.rs`, `.py`, `.java`.
+static EXTENSION: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"\.[A-Za-z][A-Za-z0-9]{0,4}$").unwrap());
+
+/// Whether a vocabulary pattern matches the line outside a name. A word
+/// inside a path (`src/errors/e1.rs`), a module path (`Error::new`) or a file
+/// name (`failure.py`) names something; it does not report an outcome.
+fn diagnostic(pattern: &regex::Regex, line: &str) -> bool {
+    pattern.find_iter(line).any(|m| {
+        let start = m.start() + (m.as_str().len() - m.as_str().trim_start().len());
+        let begin = line[..start]
+            .rfind(char::is_whitespace)
+            .map_or(0, |i| i + line[i..].chars().next().unwrap().len_utf8());
+        let end = line[m.end()..]
+            .find(char::is_whitespace)
+            .map_or(line.len(), |i| m.end() + i);
+        let token = &line[begin..end];
+        let name = token.trim_end_matches(|c: char| c.is_ascii_digit() || ":,;)]}'\"`".contains(c));
+        !(token.contains('/') || token.contains("::") || EXTENSION.is_match(name))
+    })
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, clap::ValueEnum)]
 pub enum Version {
@@ -362,9 +390,12 @@ impl Label {
     }
 }
 
-fn signal_value<'v>(value: &'v serde_json::Value, signal: &regex::Regex) -> Option<&'v str> {
+fn signal_value<'v>(
+    value: &'v serde_json::Value,
+    signal: &dyn Fn(&str) -> bool,
+) -> Option<&'v str> {
     match value {
-        serde_json::Value::String(s) => signal.is_match(s).then_some(s),
+        serde_json::Value::String(s) => signal(s).then_some(s),
         serde_json::Value::Array(a) => a.iter().find_map(|v| signal_value(v, signal)),
         serde_json::Value::Object(o) => o.values().find_map(|v| signal_value(v, signal)),
         _ => None,
@@ -393,10 +424,12 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
     let mut units = Vec::new();
     let mut distinct = BTreeSet::new();
     let mut seen = Seen::default();
-    let signal = if version == Version::V3 {
-        &*STRONG
+    let v2_signal = |s: &str| SIGNAL.is_match(s);
+    let v3_signal = |s: &str| diagnostic(&STRONG, s);
+    let signal: &dyn Fn(&str) -> bool = if version == Version::V3 {
+        &v3_signal
     } else {
-        &*SIGNAL
+        &v2_signal
     };
     for (ordinal, record) in data.records.iter().enumerate() {
         if let Some(value) = &record.value {
@@ -544,9 +577,9 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     for i in 0..n {
         let origin = first[i] as usize;
         if origin == i {
-            if STRONG.is_match(&views[i]) {
+            if diagnostic(&STRONG, &views[i]) {
                 strong.set(i);
-            } else if WEAK.is_match(&views[i]) {
+            } else if diagnostic(&WEAK, &views[i]) {
                 weak.set(i);
             } else if is_trivial(&views[i]) {
                 trivial.set(i);

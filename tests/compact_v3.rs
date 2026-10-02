@@ -182,19 +182,55 @@ fn diagnostic_vocabulary_and_frames_survive_noise() {
         "  File \"/app/main.py\", line 12, in <module>",
         "fatal: not a git repository",
         "✗ 3 of 12 checks",
+        "    TypeError: Cannot read properties of undefined (reading 'id')",
+        "Caused by: java.lang.NullPointerException: name is null",
+        "\tat com.acme.billing.Invoice.total(Invoice.java:88)",
+        "--- FAIL: TestRefresh (0.00s)",
+        "\t/work/app/auth/session.go:88 +0x1d",
+        "  --> src/cache.rs:17:9",
+        "✖ 3 problems (1 error, 2 warnings)",
     ];
-    let mut raw = String::new();
-    for fact in facts {
-        raw.push_str(&noise_lines(400));
-        raw.push_str(fact);
-        raw.push('\n');
+    // Foldable noise leaves room for anything; distinct noise only leaves
+    // room for lines ranked as diagnostics or their context.
+    let distinct = |block: usize| -> String {
+        distinct_lines(200 * (block + 1))
+            .lines()
+            .skip(200 * block)
+            .map(|line| format!("{line}\n"))
+            .collect()
+    };
+    let foldable = |_| noise_lines(200);
+    let generators: [&dyn Fn(usize) -> String; 2] = [&foldable, &distinct];
+    for noise in generators {
+        let mut raw = String::new();
+        for (block, fact) in facts.iter().enumerate() {
+            raw.push_str(&noise(block));
+            raw.push_str(fact);
+            raw.push('\n');
+        }
+        raw.push_str(&noise(facts.len()));
+        let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+        for fact in facts {
+            assert!(text.contains(fact), "{fact:?} missing in:\n{text}");
+        }
+        assert_eq!(original(dir.path(), &text), raw.as_bytes());
     }
-    raw.push_str(&noise_lines(400));
-    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
-    for fact in facts {
-        assert!(text.contains(fact), "{fact:?} missing in:\n{text}");
-    }
-    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
+/// A diagnostic word inside a path, a module path or a file name is a name,
+/// not an outcome: `src/errors/e1.rs` and `Error::new` are ordinary lines that
+/// fold, and the real error is not crowded out by them.
+#[test]
+fn diagnostic_words_inside_paths_and_names_are_not_diagnostics() {
+    let dir = tempfile::tempdir().unwrap();
+    let names: String = (0..300)
+        .map(|i| format!("checked src/errors/e{i}.rs, failure_{i}.py and Error::new({i})\n"))
+        .collect();
+    let raw = format!("start\n{names}error: real failure here\n{names}end\n");
+    let text = compress_v3(dir.path(), raw.as_bytes(), 1024);
+    assert!(text.contains(" error: real failure here\n"), "{text}");
+    assert!(text.contains("similar=600"), "{text}");
+    assert_eq!(text.matches("checked src/errors").count(), 1, "{text}");
 }
 
 #[test]
