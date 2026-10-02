@@ -104,7 +104,7 @@ fn v2_partial_tables_keep_cells_indices_and_provenance() {
             format!("input#record={index}")
         );
     }
-    let data: Dataset = serde_json::from_slice(&store.get(artifact(text)).unwrap()).unwrap();
+    let data: Dataset = store.dataset(artifact(text)).unwrap();
     assert_eq!(store.get(&data.snapshots[0].blob).unwrap(), raw);
 }
 
@@ -366,8 +366,7 @@ fn v2_huge_records_and_malformed_jsonl_keep_originals() {
         if output.as_ref() != raw.as_bytes() {
             let text = std::str::from_utf8(&output).unwrap();
             let store = Store::open(Some(dir.path().into())).unwrap();
-            let data: Dataset =
-                serde_json::from_slice(&store.get(artifact(text)).unwrap()).unwrap();
+            let data: Dataset = store.dataset(artifact(text)).unwrap();
             assert!(data.records.iter().all(|r| r.value.is_none()));
             assert_eq!(store.get(&data.snapshots[0].blob).unwrap(), raw.as_bytes());
         }

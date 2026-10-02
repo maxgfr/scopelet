@@ -202,5 +202,7 @@ rows to source labels. `total_records` and `omitted_units` describe coverage,
 not a computed aggregate. Complete cells, exact numbers and missing/null
 semantics survive. A partial table cannot establish an exhaustive count.
 V2 prioritizes distinct diagnostics before repetitions, and links directly to
-saved-source search. Version 1 remains selectable with `--compact-version 1`;
-query and artifact JSON schemas remain version 1.
+saved-source search. Version 1 remains selectable with `--compact-version 1`.
+The query schema is version 1. Artifacts are schema 1, except compact-v3
+automatic compression's schema 2, which names the original blob instead of
+copying its records; `expand` and queries read both.

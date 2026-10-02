@@ -99,6 +99,23 @@ fn flush(file: &fs::File) -> std::io::Result<()> {
     }
 }
 
+/// The schema version of dataset artifact bytes, read before their body.
+pub fn artifact_schema(bytes: &[u8]) -> Result<u32> {
+    // Scopelet serializes the version first; anything else is parsed whole.
+    for version in [1, 2] {
+        if bytes.starts_with(format!("{{\"schema_version\":{version},").as_bytes()) {
+            return Ok(version);
+        }
+    }
+    #[derive(serde::Deserialize)]
+    struct Probe {
+        schema_version: u32,
+    }
+    Ok(serde_json::from_slice::<Probe>(bytes)
+        .context("invalid dataset artifact")?
+        .schema_version)
+}
+
 pub fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -335,6 +352,92 @@ impl Store {
         Ok(bytes)
     }
 
+    /// A verified dataset artifact with its records. Schema 1 stores them;
+    /// schema 2 names the blob they are parsed from, which is read, verified
+    /// and parsed again here. The dataset returned carries its records, so
+    /// it is schema 1 whatever the artifact's schema: saving it (a query over
+    /// it, a search of it) stores a self-contained artifact.
+    pub fn dataset(&self, id: &str) -> Result<crate::model::Dataset> {
+        self.load_dataset(id, true)
+    }
+
+    /// A verified dataset artifact without its records: metadata, notes and
+    /// snapshots. A schema-2 artifact's blob is not read.
+    pub fn dataset_head(&self, id: &str) -> Result<crate::model::Dataset> {
+        self.load_dataset(id, false)
+    }
+
+    fn load_dataset(&self, id: &str, records: bool) -> Result<crate::model::Dataset> {
+        use crate::model::{Dataset, DatasetRef};
+        ensure!(
+            id.starts_with("artifact:"),
+            "expected an artifact reference"
+        );
+        let bytes = self.get(id)?;
+        match artifact_schema(&bytes)? {
+            1 => {
+                let mut data: Dataset =
+                    serde_json::from_slice(&bytes).context("invalid dataset artifact")?;
+                if !records {
+                    data.records.clear();
+                }
+                Ok(data)
+            }
+            2 => {
+                let head: DatasetRef =
+                    serde_json::from_slice(&bytes).context("invalid dataset artifact")?;
+                let from = &head.records_from;
+                let records = if records {
+                    ensure!(
+                        from.blob.starts_with("blob:"),
+                        "artifact records must come from a blob"
+                    );
+                    let text = String::from_utf8(self.get(&from.blob)?)
+                        .context("artifact records blob is not UTF-8")?;
+                    crate::sources::Parsed::parse(text, from.format, &from.source)?
+                        .records(&from.source, from.blob.clone())
+                } else {
+                    Vec::new()
+                };
+                Ok(Dataset {
+                    schema_version: 1,
+                    scan_complete: head.scan_complete,
+                    examined: head.examined,
+                    skipped: head.skipped,
+                    notes: head.notes,
+                    snapshots: head.snapshots,
+                    records,
+                })
+            }
+            version => bail!("unsupported artifact schema {version}"),
+        }
+    }
+
+    /// Blobs a verified artifact refers to, without parsing its records again.
+    pub fn references(&self, id: &str) -> Result<Vec<String>> {
+        use crate::model::{Dataset, DatasetRef};
+        let bytes = self.get(id)?;
+        Ok(match artifact_schema(&bytes)? {
+            1 => {
+                let data: Dataset = serde_json::from_slice(&bytes)?;
+                data.snapshots
+                    .into_iter()
+                    .map(|s| s.blob)
+                    .chain(data.records.into_iter().filter_map(|r| r.blob))
+                    .collect()
+            }
+            2 => {
+                let data: DatasetRef = serde_json::from_slice(&bytes)?;
+                data.snapshots
+                    .into_iter()
+                    .map(|s| s.blob)
+                    .chain([data.records_from.blob])
+                    .collect()
+            }
+            version => bail!("unsupported artifact schema {version}"),
+        })
+    }
+
     /// Mark an item as used so age-based cleanup does not drop it mid-session.
     pub fn touch(&self, id: &str) -> Result<()> {
         fs::File::open(self.location(id)?)?.set_modified(SystemTime::now())?;
@@ -366,16 +469,7 @@ impl Store {
                 removed += 1;
             } else {
                 // Fail closed on malformed surviving artifacts: do not discard their originals.
-                let bytes = self.get(&format!("artifact:{name}"))?;
-                let data: crate::model::Dataset = serde_json::from_slice(&bytes)?;
-                for snapshot in data.snapshots {
-                    referenced.insert(snapshot.blob);
-                }
-                for record in data.records {
-                    if let Some(blob) = record.blob {
-                        referenced.insert(blob);
-                    }
-                }
+                referenced.extend(self.references(&format!("artifact:{name}"))?);
             }
         }
         for item in fs::read_dir(self.root.join("blobs"))? {

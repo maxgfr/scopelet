@@ -64,7 +64,7 @@ pub enum Source {
     },
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, clap::ValueEnum)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, clap::ValueEnum, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Format {
     #[default]
@@ -187,6 +187,46 @@ pub struct Dataset {
     pub notes: Vec<String>,
     pub snapshots: Vec<Snapshot>,
     pub records: Vec<Record>,
+}
+
+/// Where the records of a schema-2 artifact come from: they are parsed again
+/// from the original blob instead of being stored a second time.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct RecordsRef {
+    pub blob: String,
+    pub format: Format,
+    pub source: String,
+}
+
+/// A saved dataset of schema 2: the metadata of `Dataset` and a reference to
+/// its records. The artifact ID is the SHA-256 of this exact JSON, which
+/// names the blob, so the reference is as immutable as a record copy.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DatasetRef {
+    pub schema_version: u32,
+    pub scan_complete: bool,
+    pub examined: usize,
+    pub skipped: BTreeMap<String, usize>,
+    pub notes: Vec<String>,
+    pub snapshots: Vec<Snapshot>,
+    pub records_from: RecordsRef,
+}
+
+impl DatasetRef {
+    /// The dataset's metadata with records replaced by their source.
+    pub fn new(data: &Dataset, records_from: RecordsRef) -> Self {
+        Self {
+            schema_version: 2,
+            scan_complete: data.scan_complete,
+            examined: data.examined,
+            skipped: data.skipped.clone(),
+            notes: data.notes.clone(),
+            snapshots: data.snapshots.clone(),
+            records_from,
+        }
+    }
 }
 
 impl Default for Dataset {

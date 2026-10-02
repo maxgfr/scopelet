@@ -170,7 +170,9 @@ fn print(value: &impl serde::Serialize) -> Result<()> {
 
 /// Dataset metadata without records, kept inside the same byte budget as a view.
 /// A wide scan can hold thousands of snapshots, so the list is paged by budget.
-fn manifest_view(data: &Dataset, max_bytes: usize) -> Result<serde_json::Value> {
+/// `schema` is the stored artifact's: a schema-2 artifact names the blob its
+/// records are parsed from, which the manifest says.
+fn manifest_view(data: &Dataset, max_bytes: usize, schema: u32) -> Result<serde_json::Value> {
     const NOTE: &str = "Manifest truncated: snapshots listed are the first of total_snapshots. Raise --max-bytes, or expand --raw for the whole artifact.";
     let mut meta = Dataset {
         schema_version: data.schema_version,
@@ -201,6 +203,9 @@ fn manifest_view(data: &Dataset, max_bytes: usize) -> Result<serde_json::Value> 
     object.insert("total_records".into(), json!(data.records.len()));
     object.insert("total_snapshots".into(), json!(data.snapshots.len()));
     object.insert("shown_snapshots".into(), json!(shown));
+    if schema != 1 {
+        object.insert("artifact_schema_version".into(), json!(schema));
+    }
     ensure!(
         serde_json::to_vec(&value)?.len() <= max_bytes,
         "manifest metadata exceeds output budget; increase max_bytes"
@@ -595,9 +600,10 @@ fn execute(cli: Cli) -> Result<i32> {
                 return Ok(0);
             }
             if id.starts_with("artifact:") {
-                let data: Dataset = serde_json::from_slice(&bytes)?;
+                let data = store.dataset(&id)?;
                 if manifest {
-                    print(&manifest_view(&data, max_bytes)?)?;
+                    let schema = scopelet::store::artifact_schema(&bytes)?;
+                    print(&manifest_view(&data, max_bytes, schema)?)?;
                 } else {
                     ensure!(
                         start.is_none() && end.is_none(),

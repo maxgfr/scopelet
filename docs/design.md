@@ -6,7 +6,9 @@ call another model to compress data.
 
 `Source -> Dataset -> operations -> immutable artifact -> bounded View` is the
 single pipeline. The Rust library exposes the same types used by the CLI.
-Request version and saved artifact schema are both 1. Unknown fields fail.
+Request version is 1. Saved artifacts are schema 1 (records stored) or, for
+compact-v3 automatic compression, schema 2 (records named by their original
+blob). Unknown request fields fail.
 
 Source loading owns scope and freshness. A dataset carries full records,
 snapshots, the number of examined files/streams and observed skip counts.
@@ -34,7 +36,16 @@ is intentional and recoverable, not assumed safe. `expand --manifest` obeys the
 same budget: it lists the first snapshots that fit and reports how many exist.
 
 The artifact ID hashes the complete serialized dataset. Source blob IDs hash
-original bytes. `expand` retrieves an immutable snapshot; an artifact used as a
+original bytes. A schema-2 artifact carries the dataset's metadata and
+snapshots and, instead of `records`, `records_from: {blob, format, source}`;
+its ID hashes that exact JSON, which names the blob, so it is as immutable as
+a stored copy. Readers verify the artifact, then the blob, and parse the
+records again with the recorded format; a missing or damaged blob fails that
+read while the metadata stays readable. A dataset read back carries its
+records, so saving a query over it stores a self-contained schema-1 artifact.
+`expand --manifest` reports `artifact_schema_version` when it is not 1. An
+older binary rejects a schema-2 artifact (`missing field records`) rather than
+misreading it. `expand` retrieves an immutable snapshot; an artifact used as a
 new query source checks all recorded local source hashes first. A changed or
 deleted local source fails that query, while its old blob remains recoverable.
 Web extraction snapshots describe extracted text, not original HTML/PDF bytes;
@@ -168,8 +179,10 @@ verification or certifies an unvisited source.
 Automatic compression prepares a view before opening storage. Rejected views,
 small/binary inputs and persisted previews perform no cache writes. Accepted
 views save original bytes and serialize the same dataset through a bounded,
-buffered hashing writer; artifact identities remain SHA-256 of the exact v1 JSON
-serialization. A storage/compression failure returns native captured bytes.
+buffered hashing writer; artifact identities remain SHA-256 of the exact JSON
+serialization. Compact-v1 and v2 store schema-1 artifacts, byte for byte as
+before; compact-v3 stores a schema-2 artifact that names the original blob, so
+an accepted view caches the original once plus well under a kilobyte. A storage/compression failure returns native captured bytes.
 Explicit queries still report storage errors. Compact-v2 became the CLI and hook default after a bounded live rollout
 comparison, and compact-v3 replaced it as the default (see below); v2 remains
 selectable and byte-identical. Legacy

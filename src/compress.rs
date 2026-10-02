@@ -177,8 +177,10 @@ fn automatic_with(
     let Ok(text) = std::str::from_utf8(bytes) else {
         return Ok(Cow::Borrowed(bytes));
     };
+    let parsed = Parsed::detected(text.to_owned());
+    let format = parsed.format();
     let mut data = Dataset {
-        records: Parsed::detected(text.to_owned()).records("input", String::new()),
+        records: parsed.records("input", String::new()),
         ..Dataset::default()
     };
     data.notes
@@ -198,7 +200,20 @@ fn automatic_with(
         bytes: bytes.len(),
         local_path: None,
     });
-    let artifact = store.put_json(&data)?;
+    // Compact-v3 artifacts name the original blob instead of storing every
+    // record a second time; earlier versions keep their exact v1 artifacts.
+    let artifact = if version == Version::V3 {
+        store.put_json(&DatasetRef::new(
+            &data,
+            RecordsRef {
+                blob: data.snapshots[0].blob.clone(),
+                format,
+                source: "input".into(),
+            },
+        ))?
+    } else {
+        store.put_json(&data)?
+    };
     // Only substitute our header, never placeholder-looking text in original evidence.
     let end = result.find('\n').unwrap() + 1;
     result.replace_range(..end, &header(&data, &artifact, version));

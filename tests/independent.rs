@@ -195,9 +195,7 @@ fn render_budget_pages_and_artifact_expansion() {
     assert_eq!(next, first.shown_records);
     assert!(!first.display_complete);
 
-    let artifact_data: Dataset =
-        serde_json::from_slice(&store.get(&first.artifact).expect("artifact bytes"))
-            .expect("artifact dataset");
+    let artifact_data: Dataset = store.dataset(&first.artifact).unwrap();
     let second =
         render::render(&artifact_data, &store, Mode::Default, 4096, next).expect("expanded page");
     assert_eq!(second.offset, next);

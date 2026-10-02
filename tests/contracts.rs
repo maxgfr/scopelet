@@ -240,7 +240,7 @@ fn oversized_record_has_explicit_recovery_instead_of_stuck_pagination() {
     assert_eq!(view.blocked_record, Some(0));
     assert_eq!(view.next_offset, None);
     assert!(!view.display_complete);
-    let recovered: Dataset = serde_json::from_slice(&store.get(&view.artifact).unwrap()).unwrap();
+    let recovered: Dataset = store.dataset(&view.artifact).unwrap();
     assert_eq!(recovered.records[0].text.len(), 4000);
 }
 

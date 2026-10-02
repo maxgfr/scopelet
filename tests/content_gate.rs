@@ -11,6 +11,7 @@
 use scopelet::{
     compress::{self, Version},
     model::Dataset,
+    sources,
     store::Store,
 };
 
@@ -280,13 +281,29 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
         .find(|s| s.starts_with("artifact:"))
         .ok_or_else(|| format!("{name}: no artifact reference"))?;
     let store = Store::open(Some(cache.to_path_buf())).unwrap();
-    let data: Dataset = serde_json::from_slice(&store.get(artifact).unwrap()).unwrap();
+    let data: Dataset = store.dataset(artifact).unwrap();
     if data.snapshots.len() != 1 {
         return Err(format!("{name}: expected one snapshot"));
     }
     let original = store.get(&data.snapshots[0].blob).unwrap();
     if original != fixture.bytes {
         return Err(format!("{name}: original bytes do not round-trip"));
+    }
+    // The artifact's records are those an ingestion of the original yields,
+    // whether it stores them (schema 1) or names their blob (schema 2).
+    let mut expected = Dataset::default();
+    let format = compress::detect(&String::from_utf8_lossy(&original));
+    sources::ingest(
+        &mut expected,
+        &store,
+        "input",
+        original.clone(),
+        None,
+        format,
+    )
+    .map_err(|e| format!("{name}: {e:#}"))?;
+    if data.records != expected.records {
+        return Err(format!("{name}: stored records differ from the original's"));
     }
     for fact in &fixture.facts {
         if !String::from_utf8_lossy(&original).contains(&source_form(fact)) {

@@ -20,7 +20,7 @@ fn original(dir: &std::path::Path, text: &str) -> Vec<u8> {
         .split_whitespace()
         .find(|s| s.starts_with("artifact:"))
         .unwrap();
-    let data: Dataset = serde_json::from_slice(&store.get(artifact).unwrap()).unwrap();
+    let data: Dataset = store.dataset(artifact).unwrap();
     store.get(&data.snapshots[0].blob).unwrap()
 }
 

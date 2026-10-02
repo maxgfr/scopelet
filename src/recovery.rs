@@ -11,15 +11,14 @@ pub fn search(
     source: Option<&str>,
 ) -> Result<Dataset> {
     let search = Search::new(patterns, false, false, context)?;
-    let bytes = store.get(id)?;
-    store.touch(id)?;
     let mut data = if id.starts_with("artifact:") {
-        let mut data: Dataset =
-            serde_json::from_slice(&bytes).context("invalid dataset artifact")?;
-        ensure!(data.schema_version == 1, "unsupported artifact schema");
-        data.records.clear();
+        // Only the snapshots are searched: records are not parsed again.
+        let data = store.dataset_head(id)?;
+        store.touch(id)?;
         data
     } else {
+        let bytes = store.get(id)?;
+        store.touch(id)?;
         ensure!(source.is_none(), "--source requires an artifact reference");
         Dataset {
             snapshots: vec![Snapshot {

@@ -112,10 +112,8 @@ pub(crate) fn load_search(
             data.examined = 1;
         }
         Source::Artifact { id } => {
-            let raw = store.get(id)?;
             if id.starts_with("artifact:") {
-                data = serde_json::from_slice(&raw).context("invalid dataset artifact")?;
-                ensure!(data.schema_version == 1, "unsupported artifact schema");
+                data = store.dataset(id)?;
                 for s in &data.snapshots {
                     if let Some(path) = &s.local_path {
                         let unchanged = read_bounded(Path::new(path), MAX_INPUT)
@@ -127,7 +125,7 @@ pub(crate) fn load_search(
                     }
                 }
             } else {
-                ingest(&mut data, store, id, raw, None, Format::Text)?;
+                ingest(&mut data, store, id, store.get(id)?, None, Format::Text)?;
                 data.examined = 1;
             }
         }
@@ -198,7 +196,16 @@ impl Parsed {
         Self::Text(text)
     }
 
-    fn parse(text: String, format: Format, source: &str) -> Result<Self> {
+    /// The format that parses the same text back into these records.
+    pub(crate) fn format(&self) -> Format {
+        match self {
+            Self::Text(_) => Format::Text,
+            Self::Json(_) => Format::Json,
+            Self::Jsonl(_) => Format::Jsonl,
+        }
+    }
+
+    pub(crate) fn parse(text: String, format: Format, source: &str) -> Result<Self> {
         Ok(match format {
             Format::Text => Self::Text(text),
             Format::Json => Self::Json(
