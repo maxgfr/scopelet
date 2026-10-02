@@ -351,8 +351,7 @@ fn execute(cli: Cli) -> Result<i32> {
         compress::Version::default()
     };
     let cancel = Arc::new(AtomicBool::new(false));
-    let signal = cancel.clone();
-    ctrlc::set_handler(move || signal.store(true, std::sync::atomic::Ordering::SeqCst))?;
+    scopelet::process::cancel_on_termination(cancel.clone())?;
     if matches!(cli.command, Cmd::Doctor) {
         let mut status = scopelet::adapters::doctor(cancel);
         status["integration"] = integration::doctor();

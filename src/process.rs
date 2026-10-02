@@ -84,6 +84,49 @@ fn nonblocking(pipe: &impl std::os::fd::AsRawFd) -> Result<()> {
     Ok(())
 }
 
+/// Turn SIGINT, SIGTERM and SIGHUP into `cancel`, replacing whatever the
+/// caller left (an ignored SIGHUP under `nohup`, say), so a wrapped command is
+/// stopped and its status reported (130) instead of this process dying first.
+///
+/// A direct `sigaction` rather than a signal-handling crate: on Apple
+/// platforms that crate links the Foundation framework, whose loading cost
+/// most of a millisecond on every invocation, every hook included.
+#[cfg(unix)]
+pub fn cancel_on_termination(cancel: Arc<AtomicBool>) -> Result<()> {
+    static CANCEL: std::sync::OnceLock<Arc<AtomicBool>> = std::sync::OnceLock::new();
+    extern "C" fn handle(_: libc::c_int) {
+        // An atomic load and an atomic store: async-signal-safe.
+        if let Some(cancel) = CANCEL.get() {
+            cancel.store(true, Ordering::SeqCst);
+        }
+    }
+    ensure!(
+        CANCEL.set(cancel).is_ok(),
+        "termination handler already installed"
+    );
+    for signal in [libc::SIGINT, libc::SIGTERM, libc::SIGHUP] {
+        // SAFETY: a zeroed sigaction is a valid starting value, and the
+        // handler only touches an initialized atomic.
+        let installed = unsafe {
+            let mut action: libc::sigaction = std::mem::zeroed();
+            action.sa_sigaction = handle as extern "C" fn(libc::c_int) as libc::sighandler_t;
+            action.sa_flags = libc::SA_RESTART;
+            libc::sigemptyset(&mut action.sa_mask);
+            libc::sigaction(signal, &action, std::ptr::null_mut())
+        };
+        if installed != 0 {
+            return Err(std::io::Error::last_os_error()).context("install termination handler");
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+pub fn cancel_on_termination(cancel: Arc<AtomicBool>) -> Result<()> {
+    ctrlc::set_handler(move || cancel.store(true, Ordering::SeqCst))?;
+    Ok(())
+}
+
 #[cfg(unix)]
 fn signal_group(pid: u32, signal: i32) {
     // The child starts a dedicated group; this never targets the caller's group.

@@ -168,3 +168,51 @@ fn large_output_is_captured_at_pipe_speed() {
         started.elapsed()
     );
 }
+
+/// The binary turns SIGINT, SIGTERM and SIGHUP into a cancellation, even when
+/// its caller ignored them (`nohup`, a background job): the wrapped command's
+/// group is stopped and `run --auto` exits 130 instead of dying or hanging.
+#[test]
+fn termination_signals_cancel_a_wrapped_command() {
+    let binary = env!("CARGO_BIN_EXE_scopelet");
+    for (signal, ignored) in [
+        (libc::SIGINT, false),
+        (libc::SIGTERM, false),
+        (libc::SIGHUP, false),
+        (libc::SIGINT, true),
+        (libc::SIGHUP, true),
+    ] {
+        let dir = tempfile::tempdir().unwrap();
+        let trap = if ignored { "trap '' INT HUP; " } else { "" };
+        let mut child = Command::new("sh")
+            .args([
+                "-c",
+                &format!("{trap}exec \"$0\" --cache-dir \"$1\" run --auto -- sleep 30"),
+                binary,
+                dir.path().to_str().unwrap(),
+            ])
+            .env("SCOPELET_EVENTS", "0")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .unwrap();
+        thread::sleep(Duration::from_millis(500));
+        unsafe { libc::kill(child.id() as i32, signal) };
+        let start = Instant::now();
+        let status = loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                break status;
+            }
+            if start.elapsed() > Duration::from_secs(5) {
+                let _ = child.kill();
+                panic!("signal {signal} (ignored: {ignored}) did not cancel");
+            }
+            thread::sleep(Duration::from_millis(20));
+        };
+        assert_eq!(
+            status.code(),
+            Some(130),
+            "signal {signal} (ignored: {ignored})"
+        );
+    }
+}
