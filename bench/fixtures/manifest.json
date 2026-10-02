@@ -50,7 +50,7 @@
   },
   "git_diff": {
     "profile": "git",
-    "min_reduction": 72,
+    "min_reduction": 82,
     "visible": true,
     "facts": ["+        self.expires_at >= now", "diff --git a/src/auth.rs b/src/auth.rs", "+        gross - self.discount", "diff --git a/src/billing/invoice.rs b/src/billing/invoice.rs"],
     "pending_facts": []
@@ -78,10 +78,10 @@
   },
   "service_log": {
     "profile": "logs",
-    "min_reduction": 95,
+    "min_reduction": 98,
     "visible": true,
-    "facts": ["ERROR [pool] conn refused 10.0.3.7:5432"],
-    "pending_facts": ["FATAL [migrate] migration 0042_add_tenants failed"]
+    "facts": ["ERROR [pool] conn refused 10.0.3.7:5432", "FATAL [migrate] migration 0042_add_tenants failed"],
+    "pending_facts": []
   },
   "rg_context": {
     "profile": "search",

@@ -241,10 +241,13 @@ the whole stream through unchanged. JSON records are still never split.
 Repetitions fold wherever they occur. `input:a-b repeat=N` (N = b−a+1) is a
 contiguous run of one text; `input:a repeat=N last=b` (N < b−a+1) is the same
 text at N dispersed lines, shown at its first occurrence; `input:a similar=N
-last=b` groups N lines that share a template after masking digit runs, hex
-runs of eight or more characters and whitespace runs. Only lines without a
-diagnostic fold by template: diagnostics fold with identical text only, so
-counters and identifiers in an error stay visible. When at least 90% of a
+last=b` groups N lines that share a template after masking digit runs,
+decimal numbers and measurements with a unit (`12.4s`, `42ms`, `1.2KiB`,
+`37%`), UUIDs, `0x` addresses, hex runs of seven or more characters that
+contain a digit, and whitespace runs. Only lines without a diagnostic fold by
+template: diagnostics fold by their text with timestamps masked, so a flood of
+one error differing only by its time folds while counters and identifiers in
+an error stay visible. When at least 90% of a
 record's lines (20 or more) sit in folded groups, its remaining singletons are
 promoted ahead of context, because the rare line among noise is usually the
 evidence being looked for. All of these markers are metadata, never bytes

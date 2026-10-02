@@ -92,8 +92,10 @@ fn strip_escapes(text: &str) -> String {
 }
 
 /// Key under which lines that differ only by counters, identifiers or
-/// alignment coincide: digit runs and hex runs of at least eight characters
-/// (containing a digit) become `#`, whitespace runs become one space.
+/// alignment coincide. These become `#`: digit runs, decimal numbers and
+/// measurements (`12.4s`, `42ms`, `1.2KiB`, `37%`), UUIDs, `0x` addresses and
+/// hex runs of at least seven characters containing a digit (short Git
+/// hashes). Whitespace runs become one space.
 #[cfg(test)]
 pub(crate) fn template(line: &str) -> String {
     let mut out = String::new();
@@ -117,13 +119,22 @@ pub(crate) fn template_into(line: &str, out: &mut String) {
             out.push(' ');
         } else if bytes[i].is_ascii_alphanumeric() {
             let start = i;
+            if let Some(end) = uuid_at(bytes, start).or_else(|| measurement_at(line, start)) {
+                out.push('#');
+                i = end;
+                continue;
+            }
             while i < bytes.len() && bytes[i].is_ascii_alphanumeric() {
                 i += 1;
             }
             let word = &line[start..i];
             let digits = word.bytes().filter(u8::is_ascii_digit).count();
+            let address = word.len() > 2
+                && (word.starts_with("0x") || word.starts_with("0X"))
+                && word[2..].bytes().all(|b| b.is_ascii_hexdigit());
             if digits == word.len()
-                || (word.len() >= 8 && digits > 0 && word.bytes().all(|b| b.is_ascii_hexdigit()))
+                || address
+                || (word.len() >= 7 && digits > 0 && word.bytes().all(|b| b.is_ascii_hexdigit()))
             {
                 out.push('#');
             } else {
@@ -147,6 +158,81 @@ pub(crate) fn template_into(line: &str, out: &mut String) {
     }
 }
 
+/// Units a measurement may carry right after its number. `Z` is the UTC
+/// designator closing a timestamp's fraction (`12:00:01.137Z`).
+const UNITS: &[&str] = &[
+    "Z", "ns", "us", "ms", "s", "m", "min", "h", "d", "b", "B", "k", "K", "kb", "kB", "KB", "Ki",
+    "KiB", "M", "mb", "MB", "Mi", "MiB", "G", "gb", "GB", "Gi", "GiB", "T", "TB", "Ti", "TiB",
+    "px", "x",
+];
+
+fn word_ends(bytes: &[u8], i: usize) -> bool {
+    bytes.get(i).is_none_or(|b| !b.is_ascii_alphanumeric())
+}
+
+/// End of a number at `start` (decimals included) followed by nothing, a
+/// known unit or `%`, when the word stops there: `12`, `12.4s`, `1.2KiB`.
+fn measurement_at(line: &str, start: usize) -> Option<usize> {
+    let bytes = line.as_bytes();
+    let digits = |mut i: usize| {
+        while bytes.get(i).is_some_and(u8::is_ascii_digit) {
+            i += 1;
+        }
+        i
+    };
+    let mut i = digits(start);
+    if i == start {
+        return None;
+    }
+    if bytes.get(i) == Some(&b'.') && bytes.get(i + 1).is_some_and(u8::is_ascii_digit) {
+        i = digits(i + 1);
+    }
+    if bytes.get(i) == Some(&b'%') {
+        return Some(i + 1);
+    }
+    let mut end = i;
+    while bytes.get(end).is_some_and(u8::is_ascii_alphabetic) {
+        end += 1;
+    }
+    (word_ends(bytes, end) && (end == i || UNITS.contains(&&line[i..end]))).then_some(end)
+}
+
+/// End of a UUID (8-4-4-4-12 hex digits) at `start`.
+fn uuid_at(bytes: &[u8], start: usize) -> Option<usize> {
+    let mut i = start;
+    for (n, width) in [8, 4, 4, 4, 12].into_iter().enumerate() {
+        if n > 0 {
+            (bytes.get(i) == Some(&b'-')).then_some(())?;
+            i += 1;
+        }
+        let run = bytes.get(i..i + width)?;
+        run.iter().all(u8::is_ascii_hexdigit).then_some(())?;
+        i += width;
+    }
+    word_ends(bytes, i).then_some(i)
+}
+
+static TIMESTAMP: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+    regex::Regex::new(
+        r"(?-u:\b)\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:[.,]\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?|(?-u:\b)\d{2}:\d{2}:\d{2}(?:[.,]\d+)?",
+    )
+    .unwrap()
+});
+
+/// Key under which repetitions of one diagnostic coincide: only timestamps
+/// become `#`. Counters, identifiers and addresses in an error are evidence,
+/// so they stay part of the key and distinct errors stay distinct.
+pub(crate) fn diagnostic_key_into(line: &str, out: &mut String) {
+    out.clear();
+    let mut last = 0;
+    for m in TIMESTAMP.find_iter(line) {
+        out.push_str(&line[last..m.start()]);
+        out.push('#');
+        last = m.end();
+    }
+    out.push_str(&line[last..]);
+}
+
 /// Width in bytes of the whitespace character starting at `i`, if any. ASCII
 /// is decided from the byte; anything else is decoded so Unicode whitespace
 /// (no-break space, ideographic space, ...) collapses exactly as before.
@@ -165,7 +251,9 @@ fn whitespace_at(line: &str, i: usize) -> Option<usize> {
 mod tests {
     use super::*;
 
-    /// The character-by-character template this byte scan replaced.
+    /// The character-by-character template this byte scan replaced, before
+    /// measurements, UUIDs and addresses were masked: the cases below keep
+    /// checking the scan's whitespace and Unicode handling.
     fn reference_template(line: &str) -> String {
         let mut out = String::new();
         let mut chars = line.char_indices().peekable();
@@ -213,7 +301,7 @@ mod tests {
             "plain words here",
             "  leading\t\x0B\x0Cmixed \r spaces  ",
             "\x1c\x1d\x1e\x1f control bytes stay",
-            "module12.test.js took 42 ms (0x00ff00aa1234)",
+            "module12.test.js took 42 ms",
             "deadbeef 12345678 abc12345 a1 é1 1é",
             "no-break\u{a0}space and\u{3000}ideographic\u{2028}separator",
             "\u{85}next line\u{85}\u{85}twice",
@@ -245,6 +333,50 @@ mod tests {
         assert_eq!(line_view("\x1b]0;title\x07é\x1b[K\n"), "é");
         assert_eq!(line_view("\x1b(Bx"), "x");
         assert_eq!(line_view("\x1bMx"), "x");
+    }
+
+    #[test]
+    fn templates_mask_measurements_uuids_addresses_and_short_hashes() {
+        assert_eq!(
+            template("ok in 12.4s, 42ms, 1.2KiB, 512Mi, [ 37%]"),
+            "ok in #, #, #, #, [ #]"
+        );
+        assert_eq!(
+            template("pod 0f9e8d7c-0017-4b3a-9c8d-7e6f5a4b3c2d ready"),
+            "pod # ready"
+        );
+        assert_eq!(template("pc=0x5f3a2d addr=0x18 +0x1d"), "pc=# addr=# +#");
+        assert_eq!(template("2026-09-30T12:00:03.411Z GET"), "#-#-30T#:#:# GET");
+        assert_eq!(template("index 1a2b3c4..5d6e7f8 100644"), "index #..# #");
+        // A word that only starts with a number is not a measurement.
+        assert_eq!(template("2nd attempt 64bits 3a"), "2nd attempt 64bits 3a");
+        assert_eq!(
+            template("module12.test.js took 42 ms (0x00ff00aa1234)"),
+            "module#.test.js took # ms (#)"
+        );
+    }
+
+    #[test]
+    fn diagnostic_keys_mask_timestamps_only() {
+        let key = |line| {
+            let mut out = String::new();
+            diagnostic_key_into(line, &mut out);
+            out
+        };
+        assert_eq!(
+            key("2026-09-30T12:00:01.123Z ERROR conn refused 10.0.3.7:5432 (attempt 3/5)"),
+            "# ERROR conn refused 10.0.3.7:5432 (attempt 3/5)"
+        );
+        assert_eq!(
+            key("2026-09-30 12:01:02.811 ERROR 4182 --- [main] failed"),
+            "# ERROR 4182 --- [main] failed"
+        );
+        assert_eq!(
+            key("[12:00:01] error: case 7 failed"),
+            "[#] error: case 7 failed"
+        );
+        assert_eq!(key("2026-09-30T12:00:01+02:00 fatal: x"), "# fatal: x");
+        assert_eq!(key("error: case 7 failed"), "error: case 7 failed");
     }
 
     #[test]

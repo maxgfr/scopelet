@@ -233,6 +233,40 @@ fn diagnostic_words_inside_paths_and_names_are_not_diagnostics() {
     assert_eq!(text.matches("checked src/errors").count(), 1, "{text}");
 }
 
+/// A flood of one error differing only by its timestamp is one diagnostic
+/// repeated: it folds, its counters stay visible, and the rare fatal line
+/// among it is shown.
+#[test]
+fn timestamped_diagnostics_fold_and_keep_their_identifiers() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = String::new();
+    for i in 0..1200 {
+        let ts = format!(
+            "2026-09-30T12:{:02}:{:02}.{:03}Z",
+            i / 60 % 60,
+            i % 60,
+            i * 7 % 1000
+        );
+        if i == 900 {
+            raw.push_str(&format!("{ts} FATAL migration 0042 failed: no relation\n"));
+        } else {
+            raw.push_str(&format!(
+                "{ts} ERROR conn refused 10.0.3.7:5432 (attempt {}/2)\n",
+                i % 2 + 1
+            ));
+        }
+    }
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    assert!(
+        text.contains("FATAL migration 0042 failed: no relation"),
+        "{text}"
+    );
+    assert!(text.contains("(attempt 1/2)"), "{text}");
+    assert!(text.contains("(attempt 2/2)"), "{text}");
+    assert!(text.contains("similar=600"), "{text}");
+    assert!(text.contains("omitted_units=0"), "{text}");
+}
+
 #[test]
 fn warnings_do_not_evict_errors_from_a_small_budget() {
     let dir = tempfile::tempdir().unwrap();

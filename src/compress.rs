@@ -608,13 +608,15 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     nearby.fill(0..n.min(3));
     nearby.fill(n.saturating_sub(5)..n);
 
-    // Diagnostics group by exact text: their variable parts (counters, ids)
-    // are evidence and stay visible. Other lines group by template.
+    // Diagnostics group by their text without timestamps: their variable
+    // parts (counters, ids) are evidence and stay visible. Other lines group
+    // by template.
     let mut groups: Vec<Group> = Vec::new();
     let mut owner: Vec<u32> = vec![NONE; n];
     // The group of each first occurrence; repetitions look it up by index.
     let mut slot_of_first: Vec<u32> = vec![NONE; n];
     let mut by_template: HashMap<String, u32> = HashMap::default();
+    let mut by_diagnostic: HashMap<String, u32> = HashMap::default();
     // One reusable buffer: a template key is only copied when it is new, so a
     // scan over many same-shaped lines allocates once, not once per line.
     let mut key = String::new();
@@ -658,8 +660,17 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         let slot = if slot_of_first[origin] != NONE {
             slot_of_first[origin]
         } else if strong.get(i) || weak.get(i) {
-            slot_of_first[i] = groups.len() as u32;
-            groups.len() as u32
+            // Repetitions of one diagnostic differ by their timestamps only.
+            clean::diagnostic_key_into(view, &mut key);
+            let slot = match by_diagnostic.get(key.as_str()) {
+                Some(&slot) => slot,
+                None => {
+                    by_diagnostic.insert(key.clone(), groups.len() as u32);
+                    groups.len() as u32
+                }
+            };
+            slot_of_first[i] = slot;
+            slot
         } else {
             clean::template_into(view, &mut key);
             let slot = match by_template.get(key.as_str()) {
@@ -676,6 +687,7 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         owner[i] = slot;
     }
     drop(by_template);
+    drop(by_diagnostic);
     // A nontrivial line is shown in place unless it folds into an earlier
     // occurrence. A trivial line next to one (ignoring other trivial lines)
     // is glued: it stays where it is. One between lines shown elsewhere has
