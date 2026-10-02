@@ -256,10 +256,21 @@ fn automatic_with(
         return unchanged(Reason::TooManyLines);
     }
     // Existing Scopelet output and host previews are never compressed again.
-    if SCOPELET_MARKER.find(bytes).is_some() {
+    // Compact-v3 only recognizes their markers where they are written, at the
+    // start of a line: a source file quoting `"[scopelet "` is not a view.
+    let marked = |finder: &memchr::memmem::Finder<'_>| {
+        if version == Version::V3 {
+            finder
+                .find_iter(bytes)
+                .any(|i| i == 0 || bytes[i - 1] == b'\n')
+        } else {
+            finder.find(bytes).is_some()
+        }
+    };
+    if marked(&SCOPELET_MARKER) {
         return unchanged(Reason::AlreadyCompressed);
     }
-    if PERSISTED_MARKER.find(bytes).is_some() {
+    if marked(&PERSISTED_MARKER) {
         return unchanged(Reason::Persisted);
     }
     let Ok(text) = std::str::from_utf8(bytes) else {

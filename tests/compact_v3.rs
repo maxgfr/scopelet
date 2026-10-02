@@ -866,3 +866,38 @@ fn real_tool_output_keeps_the_evidence_that_decides_the_outcome() {
         assert_eq!(original(dir.path(), &text), raw.as_bytes(), "{name}");
     }
 }
+
+/// Scopelet's own output is never compressed again, but only a marker at the
+/// start of a line is one: source code quoting it is ordinary text.
+#[test]
+fn only_a_marker_at_a_line_start_means_already_compressed() {
+    let dir = tempfile::tempdir().unwrap();
+    let quoting: String = (0..400)
+        .map(|i| format!("    let header_{i} = format!(\"[scopelet compact-v3 {{id}}\");\n"))
+        .collect();
+    let text = compress_v3(dir.path(), quoting.as_bytes(), 4096);
+    assert!(text.starts_with("[scopelet compact-v3 artifact:"), "{text}");
+    // Earlier versions keep their byte-identical rule.
+    let v2 = compress::automatic_lazy(
+        quoting.as_bytes(),
+        Some(dir.path().into()),
+        4096,
+        Version::V2,
+    )
+    .unwrap();
+    assert_eq!(v2.as_ref(), quoting.as_bytes());
+    // A view, or a note, at the start of a line passes through.
+    let view = format!("{text}{}", "more\n".repeat(1000));
+    let again =
+        compress::automatic_lazy(view.as_bytes(), Some(dir.path().into()), 4096, Version::V3)
+            .unwrap();
+    assert_eq!(again.as_ref(), view.as_bytes());
+    let note = format!(
+        "{}[scopelet capture_complete=false exit_code=1; saved output may be partial]\n",
+        "line\n".repeat(1000)
+    );
+    let kept =
+        compress::automatic_lazy(note.as_bytes(), Some(dir.path().into()), 4096, Version::V3)
+            .unwrap();
+    assert_eq!(kept.as_ref(), note.as_bytes());
+}

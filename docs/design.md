@@ -159,7 +159,9 @@ Automatic inputs up to 2048 bytes remain unchanged (16 KiB for a recognized
 file read in compact-v3). Larger inputs have a 4096 byte target per stream (in
 compact-v3, the recognized command's profile target) and need both 512 bytes and 20% savings including all
 metadata before replacement. Non-UTF-8 input, existing Scopelet output and host
-persisted-output previews remain unchanged. Inputs over 100000 lines (250000
+persisted-output previews remain unchanged; compact-v3 recognizes those markers
+only at the start of a line, where they are written, so a source file quoting
+`[scopelet ` is compressed like any other text. Inputs over 100000 lines (250000
 in compact-v3, whose lighter units keep the peak resident size under 128 MB at
 that count with a full 32 MiB stream) bypass automatic compression to bound
 selection memory; explicit compact queries reject more than 100000 units. Byte thresholds are not tokenizer or session savings.
