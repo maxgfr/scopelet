@@ -111,10 +111,18 @@ enum Cmd {
     },
     /// Recover an immutable snapshot or page a saved result.
     Expand {
+        /// artifact:<sha256> or blob:<sha256>, a bare hash, a unique prefix of
+        /// at least 8 hex characters, or last (the latest automatic view).
         id: String,
         /// Search literal text in immutable originals; repeat for alternatives.
         #[arg(long, conflicts_with_all = ["raw", "manifest", "start", "end"])]
         find: Vec<String>,
+        /// Treat --find patterns as regular expressions.
+        #[arg(long, requires = "find")]
+        regex: bool,
+        /// Match --find patterns without regard to case.
+        #[arg(long, requires = "find")]
+        ignore_case: bool,
         #[arg(long, default_value_t = 3, requires = "find")]
         context: usize,
         /// Restrict an artifact search to an exact source label from its manifest.
@@ -124,7 +132,8 @@ enum Cmd {
         raw: bool,
         #[arg(long)]
         manifest: bool,
-        #[arg(long, default_value_t = 0)]
+        /// Record position to page an artifact or a search result from.
+        #[arg(long, default_value_t = 0, conflicts_with_all = ["start", "end"])]
         offset: usize,
         #[arg(long)]
         start: Option<usize>,
@@ -396,6 +405,7 @@ fn execute(cli: Cli) -> Result<i32> {
                         patterns: find,
                         all: false,
                         regex: false,
+                        ignore_case: false,
                         context,
                     });
                 }
@@ -580,6 +590,8 @@ fn execute(cli: Cli) -> Result<i32> {
         Cmd::Expand {
             id,
             find,
+            regex,
+            ignore_case,
             context,
             source,
             raw,
@@ -593,9 +605,16 @@ fn execute(cli: Cli) -> Result<i32> {
                 (1024..=1024 * 1024).contains(&max_bytes),
                 "max_bytes must be 1024..1048576"
             );
+            let id = store.resolve(&id)?;
             if !find.is_empty() {
-                let data =
-                    scopelet::recovery::search(&store, &id, &find, context, source.as_deref())?;
+                let data = scopelet::recovery::search(
+                    &store,
+                    &id,
+                    &find,
+                    (regex, ignore_case),
+                    context,
+                    source.as_deref(),
+                )?;
                 print(&render::render(
                     &data,
                     &store,
@@ -609,15 +628,16 @@ fn execute(cli: Cli) -> Result<i32> {
                     0
                 });
             }
-            if id.starts_with("blob:") && (start.is_some() || end.is_some()) {
+            if id.starts_with("blob:") && !raw {
                 ensure!(!manifest, "--manifest requires an artifact");
-                let data = scopelet::recovery::range(
+                // A blob is paged by lines: the lines that fit, then next_start.
+                print(&scopelet::recovery::page(
                     &store,
                     &id,
                     start.unwrap_or(1),
                     end.unwrap_or(usize::MAX),
-                )?;
-                print(&render::render(&data, &store, Mode::Default, max_bytes, 0)?)?;
+                    max_bytes,
+                )?)?;
                 return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
                     130
                 } else {
@@ -626,7 +646,7 @@ fn execute(cli: Cli) -> Result<i32> {
             }
             let bytes = store.get(&id)?;
             // Expansion is use: keep the item out of the next age-based cleanup.
-            store.touch(&id)?;
+            store.touch(&id);
             if raw {
                 std::io::stdout().write_all(&bytes)?;
                 return Ok(0);
@@ -650,15 +670,6 @@ fn execute(cli: Cli) -> Result<i32> {
                         offset,
                     )?)?;
                 }
-            } else {
-                ensure!(!manifest, "--manifest requires an artifact");
-                let mut data = Dataset::default();
-                sources::ingest(&mut data, &store, &id, bytes, None, Format::Text)?;
-                data.notes.push(
-                    "Immutable original snapshot; does not assert the source is still current."
-                        .into(),
-                );
-                print(&render::render(&data, &store, Mode::Default, max_bytes, 0)?)?;
             }
         }
         Cmd::Clean {

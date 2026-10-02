@@ -29,11 +29,12 @@ pub fn execute(request: &Request, store: &Store, cancel: Arc<AtomicBool>) -> Res
             patterns,
             all,
             regex,
+            ignore_case,
             context,
         }) = request.operations.first()
     {
         // For invalid searches retain source-loading/error precedence of the old path.
-        if let Ok(search) = Search::new(patterns, *all, *regex, *context) {
+        if let Ok(search) = Search::new(patterns, *all, *regex, *ignore_case, *context) {
             let mut data = sources::load_search(&request.source, store, cancel, Some(&search))?;
             pipeline::apply(&mut data, &request.operations[1..])?;
             return Ok(data);

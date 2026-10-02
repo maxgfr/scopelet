@@ -29,8 +29,12 @@ fn transform(records: Vec<Record>, op: &Operation) -> Result<Vec<Record>> {
             patterns,
             all,
             regex,
+            ignore_case,
             context,
-        } => Ok(crate::search::Search::new(patterns, *all, *regex, *context)?.apply(records)),
+        } => Ok(
+            crate::search::Search::new(patterns, *all, *regex, *ignore_case, *context)?
+                .apply(records),
+        ),
         Operation::Filter {
             pointer: path,
             equals,

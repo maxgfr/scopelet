@@ -214,6 +214,7 @@ fn automatic_with(
     } else {
         store.put_json(&data)?
     };
+    store.set_last(&artifact);
     // Only substitute our header, never placeholder-looking text in original evidence.
     let end = result.find('\n').unwrap() + 1;
     result.replace_range(..end, &header(&data, &artifact, version));

@@ -91,6 +91,9 @@ pub enum Operation {
         all: bool,
         #[serde(default)]
         regex: bool,
+        /// Match without regard to case (Unicode simple case folding).
+        #[serde(default)]
+        ignore_case: bool,
         #[serde(default = "default_context")]
         context: usize,
     },

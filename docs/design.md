@@ -215,14 +215,27 @@ templates as described in its own section. Selection remains a heuristic:
 omissions stay explicit, the output stays within the byte budget, and originals
 remain recoverable. The output is restored to source order after selection.
 
-`expand ID --find TEXT [--find TEXT] [--context N] [--source LABEL]` searches
-immutable original blobs, including evidence no longer present in a filtered
-artifact's records. It uses literal alternatives and absolute source lines,
+`expand ID --find TEXT [--find TEXT] [--regex] [--ignore-case] [--context N]
+[--source LABEL]` searches immutable original blobs, including evidence no
+longer present in a filtered artifact's records. It uses literal alternatives
+(regular expressions with `--regex`; a search spec's additive `ignore_case`
+backs `--ignore-case`) and absolute source lines,
 returns ordinary paginated JSON views, and labels the data as historical.
 `--source` selects an exact artifact snapshot label; unknown labels fail.
 Search conflicts with raw/manifest/range expansion. This is text-window
 recovery, even for a JSON original; structured computations belong in `query`.
 No local freshness check is implied by explicit recovery.
+
+`expand` and artifact query sources resolve what a person types: a full
+reference, a bare 64-character hash (an artifact before a blob), a unique
+prefix of at least 8 hex characters (an ambiguous one fails with the number of
+candidates), or `last`. Each accepted automatic compression atomically
+records its artifact in `<cache>/last`; with concurrent hosts it names the
+latest write. A blob is paged by lines: when the requested lines do not fit,
+the view holds the first lines that do and `next_start`; only a single line
+larger than the budget remains a `blocked_record`. `--offset` pages records
+and conflicts with a line range instead of being ignored. Marking an item as
+used is best effort, so a read-only cache stays readable.
 
 Blob range recovery optionally caches offsets for at most 100000 lines in
 `line-index-v1/`. These disposable indexes have local ignore markers and bind

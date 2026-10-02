@@ -21,6 +21,7 @@ fn multiline_and_single_line_patterns_keep_all_evidence() {
             patterns: vec!["single".into(), "start\\nfinish".into()],
             all: true,
             regex: true,
+            ignore_case: false,
             context: 0,
         }],
     )
@@ -264,6 +265,7 @@ fn regex_line_anchors_preserve_crlf_bytes() {
             patterns: vec!["^exact$".into()],
             all: false,
             regex: true,
+            ignore_case: false,
             context: 0,
         }],
     )

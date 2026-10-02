@@ -36,6 +36,7 @@ fn search_all_patterns_across_lines_and_merges_overlapping_context() {
             patterns: vec!["alpha".into(), "beta".into()],
             all: true,
             regex: false,
+            ignore_case: false,
             context: 1,
         }],
     )
@@ -66,6 +67,7 @@ fn regex_search_can_match_across_physical_lines() {
             patterns: vec!["alpha\\nbeta".into()],
             all: false,
             regex: true,
+            ignore_case: false,
             context: 0,
         }],
     )

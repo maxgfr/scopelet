@@ -17,6 +17,9 @@ pub struct View {
     pub next_offset: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub blocked_record: Option<usize>,
+    /// First source line not shown when a blob page stops at the budget.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_start: Option<usize>,
     pub records: Vec<Record>,
     pub notes: Vec<String>,
 }
@@ -71,6 +74,7 @@ fn paginate(
         offset,
         next_offset: (offset < data.records.len()).then_some(offset),
         blocked_record: None,
+        next_start: None,
         records: Vec::new(),
         notes: Vec::new(),
     };
@@ -136,7 +140,7 @@ fn paginate(
         (offset + view.shown_records < view.total_records).then_some(offset + view.shown_records);
     if view.blocked_record.is_some() {
         view.next_offset = None;
-        view.notes.push("Record exceeds budget. Increase max_bytes or expand --raw to a local file and select the record locally.".into());
+        view.notes.push("Record exceeds budget. Increase max_bytes; expand its blob by line range (--start/--end), or with --raw for a single line too long to show.".into());
     }
     if view.records.iter().any(|record| record.text_truncated) {
         view.notes.push(

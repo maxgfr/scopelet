@@ -200,10 +200,21 @@ fn recovery_searches_originals_after_source_changes() {
     let id = store.put_json(&data).unwrap();
     fs::write(&file, "replacement").unwrap();
     assert!(sources::load(&Source::Artifact { id: id.clone() }, &store, cancel()).is_err());
-    let recovered = recovery::search(&store, &id, &["evidence".into()], 0, None).unwrap();
+    let recovered =
+        recovery::search(&store, &id, &["evidence".into()], (false, false), 0, None).unwrap();
     assert_eq!(recovered.records[0].text, "old evidence é\r\n");
     assert_eq!(recovered.records[0].start_line, Some(2));
-    assert!(recovery::search(&store, &id, &["evidence".into()], 0, Some("absent")).is_err());
+    assert!(
+        recovery::search(
+            &store,
+            &id,
+            &["evidence".into()],
+            (false, false),
+            0,
+            Some("absent")
+        )
+        .is_err()
+    );
 }
 
 #[test]

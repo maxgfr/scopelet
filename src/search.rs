@@ -10,7 +10,13 @@ pub(crate) struct Search {
     context: usize,
 }
 impl Search {
-    pub(crate) fn new(patterns: &[String], all: bool, regex: bool, context: usize) -> Result<Self> {
+    pub(crate) fn new(
+        patterns: &[String],
+        all: bool,
+        regex: bool,
+        ignore_case: bool,
+        context: usize,
+    ) -> Result<Self> {
         ensure!(
             !patterns.is_empty() && patterns.len() <= 64,
             "provide 1..64 search patterns"
@@ -22,12 +28,19 @@ impl Search {
             .collect();
         let patterns = strings
             .iter()
-            .map(|p| RegexBuilder::new(p).multi_line(true).crlf(true).build())
+            .map(|p| {
+                RegexBuilder::new(p)
+                    .multi_line(true)
+                    .crlf(true)
+                    .case_insensitive(ignore_case)
+                    .build()
+            })
             .collect::<Result<Vec<_>, _>>()?;
         let set = if strings.len() > 1 {
             RegexSetBuilder::new(&strings)
                 .multi_line(true)
                 .crlf(true)
+                .case_insensitive(ignore_case)
                 .build()
                 .ok()
         } else {

@@ -112,6 +112,7 @@ pub(crate) fn load_search(
             data.examined = 1;
         }
         Source::Artifact { id } => {
+            let id = &store.resolve(id)?;
             if id.starts_with("artifact:") {
                 data = store.dataset(id)?;
                 for s in &data.snapshots {

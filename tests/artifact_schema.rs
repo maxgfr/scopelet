@@ -163,6 +163,7 @@ fn queries_over_a_schema_2_artifact_store_self_contained_results() {
             patterns: vec!["late failure".into()],
             all: false,
             regex: false,
+            ignore_case: false,
             context: 0,
         }],
         mode: Default::default(),

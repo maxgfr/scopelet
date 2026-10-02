@@ -211,7 +211,7 @@ impl Store {
                 // Existing artifacts remain reusable in a read-only directory.
                 let id = format!("artifact:{}", hash_json(value, std::io::sink())?);
                 self.verify(&id)?;
-                self.touch(&id)?;
+                self.touch(&id);
                 return Ok(id);
             }
             Err(error) => return Err(error.into()),
@@ -444,9 +444,77 @@ impl Store {
     }
 
     /// Mark an item as used so age-based cleanup does not drop it mid-session.
-    pub fn touch(&self, id: &str) -> Result<()> {
-        fs::File::open(self.location(id)?)?.set_modified(SystemTime::now())?;
-        Ok(())
+    /// Best effort: a read-only cache stays readable, it only ages.
+    pub fn touch(&self, id: &str) {
+        if let Ok(path) = self.location(id)
+            && let Ok(file) = fs::File::open(path)
+        {
+            let _ = file.set_modified(SystemTime::now());
+        }
+    }
+
+    /// Record the artifact of the latest automatic compression for
+    /// `expand last`. Best effort, atomic: a reader sees a whole ID or none.
+    pub fn set_last(&self, artifact: &str) {
+        let write = || -> Result<()> {
+            let mut temp = tempfile::Builder::new()
+                .prefix(TEMP_PREFIX)
+                .rand_bytes(12)
+                .tempfile_in(&self.root)?;
+            temp.write_all(artifact.as_bytes())?;
+            temp.persist(self.root.join("last"))?;
+            Ok(())
+        };
+        let _ = write();
+    }
+
+    /// The full reference for what a user typed: `artifact:<sha256>` or
+    /// `blob:<sha256>`; a bare 64-character hash (an artifact first); a
+    /// unique prefix of at least 8 hex characters; or `last`, the artifact of
+    /// the latest automatic compression.
+    pub fn resolve(&self, text: &str) -> Result<String> {
+        let text = text.trim();
+        if text == "last" {
+            let id = fs::read_to_string(self.root.join("last"))
+                .context("no automatic compression recorded yet in this cache")?;
+            self.location(&id)?;
+            return Ok(id);
+        }
+        if text.contains(':') {
+            self.location(text)?;
+            return Ok(text.to_owned());
+        }
+        let hash = text.to_ascii_lowercase();
+        ensure!(
+            hash.len() >= 8 && hash.len() <= 64 && hash.bytes().all(|b| b.is_ascii_hexdigit()),
+            "expected artifact:<sha256>, blob:<sha256>, a hash or a prefix of at least 8 hex characters, or last"
+        );
+        let mut found = Vec::new();
+        for (kind, folder) in [("artifact", "artifacts"), ("blob", "blobs")] {
+            if hash.len() == 64 {
+                if self.root.join(folder).join(&hash).is_file() {
+                    // A full hash names one item: the artifact when both exist.
+                    return Ok(format!("{kind}:{hash}"));
+                }
+                continue;
+            }
+            let entries = match fs::read_dir(self.root.join(folder)) {
+                Ok(entries) => entries,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => return Err(e.into()),
+            };
+            for entry in entries {
+                let name = entry?.file_name().to_string_lossy().into_owned();
+                if content_hash_name(&name) && name.starts_with(&hash) {
+                    found.push(format!("{kind}:{name}"));
+                }
+            }
+        }
+        match found.len() {
+            1 => Ok(found.pop().unwrap()),
+            0 => bail!("no cached artifact or blob matches {text}"),
+            n => bail!("{text} matches {n} cached items; give more characters"),
+        }
     }
 
     /// Age-based cleanup; the number of items removed. See `clean_with`.

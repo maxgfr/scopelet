@@ -88,9 +88,18 @@ scopelet expand artifact:HASH --offset 10
 scopelet expand artifact:HASH --manifest
 scopelet expand blob:HASH --start 30 --end 70
 scopelet expand blob:HASH --raw > original.bin
+scopelet expand 3f9c2d1e --find panicked   # unique prefix of 8+ hex characters
+scopelet expand last --manifest            # the latest automatic compression
 ```
 
-Use the returned `next_offset`, not an inferred page size. If the next record
+A reference is `artifact:HASH`, `blob:HASH`, a bare 64-character hash (the
+artifact when both exist), a unique prefix of at least 8 hex characters (an
+ambiguous prefix fails with the number of matches) or `last`. Use the returned
+`next_offset`, not an inferred page size; `--offset` cannot be combined with
+`--start`/`--end`. A blob is paged by lines: when the requested lines do not
+all fit, the view shows the first ones and `next_start` names the line to pass
+to `--start` next. Only a single line longer than the budget is still a
+`blocked_record`. If the next record of an artifact
 does not fit, increase `--max-bytes` (up to 1 MiB) or expand its blob by lines;
 `--manifest` lists source blobs even when no record fits, within the same
 `--max-bytes` budget: compare `shown_snapshots` with `total_snapshots`, and raise
@@ -147,9 +156,12 @@ exit code; it cannot be combined with selection/mode/budget flags.
 scopelet expand artifact:HASH --find 'missing evidence' --context 3
 scopelet expand artifact:HASH --find 'receipt' --source input
 scopelet expand blob:HASH --find 'failure' --find 'warning' --context 0
+scopelet expand last --find 'panick(ed)? at' --regex --ignore-case
 ```
 
-`--find` is literal and repeatable (alternatives). On an artifact it searches
+`--find` is literal and repeatable (alternatives); `--regex` makes the
+patterns regular expressions and `--ignore-case` ignores case. Query specs
+accept the same `"ignore_case": true` in a search operation. On an artifact it searches
 original snapshots, including material omitted by its earlier query. `--source`
 is an exact label from the manifest; unknown labels fail. Results are paginated
 JSON text windows with absolute line numbers; use `next_offset` to recover more.
