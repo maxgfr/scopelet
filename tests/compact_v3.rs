@@ -235,6 +235,8 @@ fn diagnostic_vocabulary_and_frames_survive_noise() {
         "    TypeError: Cannot read properties of undefined (reading 'id')",
         "Caused by: java.lang.NullPointerException: name is null",
         "\tat com.acme.billing.Invoice.total(Invoice.java:88)",
+        // Java identifiers may be Unicode: a frame stays a frame.
+        "\tat com.acme.société.Facture.total(Facture.java:91)",
         "--- FAIL: TestRefresh (0.00s)",
         "\t/work/app/auth/session.go:88 +0x1d",
         "  --> src/cache.rs:17:9",

@@ -212,9 +212,10 @@ fn uuid_at(bytes: &[u8], start: usize) -> Option<usize> {
     word_ends(bytes, i).then_some(i)
 }
 
+/// ASCII digits: Unicode `\d` costs compiling a larger engine on every call.
 static TIMESTAMP: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
     regex::Regex::new(
-        r"(?-u:\b)\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:[.,]\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?|(?-u:\b)\d{2}:\d{2}:\d{2}(?:[.,]\d+)?",
+        r"(?-u:\b)[0-9]{4}-[0-9]{2}-[0-9]{2}(?:[T ][0-9]{2}:[0-9]{2}(?::[0-9]{2}(?:[.,][0-9]+)?)?(?:Z|[+-][0-9]{2}:?[0-9]{2})?)?|(?-u:\b)[0-9]{2}:[0-9]{2}:[0-9]{2}(?:[.,][0-9]+)?",
     )
     .unwrap()
 });

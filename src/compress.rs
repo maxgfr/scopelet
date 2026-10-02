@@ -60,23 +60,26 @@ static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
 /// matching them loosely turns any line starting with `e ` into a diagnostic.
 /// So do error and exception type names (`TypeError`, `KeyError`,
 /// `NullPointerException`), whose convention is a capitalized identifier.
-/// Word boundaries are ASCII: the vocabulary is ASCII, and Unicode boundaries
-/// cost a slower engine on every line.
+/// Word boundaries, case folding and indentation are ASCII: the vocabulary is
+/// ASCII, Unicode boundaries cost a slower engine on every line, and Unicode
+/// classes and folding cost compiling a larger one on every call (every hook
+/// is a new process).
 static STRONG: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"(?i:(?-u:\b)(error|errors|failed|failure|panic|panicked|exception|traceback|fatal|assertionerror|caused by|test result|tests? passed|tests? failed)(?-u:\b))|(?-u:\b)[A-Z][A-Za-z]*(Error|Exception)(?-u:\b)|npm ERR!|^\s*(FAIL|FAILED|--- FAIL|E {2,}|FATAL|×|✕|✗|✖)").unwrap()
+    regex::Regex::new(r"(?i-u:\b(error|errors|failed|failure|panic|panicked|exception|traceback|fatal|assertionerror|caused by|test result|tests? passed|tests? failed)\b)|(?-u:\b[A-Z][A-Za-z]*(Error|Exception)\b)|npm ERR!|^(?-u:\s*)(FAIL|FAILED|--- FAIL|E {2,}|FATAL|×|✕|✗|✖)").unwrap()
 });
 /// Advisory lines: shown once per template, never ahead of a diagnostic.
 /// A passing test is not an advisory. Listing it here grouped every `PASS`
 /// line by exact text, which stopped a suite of passes from folding and let
 /// them crowd out the failure's own detail.
 static WEAK: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"(?i:(?-u:\b)(warning|warn|deprecated|deprecation)(?-u:\b))").unwrap()
+    regex::Regex::new(r"(?i-u:\b(warning|warn|deprecated|deprecation)\b)").unwrap()
 });
 /// Stack frames: context for a diagnostic, wherever they are. JavaScript and
 /// Python frames, Java's `at pkg.Class.method(File.java:N)`, Go's
-/// `file.go:N +0x1d` and rustc's `--> file:line:col` locations.
+/// `file.go:N +0x1d` and rustc's `--> file:line:col` locations. Indentation
+/// and line numbers are ASCII; a Java identifier keeps Unicode `\w`.
 static FRAME: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r#"^\s+at .*\(.*:\d+:\d+\)|^\s+File ".*", line \d+|^\s+at [\w$.<>/-]+\([^()]*\)\s*$|\.go:\d+ \+0x[0-9a-f]+|^\s*--> \S+:\d+:\d+"#).unwrap()
+    regex::Regex::new(r#"^(?-u:\s+)at .*\(.*:[0-9]+:[0-9]+\)|^(?-u:\s+)File ".*", line [0-9]+|^(?-u:\s+)at [\w$.<>/-]+\([^()]*\)(?-u:\s*)$|\.go:[0-9]+ \+0x[0-9a-f]+|^(?-u:\s*)--> \S+:[0-9]+:[0-9]+"#).unwrap()
 });
 /// A file extension at the end of a token: `.rs`, `.py`, `.java`.
 static EXTENSION: LazyLock<regex::Regex> =
