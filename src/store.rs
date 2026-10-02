@@ -142,6 +142,19 @@ pub fn artifact_schema(bytes: &[u8]) -> Result<u32> {
         .schema_version)
 }
 
+/// The cache directory: `path`, else `SCOPELET_CACHE_DIR`, else
+/// `$XDG_CACHE_HOME/scopelet`, else `~/.cache/scopelet`. Nothing is created.
+pub fn cache_root(path: Option<PathBuf>) -> PathBuf {
+    path.or_else(|| std::env::var_os("SCOPELET_CACHE_DIR").map(PathBuf::from))
+        .unwrap_or_else(|| {
+            let base = std::env::var_os("XDG_CACHE_HOME")
+                .map(PathBuf::from)
+                .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cache")))
+                .unwrap_or_else(std::env::temp_dir);
+            base.join("scopelet")
+        })
+}
+
 pub fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
@@ -291,15 +304,7 @@ impl Store {
         Ok(())
     }
     pub fn open(path: Option<PathBuf>) -> Result<Self> {
-        let root = path
-            .or_else(|| std::env::var_os("SCOPELET_CACHE_DIR").map(PathBuf::from))
-            .unwrap_or_else(|| {
-                let base = std::env::var_os("XDG_CACHE_HOME")
-                    .map(PathBuf::from)
-                    .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cache")))
-                    .unwrap_or_else(std::env::temp_dir);
-                base.join("scopelet")
-            });
+        let root = cache_root(path);
         for dir in [&root, &root.join("blobs"), &root.join("artifacts")] {
             if let Ok(meta) = fs::symlink_metadata(dir) {
                 ensure!(

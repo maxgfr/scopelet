@@ -193,7 +193,7 @@ fn claude_persistence_metadata_bypasses_compression_before_preview_rendering() {
             .unwrap()
             .extend(metadata.as_object().unwrap().clone());
         assert_eq!(hook(dir.path(), "claude", persisted), json!({}));
-        assert!(!dir.path().join("cache").exists());
+        assert!(!store_opened(dir.path()));
     }
     let mut inline = event;
     inline["tool_response"]["persistedOutputPath"] = json!(null);
@@ -205,12 +205,19 @@ fn claude_persistence_metadata_bypasses_compression_before_preview_rendering() {
             .contains("[scopelet compact-v1")
     );
 }
+/// Whether the cache store was opened: only the event journal may be written.
+fn store_opened(dir: &std::path::Path) -> bool {
+    ["cache/blobs", "cache/artifacts"]
+        .iter()
+        .any(|d| dir.join(d).exists())
+}
+
 #[test]
 fn small_automatic_outputs_do_not_open_cache() {
     let dir = tempfile::tempdir().unwrap();
     let event = json!({"hook_event_name":"PostToolUse","tool_name":"Bash","tool_response":{"stdout":"x".repeat(2048),"stderr":"warning\r\n","interrupted":false,"isImage":false}});
     assert_eq!(hook(dir.path(), "claude", event), json!({}));
-    assert!(!dir.path().join("cache").exists());
+    assert!(!store_opened(dir.path()));
     cli(dir.path())
         .args([
             "run",
@@ -224,7 +231,7 @@ fn small_automatic_outputs_do_not_open_cache() {
         .code(7)
         .stdout("ok\r\n")
         .stderr("warning\n");
-    assert!(!dir.path().join("cache").exists());
+    assert!(!store_opened(dir.path()));
 }
 #[test]
 fn codex_small_file_reads_stay_native_and_large_reads_are_wrapped() {
@@ -704,5 +711,91 @@ fn doctor_reports_a_stale_pinned_binary() {
             .as_str()
             .unwrap()
             .contains("install --agent all")
+    );
+}
+
+#[test]
+fn the_event_journal_records_decisions_and_can_be_turned_off() {
+    let dir = tempfile::tempdir().unwrap();
+    let event = json!({"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"npm test"},"tool_response":{"stdout":"x".repeat(100),"stderr":"","interrupted":false,"isImage":false}});
+    let journal = |dir: &std::path::Path| -> Vec<Value> {
+        let folder = dir.join("cache/events");
+        std::fs::read_dir(&folder)
+            .map(|entries| {
+                entries
+                    .flatten()
+                    .filter(|e| e.path().extension().is_some_and(|x| x == "jsonl"))
+                    .flat_map(|e| {
+                        fs::read_to_string(e.path())
+                            .unwrap()
+                            .lines()
+                            .map(|l| serde_json::from_str::<Value>(l).unwrap())
+                            .collect::<Vec<_>>()
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    assert_eq!(hook(dir.path(), "claude", event.clone()), json!({}));
+    let events = journal(dir.path());
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0]["reason"], "small");
+    assert_eq!(events[0]["host"], "claude");
+    assert_eq!(events[0]["bytes_in"], 100);
+    // Nothing that could identify the command or its output.
+    let line = events[0].to_string();
+    assert!(!line.contains("npm") && !line.contains("xxxx"), "{line}");
+    assert!(line.len() < 512);
+
+    let quiet = tempfile::tempdir().unwrap();
+    let output = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
+        .env("SCOPELET_EVENTS", "0")
+        .env("SCOPELET_CONFIG_DIR", quiet.path().join("config"))
+        .env("SCOPELET_CACHE_DIR", quiet.path().join("cache"))
+        .args(["hook", "claude"])
+        .write_stdin(event.to_string())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(!quiet.path().join("cache").exists());
+}
+
+#[test]
+fn stats_count_compressions_pass_throughs_and_later_expansions() {
+    let dir = tempfile::tempdir().unwrap();
+    let big: String = (0..2000).map(|i| format!("line {i} of noise\n")).collect();
+    let run = |stdin: &str| -> Vec<u8> {
+        cli(dir.path())
+            .env("SCOPELET_COMPACT_VERSION", "3")
+            .arg("compress")
+            .write_stdin(stdin.to_owned())
+            .output()
+            .unwrap()
+            .stdout
+    };
+    let view = String::from_utf8(run(&big)).unwrap();
+    run("tiny\n");
+    let artifact = view
+        .split_whitespace()
+        .find(|s| s.starts_with("artifact:"))
+        .unwrap();
+    cli(dir.path())
+        .args(["expand", &artifact[9..21], "--manifest"])
+        .assert()
+        .success();
+    let out = cli(dir.path())
+        .args(["stats", "--days", "1"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let stats: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(stats["compressions"], 1, "{stats}");
+    assert_eq!(stats["pass_through"]["small"], 1, "{stats}");
+    assert_eq!(stats["expands"], 1, "{stats}");
+    assert_eq!(stats["expanded_after_compression"], 1, "{stats}");
+    assert_eq!(stats["expand_rate"], 1.0, "{stats}");
+    assert_eq!(
+        stats["bytes_saved"].as_u64().unwrap(),
+        (big.len() - view.len()) as u64
     );
 }

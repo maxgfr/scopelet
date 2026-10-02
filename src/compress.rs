@@ -138,8 +138,59 @@ pub fn detect(text: &str) -> Format {
     }
 }
 
+/// Why automatic compression replaced an output or left it unchanged.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Reason {
+    /// At most the exact-size threshold.
+    Small,
+    NonUtf8,
+    /// More lines than automatic selection accepts.
+    TooManyLines,
+    /// Already a Scopelet view.
+    AlreadyCompressed,
+    /// The view would not have saved 20% and 512 bytes.
+    Savings,
+    /// A host's persisted-output preview.
+    Persisted,
+    Compressed,
+}
+
+impl Reason {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Small => "small",
+            Self::NonUtf8 => "non_utf8",
+            Self::TooManyLines => "too_many_lines",
+            Self::AlreadyCompressed => "already_compressed",
+            Self::Savings => "savings",
+            Self::Persisted => "persisted",
+            Self::Compressed => "compressed",
+        }
+    }
+}
+
+/// The outcome of one automatic compression, for the local event journal.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Decision {
+    pub reason: Reason,
+    /// The artifact and original stored, when the output was replaced.
+    pub artifact: Option<String>,
+    pub blob: Option<String>,
+}
+
+impl Decision {
+    fn unchanged(reason: Reason) -> Self {
+        Self {
+            reason,
+            artifact: None,
+            blob: None,
+        }
+    }
+}
+
 pub fn automatic(bytes: &[u8], store: &Store, budget: usize) -> Result<Vec<u8>> {
-    automatic_with(bytes, budget, Version::V1, false, || Ok(store.clone())).map(Cow::into_owned)
+    automatic_with(bytes, budget, Version::V1, false, || Ok(store.clone()))
+        .map(|(output, _)| output.into_owned())
 }
 
 /// The store factory is not invoked for a rejected or ineligible substitution.
@@ -149,7 +200,7 @@ pub fn automatic_lazy<'a>(
     budget: usize,
     version: Version,
 ) -> Result<Cow<'a, [u8]>> {
-    automatic_with(bytes, budget, version, false, || Store::open(path))
+    automatic_with(bytes, budget, version, false, || Store::open(path)).map(|(output, _)| output)
 }
 
 /// `automatic_lazy` for the output of a recognized command: its profile's
@@ -163,6 +214,17 @@ pub fn automatic_profile<'a>(
     budget: Option<usize>,
     version: Version,
 ) -> Result<Cow<'a, [u8]>> {
+    automatic_decision(bytes, path, profile, budget, version).map(|(output, _)| output)
+}
+
+/// `automatic_profile`, with the decision it made.
+pub fn automatic_decision<'a>(
+    bytes: &'a [u8],
+    path: Option<PathBuf>,
+    profile: Option<crate::commands::Profile>,
+    budget: Option<usize>,
+    version: Version,
+) -> Result<(Cow<'a, [u8]>, Decision)> {
     let profile = profile.filter(|_| version == Version::V3);
     let reading = profile == Some(crate::commands::Profile::FileRead);
     let budget = budget.unwrap_or(profile.map_or(DEFAULT_BUDGET, |p| p.budget()));
@@ -176,7 +238,8 @@ fn automatic_with(
     version: Version,
     reading: bool,
     store: impl FnOnce() -> Result<Store>,
-) -> Result<Cow<'_, [u8]>> {
+) -> Result<(Cow<'_, [u8]>, Decision)> {
+    let unchanged = |reason| Ok((Cow::Borrowed(bytes), Decision::unchanged(reason)));
     ensure!(
         (1024..=1024 * 1024).contains(&budget),
         "max_bytes must be 1024..1048576"
@@ -186,15 +249,21 @@ fn automatic_with(
     } else {
         MAX_LINES
     };
-    if bytes.len() <= SMALL || memchr::memchr_iter(b'\n', bytes).count() > max_lines {
-        return Ok(Cow::Borrowed(bytes));
+    if bytes.len() <= SMALL {
+        return unchanged(Reason::Small);
+    }
+    if memchr::memchr_iter(b'\n', bytes).count() > max_lines {
+        return unchanged(Reason::TooManyLines);
     }
     // Existing Scopelet output and host previews are never compressed again.
-    if SCOPELET_MARKER.find(bytes).is_some() || PERSISTED_MARKER.find(bytes).is_some() {
-        return Ok(Cow::Borrowed(bytes));
+    if SCOPELET_MARKER.find(bytes).is_some() {
+        return unchanged(Reason::AlreadyCompressed);
+    }
+    if PERSISTED_MARKER.find(bytes).is_some() {
+        return unchanged(Reason::Persisted);
     }
     let Ok(text) = std::str::from_utf8(bytes) else {
-        return Ok(Cow::Borrowed(bytes));
+        return unchanged(Reason::NonUtf8);
     };
     let parsed = Parsed::detected(text.to_owned());
     let format = parsed.format();
@@ -214,7 +283,7 @@ fn automatic_with(
         reading,
     )?;
     if shown == 0 || result.len() + 512 > bytes.len() || result.len() * 5 > bytes.len() * 4 {
-        return Ok(Cow::Borrowed(bytes));
+        return unchanged(Reason::Savings);
     }
     let store = store()?;
     let blob = store.put("blob", bytes)?;
@@ -246,7 +315,12 @@ fn automatic_with(
     let end = result.find('\n').unwrap() + 1;
     result.replace_range(..end, &header(&data, &artifact, version));
     ensure!(result.len() <= budget, "compact metadata exceeds budget");
-    Ok(Cow::Owned(result.into_bytes()))
+    let decision = Decision {
+        reason: Reason::Compressed,
+        blob: Some(data.snapshots[0].blob.clone()),
+        artifact: Some(artifact),
+    };
+    Ok((Cow::Owned(result.into_bytes()), decision))
 }
 
 pub fn compact(data: &Dataset, store: &Store, budget: usize) -> Result<String> {

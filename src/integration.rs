@@ -515,10 +515,20 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
         return Ok(json!({}));
     };
     let (profile, small) = limits(command, version);
-    if raw.len() <= small || raw.len() > MAX_INPUT {
+    if raw.len() <= small {
+        crate::events::unchanged(
+            "opencode",
+            profile,
+            version,
+            raw.len(),
+            compress::Reason::Small,
+        );
         return Ok(json!({}));
     }
-    let small = compress::automatic_profile(raw.as_bytes(), None, profile, None, version)?;
+    if raw.len() > MAX_INPUT {
+        return Ok(json!({}));
+    }
+    let small = crate::events::automatic("opencode", raw.as_bytes(), None, profile, None, version);
     if small.as_ref() == raw.as_bytes() {
         return Ok(json!({}));
     }
@@ -613,6 +623,15 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
                 .as_u64()
                 .is_some_and(|size| size > 0)
         {
+            let bytes = output["stdout"].as_str().map_or(0, str::len)
+                + output["stderr"].as_str().map_or(0, str::len);
+            crate::events::unchanged(
+                "claude",
+                profile,
+                version,
+                bytes,
+                compress::Reason::Persisted,
+            );
             return Ok(json!({}));
         }
         if ["stdout", "stderr"].iter().all(|stream| {
@@ -620,6 +639,9 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
                 .as_str()
                 .is_some_and(|text| text.len() <= small)
         }) {
+            let bytes = output["stdout"].as_str().map_or(0, str::len)
+                + output["stderr"].as_str().map_or(0, str::len);
+            crate::events::unchanged("claude", profile, version, bytes, compress::Reason::Small);
             return Ok(json!({}));
         }
         let mut changed = false;
@@ -628,7 +650,8 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             if raw.len() > MAX_INPUT {
                 return Ok(json!({}));
             }
-            let small = compress::automatic_profile(raw.as_bytes(), None, profile, None, version)?;
+            let small =
+                crate::events::automatic("claude", raw.as_bytes(), None, profile, None, version);
             if small.as_ref() != raw.as_bytes() {
                 output[stream] = json!(String::from_utf8(small.into_owned())?);
                 changed = true;

@@ -5,6 +5,7 @@ pub mod commands;
 mod compact_table;
 pub mod compress;
 mod encoding;
+pub mod events;
 pub mod integration;
 mod line_index;
 pub mod model;

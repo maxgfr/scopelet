@@ -177,6 +177,12 @@ enum Cmd {
     Doctor,
     /// Deterministic offline correctness and byte-size check (no model calls).
     Bench,
+    /// Summarize the local event journal: compressions, bytes saved, why
+    /// outputs passed through, and how often a compressed view was expanded.
+    Stats {
+        #[arg(long, default_value_t = 30)]
+        days: u64,
+    },
     /// Explicitly remove cached artifacts and originals older than this age.
     Clean {
         #[arg(long, default_value_t = 7)]
@@ -383,14 +389,14 @@ fn execute(cli: Cli) -> Result<i32> {
         )?;
         let code = process::exit_code(&result);
         for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
-            let output = compress::automatic_profile(
+            let output = scopelet::events::automatic(
+                "run",
                 bytes,
                 cli.cache_dir.clone(),
                 *profile,
                 *max_bytes,
                 compact_version,
-            )
-            .unwrap_or(std::borrow::Cow::Borrowed(bytes));
+            );
             if stderr {
                 std::io::stderr().write_all(&output)?;
             } else {
@@ -404,6 +410,10 @@ fn execute(cli: Cli) -> Result<i32> {
         }
         return Ok(code);
     }
+    if let Cmd::Stats { days } = cli.command {
+        print(&scopelet::events::stats(cli.cache_dir, days))?;
+        return Ok(0);
+    }
     if let Cmd::Compress { max_bytes, profile } = cli.command {
         ensure!(
             max_bytes.is_none_or(|b| (1024..=1024 * 1024).contains(&b)),
@@ -414,9 +424,14 @@ fn execute(cli: Cli) -> Result<i32> {
             .take(MAX_INPUT as u64 + 1)
             .read_to_end(&mut bytes)?;
         ensure!(bytes.len() <= MAX_INPUT, "input exceeds 32 MiB");
-        let output =
-            compress::automatic_profile(&bytes, cli.cache_dir, profile, max_bytes, compact_version)
-                .unwrap_or(std::borrow::Cow::Borrowed(&bytes));
+        let output = scopelet::events::automatic(
+            "cli",
+            &bytes,
+            cli.cache_dir,
+            profile,
+            max_bytes,
+            compact_version,
+        );
         std::io::stdout().write_all(&output)?;
         return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
             130
@@ -700,6 +715,7 @@ fn execute(cli: Cli) -> Result<i32> {
                 "max_bytes must be 1024..1048576"
             );
             let id = store.resolve(&id)?;
+            scopelet::events::expanded(Some(store.root.clone()), &id);
             if !find.is_empty() {
                 let data = scopelet::recovery::search(
                     &store,
@@ -784,6 +800,7 @@ fn execute(cli: Cli) -> Result<i32> {
         | Cmd::Uninstall { .. }
         | Cmd::Mode { .. }
         | Cmd::Hook { .. }
+        | Cmd::Stats { .. }
         | Cmd::Compress { .. } => unreachable!(),
     }
     Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {

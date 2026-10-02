@@ -221,7 +221,16 @@ semantics and preserve multiline matches. No index substitutes for source-hash
 verification or certifies an unvisited source.
 
 Automatic compression prepares a view before opening storage. Rejected views,
-small/binary inputs and persisted previews perform no cache writes. Accepted
+small/binary inputs and persisted previews perform no store writes; each
+decision appends one line under 512 bytes to the local event journal,
+`<cache>/events/YYYY-MM.jsonl` (time, host, profile, byte counts, a typed reason
+`small`, `non_utf8`, `too_many_lines`, `already_compressed`, `savings`,
+`persisted`, `compressed` or `error`, compact version, and 12-character
+prefixes of the artifact and original; `expand` adds one line with the
+reference prefix). No content, command or path is recorded, nothing is
+transmitted, writing is best effort, and `SCOPELET_EVENTS=0` disables it.
+`stats --days N` summarizes compressions, bytes saved, pass-through reasons and
+the share of compressions whose artifact or original was expanded later. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact JSON
 serialization. Compact-v1 and v2 store schema-1 artifacts, byte for byte as
