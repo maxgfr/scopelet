@@ -355,6 +355,63 @@ fn unified_diffs_keep_file_headers_and_changes_in_place() {
     assert_eq!(original(dir.path(), &text), raw.as_bytes());
 }
 
+/// Git's default three lines of context put a hunk header four lines above
+/// its first change: the header still locates the changes shown. A tier is
+/// filled from both ends, so where the budget runs out one hunk may be cut
+/// between its header and its change.
+#[test]
+fn hunk_headers_stay_with_their_changes_at_the_default_context() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = String::new();
+    for f in 0..40 {
+        raw.push_str(&format!(
+            "diff --git a/src/m{f}.py b/src/m{f}.py\nindex 1111111..2222222 100644\n--- a/src/m{f}.py\n+++ b/src/m{f}.py\n@@ -{0},7 +{0},8 @@ def handler_{f}():\n     x = load()\n     y = parse(x)\n     z = check(y)\n-    return old_{f}(z)\n+    value = new_{f}(z)\n+    return value\n     # end\n     pass\n     done()\n",
+            10 * f + 5
+        ));
+    }
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    let shown: Vec<usize> = (0..40)
+        .filter(|f| text.contains(&format!("+    value = new_{f}(z)\n")))
+        .collect();
+    assert!(
+        shown.len() >= 5,
+        "{} changes shown in:\n{text}",
+        shown.len()
+    );
+    let headless: Vec<_> = shown
+        .iter()
+        .filter(|f| !text.contains(&format!("@@ def handler_{f}():\n")))
+        .collect();
+    assert!(
+        headless.len() <= 1,
+        "{headless:?} without header in:\n{text}"
+    );
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
+/// Commit messages fold only with identical text, like changes: messages
+/// that differ by a number are distinct evidence, not a template.
+#[test]
+fn commit_messages_differing_by_numbers_stay_distinct() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = String::new();
+    for c in 0..40 {
+        raw.push_str(&format!(
+            "commit {c:040x}\nAuthor: A <a@example.com>\nDate:   Mon Jan 1 10:00:00 2024 +0000\n\n    Fix parser case {c}\n\ndiff --git a/src/m{c}.rs b/src/m{c}.rs\nindex 1111111..2222222 100644\n--- a/src/m{c}.rs\n+++ b/src/m{c}.rs\n@@ -1,2 +1,2 @@\n-old {c}\n+new {c}\n"
+        ));
+    }
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    let messages = text.matches("    Fix parser case ").count();
+    assert!(messages >= 5, "{messages} messages in:\n{text}");
+    assert!(
+        !text
+            .lines()
+            .any(|l| l.contains("similar=") && l.contains("Fix parser case")),
+        "{text}"
+    );
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
 #[test]
 fn warnings_do_not_evict_errors_from_a_small_budget() {
     let dir = tempfile::tempdir().unwrap();

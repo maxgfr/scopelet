@@ -919,9 +919,10 @@ fn text_units_v3<'a>(
         let origin = first[i] as usize;
         let slot = if slot_of_first[origin] != NONE {
             slot_of_first[origin]
-        } else if matches!(role(i), Diff::File | Diff::Change) {
-            // Headers and changes are evidence: they never fold by template,
-            // only with the very same text (a file every commit touches).
+        } else if matches!(role(i), Diff::File | Diff::Change | Diff::Message) {
+            // Headers, changes and commit messages are evidence: they never
+            // fold by template, only with the very same text (a file every
+            // commit touches).
             slot_of_first[i] = groups.len() as u32;
             groups.len() as u32
         } else if strong.get(i) || weak.get(i) {
@@ -979,7 +980,10 @@ fn text_units_v3<'a>(
                 _ if !trivial.get(i) => reach = in_place(i).then_some(0),
                 _ => {
                     reach = reach.map(|r| r + 1);
-                    if reach.is_some_and(|r| r <= GLUE_REACH) {
+                    // A hunk header locates the first change below it, past
+                    // however much context Git shows before that change.
+                    let locates = !order && role(i) == Diff::Hunk;
+                    if reach.is_some_and(|r| locates || r <= GLUE_REACH) {
                         glued.set(i);
                     }
                 }
@@ -1147,7 +1151,14 @@ fn text_units_v3<'a>(
     for (line, &priority) in line_priority.iter().enumerate().rev() {
         while k > 0 && trivial_units[k - 1].2 == line {
             k -= 1;
-            let (unit, ..) = trivial_units[k];
+            let (unit, first_line, _) = trivial_units[k];
+            // A hunk header ranks with the change it locates, at any distance.
+            if role(first_line) == Diff::Hunk
+                && let Some((priority, _)) = carry
+            {
+                units[unit].priority = priority;
+                continue;
+            }
             let after = carry
                 .filter(|&(_, at)| at - line <= GLUE_REACH)
                 .map(|(p, _)| p);
