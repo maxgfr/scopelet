@@ -8,8 +8,9 @@ call another model to compress data.
 single pipeline. The Rust library exposes the same types used by the CLI.
 Request version is 1. Saved artifacts are schema 1 (records stored) or, for
 compact-v3 automatic compression and for a recovery whose only record is a
-whole text original (a single-line blob paged or searched), schema 2 (records
-named by their original blob). Unknown request fields fail.
+whole stored text original (a blob paged or searched whose view is all of it,
+such as a single long line), schema 2 (records named by their original blob).
+Unknown request fields fail.
 
 Source loading owns scope and freshness. A dataset carries full records,
 snapshots, the number of examined files/streams and observed skip counts.
@@ -201,7 +202,7 @@ character, where it stays literal: `"\d+"`), or backslash-escaped; a `~`
 inside a word (`HEAD~1`) is literal; literal `NAME=value` prefixes,
 `cd DIR &&`, `&&`, a final `|| true`, pipes, `2>&1` and output or errors to
 `/dev/null` are accepted. Expansions (`$`, backticks, globs, a `~` starting a
-word or following an assignment's `=` or `:`, braces), grouping, `;`, a lone
+word or following any `=` or `:`, braces), grouping, `;`, a lone
 `&`, `|&`, `&>`, `>|`, input and
 other redirections, heredocs, newlines, and words starting with `=` or `#`
 leave the command native. Every command in it must be recognized; after a pipe
@@ -380,10 +381,12 @@ mentions `error` is a change. File headers (`diff --git`, the `---`/`+++`
 pair of a plain diff, and `git log -p`'s `commit <hash>`) never fold by
 template, only with identical text, and rank as context does (tier 2).
 Changed lines and commit messages fold only with identical text; a distinct
-one ranks in tier 2, one repeated across files or commits in tier 1. Hunk
-headers and context lines are glued like trivial lines, so a hunk is shown
-with the change it locates; a file header ends what can glue and metadata
-lines (`index`, modes, renames, `Author:`, `Date:`) are transparent to it.
+one ranks in tier 2, one repeated across files or commits in tier 1. Context
+lines are glued like trivial lines. A hunk header glues to the first change
+below it however much context lies between (Git's default three lines put it
+four lines away) and ranks with that change, so a hunk is shown with the
+change it locates; a file header ends what can glue and metadata lines
+(`index`, modes, renames, `Author:`, `Date:`) are transparent to it.
 
 V3 ranks units in five tiers: the first and last line of a record; the first
 occurrence of each strong diagnostic template (`error`, `failed`, `panic`,

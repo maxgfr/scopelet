@@ -208,7 +208,8 @@ fn lex(command: &str) -> Option<Vec<Token>> {
                 tokens.push(Token::Redirect(redirect));
             }
             // A tilde expands at the start of a word and after the `=` or `:`
-            // of an assignment-like word; anywhere else (`HEAD~1`) it is literal.
+            // of an assignment-like word, so one after any `=` or `:` is
+            // rejected; anywhere else (`HEAD~1`) it is literal.
             '~' if !started || matches!(word.chars().last(), Some('=' | ':')) => return None,
             '\n' | '\r' | ';' | '<' | '(' | ')' | '{' | '}' | '$' | '`' | '*' | '?' | '[' | '!' => {
                 return None;
