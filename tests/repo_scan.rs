@@ -103,6 +103,13 @@ fn only_matching_files_keep_their_original_and_recovery_reads_the_rest_locally()
         None,
     ));
     assert_eq!(found["total_records"], 1);
+    // Its original was never stored, so the result keeps its own copy and
+    // expands after the local file changes.
+    let kept = found["artifact"].as_str().unwrap().to_owned();
+    std::fs::write(root.join("d0/f0007.txt"), "rewritten\n").unwrap();
+    let again = ok(cli(&cache, "4", &["expand", &kept], None));
+    assert!(again.to_string().contains("hay only 7"), "{again}");
+    std::fs::write(root.join("d0/f0007.txt"), "file 7\nhay only 7\n").unwrap();
     // Once it changes, it is counted as not retained instead.
     std::fs::write(root.join("d0/f0007.txt"), "rewritten\n").unwrap();
     let found = ok(cli(

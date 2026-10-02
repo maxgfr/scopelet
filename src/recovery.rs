@@ -95,21 +95,23 @@ pub fn search(
     Ok(data)
 }
 
-/// Store a recovery result and render its page at `offset`. A result that is
-/// one whole text original (a single-line blob paged or searched shows its
-/// only line) names that blob, as a compact-v3 artifact does (schema 2),
-/// instead of storing the line a second time for every recovery.
+/// Store a recovery result and render its page at `offset`, as
+/// `render::render` does. A result whose only record is one whole stored text
+/// original (a single-line blob paged or searched shows its only line) names
+/// that blob, as a compact-v3 artifact does (schema 2), instead of storing the
+/// original a second time for every recovery.
 pub fn render(data: &Dataset, store: &Store, budget: usize, offset: usize) -> Result<View> {
     if let [record] = data.records.as_slice()
         && let Some(blob) = record.blob.as_deref()
+        // A scanned file whose original was not kept is searched locally:
+        // its blob is named but absent, so the result keeps its own copy.
         && blob.starts_with("blob:")
-        && record.value.is_none()
-        && record.start_line == Some(1)
-        && record.end_line == Some(crate::clean::line_count(&record.text))
-        && record.omitted_lines.is_none()
-        && !record.text_truncated
-        // Hashing settles that the text is the whole blob, not a prefix.
+        && store.contains(blob)
+        // Hashing settles that the text is the whole blob, not a prefix...
         && blob.ends_with(&digest(record.text.as_bytes()))
+        // ...and reading it back as text must give exactly this record.
+        && crate::sources::Parsed::Text(record.text.clone()).records(&record.source, blob.into())
+            == data.records
     {
         let artifact = store.put_json(&DatasetRef::new(
             data,
