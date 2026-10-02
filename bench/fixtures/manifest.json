@@ -1,0 +1,107 @@
+{
+  "cargo_test": {
+    "profile": "tests",
+    "min_reduction": 68,
+    "visible": true,
+    "facts": ["panicked at src/session.rs:42:9", "left: 1735689599", "right: 1735689600", "test result: FAILED. 211 passed; 1 failed", "--> src/cache.rs:17:9", "test session::tests::refresh_rotates_expiring_token ... FAILED"],
+    "pending_facts": []
+  },
+  "tsc": {
+    "profile": "tests",
+    "min_reduction": 71,
+    "visible": true,
+    "facts": ["error TS2345: Argument of type 'string' is not assignable", "Found 151 errors in 40 files."],
+    "pending_facts": []
+  },
+  "pytest_traceback": {
+    "profile": "tests",
+    "min_reduction": 85,
+    "visible": true,
+    "facts": ["ModuleNotFoundError: No module named 'redis'", "KeyError: 'tenant_id'", "1 failed, 318 passed, 1 error", "billing/storage.py:233: KeyError"],
+    "pending_facts": []
+  },
+  "go_test": {
+    "profile": "tests",
+    "min_reduction": 77,
+    "visible": true,
+    "facts": ["--- FAIL: TestRefresh", "session_test.go:42: expected 1735689600, got 1735689599", "panic: runtime error: invalid memory address", "/work/app/auth/session.go:88 +0x1d", "FAIL\tgithub.com/acme/app/auth"],
+    "pending_facts": []
+  },
+  "java_npe": {
+    "profile": "logs",
+    "min_reduction": 94,
+    "visible": true,
+    "facts": ["NullPointerException: Cannot invoke \"String.length()\" because \"name\" is null", "at com.acme.billing.Invoice.total(Invoice.java:88)", "Caused by: java.sql.SQLException", "Application run failed"],
+    "pending_facts": []
+  },
+  "jest": {
+    "profile": "tests",
+    "min_reduction": 92,
+    "visible": true,
+    "facts": ["TypeError: Cannot read properties of undefined (reading 'id')", "FAIL src/api/session.test.ts", "Tests:       1 failed, 1412 passed", "src/api/session.test.ts:42:20"],
+    "pending_facts": []
+  },
+  "eslint": {
+    "profile": "tests",
+    "min_reduction": 91,
+    "visible": true,
+    "facts": ["42:9  error  'token' is possibly 'undefined'", "✖ 145 problems (1 error, 144 warnings)", "/work/web/src/api/session.ts"],
+    "pending_facts": []
+  },
+  "git_diff": {
+    "profile": "git",
+    "min_reduction": 72,
+    "visible": true,
+    "facts": ["+        self.expires_at >= now", "diff --git a/src/auth.rs b/src/auth.rs", "+        gross - self.discount", "diff --git a/src/billing/invoice.rs b/src/billing/invoice.rs"],
+    "pending_facts": []
+  },
+  "git_log_p": {
+    "profile": "git",
+    "min_reduction": 80,
+    "visible": true,
+    "facts": ["commit 6b3216fdaeeb975729fae923d5a4fd12aabfe228", "Fix token expiry off-by-one", "+        self.expires_at >= now"],
+    "pending_facts": []
+  },
+  "kubectl_json": {
+    "profile": null,
+    "min_reduction": null,
+    "visible": true,
+    "facts": ["CrashLoopBackOff", "\"restartCount\": 14"],
+    "pending_facts": []
+  },
+  "gh_api": {
+    "profile": null,
+    "min_reduction": null,
+    "visible": true,
+    "facts": ["\"mergeable_state\":\"dirty\"", "\"title\":\"Rotate tokens before expiry\""],
+    "pending_facts": []
+  },
+  "service_log": {
+    "profile": "logs",
+    "min_reduction": 95,
+    "visible": true,
+    "facts": ["ERROR [pool] conn refused 10.0.3.7:5432"],
+    "pending_facts": ["FATAL [migrate] migration 0042_add_tenants failed"]
+  },
+  "rg_context": {
+    "profile": "search",
+    "min_reduction": 92,
+    "visible": true,
+    "facts": ["src/billing/invoice.rs:88:    let client = Client::new(Duration::from_secs(0)); // FIXME zero timeout"],
+    "pending_facts": []
+  },
+  "rust_small": {
+    "profile": "fileread",
+    "min_reduction": null,
+    "visible": true,
+    "facts": ["pub(crate) fn apply(&self, records: Vec<Record>) -> Vec<Record> {"],
+    "pending_facts": []
+  },
+  "rust_large": {
+    "profile": "fileread",
+    "min_reduction": 87,
+    "visible": true,
+    "facts": [],
+    "pending_facts": ["pub fn install(agent: Agent, remove: bool) -> Result<Value> {", "fn simple_args(command: &str) -> Option<Vec<String>> {", "\n }\n", "\n \n"]
+  }
+}

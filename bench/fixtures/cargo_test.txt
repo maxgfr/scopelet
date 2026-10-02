@@ -1,0 +1,271 @@
+   Compiling serde v1.0.0
+   Compiling serde_json v1.1.1
+   Compiling regex v1.2.2
+   Compiling regex-syntax v1.3.3
+   Compiling memchr v1.4.4
+   Compiling aho-corasick v1.5.0
+   Compiling tokio v1.6.1
+   Compiling tokio-macros v1.7.2
+   Compiling hyper v1.8.3
+   Compiling http v1.9.4
+   Compiling bytes v1.10.0
+   Compiling mio v1.11.1
+   Compiling libc v1.12.2
+   Compiling log v1.13.3
+   Compiling tracing v1.14.4
+   Compiling tracing-core v1.15.0
+   Compiling once_cell v1.16.1
+   Compiling anyhow v1.17.2
+   Compiling thiserror v1.18.3
+   Compiling clap v1.19.4
+   Compiling clap_builder v1.20.0
+   Compiling clap_derive v1.21.1
+   Compiling sha2 v1.22.2
+   Compiling digest v1.23.3
+   Compiling ring v1.24.4
+   Compiling rustls v1.25.0
+   Compiling url v1.26.1
+   Compiling idna v1.27.2
+   Compiling acme-auth v0.4.2 (/work/acme-auth)
+warning: unused variable: `stale`
+  --> src/cache.rs:17:9
+   |
+17 |     let stale = entry.age() > ttl;
+   |         ^^^^^ help: if this is intentional, prefix it with an underscore: `_stale`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+warning: `acme-auth` (lib test) generated 1 warning
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 41.87s
+     Running unittests src/lib.rs (target/debug/deps/acme_auth-3f9c2d1e8b7a6054)
+
+running 212 tests
+test cache::tests::case_000 ... ok
+test session::tests::case_001 ... ok
+test token::tests::case_002 ... ok
+test claims::tests::case_003 ... ok
+test store::tests::case_004 ... ok
+test refresh::tests::case_005 ... ok
+test policy::tests::case_006 ... ok
+test audit::tests::case_007 ... ok
+test cache::tests::case_008 ... ok
+test session::tests::case_009 ... ok
+test token::tests::case_010 ... ok
+test claims::tests::case_011 ... ok
+test store::tests::case_012 ... ok
+test refresh::tests::case_013 ... ok
+test policy::tests::case_014 ... ok
+test audit::tests::case_015 ... ok
+test cache::tests::case_016 ... ok
+test session::tests::case_017 ... ok
+test token::tests::case_018 ... ok
+test claims::tests::case_019 ... ok
+test store::tests::case_020 ... ok
+test refresh::tests::case_021 ... ok
+test policy::tests::case_022 ... ok
+test audit::tests::case_023 ... ok
+test cache::tests::case_024 ... ok
+test session::tests::case_025 ... ok
+test token::tests::case_026 ... ok
+test claims::tests::case_027 ... ok
+test store::tests::case_028 ... ok
+test refresh::tests::case_029 ... ok
+test policy::tests::case_030 ... ok
+test audit::tests::case_031 ... ok
+test cache::tests::case_032 ... ok
+test session::tests::case_033 ... ok
+test token::tests::case_034 ... ok
+test claims::tests::case_035 ... ok
+test store::tests::case_036 ... ok
+test refresh::tests::case_037 ... ok
+test policy::tests::case_038 ... ok
+test audit::tests::case_039 ... ok
+test cache::tests::case_040 ... ok
+test session::tests::case_041 ... ok
+test token::tests::case_042 ... ok
+test claims::tests::case_043 ... ok
+test store::tests::case_044 ... ok
+test refresh::tests::case_045 ... ok
+test policy::tests::case_046 ... ok
+test audit::tests::case_047 ... ok
+test cache::tests::case_048 ... ok
+test session::tests::case_049 ... ok
+test token::tests::case_050 ... ok
+test claims::tests::case_051 ... ok
+test store::tests::case_052 ... ok
+test refresh::tests::case_053 ... ok
+test policy::tests::case_054 ... ok
+test audit::tests::case_055 ... ok
+test cache::tests::case_056 ... ok
+test session::tests::case_057 ... ok
+test token::tests::case_058 ... ok
+test claims::tests::case_059 ... ok
+test store::tests::case_060 ... ok
+test refresh::tests::case_061 ... ok
+test policy::tests::case_062 ... ok
+test audit::tests::case_063 ... ok
+test cache::tests::case_064 ... ok
+test session::tests::case_065 ... ok
+test token::tests::case_066 ... ok
+test claims::tests::case_067 ... ok
+test store::tests::case_068 ... ok
+test refresh::tests::case_069 ... ok
+test policy::tests::case_070 ... ok
+test audit::tests::case_071 ... ok
+test cache::tests::case_072 ... ok
+test session::tests::case_073 ... ok
+test token::tests::case_074 ... ok
+test claims::tests::case_075 ... ok
+test store::tests::case_076 ... ok
+test refresh::tests::case_077 ... ok
+test policy::tests::case_078 ... ok
+test audit::tests::case_079 ... ok
+test cache::tests::case_080 ... ok
+test session::tests::case_081 ... ok
+test token::tests::case_082 ... ok
+test claims::tests::case_083 ... ok
+test store::tests::case_084 ... ok
+test refresh::tests::case_085 ... ok
+test policy::tests::case_086 ... ok
+test audit::tests::case_087 ... ok
+test cache::tests::case_088 ... ok
+test session::tests::case_089 ... ok
+test token::tests::case_090 ... ok
+test claims::tests::case_091 ... ok
+test store::tests::case_092 ... ok
+test refresh::tests::case_093 ... ok
+test policy::tests::case_094 ... ok
+test audit::tests::case_095 ... ok
+test cache::tests::case_096 ... ok
+test session::tests::case_097 ... ok
+test token::tests::case_098 ... ok
+test claims::tests::case_099 ... ok
+test store::tests::case_100 ... ok
+test refresh::tests::case_101 ... ok
+test policy::tests::case_102 ... ok
+test audit::tests::case_103 ... ok
+test cache::tests::case_104 ... ok
+test session::tests::case_105 ... ok
+test token::tests::case_106 ... ok
+test claims::tests::case_107 ... ok
+test store::tests::case_108 ... ok
+test refresh::tests::case_109 ... ok
+test policy::tests::case_110 ... ok
+test audit::tests::case_111 ... ok
+test cache::tests::case_112 ... ok
+test session::tests::case_113 ... ok
+test token::tests::case_114 ... ok
+test claims::tests::case_115 ... ok
+test store::tests::case_116 ... ok
+test refresh::tests::case_117 ... ok
+test policy::tests::case_118 ... ok
+test audit::tests::case_119 ... ok
+test cache::tests::case_120 ... ok
+test session::tests::case_121 ... ok
+test token::tests::case_122 ... ok
+test claims::tests::case_123 ... ok
+test store::tests::case_124 ... ok
+test refresh::tests::case_125 ... ok
+test policy::tests::case_126 ... ok
+test audit::tests::case_127 ... ok
+test cache::tests::case_128 ... ok
+test session::tests::case_129 ... ok
+test token::tests::case_130 ... ok
+test claims::tests::case_131 ... ok
+test store::tests::case_132 ... ok
+test refresh::tests::case_133 ... ok
+test policy::tests::case_134 ... ok
+test audit::tests::case_135 ... ok
+test cache::tests::case_136 ... ok
+test session::tests::refresh_rotates_expiring_token ... FAILED
+test token::tests::case_138 ... ok
+test claims::tests::case_139 ... ok
+test store::tests::case_140 ... ok
+test refresh::tests::case_141 ... ok
+test policy::tests::case_142 ... ok
+test audit::tests::case_143 ... ok
+test cache::tests::case_144 ... ok
+test session::tests::case_145 ... ok
+test token::tests::case_146 ... ok
+test claims::tests::case_147 ... ok
+test store::tests::case_148 ... ok
+test refresh::tests::case_149 ... ok
+test policy::tests::case_150 ... ok
+test audit::tests::case_151 ... ok
+test cache::tests::case_152 ... ok
+test session::tests::case_153 ... ok
+test token::tests::case_154 ... ok
+test claims::tests::case_155 ... ok
+test store::tests::case_156 ... ok
+test refresh::tests::case_157 ... ok
+test policy::tests::case_158 ... ok
+test audit::tests::case_159 ... ok
+test cache::tests::case_160 ... ok
+test session::tests::case_161 ... ok
+test token::tests::case_162 ... ok
+test claims::tests::case_163 ... ok
+test store::tests::case_164 ... ok
+test refresh::tests::case_165 ... ok
+test policy::tests::case_166 ... ok
+test audit::tests::case_167 ... ok
+test cache::tests::case_168 ... ok
+test session::tests::case_169 ... ok
+test token::tests::case_170 ... ok
+test claims::tests::case_171 ... ok
+test store::tests::case_172 ... ok
+test refresh::tests::case_173 ... ok
+test policy::tests::case_174 ... ok
+test audit::tests::case_175 ... ok
+test cache::tests::case_176 ... ok
+test session::tests::case_177 ... ok
+test token::tests::case_178 ... ok
+test claims::tests::case_179 ... ok
+test store::tests::case_180 ... ok
+test refresh::tests::case_181 ... ok
+test policy::tests::case_182 ... ok
+test audit::tests::case_183 ... ok
+test cache::tests::case_184 ... ok
+test session::tests::case_185 ... ok
+test token::tests::case_186 ... ok
+test claims::tests::case_187 ... ok
+test store::tests::case_188 ... ok
+test refresh::tests::case_189 ... ok
+test policy::tests::case_190 ... ok
+test audit::tests::case_191 ... ok
+test cache::tests::case_192 ... ok
+test session::tests::case_193 ... ok
+test token::tests::case_194 ... ok
+test claims::tests::case_195 ... ok
+test store::tests::case_196 ... ok
+test refresh::tests::case_197 ... ok
+test policy::tests::case_198 ... ok
+test audit::tests::case_199 ... ok
+test cache::tests::case_200 ... ok
+test session::tests::case_201 ... ok
+test token::tests::case_202 ... ok
+test claims::tests::case_203 ... ok
+test store::tests::case_204 ... ok
+test refresh::tests::case_205 ... ok
+test policy::tests::case_206 ... ok
+test audit::tests::case_207 ... ok
+test cache::tests::case_208 ... ok
+test session::tests::case_209 ... ok
+test token::tests::case_210 ... ok
+test claims::tests::case_211 ... ok
+
+failures:
+
+---- session::tests::refresh_rotates_expiring_token stdout ----
+thread 'session::tests::refresh_rotates_expiring_token' panicked at src/session.rs:42:9:
+assertion `left == right` failed: token must be rotated before expiry
+  left: 1735689599
+ right: 1735689600
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    session::tests::refresh_rotates_expiring_token
+
+test result: FAILED. 211 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.84s
+
+error: test failed, to rerun pass `--lib`

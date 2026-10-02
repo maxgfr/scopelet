@@ -1,0 +1,195 @@
+src/api/index.ts(10,5): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/api/client.ts(17,6): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/reducer.ts(24,7): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/api/selectors.ts(31,8): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/api/types.ts(38,9): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/api/format.ts(45,10): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/api/session.ts(52,11): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/router.ts(59,12): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/store/index.ts(66,13): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/store/client.ts(73,14): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/store/reducer.ts(80,15): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/store/selectors.ts(87,16): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/store/types.ts(94,17): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/store/format.ts(101,18): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/store/session.ts(108,19): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/store/router.ts(115,20): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/ui/index.ts(122,21): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/ui/client.ts(129,22): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/ui/reducer.ts(136,23): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/ui/selectors.ts(143,24): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/ui/types.ts(150,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/ui/format.ts(157,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/ui/session.ts(164,27): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/ui/router.ts(171,28): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/hooks/index.ts(178,29): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/hooks/client.ts(185,30): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/hooks/reducer.ts(192,31): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/hooks/selectors.ts(199,32): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/hooks/types.ts(206,33): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/hooks/format.ts(213,34): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/hooks/session.ts(220,5): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/hooks/router.ts(227,6): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/utils/index.ts(234,7): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/utils/client.ts(241,8): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/utils/reducer.ts(248,9): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/utils/selectors.ts(255,10): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/utils/types.ts(262,11): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/utils/format.ts(269,12): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/utils/session.ts(276,13): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/utils/router.ts(283,14): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/api/index.ts(290,15): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/api/client.ts(297,16): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/reducer.ts(304,17): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/api/selectors.ts(11,18): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/api/types.ts(18,19): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/api/format.ts(25,20): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/api/session.ts(32,21): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/router.ts(39,22): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/store/index.ts(46,23): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/store/client.ts(53,24): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/store/reducer.ts(60,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/store/selectors.ts(67,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/store/types.ts(74,27): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/store/format.ts(81,28): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/store/session.ts(88,29): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/store/router.ts(95,30): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/ui/index.ts(102,31): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/ui/client.ts(109,32): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/ui/reducer.ts(116,33): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/ui/selectors.ts(123,34): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/ui/types.ts(130,5): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/ui/format.ts(137,6): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/ui/session.ts(144,7): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/ui/router.ts(151,8): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/hooks/index.ts(158,9): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/hooks/client.ts(165,10): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/hooks/reducer.ts(172,11): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/hooks/selectors.ts(179,12): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/hooks/types.ts(186,13): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/hooks/format.ts(193,14): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/hooks/session.ts(200,15): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/hooks/router.ts(207,16): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/utils/index.ts(214,17): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/utils/client.ts(221,18): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/utils/reducer.ts(228,19): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/utils/selectors.ts(235,20): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/utils/types.ts(242,21): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/utils/format.ts(249,22): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/utils/session.ts(256,23): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/utils/router.ts(263,24): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/api/index.ts(270,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/api/client.ts(277,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/reducer.ts(284,27): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/api/selectors.ts(291,28): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/api/types.ts(298,29): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/api/format.ts(305,30): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/api/session.ts(12,31): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/router.ts(19,32): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/store/index.ts(26,33): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/store/client.ts(33,34): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/store/reducer.ts(40,5): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/store/selectors.ts(47,6): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/store/types.ts(54,7): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/store/format.ts(61,8): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/store/session.ts(68,9): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/store/router.ts(75,10): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/ui/index.ts(82,11): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/client.ts(45,7): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+src/ui/client.ts(89,12): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/ui/reducer.ts(96,13): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/ui/selectors.ts(103,14): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/ui/types.ts(110,15): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/ui/format.ts(117,16): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/ui/session.ts(124,17): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/ui/router.ts(131,18): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/hooks/index.ts(138,19): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/hooks/client.ts(145,20): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/hooks/reducer.ts(152,21): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/hooks/selectors.ts(159,22): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/hooks/types.ts(166,23): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/hooks/format.ts(173,24): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/hooks/session.ts(180,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/hooks/router.ts(187,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/utils/index.ts(194,27): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/utils/client.ts(201,28): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/utils/reducer.ts(208,29): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/utils/selectors.ts(215,30): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/utils/types.ts(222,31): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/utils/format.ts(229,32): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/utils/session.ts(236,33): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/utils/router.ts(243,34): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/api/index.ts(250,5): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/api/client.ts(257,6): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/reducer.ts(264,7): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/api/selectors.ts(271,8): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/api/types.ts(278,9): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/api/format.ts(285,10): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/api/session.ts(292,11): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/api/router.ts(299,12): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/store/index.ts(306,13): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/store/client.ts(13,14): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/store/reducer.ts(20,15): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/store/selectors.ts(27,16): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/store/types.ts(34,17): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/store/format.ts(41,18): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/store/session.ts(48,19): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/store/router.ts(55,20): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/ui/index.ts(62,21): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/ui/client.ts(69,22): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/ui/reducer.ts(76,23): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/ui/selectors.ts(83,24): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/ui/types.ts(90,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/ui/format.ts(97,26): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/ui/session.ts(104,27): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/ui/router.ts(111,28): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/hooks/index.ts(118,29): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/hooks/client.ts(125,30): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/hooks/reducer.ts(132,31): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/hooks/selectors.ts(139,32): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/hooks/types.ts(146,33): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/hooks/format.ts(153,34): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+
+Found 151 errors in 40 files.
+
+Errors  Files
+     4  src/api/index.ts:175
+     4  src/api/client.ts:87
+     4  src/api/reducer.ts:212
+     4  src/api/selectors.ts:34
+     4  src/api/types.ts:47
+     4  src/api/format.ts:284
+     4  src/api/session.ts:58
+     4  src/api/router.ts:197
+     4  src/store/index.ts:39
+     4  src/store/client.ts:269
+     4  src/store/reducer.ts:119
+     4  src/store/selectors.ts:29
+     4  src/store/types.ts:54
+     4  src/store/format.ts:232
+     4  src/store/session.ts:224
+     4  src/store/router.ts:45
+     4  src/ui/index.ts:133
+     4  src/ui/client.ts:56
+     4  src/ui/reducer.ts:292
+     4  src/ui/selectors.ts:227
+     4  src/ui/types.ts:40
+     4  src/ui/format.ts:299
+     4  src/ui/session.ts:73
+     4  src/ui/router.ts:124
+     4  src/hooks/index.ts:41
+     4  src/hooks/client.ts:213
+     4  src/hooks/reducer.ts:35
+     4  src/hooks/selectors.ts:123
+     4  src/hooks/types.ts:33
+     4  src/hooks/format.ts:295
+     4  src/hooks/session.ts:78
+     4  src/hooks/router.ts:158
+     4  src/utils/index.ts:224
+     4  src/utils/client.ts:83
+     4  src/utils/reducer.ts:286
+     4  src/utils/selectors.ts:70
+     4  src/utils/types.ts:167
+     4  src/utils/format.ts:296
+     4  src/utils/session.ts:102
+     4  src/utils/router.ts:62

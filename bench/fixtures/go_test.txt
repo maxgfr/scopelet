@@ -1,0 +1,265 @@
+=== RUN   TestParse0
+--- PASS: TestParse0 (0.00s)
+=== RUN   TestParse1
+--- PASS: TestParse1 (0.00s)
+=== RUN   TestParse2
+--- PASS: TestParse2 (0.00s)
+=== RUN   TestParse3
+--- PASS: TestParse3 (0.00s)
+=== RUN   TestParse4
+--- PASS: TestParse4 (0.00s)
+=== RUN   TestParse5
+--- PASS: TestParse5 (0.00s)
+=== RUN   TestParse6
+--- PASS: TestParse6 (0.00s)
+=== RUN   TestParse7
+--- PASS: TestParse7 (0.00s)
+=== RUN   TestParse8
+--- PASS: TestParse8 (0.00s)
+=== RUN   TestParse9
+--- PASS: TestParse9 (0.00s)
+=== RUN   TestParse10
+--- PASS: TestParse10 (0.00s)
+=== RUN   TestParse11
+--- PASS: TestParse11 (0.00s)
+=== RUN   TestParse12
+--- PASS: TestParse12 (0.00s)
+=== RUN   TestParse13
+--- PASS: TestParse13 (0.00s)
+=== RUN   TestParse14
+--- PASS: TestParse14 (0.00s)
+=== RUN   TestParse15
+--- PASS: TestParse15 (0.00s)
+=== RUN   TestParse16
+--- PASS: TestParse16 (0.00s)
+=== RUN   TestParse17
+--- PASS: TestParse17 (0.00s)
+=== RUN   TestParse18
+--- PASS: TestParse18 (0.00s)
+=== RUN   TestParse19
+--- PASS: TestParse19 (0.00s)
+=== RUN   TestParse20
+--- PASS: TestParse20 (0.00s)
+=== RUN   TestParse21
+--- PASS: TestParse21 (0.00s)
+=== RUN   TestParse22
+--- PASS: TestParse22 (0.00s)
+=== RUN   TestParse23
+--- PASS: TestParse23 (0.00s)
+=== RUN   TestParse24
+--- PASS: TestParse24 (0.00s)
+=== RUN   TestParse25
+--- PASS: TestParse25 (0.00s)
+=== RUN   TestParse26
+--- PASS: TestParse26 (0.00s)
+=== RUN   TestParse27
+--- PASS: TestParse27 (0.00s)
+=== RUN   TestParse28
+--- PASS: TestParse28 (0.00s)
+=== RUN   TestParse29
+--- PASS: TestParse29 (0.00s)
+=== RUN   TestParse30
+--- PASS: TestParse30 (0.00s)
+=== RUN   TestParse31
+--- PASS: TestParse31 (0.00s)
+=== RUN   TestParse32
+--- PASS: TestParse32 (0.00s)
+=== RUN   TestParse33
+--- PASS: TestParse33 (0.00s)
+=== RUN   TestParse34
+--- PASS: TestParse34 (0.00s)
+=== RUN   TestParse35
+--- PASS: TestParse35 (0.00s)
+=== RUN   TestParse36
+--- PASS: TestParse36 (0.00s)
+=== RUN   TestParse37
+--- PASS: TestParse37 (0.00s)
+=== RUN   TestParse38
+--- PASS: TestParse38 (0.00s)
+=== RUN   TestParse39
+--- PASS: TestParse39 (0.00s)
+=== RUN   TestParse40
+--- PASS: TestParse40 (0.00s)
+=== RUN   TestParse41
+--- PASS: TestParse41 (0.00s)
+=== RUN   TestParse42
+--- PASS: TestParse42 (0.00s)
+=== RUN   TestParse43
+--- PASS: TestParse43 (0.00s)
+=== RUN   TestParse44
+--- PASS: TestParse44 (0.00s)
+=== RUN   TestParse45
+--- PASS: TestParse45 (0.00s)
+=== RUN   TestParse46
+--- PASS: TestParse46 (0.00s)
+=== RUN   TestParse47
+--- PASS: TestParse47 (0.00s)
+=== RUN   TestParse48
+--- PASS: TestParse48 (0.00s)
+=== RUN   TestParse49
+--- PASS: TestParse49 (0.00s)
+=== RUN   TestParse50
+--- PASS: TestParse50 (0.00s)
+=== RUN   TestParse51
+--- PASS: TestParse51 (0.00s)
+=== RUN   TestParse52
+--- PASS: TestParse52 (0.00s)
+=== RUN   TestParse53
+--- PASS: TestParse53 (0.00s)
+=== RUN   TestParse54
+--- PASS: TestParse54 (0.00s)
+=== RUN   TestParse55
+--- PASS: TestParse55 (0.00s)
+=== RUN   TestParse56
+--- PASS: TestParse56 (0.00s)
+=== RUN   TestParse57
+--- PASS: TestParse57 (0.00s)
+=== RUN   TestParse58
+--- PASS: TestParse58 (0.00s)
+=== RUN   TestParse59
+--- PASS: TestParse59 (0.00s)
+=== RUN   TestStore0
+--- PASS: TestStore0 (0.00s)
+=== RUN   TestStore1
+--- PASS: TestStore1 (0.00s)
+=== RUN   TestStore2
+--- PASS: TestStore2 (0.00s)
+=== RUN   TestStore3
+--- PASS: TestStore3 (0.00s)
+=== RUN   TestStore4
+--- PASS: TestStore4 (0.00s)
+=== RUN   TestStore5
+--- PASS: TestStore5 (0.00s)
+=== RUN   TestStore6
+--- PASS: TestStore6 (0.00s)
+=== RUN   TestStore7
+--- PASS: TestStore7 (0.00s)
+=== RUN   TestStore8
+--- PASS: TestStore8 (0.00s)
+=== RUN   TestStore9
+--- PASS: TestStore9 (0.00s)
+=== RUN   TestStore10
+--- PASS: TestStore10 (0.00s)
+=== RUN   TestStore11
+--- PASS: TestStore11 (0.00s)
+=== RUN   TestStore12
+--- PASS: TestStore12 (0.00s)
+=== RUN   TestStore13
+--- PASS: TestStore13 (0.00s)
+=== RUN   TestStore14
+--- PASS: TestStore14 (0.00s)
+=== RUN   TestStore15
+--- PASS: TestStore15 (0.00s)
+=== RUN   TestStore16
+--- PASS: TestStore16 (0.00s)
+=== RUN   TestStore17
+--- PASS: TestStore17 (0.00s)
+=== RUN   TestStore18
+--- PASS: TestStore18 (0.00s)
+=== RUN   TestStore19
+--- PASS: TestStore19 (0.00s)
+=== RUN   TestStore20
+--- PASS: TestStore20 (0.00s)
+=== RUN   TestStore21
+--- PASS: TestStore21 (0.00s)
+=== RUN   TestStore22
+--- PASS: TestStore22 (0.00s)
+=== RUN   TestStore23
+--- PASS: TestStore23 (0.00s)
+=== RUN   TestStore24
+--- PASS: TestStore24 (0.00s)
+=== RUN   TestStore25
+--- PASS: TestStore25 (0.00s)
+=== RUN   TestStore26
+--- PASS: TestStore26 (0.00s)
+=== RUN   TestStore27
+--- PASS: TestStore27 (0.00s)
+=== RUN   TestStore28
+--- PASS: TestStore28 (0.00s)
+=== RUN   TestStore29
+--- PASS: TestStore29 (0.00s)
+=== RUN   TestStore30
+--- PASS: TestStore30 (0.00s)
+=== RUN   TestStore31
+--- PASS: TestStore31 (0.00s)
+=== RUN   TestStore32
+--- PASS: TestStore32 (0.00s)
+=== RUN   TestStore33
+--- PASS: TestStore33 (0.00s)
+=== RUN   TestStore34
+--- PASS: TestStore34 (0.00s)
+=== RUN   TestStore35
+--- PASS: TestStore35 (0.00s)
+=== RUN   TestStore36
+--- PASS: TestStore36 (0.00s)
+=== RUN   TestStore37
+--- PASS: TestStore37 (0.00s)
+=== RUN   TestStore38
+--- PASS: TestStore38 (0.00s)
+=== RUN   TestStore39
+--- PASS: TestStore39 (0.00s)
+=== RUN   TestStore40
+--- PASS: TestStore40 (0.00s)
+=== RUN   TestStore41
+--- PASS: TestStore41 (0.00s)
+=== RUN   TestStore42
+--- PASS: TestStore42 (0.00s)
+=== RUN   TestStore43
+--- PASS: TestStore43 (0.00s)
+=== RUN   TestStore44
+--- PASS: TestStore44 (0.00s)
+=== RUN   TestStore45
+--- PASS: TestStore45 (0.00s)
+=== RUN   TestStore46
+--- PASS: TestStore46 (0.00s)
+=== RUN   TestStore47
+--- PASS: TestStore47 (0.00s)
+=== RUN   TestStore48
+--- PASS: TestStore48 (0.00s)
+=== RUN   TestStore49
+--- PASS: TestStore49 (0.00s)
+=== RUN   TestStore50
+--- PASS: TestStore50 (0.00s)
+=== RUN   TestStore51
+--- PASS: TestStore51 (0.00s)
+=== RUN   TestStore52
+--- PASS: TestStore52 (0.00s)
+=== RUN   TestStore53
+--- PASS: TestStore53 (0.00s)
+=== RUN   TestStore54
+--- PASS: TestStore54 (0.00s)
+=== RUN   TestStore55
+--- PASS: TestStore55 (0.00s)
+=== RUN   TestStore56
+--- PASS: TestStore56 (0.00s)
+=== RUN   TestStore57
+--- PASS: TestStore57 (0.00s)
+=== RUN   TestStore58
+--- PASS: TestStore58 (0.00s)
+=== RUN   TestStore59
+--- PASS: TestStore59 (0.00s)
+=== RUN   TestRefresh
+    session_test.go:42: expected 1735689600, got 1735689599
+--- FAIL: TestRefresh (0.00s)
+=== RUN   TestRotate
+panic: runtime error: invalid memory address or nil pointer dereference [recovered]
+	panic: runtime error: invalid memory address or nil pointer dereference
+[signal SIGSEGV: segmentation violation code=0x1 addr=0x18 pc=0x5f3a2d]
+
+goroutine 35 [running]:
+testing.tRunner.func1.2({0x6a1c40, 0x8e5a90})
+	/usr/local/go/src/testing/testing.go:1632 +0x230
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1635 +0x35e
+panic({0x6a1c40?, 0x8e5a90?})
+	/usr/local/go/src/runtime/panic.go:785 +0x132
+github.com/acme/app/auth.(*Session).Rotate(0x0)
+	/work/app/auth/session.go:88 +0x1d
+github.com/acme/app/auth.TestRotate(0xc000107040)
+	/work/app/auth/session_test.go:57 +0x4b
+testing.tRunner(0xc000107040, 0x6f2b18)
+	/usr/local/go/src/testing/testing.go:1690 +0xf4
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:1743 +0x390
+exit status 2
+FAIL	github.com/acme/app/auth	0.412s

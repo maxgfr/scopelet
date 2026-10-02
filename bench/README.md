@@ -17,7 +17,13 @@ the task; measure your own setup before quoting a percentage.
 progress log with two diagnostics at the end, a retry loop hiding one fatal
 error, the same log with CRLF endings, a receipt buried in the middle, a
 1000-row JSON array, a 1000-row JSONL stream, a 12 KB single line and a 32-byte
-output. For every fixture it records bytes in and out, cold and warm timings,
+output. It adds the real tool outputs in `fixtures/` (cargo, tsc, pytest, go,
+Java, Jest, ESLint, Git diffs and logs, kubectl and gh JSON, a service log, rg
+with context and two Rust sources), described by `fixtures/manifest.json`:
+facts that must be visible, a minimum reduction (`null` means the output must
+pass through), and pending facts that a planned change should reveal, which
+are reported but not enforced. `tests/content_gate.rs` reads the same files.
+For every fixture it records bytes in and out, cold and warm timings,
 whether every fact is visible in the view, and whether the original bytes come
 back through the artifact manifest and source blob. It exits non-zero when a
 fact or a byte is lost.

@@ -1,0 +1,296 @@
+2026-09-30 12:00:00.000  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 0 from classpath:application.yml
+2026-09-30 12:00:00.037  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 1 from classpath:application.yml
+2026-09-30 12:00:00.074  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 2 from classpath:application.yml
+2026-09-30 12:00:00.111  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 3 from classpath:application.yml
+2026-09-30 12:00:01.148  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 4 from classpath:application.yml
+2026-09-30 12:00:01.185  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 5 from classpath:application.yml
+2026-09-30 12:00:01.222  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 6 from classpath:application.yml
+2026-09-30 12:00:01.259  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 7 from classpath:application.yml
+2026-09-30 12:00:02.296  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 8 from classpath:application.yml
+2026-09-30 12:00:02.333  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 9 from classpath:application.yml
+2026-09-30 12:00:02.370  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 10 from classpath:application.yml
+2026-09-30 12:00:02.407  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 11 from classpath:application.yml
+2026-09-30 12:00:03.444  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 12 from classpath:application.yml
+2026-09-30 12:00:03.481  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 13 from classpath:application.yml
+2026-09-30 12:00:03.518  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 14 from classpath:application.yml
+2026-09-30 12:00:03.555  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 15 from classpath:application.yml
+2026-09-30 12:00:04.592  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 16 from classpath:application.yml
+2026-09-30 12:00:04.629  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 17 from classpath:application.yml
+2026-09-30 12:00:04.666  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 18 from classpath:application.yml
+2026-09-30 12:00:04.703  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 19 from classpath:application.yml
+2026-09-30 12:00:05.740  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 20 from classpath:application.yml
+2026-09-30 12:00:05.777  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 21 from classpath:application.yml
+2026-09-30 12:00:05.814  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 22 from classpath:application.yml
+2026-09-30 12:00:05.851  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 23 from classpath:application.yml
+2026-09-30 12:00:06.888  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 24 from classpath:application.yml
+2026-09-30 12:00:06.925  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 25 from classpath:application.yml
+2026-09-30 12:00:06.962  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 26 from classpath:application.yml
+2026-09-30 12:00:06.999  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 27 from classpath:application.yml
+2026-09-30 12:00:07.036  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 28 from classpath:application.yml
+2026-09-30 12:00:07.073  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 29 from classpath:application.yml
+2026-09-30 12:00:07.110  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 30 from classpath:application.yml
+2026-09-30 12:00:07.147  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 31 from classpath:application.yml
+2026-09-30 12:00:08.184  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 32 from classpath:application.yml
+2026-09-30 12:00:08.221  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 33 from classpath:application.yml
+2026-09-30 12:00:08.258  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 34 from classpath:application.yml
+2026-09-30 12:00:08.295  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 35 from classpath:application.yml
+2026-09-30 12:00:09.332  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 36 from classpath:application.yml
+2026-09-30 12:00:09.369  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 37 from classpath:application.yml
+2026-09-30 12:00:09.406  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 38 from classpath:application.yml
+2026-09-30 12:00:09.443  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 39 from classpath:application.yml
+2026-09-30 12:00:10.480  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 40 from classpath:application.yml
+2026-09-30 12:00:10.517  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 41 from classpath:application.yml
+2026-09-30 12:00:10.554  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 42 from classpath:application.yml
+2026-09-30 12:00:10.591  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 43 from classpath:application.yml
+2026-09-30 12:00:11.628  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 44 from classpath:application.yml
+2026-09-30 12:00:11.665  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 45 from classpath:application.yml
+2026-09-30 12:00:11.702  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 46 from classpath:application.yml
+2026-09-30 12:00:11.739  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 47 from classpath:application.yml
+2026-09-30 12:00:12.776  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 48 from classpath:application.yml
+2026-09-30 12:00:12.813  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 49 from classpath:application.yml
+2026-09-30 12:00:12.850  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 50 from classpath:application.yml
+2026-09-30 12:00:12.887  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 51 from classpath:application.yml
+2026-09-30 12:00:13.924  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 52 from classpath:application.yml
+2026-09-30 12:00:13.961  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 53 from classpath:application.yml
+2026-09-30 12:00:13.998  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 54 from classpath:application.yml
+2026-09-30 12:00:13.035  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 55 from classpath:application.yml
+2026-09-30 12:00:14.072  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 56 from classpath:application.yml
+2026-09-30 12:00:14.109  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 57 from classpath:application.yml
+2026-09-30 12:00:14.146  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 58 from classpath:application.yml
+2026-09-30 12:00:14.183  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 59 from classpath:application.yml
+2026-09-30 12:00:15.220  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 60 from classpath:application.yml
+2026-09-30 12:00:15.257  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 61 from classpath:application.yml
+2026-09-30 12:00:15.294  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 62 from classpath:application.yml
+2026-09-30 12:00:15.331  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 63 from classpath:application.yml
+2026-09-30 12:00:16.368  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 64 from classpath:application.yml
+2026-09-30 12:00:16.405  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 65 from classpath:application.yml
+2026-09-30 12:00:16.442  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 66 from classpath:application.yml
+2026-09-30 12:00:16.479  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 67 from classpath:application.yml
+2026-09-30 12:00:17.516  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 68 from classpath:application.yml
+2026-09-30 12:00:17.553  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 69 from classpath:application.yml
+2026-09-30 12:00:17.590  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 70 from classpath:application.yml
+2026-09-30 12:00:17.627  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 71 from classpath:application.yml
+2026-09-30 12:00:18.664  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 72 from classpath:application.yml
+2026-09-30 12:00:18.701  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 73 from classpath:application.yml
+2026-09-30 12:00:18.738  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 74 from classpath:application.yml
+2026-09-30 12:00:18.775  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 75 from classpath:application.yml
+2026-09-30 12:00:19.812  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 76 from classpath:application.yml
+2026-09-30 12:00:19.849  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 77 from classpath:application.yml
+2026-09-30 12:00:19.886  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 78 from classpath:application.yml
+2026-09-30 12:00:19.923  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 79 from classpath:application.yml
+2026-09-30 12:00:20.960  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 80 from classpath:application.yml
+2026-09-30 12:00:20.997  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 81 from classpath:application.yml
+2026-09-30 12:00:20.034  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 82 from classpath:application.yml
+2026-09-30 12:00:20.071  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 83 from classpath:application.yml
+2026-09-30 12:00:21.108  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 84 from classpath:application.yml
+2026-09-30 12:00:21.145  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 85 from classpath:application.yml
+2026-09-30 12:00:21.182  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 86 from classpath:application.yml
+2026-09-30 12:00:21.219  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 87 from classpath:application.yml
+2026-09-30 12:00:22.256  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 88 from classpath:application.yml
+2026-09-30 12:00:22.293  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 89 from classpath:application.yml
+2026-09-30 12:00:22.330  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 90 from classpath:application.yml
+2026-09-30 12:00:22.367  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 91 from classpath:application.yml
+2026-09-30 12:00:23.404  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 92 from classpath:application.yml
+2026-09-30 12:00:23.441  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 93 from classpath:application.yml
+2026-09-30 12:00:23.478  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 94 from classpath:application.yml
+2026-09-30 12:00:23.515  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 95 from classpath:application.yml
+2026-09-30 12:00:24.552  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 96 from classpath:application.yml
+2026-09-30 12:00:24.589  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 97 from classpath:application.yml
+2026-09-30 12:00:24.626  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 98 from classpath:application.yml
+2026-09-30 12:00:24.663  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 99 from classpath:application.yml
+2026-09-30 12:00:25.700  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 100 from classpath:application.yml
+2026-09-30 12:00:25.737  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 101 from classpath:application.yml
+2026-09-30 12:00:25.774  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 102 from classpath:application.yml
+2026-09-30 12:00:25.811  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 103 from classpath:application.yml
+2026-09-30 12:00:26.848  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 104 from classpath:application.yml
+2026-09-30 12:00:26.885  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 105 from classpath:application.yml
+2026-09-30 12:00:26.922  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 106 from classpath:application.yml
+2026-09-30 12:00:26.959  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 107 from classpath:application.yml
+2026-09-30 12:00:27.996  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 108 from classpath:application.yml
+2026-09-30 12:00:27.033  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 109 from classpath:application.yml
+2026-09-30 12:00:27.070  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 110 from classpath:application.yml
+2026-09-30 12:00:27.107  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 111 from classpath:application.yml
+2026-09-30 12:00:28.144  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 112 from classpath:application.yml
+2026-09-30 12:00:28.181  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 113 from classpath:application.yml
+2026-09-30 12:00:28.218  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 114 from classpath:application.yml
+2026-09-30 12:00:28.255  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 115 from classpath:application.yml
+2026-09-30 12:00:29.292  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 116 from classpath:application.yml
+2026-09-30 12:00:29.329  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 117 from classpath:application.yml
+2026-09-30 12:00:29.366  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 118 from classpath:application.yml
+2026-09-30 12:00:29.403  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 119 from classpath:application.yml
+2026-09-30 12:00:30.440  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 120 from classpath:application.yml
+2026-09-30 12:00:30.477  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 121 from classpath:application.yml
+2026-09-30 12:00:30.514  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 122 from classpath:application.yml
+2026-09-30 12:00:30.551  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 123 from classpath:application.yml
+2026-09-30 12:00:31.588  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 124 from classpath:application.yml
+2026-09-30 12:00:31.625  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 125 from classpath:application.yml
+2026-09-30 12:00:31.662  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 126 from classpath:application.yml
+2026-09-30 12:00:31.699  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 127 from classpath:application.yml
+2026-09-30 12:00:32.736  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 128 from classpath:application.yml
+2026-09-30 12:00:32.773  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 129 from classpath:application.yml
+2026-09-30 12:00:32.810  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 130 from classpath:application.yml
+2026-09-30 12:00:32.847  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 131 from classpath:application.yml
+2026-09-30 12:00:33.884  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 132 from classpath:application.yml
+2026-09-30 12:00:33.921  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 133 from classpath:application.yml
+2026-09-30 12:00:33.958  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 134 from classpath:application.yml
+2026-09-30 12:00:33.995  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 135 from classpath:application.yml
+2026-09-30 12:00:34.032  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 136 from classpath:application.yml
+2026-09-30 12:00:34.069  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 137 from classpath:application.yml
+2026-09-30 12:00:34.106  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 138 from classpath:application.yml
+2026-09-30 12:00:34.143  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 139 from classpath:application.yml
+2026-09-30 12:00:35.180  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 140 from classpath:application.yml
+2026-09-30 12:00:35.217  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 141 from classpath:application.yml
+2026-09-30 12:00:35.254  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 142 from classpath:application.yml
+2026-09-30 12:00:35.291  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 143 from classpath:application.yml
+2026-09-30 12:00:36.328  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 144 from classpath:application.yml
+2026-09-30 12:00:36.365  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 145 from classpath:application.yml
+2026-09-30 12:00:36.402  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 146 from classpath:application.yml
+2026-09-30 12:00:36.439  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 147 from classpath:application.yml
+2026-09-30 12:00:37.476  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 148 from classpath:application.yml
+2026-09-30 12:00:37.513  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 149 from classpath:application.yml
+2026-09-30 12:00:37.550  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 150 from classpath:application.yml
+2026-09-30 12:00:37.587  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 151 from classpath:application.yml
+2026-09-30 12:00:38.624  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 152 from classpath:application.yml
+2026-09-30 12:00:38.661  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 153 from classpath:application.yml
+2026-09-30 12:00:38.698  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 154 from classpath:application.yml
+2026-09-30 12:00:38.735  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 155 from classpath:application.yml
+2026-09-30 12:00:39.772  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 156 from classpath:application.yml
+2026-09-30 12:00:39.809  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 157 from classpath:application.yml
+2026-09-30 12:00:39.846  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 158 from classpath:application.yml
+2026-09-30 12:00:39.883  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 159 from classpath:application.yml
+2026-09-30 12:00:40.920  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 160 from classpath:application.yml
+2026-09-30 12:00:40.957  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 161 from classpath:application.yml
+2026-09-30 12:00:40.994  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 162 from classpath:application.yml
+2026-09-30 12:00:40.031  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 163 from classpath:application.yml
+2026-09-30 12:00:41.068  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 164 from classpath:application.yml
+2026-09-30 12:00:41.105  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 165 from classpath:application.yml
+2026-09-30 12:00:41.142  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 166 from classpath:application.yml
+2026-09-30 12:00:41.179  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 167 from classpath:application.yml
+2026-09-30 12:00:42.216  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 168 from classpath:application.yml
+2026-09-30 12:00:42.253  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 169 from classpath:application.yml
+2026-09-30 12:00:42.290  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 170 from classpath:application.yml
+2026-09-30 12:00:42.327  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 171 from classpath:application.yml
+2026-09-30 12:00:43.364  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 172 from classpath:application.yml
+2026-09-30 12:00:43.401  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 173 from classpath:application.yml
+2026-09-30 12:00:43.438  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 174 from classpath:application.yml
+2026-09-30 12:00:43.475  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 175 from classpath:application.yml
+2026-09-30 12:00:44.512  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 176 from classpath:application.yml
+2026-09-30 12:00:44.549  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 177 from classpath:application.yml
+2026-09-30 12:00:44.586  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 178 from classpath:application.yml
+2026-09-30 12:00:44.623  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 179 from classpath:application.yml
+2026-09-30 12:00:45.660  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 180 from classpath:application.yml
+2026-09-30 12:00:45.697  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 181 from classpath:application.yml
+2026-09-30 12:00:45.734  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 182 from classpath:application.yml
+2026-09-30 12:00:45.771  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 183 from classpath:application.yml
+2026-09-30 12:00:46.808  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 184 from classpath:application.yml
+2026-09-30 12:00:46.845  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 185 from classpath:application.yml
+2026-09-30 12:00:46.882  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 186 from classpath:application.yml
+2026-09-30 12:00:46.919  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 187 from classpath:application.yml
+2026-09-30 12:00:47.956  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 188 from classpath:application.yml
+2026-09-30 12:00:47.993  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 189 from classpath:application.yml
+2026-09-30 12:00:47.030  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 190 from classpath:application.yml
+2026-09-30 12:00:47.067  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 191 from classpath:application.yml
+2026-09-30 12:00:48.104  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 192 from classpath:application.yml
+2026-09-30 12:00:48.141  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 193 from classpath:application.yml
+2026-09-30 12:00:48.178  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 194 from classpath:application.yml
+2026-09-30 12:00:48.215  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 195 from classpath:application.yml
+2026-09-30 12:00:49.252  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 196 from classpath:application.yml
+2026-09-30 12:00:49.289  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 197 from classpath:application.yml
+2026-09-30 12:00:49.326  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 198 from classpath:application.yml
+2026-09-30 12:00:49.363  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 199 from classpath:application.yml
+2026-09-30 12:00:50.400  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 200 from classpath:application.yml
+2026-09-30 12:00:50.437  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 201 from classpath:application.yml
+2026-09-30 12:00:50.474  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 202 from classpath:application.yml
+2026-09-30 12:00:50.511  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 203 from classpath:application.yml
+2026-09-30 12:00:51.548  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 204 from classpath:application.yml
+2026-09-30 12:00:51.585  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 205 from classpath:application.yml
+2026-09-30 12:00:51.622  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 206 from classpath:application.yml
+2026-09-30 12:00:51.659  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 207 from classpath:application.yml
+2026-09-30 12:00:52.696  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 208 from classpath:application.yml
+2026-09-30 12:00:52.733  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 209 from classpath:application.yml
+2026-09-30 12:00:52.770  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 210 from classpath:application.yml
+2026-09-30 12:00:52.807  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 211 from classpath:application.yml
+2026-09-30 12:00:53.844  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 212 from classpath:application.yml
+2026-09-30 12:00:53.881  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 213 from classpath:application.yml
+2026-09-30 12:00:53.918  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 214 from classpath:application.yml
+2026-09-30 12:00:53.955  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 215 from classpath:application.yml
+2026-09-30 12:00:54.992  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 216 from classpath:application.yml
+2026-09-30 12:00:54.029  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 217 from classpath:application.yml
+2026-09-30 12:00:54.066  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 218 from classpath:application.yml
+2026-09-30 12:00:54.103  INFO 4182 --- [main] c.a.b.config.Loader : loaded property group 219 from classpath:application.yml
+2026-09-30 12:01:02.811 ERROR 4182 --- [main] o.s.boot.SpringApplication : Application run failed
+java.lang.IllegalStateException: Failed to execute CommandLineRunner
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:774)
+	at org.springframework.boot.SpringApplication.callRunners(SpringApplication.java:755)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:319)
+	at com.acme.billing.BillingApplication.main(BillingApplication.java:14)
+Caused by: java.lang.NullPointerException: Cannot invoke "String.length()" because "name" is null
+	at com.acme.billing.Invoice.total(Invoice.java:88)
+	at com.acme.billing.InvoiceService.issue(InvoiceService.java:51)
+	at com.acme.billing.Startup.run(Startup.java:23)
+	at org.springframework.boot.SpringApplication.callRunner(SpringApplication.java:771)
+	... 3 common frames omitted
+Caused by: java.sql.SQLException: Connection is not available, request timed out after 30000ms.
+	at com.zaxxer.hikari.pool.HikariPool.createTimeoutException(HikariPool.java:696)
+	at com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:181)
+	... 6 common frames omitted
+2026-09-30 12:01:03.000  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 0
+2026-09-30 12:01:03.053  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 1
+2026-09-30 12:01:03.106  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 2
+2026-09-30 12:01:03.159  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 3
+2026-09-30 12:01:03.212  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 4
+2026-09-30 12:01:03.265  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 5
+2026-09-30 12:01:03.318  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 6
+2026-09-30 12:01:03.371  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 7
+2026-09-30 12:01:03.424  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 8
+2026-09-30 12:01:03.477  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 9
+2026-09-30 12:01:04.530  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 10
+2026-09-30 12:01:04.583  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 11
+2026-09-30 12:01:04.636  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 12
+2026-09-30 12:01:04.689  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 13
+2026-09-30 12:01:04.742  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 14
+2026-09-30 12:01:04.795  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 15
+2026-09-30 12:01:04.848  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 16
+2026-09-30 12:01:04.901  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 17
+2026-09-30 12:01:04.954  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 18
+2026-09-30 12:01:04.007  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 19
+2026-09-30 12:01:05.060  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 20
+2026-09-30 12:01:05.113  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 21
+2026-09-30 12:01:05.166  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 22
+2026-09-30 12:01:05.219  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 23
+2026-09-30 12:01:05.272  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 24
+2026-09-30 12:01:05.325  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 25
+2026-09-30 12:01:05.378  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 26
+2026-09-30 12:01:05.431  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 27
+2026-09-30 12:01:05.484  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 28
+2026-09-30 12:01:05.537  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 29
+2026-09-30 12:01:06.590  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 30
+2026-09-30 12:01:06.643  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 31
+2026-09-30 12:01:06.696  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 32
+2026-09-30 12:01:06.749  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 33
+2026-09-30 12:01:06.802  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 34
+2026-09-30 12:01:06.855  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 35
+2026-09-30 12:01:06.908  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 36
+2026-09-30 12:01:06.961  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 37
+2026-09-30 12:01:06.014  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 38
+2026-09-30 12:01:06.067  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 39
+2026-09-30 12:01:07.120  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 40
+2026-09-30 12:01:07.173  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 41
+2026-09-30 12:01:07.226  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 42
+2026-09-30 12:01:07.279  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 43
+2026-09-30 12:01:07.332  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 44
+2026-09-30 12:01:07.385  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 45
+2026-09-30 12:01:07.438  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 46
+2026-09-30 12:01:07.491  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 47
+2026-09-30 12:01:07.544  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 48
+2026-09-30 12:01:07.597  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 49
+2026-09-30 12:01:08.650  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 50
+2026-09-30 12:01:08.703  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 51
+2026-09-30 12:01:08.756  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 52
+2026-09-30 12:01:08.809  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 53
+2026-09-30 12:01:08.862  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 54
+2026-09-30 12:01:08.915  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 55
+2026-09-30 12:01:08.968  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 56
+2026-09-30 12:01:08.021  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 57
+2026-09-30 12:01:08.074  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 58
+2026-09-30 12:01:08.127  INFO 4182 --- [shutdown] c.a.b.pool.Drainer : drained connection 59

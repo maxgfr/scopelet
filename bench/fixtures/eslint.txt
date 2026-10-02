@@ -1,0 +1,222 @@
+/work/web/src/components/Widget0.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget1.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget2.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget3.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget4.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget5.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget6.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget7.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget8.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget9.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget10.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget11.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget12.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget13.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+/work/web/src/api/session.ts
+  42:9  error  'token' is possibly 'undefined'  @typescript-eslint/no-unsafe-member-access
+
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget14.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget15.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget16.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget17.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget18.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget19.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget20.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget21.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget22.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget23.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget24.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget25.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget26.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget27.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget28.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget29.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget30.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget31.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget32.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget33.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget34.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+/work/web/src/components/Widget35.tsx
+  10:3  warning  'unused' is defined but never used  @typescript-eslint/no-unused-vars
+  17:4  warning  'tmp' is defined but never used  @typescript-eslint/no-unused-vars
+  24:5  warning  'value' is defined but never used  @typescript-eslint/no-unused-vars
+  31:6  warning  'props' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 145 problems (1 error, 144 warnings)
+  0 errors and 36 warnings potentially fixable with the `--fix` option.
+

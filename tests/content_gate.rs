@@ -1,10 +1,13 @@
 //! Deterministic regression gate over the shared offline content fixtures.
 //!
-//! The fixtures mirror `bench/content.py` byte for byte (checked against the
-//! recorded SHA-256 values) so the CI gate and the published comparison
-//! measure the same inputs. Thresholds are minimum byte reductions of the
+//! The synthetic fixtures mirror `bench/content.py` byte for byte (checked
+//! against the recorded SHA-256 values) so the CI gate and the published
+//! comparison measure the same inputs. The real tool outputs live in
+//! `bench/fixtures/*.txt`, described by `bench/fixtures/manifest.json`; both
+//! sides read the same files. Thresholds are minimum byte reductions of the
 //! default compact presentation; facts must stay visible in the view and the
-//! original bytes must remain recoverable from the store.
+//! original bytes must remain recoverable from the store. Pending facts are
+//! what a planned change should make visible: they are reported, not enforced.
 use scopelet::{
     compress::{self, Version},
     model::Dataset,
@@ -41,6 +44,61 @@ struct Fixture {
     minimum_reduction: Option<f64>,
     /// Facts are expected inside the compact view (otherwise only after recovery).
     facts_visible: bool,
+    /// Facts a planned change should make visible: reported, never enforced.
+    pending: Vec<String>,
+}
+
+/// Real tool outputs described by `bench/fixtures/manifest.json`.
+fn file_fixtures() -> BTreeMap<String, Fixture> {
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/bench/fixtures");
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(format!("{root}/manifest.json")).unwrap()).unwrap();
+    let strings = |value: &serde_json::Value| -> Vec<String> {
+        value
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s.as_str().unwrap().to_owned())
+            .collect()
+    };
+    manifest
+        .as_object()
+        .unwrap()
+        .iter()
+        .map(|(name, spec)| {
+            let fixture = Fixture {
+                bytes: std::fs::read(format!("{root}/{name}.txt"))
+                    .unwrap_or_else(|e| panic!("{name}: {e}")),
+                facts: strings(&spec["facts"]),
+                minimum_reduction: spec["min_reduction"].as_f64(),
+                facts_visible: spec["visible"].as_bool().unwrap(),
+                pending: strings(&spec["pending_facts"]),
+            };
+            (name.clone(), fixture)
+        })
+        .collect()
+}
+
+#[test]
+fn every_fixture_file_is_described_by_the_manifest() {
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/bench/fixtures");
+    let described = file_fixtures();
+    for entry in std::fs::read_dir(root).unwrap() {
+        let name = entry.unwrap().file_name().into_string().unwrap();
+        if let Some(stem) = name.strip_suffix(".txt") {
+            assert!(described.contains_key(stem), "{name} has no manifest entry");
+        }
+    }
+    for (name, fixture) in &described {
+        assert!(
+            !fixture.facts.is_empty() || !fixture.pending.is_empty(),
+            "{name} checks nothing"
+        );
+        assert!(
+            !fixtures().contains_key(name.as_str()),
+            "{name} shadows a synthetic fixture"
+        );
+    }
 }
 
 fn fixtures() -> BTreeMap<&'static str, Fixture> {
@@ -59,6 +117,7 @@ fn fixtures() -> BTreeMap<&'static str, Fixture> {
                 facts: facts.iter().map(|s| s.to_string()).collect(),
                 minimum_reduction: minimum,
                 facts_visible: visible,
+                pending: Vec::new(),
             },
         );
     };
@@ -148,16 +207,19 @@ fn recorded_hashes() -> BTreeMap<String, String> {
 #[test]
 fn fixtures_match_the_published_benchmark_bytes() {
     let recorded = recorded_hashes();
+    // Only the synthetic fixtures are recorded: file fixtures are their own bytes.
     for (name, fixture) in fixtures() {
         let hash = scopelet::store::digest(&fixture.bytes);
         assert_eq!(
-            recorded[name], hash,
+            recorded.get(name),
+            Some(&hash),
             "{name} fixture drifted from bench/content.py"
         );
     }
 }
 
-fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<(), String> {
+/// Pending facts missing from the view, or an error when a gate fails.
+fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<String>, String> {
     let output = compress::automatic_lazy(
         &fixture.bytes,
         Some(cache.to_path_buf()),
@@ -165,11 +227,18 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<(), S
         Version::default(),
     )
     .map_err(|e| format!("{name}: {e:#}"))?;
+    let shown = String::from_utf8_lossy(&output);
+    let pending = fixture
+        .pending
+        .iter()
+        .filter(|fact| !shown.contains(fact.as_str()))
+        .map(|fact| format!("{name}: pending {fact:?}"))
+        .collect();
     let Some(minimum) = fixture.minimum_reduction else {
         if output.as_ref() != fixture.bytes {
             return Err(format!("{name} must pass through unchanged"));
         }
-        return Ok(());
+        return Ok(pending);
     };
     if output.len() > compress::DEFAULT_BUDGET {
         return Err(format!(
@@ -218,16 +287,29 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<(), S
             return Err(format!("{name}: {fact:?} lost from the original"));
         }
     }
-    Ok(())
+    Ok(pending)
 }
 
 #[test]
 fn default_compression_meets_reduction_visibility_and_recovery_gates() {
     let dir = tempfile::tempdir().unwrap();
     let cache = dir.path().join("cache");
-    let failures: Vec<String> = fixtures()
+    let synthetic = fixtures();
+    let files = file_fixtures();
+    let all = synthetic
         .iter()
-        .filter_map(|(name, fixture)| check(name, fixture, &cache).err())
-        .collect();
+        .map(|(name, fixture)| (*name, fixture))
+        .chain(files.iter().map(|(name, fixture)| (name.as_str(), fixture)));
+    let (mut failures, mut pending) = (Vec::new(), Vec::new());
+    for (name, fixture) in all {
+        match check(name, fixture, &cache) {
+            Ok(missing) => pending.extend(missing),
+            Err(error) => failures.push(error),
+        }
+    }
+    // Reported so a run shows what the planned changes still owe.
+    for line in &pending {
+        eprintln!("{line}");
+    }
     assert!(failures.is_empty(), "{}", failures.join("\n\n"));
 }

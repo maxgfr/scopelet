@@ -1,0 +1,480 @@
+src/api/mod0.rs-10-    let cfg = Config::load()?;
+src/api/mod0.rs:11:    let client = Client::new(cfg.timeout);
+src/api/mod0.rs-12-    client.connect()?;
+--
+src/store/mod0.rs-11-    let cfg = Config::load()?;
+src/store/mod0.rs:12:    let client = Client::new(cfg.timeout);
+src/store/mod0.rs-13-    client.connect()?;
+--
+src/billing/mod0.rs-12-    let cfg = Config::load()?;
+src/billing/mod0.rs:13:    let client = Client::new(cfg.timeout);
+src/billing/mod0.rs-14-    client.connect()?;
+--
+src/auth/mod0.rs-13-    let cfg = Config::load()?;
+src/auth/mod0.rs:14:    let client = Client::new(cfg.timeout);
+src/auth/mod0.rs-15-    client.connect()?;
+--
+src/api/mod1.rs-14-    let cfg = Config::load()?;
+src/api/mod1.rs:15:    let client = Client::new(cfg.timeout);
+src/api/mod1.rs-16-    client.connect()?;
+--
+src/store/mod1.rs-15-    let cfg = Config::load()?;
+src/store/mod1.rs:16:    let client = Client::new(cfg.timeout);
+src/store/mod1.rs-17-    client.connect()?;
+--
+src/billing/mod1.rs-16-    let cfg = Config::load()?;
+src/billing/mod1.rs:17:    let client = Client::new(cfg.timeout);
+src/billing/mod1.rs-18-    client.connect()?;
+--
+src/auth/mod1.rs-17-    let cfg = Config::load()?;
+src/auth/mod1.rs:18:    let client = Client::new(cfg.timeout);
+src/auth/mod1.rs-19-    client.connect()?;
+--
+src/api/mod2.rs-18-    let cfg = Config::load()?;
+src/api/mod2.rs:19:    let client = Client::new(cfg.timeout);
+src/api/mod2.rs-20-    client.connect()?;
+--
+src/store/mod2.rs-19-    let cfg = Config::load()?;
+src/store/mod2.rs:20:    let client = Client::new(cfg.timeout);
+src/store/mod2.rs-21-    client.connect()?;
+--
+src/billing/mod2.rs-20-    let cfg = Config::load()?;
+src/billing/mod2.rs:21:    let client = Client::new(cfg.timeout);
+src/billing/mod2.rs-22-    client.connect()?;
+--
+src/auth/mod2.rs-21-    let cfg = Config::load()?;
+src/auth/mod2.rs:22:    let client = Client::new(cfg.timeout);
+src/auth/mod2.rs-23-    client.connect()?;
+--
+src/api/mod3.rs-22-    let cfg = Config::load()?;
+src/api/mod3.rs:23:    let client = Client::new(cfg.timeout);
+src/api/mod3.rs-24-    client.connect()?;
+--
+src/store/mod3.rs-23-    let cfg = Config::load()?;
+src/store/mod3.rs:24:    let client = Client::new(cfg.timeout);
+src/store/mod3.rs-25-    client.connect()?;
+--
+src/billing/mod3.rs-24-    let cfg = Config::load()?;
+src/billing/mod3.rs:25:    let client = Client::new(cfg.timeout);
+src/billing/mod3.rs-26-    client.connect()?;
+--
+src/auth/mod3.rs-25-    let cfg = Config::load()?;
+src/auth/mod3.rs:26:    let client = Client::new(cfg.timeout);
+src/auth/mod3.rs-27-    client.connect()?;
+--
+src/api/mod4.rs-26-    let cfg = Config::load()?;
+src/api/mod4.rs:27:    let client = Client::new(cfg.timeout);
+src/api/mod4.rs-28-    client.connect()?;
+--
+src/store/mod4.rs-27-    let cfg = Config::load()?;
+src/store/mod4.rs:28:    let client = Client::new(cfg.timeout);
+src/store/mod4.rs-29-    client.connect()?;
+--
+src/billing/mod4.rs-28-    let cfg = Config::load()?;
+src/billing/mod4.rs:29:    let client = Client::new(cfg.timeout);
+src/billing/mod4.rs-30-    client.connect()?;
+--
+src/auth/mod4.rs-29-    let cfg = Config::load()?;
+src/auth/mod4.rs:30:    let client = Client::new(cfg.timeout);
+src/auth/mod4.rs-31-    client.connect()?;
+--
+src/api/mod5.rs-30-    let cfg = Config::load()?;
+src/api/mod5.rs:31:    let client = Client::new(cfg.timeout);
+src/api/mod5.rs-32-    client.connect()?;
+--
+src/store/mod5.rs-31-    let cfg = Config::load()?;
+src/store/mod5.rs:32:    let client = Client::new(cfg.timeout);
+src/store/mod5.rs-33-    client.connect()?;
+--
+src/billing/mod5.rs-32-    let cfg = Config::load()?;
+src/billing/mod5.rs:33:    let client = Client::new(cfg.timeout);
+src/billing/mod5.rs-34-    client.connect()?;
+--
+src/auth/mod5.rs-33-    let cfg = Config::load()?;
+src/auth/mod5.rs:34:    let client = Client::new(cfg.timeout);
+src/auth/mod5.rs-35-    client.connect()?;
+--
+src/api/mod6.rs-34-    let cfg = Config::load()?;
+src/api/mod6.rs:35:    let client = Client::new(cfg.timeout);
+src/api/mod6.rs-36-    client.connect()?;
+--
+src/store/mod6.rs-35-    let cfg = Config::load()?;
+src/store/mod6.rs:36:    let client = Client::new(cfg.timeout);
+src/store/mod6.rs-37-    client.connect()?;
+--
+src/billing/mod6.rs-36-    let cfg = Config::load()?;
+src/billing/mod6.rs:37:    let client = Client::new(cfg.timeout);
+src/billing/mod6.rs-38-    client.connect()?;
+--
+src/auth/mod6.rs-37-    let cfg = Config::load()?;
+src/auth/mod6.rs:38:    let client = Client::new(cfg.timeout);
+src/auth/mod6.rs-39-    client.connect()?;
+--
+src/api/mod7.rs-38-    let cfg = Config::load()?;
+src/api/mod7.rs:39:    let client = Client::new(cfg.timeout);
+src/api/mod7.rs-40-    client.connect()?;
+--
+src/store/mod7.rs-39-    let cfg = Config::load()?;
+src/store/mod7.rs:40:    let client = Client::new(cfg.timeout);
+src/store/mod7.rs-41-    client.connect()?;
+--
+src/billing/mod7.rs-40-    let cfg = Config::load()?;
+src/billing/mod7.rs:41:    let client = Client::new(cfg.timeout);
+src/billing/mod7.rs-42-    client.connect()?;
+--
+src/auth/mod7.rs-41-    let cfg = Config::load()?;
+src/auth/mod7.rs:42:    let client = Client::new(cfg.timeout);
+src/auth/mod7.rs-43-    client.connect()?;
+--
+src/api/mod8.rs-42-    let cfg = Config::load()?;
+src/api/mod8.rs:43:    let client = Client::new(cfg.timeout);
+src/api/mod8.rs-44-    client.connect()?;
+--
+src/store/mod8.rs-43-    let cfg = Config::load()?;
+src/store/mod8.rs:44:    let client = Client::new(cfg.timeout);
+src/store/mod8.rs-45-    client.connect()?;
+--
+src/billing/mod8.rs-44-    let cfg = Config::load()?;
+src/billing/mod8.rs:45:    let client = Client::new(cfg.timeout);
+src/billing/mod8.rs-46-    client.connect()?;
+--
+src/auth/mod8.rs-45-    let cfg = Config::load()?;
+src/auth/mod8.rs:46:    let client = Client::new(cfg.timeout);
+src/auth/mod8.rs-47-    client.connect()?;
+--
+src/api/mod9.rs-46-    let cfg = Config::load()?;
+src/api/mod9.rs:47:    let client = Client::new(cfg.timeout);
+src/api/mod9.rs-48-    client.connect()?;
+--
+src/store/mod9.rs-47-    let cfg = Config::load()?;
+src/store/mod9.rs:48:    let client = Client::new(cfg.timeout);
+src/store/mod9.rs-49-    client.connect()?;
+--
+src/billing/mod9.rs-48-    let cfg = Config::load()?;
+src/billing/mod9.rs:49:    let client = Client::new(cfg.timeout);
+src/billing/mod9.rs-50-    client.connect()?;
+--
+src/auth/mod9.rs-49-    let cfg = Config::load()?;
+src/auth/mod9.rs:50:    let client = Client::new(cfg.timeout);
+src/auth/mod9.rs-51-    client.connect()?;
+--
+src/api/mod10.rs-50-    let cfg = Config::load()?;
+src/api/mod10.rs:51:    let client = Client::new(cfg.timeout);
+src/api/mod10.rs-52-    client.connect()?;
+--
+src/store/mod10.rs-51-    let cfg = Config::load()?;
+src/store/mod10.rs:52:    let client = Client::new(cfg.timeout);
+src/store/mod10.rs-53-    client.connect()?;
+--
+src/billing/mod10.rs-52-    let cfg = Config::load()?;
+src/billing/mod10.rs:53:    let client = Client::new(cfg.timeout);
+src/billing/mod10.rs-54-    client.connect()?;
+--
+src/auth/mod10.rs-53-    let cfg = Config::load()?;
+src/auth/mod10.rs:54:    let client = Client::new(cfg.timeout);
+src/auth/mod10.rs-55-    client.connect()?;
+--
+src/api/mod11.rs-54-    let cfg = Config::load()?;
+src/api/mod11.rs:55:    let client = Client::new(cfg.timeout);
+src/api/mod11.rs-56-    client.connect()?;
+--
+src/store/mod11.rs-55-    let cfg = Config::load()?;
+src/store/mod11.rs:56:    let client = Client::new(cfg.timeout);
+src/store/mod11.rs-57-    client.connect()?;
+--
+src/billing/mod11.rs-56-    let cfg = Config::load()?;
+src/billing/mod11.rs:57:    let client = Client::new(cfg.timeout);
+src/billing/mod11.rs-58-    client.connect()?;
+--
+src/auth/mod11.rs-57-    let cfg = Config::load()?;
+src/auth/mod11.rs:58:    let client = Client::new(cfg.timeout);
+src/auth/mod11.rs-59-    client.connect()?;
+--
+src/api/mod12.rs-58-    let cfg = Config::load()?;
+src/api/mod12.rs:59:    let client = Client::new(cfg.timeout);
+src/api/mod12.rs-60-    client.connect()?;
+--
+src/store/mod12.rs-59-    let cfg = Config::load()?;
+src/store/mod12.rs:60:    let client = Client::new(cfg.timeout);
+src/store/mod12.rs-61-    client.connect()?;
+--
+src/billing/mod12.rs-60-    let cfg = Config::load()?;
+src/billing/mod12.rs:61:    let client = Client::new(cfg.timeout);
+src/billing/mod12.rs-62-    client.connect()?;
+--
+src/auth/mod12.rs-61-    let cfg = Config::load()?;
+src/auth/mod12.rs:62:    let client = Client::new(cfg.timeout);
+src/auth/mod12.rs-63-    client.connect()?;
+--
+src/api/mod13.rs-62-    let cfg = Config::load()?;
+src/api/mod13.rs:63:    let client = Client::new(cfg.timeout);
+src/api/mod13.rs-64-    client.connect()?;
+--
+src/store/mod13.rs-63-    let cfg = Config::load()?;
+src/store/mod13.rs:64:    let client = Client::new(cfg.timeout);
+src/store/mod13.rs-65-    client.connect()?;
+--
+src/billing/mod13.rs-64-    let cfg = Config::load()?;
+src/billing/mod13.rs:65:    let client = Client::new(cfg.timeout);
+src/billing/mod13.rs-66-    client.connect()?;
+--
+src/auth/mod13.rs-65-    let cfg = Config::load()?;
+src/auth/mod13.rs:66:    let client = Client::new(cfg.timeout);
+src/auth/mod13.rs-67-    client.connect()?;
+--
+src/api/mod14.rs-66-    let cfg = Config::load()?;
+src/api/mod14.rs:67:    let client = Client::new(cfg.timeout);
+src/api/mod14.rs-68-    client.connect()?;
+--
+src/store/mod14.rs-67-    let cfg = Config::load()?;
+src/store/mod14.rs:68:    let client = Client::new(cfg.timeout);
+src/store/mod14.rs-69-    client.connect()?;
+--
+src/billing/mod14.rs-68-    let cfg = Config::load()?;
+src/billing/mod14.rs:69:    let client = Client::new(cfg.timeout);
+src/billing/mod14.rs-70-    client.connect()?;
+--
+src/auth/mod14.rs-69-    let cfg = Config::load()?;
+src/auth/mod14.rs:70:    let client = Client::new(cfg.timeout);
+src/auth/mod14.rs-71-    client.connect()?;
+--
+src/api/mod15.rs-70-    let cfg = Config::load()?;
+src/api/mod15.rs:71:    let client = Client::new(cfg.timeout);
+src/api/mod15.rs-72-    client.connect()?;
+--
+src/store/mod15.rs-71-    let cfg = Config::load()?;
+src/store/mod15.rs:72:    let client = Client::new(cfg.timeout);
+src/store/mod15.rs-73-    client.connect()?;
+--
+src/billing/mod15.rs-72-    let cfg = Config::load()?;
+src/billing/mod15.rs:73:    let client = Client::new(cfg.timeout);
+src/billing/mod15.rs-74-    client.connect()?;
+--
+src/auth/mod15.rs-73-    let cfg = Config::load()?;
+src/auth/mod15.rs:74:    let client = Client::new(cfg.timeout);
+src/auth/mod15.rs-75-    client.connect()?;
+--
+src/api/mod16.rs-74-    let cfg = Config::load()?;
+src/api/mod16.rs:75:    let client = Client::new(cfg.timeout);
+src/api/mod16.rs-76-    client.connect()?;
+--
+src/store/mod16.rs-75-    let cfg = Config::load()?;
+src/store/mod16.rs:76:    let client = Client::new(cfg.timeout);
+src/store/mod16.rs-77-    client.connect()?;
+--
+src/billing/mod16.rs-76-    let cfg = Config::load()?;
+src/billing/mod16.rs:77:    let client = Client::new(cfg.timeout);
+src/billing/mod16.rs-78-    client.connect()?;
+--
+src/auth/mod16.rs-77-    let cfg = Config::load()?;
+src/auth/mod16.rs:78:    let client = Client::new(cfg.timeout);
+src/auth/mod16.rs-79-    client.connect()?;
+--
+src/api/mod17.rs-78-    let cfg = Config::load()?;
+src/api/mod17.rs:79:    let client = Client::new(cfg.timeout);
+src/api/mod17.rs-80-    client.connect()?;
+--
+src/store/mod17.rs-79-    let cfg = Config::load()?;
+src/store/mod17.rs:80:    let client = Client::new(cfg.timeout);
+src/store/mod17.rs-81-    client.connect()?;
+--
+src/billing/mod17.rs-80-    let cfg = Config::load()?;
+src/billing/mod17.rs:81:    let client = Client::new(cfg.timeout);
+src/billing/mod17.rs-82-    client.connect()?;
+--
+src/auth/mod17.rs-81-    let cfg = Config::load()?;
+src/auth/mod17.rs:82:    let client = Client::new(cfg.timeout);
+src/auth/mod17.rs-83-    client.connect()?;
+--
+src/api/mod18.rs-82-    let cfg = Config::load()?;
+src/api/mod18.rs:83:    let client = Client::new(cfg.timeout);
+src/api/mod18.rs-84-    client.connect()?;
+--
+src/store/mod18.rs-83-    let cfg = Config::load()?;
+src/store/mod18.rs:84:    let client = Client::new(cfg.timeout);
+src/store/mod18.rs-85-    client.connect()?;
+--
+src/billing/mod18.rs-84-    let cfg = Config::load()?;
+src/billing/mod18.rs:85:    let client = Client::new(cfg.timeout);
+src/billing/mod18.rs-86-    client.connect()?;
+--
+src/auth/mod18.rs-85-    let cfg = Config::load()?;
+src/billing/invoice.rs:88:    let client = Client::new(Duration::from_secs(0)); // FIXME zero timeout
+src/auth/mod18.rs:86:    let client = Client::new(cfg.timeout);
+src/auth/mod18.rs-87-    client.connect()?;
+--
+src/api/mod19.rs-86-    let cfg = Config::load()?;
+src/api/mod19.rs:87:    let client = Client::new(cfg.timeout);
+src/api/mod19.rs-88-    client.connect()?;
+--
+src/store/mod19.rs-87-    let cfg = Config::load()?;
+src/store/mod19.rs:88:    let client = Client::new(cfg.timeout);
+src/store/mod19.rs-89-    client.connect()?;
+--
+src/billing/mod19.rs-88-    let cfg = Config::load()?;
+src/billing/mod19.rs:89:    let client = Client::new(cfg.timeout);
+src/billing/mod19.rs-90-    client.connect()?;
+--
+src/auth/mod19.rs-89-    let cfg = Config::load()?;
+src/auth/mod19.rs:90:    let client = Client::new(cfg.timeout);
+src/auth/mod19.rs-91-    client.connect()?;
+--
+src/api/mod20.rs-90-    let cfg = Config::load()?;
+src/api/mod20.rs:91:    let client = Client::new(cfg.timeout);
+src/api/mod20.rs-92-    client.connect()?;
+--
+src/store/mod20.rs-91-    let cfg = Config::load()?;
+src/store/mod20.rs:92:    let client = Client::new(cfg.timeout);
+src/store/mod20.rs-93-    client.connect()?;
+--
+src/billing/mod20.rs-92-    let cfg = Config::load()?;
+src/billing/mod20.rs:93:    let client = Client::new(cfg.timeout);
+src/billing/mod20.rs-94-    client.connect()?;
+--
+src/auth/mod20.rs-93-    let cfg = Config::load()?;
+src/auth/mod20.rs:94:    let client = Client::new(cfg.timeout);
+src/auth/mod20.rs-95-    client.connect()?;
+--
+src/api/mod21.rs-94-    let cfg = Config::load()?;
+src/api/mod21.rs:95:    let client = Client::new(cfg.timeout);
+src/api/mod21.rs-96-    client.connect()?;
+--
+src/store/mod21.rs-95-    let cfg = Config::load()?;
+src/store/mod21.rs:96:    let client = Client::new(cfg.timeout);
+src/store/mod21.rs-97-    client.connect()?;
+--
+src/billing/mod21.rs-96-    let cfg = Config::load()?;
+src/billing/mod21.rs:97:    let client = Client::new(cfg.timeout);
+src/billing/mod21.rs-98-    client.connect()?;
+--
+src/auth/mod21.rs-97-    let cfg = Config::load()?;
+src/auth/mod21.rs:98:    let client = Client::new(cfg.timeout);
+src/auth/mod21.rs-99-    client.connect()?;
+--
+src/api/mod22.rs-98-    let cfg = Config::load()?;
+src/api/mod22.rs:99:    let client = Client::new(cfg.timeout);
+src/api/mod22.rs-100-    client.connect()?;
+--
+src/store/mod22.rs-99-    let cfg = Config::load()?;
+src/store/mod22.rs:100:    let client = Client::new(cfg.timeout);
+src/store/mod22.rs-101-    client.connect()?;
+--
+src/billing/mod22.rs-100-    let cfg = Config::load()?;
+src/billing/mod22.rs:101:    let client = Client::new(cfg.timeout);
+src/billing/mod22.rs-102-    client.connect()?;
+--
+src/auth/mod22.rs-101-    let cfg = Config::load()?;
+src/auth/mod22.rs:102:    let client = Client::new(cfg.timeout);
+src/auth/mod22.rs-103-    client.connect()?;
+--
+src/api/mod23.rs-102-    let cfg = Config::load()?;
+src/api/mod23.rs:103:    let client = Client::new(cfg.timeout);
+src/api/mod23.rs-104-    client.connect()?;
+--
+src/store/mod23.rs-103-    let cfg = Config::load()?;
+src/store/mod23.rs:104:    let client = Client::new(cfg.timeout);
+src/store/mod23.rs-105-    client.connect()?;
+--
+src/billing/mod23.rs-104-    let cfg = Config::load()?;
+src/billing/mod23.rs:105:    let client = Client::new(cfg.timeout);
+src/billing/mod23.rs-106-    client.connect()?;
+--
+src/auth/mod23.rs-105-    let cfg = Config::load()?;
+src/auth/mod23.rs:106:    let client = Client::new(cfg.timeout);
+src/auth/mod23.rs-107-    client.connect()?;
+--
+src/api/mod24.rs-106-    let cfg = Config::load()?;
+src/api/mod24.rs:107:    let client = Client::new(cfg.timeout);
+src/api/mod24.rs-108-    client.connect()?;
+--
+src/store/mod24.rs-107-    let cfg = Config::load()?;
+src/store/mod24.rs:108:    let client = Client::new(cfg.timeout);
+src/store/mod24.rs-109-    client.connect()?;
+--
+src/billing/mod24.rs-108-    let cfg = Config::load()?;
+src/billing/mod24.rs:109:    let client = Client::new(cfg.timeout);
+src/billing/mod24.rs-110-    client.connect()?;
+--
+src/auth/mod24.rs-109-    let cfg = Config::load()?;
+src/auth/mod24.rs:110:    let client = Client::new(cfg.timeout);
+src/auth/mod24.rs-111-    client.connect()?;
+--
+src/api/mod25.rs-110-    let cfg = Config::load()?;
+src/api/mod25.rs:111:    let client = Client::new(cfg.timeout);
+src/api/mod25.rs-112-    client.connect()?;
+--
+src/store/mod25.rs-111-    let cfg = Config::load()?;
+src/store/mod25.rs:112:    let client = Client::new(cfg.timeout);
+src/store/mod25.rs-113-    client.connect()?;
+--
+src/billing/mod25.rs-112-    let cfg = Config::load()?;
+src/billing/mod25.rs:113:    let client = Client::new(cfg.timeout);
+src/billing/mod25.rs-114-    client.connect()?;
+--
+src/auth/mod25.rs-113-    let cfg = Config::load()?;
+src/auth/mod25.rs:114:    let client = Client::new(cfg.timeout);
+src/auth/mod25.rs-115-    client.connect()?;
+--
+src/api/mod26.rs-114-    let cfg = Config::load()?;
+src/api/mod26.rs:115:    let client = Client::new(cfg.timeout);
+src/api/mod26.rs-116-    client.connect()?;
+--
+src/store/mod26.rs-115-    let cfg = Config::load()?;
+src/store/mod26.rs:116:    let client = Client::new(cfg.timeout);
+src/store/mod26.rs-117-    client.connect()?;
+--
+src/billing/mod26.rs-116-    let cfg = Config::load()?;
+src/billing/mod26.rs:117:    let client = Client::new(cfg.timeout);
+src/billing/mod26.rs-118-    client.connect()?;
+--
+src/auth/mod26.rs-117-    let cfg = Config::load()?;
+src/auth/mod26.rs:118:    let client = Client::new(cfg.timeout);
+src/auth/mod26.rs-119-    client.connect()?;
+--
+src/api/mod27.rs-118-    let cfg = Config::load()?;
+src/api/mod27.rs:119:    let client = Client::new(cfg.timeout);
+src/api/mod27.rs-120-    client.connect()?;
+--
+src/store/mod27.rs-119-    let cfg = Config::load()?;
+src/store/mod27.rs:120:    let client = Client::new(cfg.timeout);
+src/store/mod27.rs-121-    client.connect()?;
+--
+src/billing/mod27.rs-120-    let cfg = Config::load()?;
+src/billing/mod27.rs:121:    let client = Client::new(cfg.timeout);
+src/billing/mod27.rs-122-    client.connect()?;
+--
+src/auth/mod27.rs-121-    let cfg = Config::load()?;
+src/auth/mod27.rs:122:    let client = Client::new(cfg.timeout);
+src/auth/mod27.rs-123-    client.connect()?;
+--
+src/api/mod28.rs-122-    let cfg = Config::load()?;
+src/api/mod28.rs:123:    let client = Client::new(cfg.timeout);
+src/api/mod28.rs-124-    client.connect()?;
+--
+src/store/mod28.rs-123-    let cfg = Config::load()?;
+src/store/mod28.rs:124:    let client = Client::new(cfg.timeout);
+src/store/mod28.rs-125-    client.connect()?;
+--
+src/billing/mod28.rs-124-    let cfg = Config::load()?;
+src/billing/mod28.rs:125:    let client = Client::new(cfg.timeout);
+src/billing/mod28.rs-126-    client.connect()?;
+--
+src/auth/mod28.rs-125-    let cfg = Config::load()?;
+src/auth/mod28.rs:126:    let client = Client::new(cfg.timeout);
+src/auth/mod28.rs-127-    client.connect()?;
+--
+src/api/mod29.rs-126-    let cfg = Config::load()?;
+src/api/mod29.rs:127:    let client = Client::new(cfg.timeout);
+src/api/mod29.rs-128-    client.connect()?;
+--
+src/store/mod29.rs-127-    let cfg = Config::load()?;
+src/store/mod29.rs:128:    let client = Client::new(cfg.timeout);
+src/store/mod29.rs-129-    client.connect()?;
+--
+src/billing/mod29.rs-128-    let cfg = Config::load()?;
+src/billing/mod29.rs:129:    let client = Client::new(cfg.timeout);
+src/billing/mod29.rs-130-    client.connect()?;
+--
+src/auth/mod29.rs-129-    let cfg = Config::load()?;
+src/auth/mod29.rs:130:    let client = Client::new(cfg.timeout);
+src/auth/mod29.rs-131-    client.connect()?;

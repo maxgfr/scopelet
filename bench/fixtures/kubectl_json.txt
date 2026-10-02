@@ -1,0 +1,1810 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00000",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T10:00:00Z",
+                "uid": "0f9e8d7c-0000-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-0",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.0.10",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T10:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00001",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T11:00:00Z",
+                "uid": "0f9e8d7c-0001-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-1",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.1.11",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T11:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00002",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T12:00:00Z",
+                "uid": "0f9e8d7c-0002-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-2",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.2.12",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T12:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00003",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T13:00:00Z",
+                "uid": "0f9e8d7c-0003-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-3",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.3.13",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T13:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00004",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T14:00:00Z",
+                "uid": "0f9e8d7c-0004-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-4",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.4.14",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T14:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00005",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T15:00:00Z",
+                "uid": "0f9e8d7c-0005-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-5",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.5.15",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T15:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00006",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T16:00:00Z",
+                "uid": "0f9e8d7c-0006-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-0",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.6.16",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T16:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00007",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T17:00:00Z",
+                "uid": "0f9e8d7c-0007-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-1",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.7.17",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T17:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00008",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T18:00:00Z",
+                "uid": "0f9e8d7c-0008-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-2",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.0.18",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T18:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00009",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T19:00:00Z",
+                "uid": "0f9e8d7c-0009-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-3",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.1.19",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T19:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0000a",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T10:00:00Z",
+                "uid": "0f9e8d7c-000a-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-4",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.2.20",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T10:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0000b",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T11:00:00Z",
+                "uid": "0f9e8d7c-000b-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-5",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.3.21",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T11:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0000c",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T12:00:00Z",
+                "uid": "0f9e8d7c-000c-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-0",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.4.22",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T12:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0000d",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T13:00:00Z",
+                "uid": "0f9e8d7c-000d-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-1",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.5.23",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T13:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0000e",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T14:00:00Z",
+                "uid": "0f9e8d7c-000e-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-2",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.6.24",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T14:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0000f",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T15:00:00Z",
+                "uid": "0f9e8d7c-000f-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-3",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.7.25",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T15:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00010",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T16:00:00Z",
+                "uid": "0f9e8d7c-0010-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-4",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.0.26",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T16:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00011",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T17:00:00Z",
+                "uid": "0f9e8d7c-0011-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-5",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.1.27",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T17:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00012",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T18:00:00Z",
+                "uid": "0f9e8d7c-0012-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-0",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.2.28",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T18:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00013",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T19:00:00Z",
+                "uid": "0f9e8d7c-0013-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-1",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.3.29",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T19:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00014",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T10:00:00Z",
+                "uid": "0f9e8d7c-0014-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-2",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.4.30",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T10:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00015",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T11:00:00Z",
+                "uid": "0f9e8d7c-0015-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-3",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.5.31",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T11:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00016",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T12:00:00Z",
+                "uid": "0f9e8d7c-0016-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-4",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.6.32",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T12:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00017",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T13:00:00Z",
+                "uid": "0f9e8d7c-0017-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-5",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.7.33",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": false,
+                        "restartCount": 14,
+                        "state": {
+                            "waiting": {
+                                "reason": "CrashLoopBackOff",
+                                "message": "back-off 5m0s restarting failed container=api"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00018",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T14:00:00Z",
+                "uid": "0f9e8d7c-0018-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-0",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.0.34",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T14:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00019",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T15:00:00Z",
+                "uid": "0f9e8d7c-0019-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-1",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.1.35",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T15:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0001a",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T16:00:00Z",
+                "uid": "0f9e8d7c-001a-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-2",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.2.36",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T16:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0001b",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T17:00:00Z",
+                "uid": "0f9e8d7c-001b-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-3",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.3.37",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T17:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0001c",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T18:00:00Z",
+                "uid": "0f9e8d7c-001c-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-4",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.4.38",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T18:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0001d",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T19:00:00Z",
+                "uid": "0f9e8d7c-001d-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-5",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.5.39",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T19:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0001e",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T10:00:00Z",
+                "uid": "0f9e8d7c-001e-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-0",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.6.40",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T10:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-0001f",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T11:00:00Z",
+                "uid": "0f9e8d7c-001f-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-1",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.7.41",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T11:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00020",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T12:00:00Z",
+                "uid": "0f9e8d7c-0020-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-2",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.0.42",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T12:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00021",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T13:00:00Z",
+                "uid": "0f9e8d7c-0021-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-3",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.1.43",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T13:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00022",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T14:00:00Z",
+                "uid": "0f9e8d7c-0022-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-4",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.2.44",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T14:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00023",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T15:00:00Z",
+                "uid": "0f9e8d7c-0023-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-5",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.3.45",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T15:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00024",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T16:00:00Z",
+                "uid": "0f9e8d7c-0024-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-0",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.4.46",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T16:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00025",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T17:00:00Z",
+                "uid": "0f9e8d7c-0025-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-1",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.5.47",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T17:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00026",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T18:00:00Z",
+                "uid": "0f9e8d7c-0026-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-2",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.6.48",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T18:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": "api-7d9f8c6b5-00027",
+                "namespace": "prod",
+                "labels": {
+                    "app": "api",
+                    "pod-template-hash": "7d9f8c6b5"
+                },
+                "creationTimestamp": "2026-09-30T19:00:00Z",
+                "uid": "0f9e8d7c-0027-4b3a-9c8d-7e6f5a4b3c2d"
+            },
+            "spec": {
+                "nodeName": "node-3",
+                "containers": [
+                    {
+                        "name": "api",
+                        "image": "registry.example.com/api:1.42.0",
+                        "resources": {
+                            "limits": {
+                                "cpu": "500m",
+                                "memory": "512Mi"
+                            }
+                        }
+                    }
+                ]
+            },
+            "status": {
+                "phase": "Running",
+                "podIP": "10.0.7.49",
+                "containerStatuses": [
+                    {
+                        "name": "api",
+                        "ready": true,
+                        "restartCount": 0,
+                        "state": {
+                            "running": {
+                                "startedAt": "2026-09-30T19:00:05Z"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": ""
+    }
+}

@@ -25,9 +25,27 @@ import time
 
 # Facts expected only after recovery: the view shows a cut line with a marker.
 RECOVERY_ONLY = {'giant_unicode_line'}
+# Real tool outputs, shared with `tests/content_gate.rs`.
+FIXTURES = Path(__file__).resolve().parent / 'fixtures'
+
+
+def file_fixtures():
+    """Manifest entries of `bench/fixtures`, keyed by fixture name."""
+    manifest = json.loads((FIXTURES / 'manifest.json').read_text())
+    return {name: {**spec, 'bytes': (FIXTURES / f'{name}.txt').read_bytes()} for name, spec in manifest.items()}
+
+
+def pending_facts():
+    """Facts a planned change should make visible: reported, never enforced."""
+    return {name: spec['pending_facts'] for name, spec in file_fixtures().items() if spec['pending_facts']}
 
 
 def fixtures():
+    return {**synthetic_fixtures(),
+            **{name: (spec['bytes'], spec['facts']) for name, spec in file_fixtures().items()}}
+
+
+def synthetic_fixtures():
     noise = ''.join(f'progress {i:04d}: ' + 'unchanged ' * 12 + '\n' for i in range(1000))
     rows = [{'id': i, 'status': 'failed' if i == 643 else 'passed',
              'message': 'error: audit-7139 amount=47' if i == 643 else 'stable ' * 12,
@@ -86,12 +104,15 @@ def measure(binary, out, warmups, repetitions):
               'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
               'binary_version': subprocess.run([str(binary), '--version'], capture_output=True, text=True, timeout=30).stdout.strip(),
               'cases': {}}
+    pending = pending_facts()
     with tempfile.TemporaryDirectory(prefix='scopelet-content-') as tmp:
         root = Path(tmp)
         for name, (original, facts) in fixtures().items():
             case = {'input_bytes': len(original), 'sha256': hashlib.sha256(original).hexdigest(),
                     'facts': facts if name not in RECOVERY_ONLY else ['entire giant line'],
                     'facts_expected': 'after recovery' if name in RECOVERY_ONLY else 'in view', 'states': {}}
+            if name in pending:
+                case['pending_facts'] = pending[name]
             for state in ('cold', 'warm'):
                 cache = root / f'{name}-{state}'
                 samples, output = [], b''
@@ -115,6 +136,9 @@ def measure(binary, out, warmups, repetitions):
                     'facts_visible': visible,
                     'facts_available_after_recovery': [v or bool(recovered and fact.encode() in recovered) for v, fact in zip(visible, facts)],
                     'original_byte_roundtrip_verified': exact}
+                if name in pending:
+                    case['states'][state]['pending_facts_visible'] = [
+                        fact in output.decode(errors='replace') for fact in pending[name]]
                 (out / f'{name}-{state}.output').write_bytes(output)
             report['cases'][name] = case
             print(name, 'complete', flush=True)

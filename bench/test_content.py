@@ -35,6 +35,27 @@ class ContentTests(unittest.TestCase):
         self.assertEqual(content.RECOVERY_ONLY, {'giant_unicode_line'})
         self.assertTrue(content.RECOVERY_ONLY <= set(content.fixtures()))
 
+    def test_file_fixtures_join_the_synthetic_corpus_without_shadowing_it(self):
+        files = content.file_fixtures()
+        synthetic = content.synthetic_fixtures()
+        self.assertGreaterEqual(len(files), 15)
+        self.assertFalse(set(files) & set(synthetic))
+        merged = content.fixtures()
+        self.assertEqual(set(merged), set(files) | set(synthetic))
+        for name, spec in files.items():
+            self.assertEqual(merged[name], (spec['bytes'], spec['facts']))
+            self.assertTrue(spec['facts'] or spec['pending_facts'], name)
+            self.assertIn(spec['profile'], {None, 'tests', 'search', 'git', 'fileread', 'logs'}, name)
+
+    def test_every_fixture_file_has_a_manifest_entry(self):
+        stems = {path.stem for path in content.FIXTURES.glob('*.txt')}
+        self.assertEqual(stems, set(content.file_fixtures()))
+
+    def test_pending_facts_are_reported_apart_from_enforced_facts(self):
+        for name, facts in content.pending_facts().items():
+            self.assertTrue(facts)
+            self.assertFalse(set(facts) & set(content.file_fixtures()[name]['facts']), name)
+
     def test_failures_name_every_lost_fact_exit_and_roundtrip(self):
         cell = {'failures': 0, 'original_byte_roundtrip_verified': True, 'facts_visible': [True], 'facts_available_after_recovery': [True]}
         report = {'cases': {
