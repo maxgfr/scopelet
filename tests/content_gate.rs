@@ -91,7 +91,7 @@ fn file_fixtures() -> BTreeMap<String, Fixture> {
                     "tests" => Profile::Tests,
                     "search" => Profile::Search,
                     "git" => Profile::Git,
-                    "fileread" => Profile::FileRead,
+                    "file-read" => Profile::FileRead,
                     "logs" => Profile::Logs,
                     other => panic!("{name}: unknown profile {other}"),
                 }),

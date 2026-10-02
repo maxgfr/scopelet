@@ -111,6 +111,15 @@ pub enum Version {
     V3,
 }
 impl Version {
+    /// The number `--compact-version` and `SCOPELET_COMPACT_VERSION` take.
+    pub fn number(self) -> u8 {
+        match self {
+            Self::V1 => 1,
+            Self::V2 => 2,
+            Self::V3 => 3,
+        }
+    }
+
     pub fn configured(explicit: Option<Self>) -> Result<Self> {
         if let Some(version) = explicit {
             return Ok(version);
@@ -131,15 +140,12 @@ impl Version {
 
 /// Conservative detection retained for callers; automatic ingestion reuses parsed values.
 pub fn detect(text: &str) -> Format {
-    match Parsed::detected(text.to_owned()) {
-        Parsed::Text(_) => Format::Text,
-        Parsed::Json(_) => Format::Json,
-        Parsed::Jsonl(_) => Format::Jsonl,
-    }
+    Parsed::detected(text.to_owned()).format()
 }
 
 /// Why automatic compression replaced an output or left it unchanged.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Reason {
     /// At most the exact-size threshold.
     Small,
@@ -153,6 +159,8 @@ pub enum Reason {
     /// A host's persisted-output preview.
     Persisted,
     Compressed,
+    /// Compression failed; the original bytes were kept.
+    Error,
 }
 
 impl Reason {
@@ -165,6 +173,7 @@ impl Reason {
             Self::Savings => "savings",
             Self::Persisted => "persisted",
             Self::Compressed => "compressed",
+            Self::Error => "error",
         }
     }
 }
@@ -188,9 +197,53 @@ impl Decision {
     }
 }
 
+/// The profile that shapes an output: a recognized command's, in compact-v3
+/// only. Earlier versions keep their single default shape.
+pub fn effective_profile(
+    profile: Option<crate::commands::Profile>,
+    version: Version,
+) -> Option<crate::commands::Profile> {
+    profile.filter(|_| version == Version::V3)
+}
+
+/// How one output is compressed: its byte target, the size up to which it
+/// stays exact, and whether it is a file being read rather than an outcome.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Shape {
+    budget: usize,
+    small: usize,
+    reading: bool,
+}
+
+impl Shape {
+    fn plain(budget: usize) -> Self {
+        Self {
+            budget,
+            small: SMALL,
+            reading: false,
+        }
+    }
+    /// A recognized command's shape in compact-v3; `budget` overrides its
+    /// target.
+    fn of(
+        profile: Option<crate::commands::Profile>,
+        budget: Option<usize>,
+        version: Version,
+    ) -> Self {
+        let profile = effective_profile(profile, version);
+        Self {
+            budget: budget.unwrap_or(profile.map_or(DEFAULT_BUDGET, |p| p.budget())),
+            small: profile.map_or(SMALL, |p| p.small()),
+            reading: profile == Some(crate::commands::Profile::FileRead),
+        }
+    }
+}
+
 pub fn automatic(bytes: &[u8], store: &Store, budget: usize) -> Result<Vec<u8>> {
-    automatic_with(bytes, budget, Version::V1, false, || Ok(store.clone()))
-        .map(|(output, _)| output.into_owned())
+    automatic_with(bytes, Shape::plain(budget), Version::V1, || {
+        Ok(store.clone())
+    })
+    .map(|(output, _)| output.into_owned())
 }
 
 /// The store factory is not invoked for a rejected or ineligible substitution.
@@ -200,7 +253,8 @@ pub fn automatic_lazy<'a>(
     budget: usize,
     version: Version,
 ) -> Result<Cow<'a, [u8]>> {
-    automatic_with(bytes, budget, version, false, || Store::open(path)).map(|(output, _)| output)
+    automatic_with(bytes, Shape::plain(budget), version, || Store::open(path))
+        .map(|(output, _)| output)
 }
 
 /// `automatic_lazy` for the output of a recognized command: its profile's
@@ -217,6 +271,38 @@ pub fn automatic_profile<'a>(
     automatic_decision(bytes, path, profile, budget, version).map(|(output, _)| output)
 }
 
+/// `automatic_decision` that journals its decision in the local event
+/// journal (`events`). Any failure keeps the original bytes, journaled as
+/// `error`, so a hook or wrapper can always return what the command printed.
+pub fn automatic_recorded<'a>(
+    host: &str,
+    bytes: &'a [u8],
+    path: Option<PathBuf>,
+    profile: Option<crate::commands::Profile>,
+    budget: Option<usize>,
+    version: Version,
+) -> Cow<'a, [u8]> {
+    let (output, decision) = automatic_decision(bytes, path.clone(), profile, budget, version)
+        .unwrap_or_else(|_| (Cow::Borrowed(bytes), Decision::unchanged(Reason::Error)));
+    if !bytes.is_empty() {
+        crate::events::record(
+            path,
+            crate::events::Event {
+                host: host.into(),
+                profile: effective_profile(profile, version).map(|p| p.name().into()),
+                bytes_in: bytes.len(),
+                bytes_out: output.len(),
+                reason: Some(decision.reason),
+                version: Some(version.number()),
+                artifact: decision.artifact.as_deref().map(crate::events::prefix),
+                blob: decision.blob.as_deref().map(crate::events::prefix),
+                ..Default::default()
+            },
+        );
+    }
+    output
+}
+
 /// `automatic_profile`, with the decision it made.
 pub fn automatic_decision<'a>(
     bytes: &'a [u8],
@@ -225,23 +311,19 @@ pub fn automatic_decision<'a>(
     budget: Option<usize>,
     version: Version,
 ) -> Result<(Cow<'a, [u8]>, Decision)> {
-    let profile = profile.filter(|_| version == Version::V3);
-    let reading = profile == Some(crate::commands::Profile::FileRead);
-    let budget = budget.unwrap_or(profile.map_or(DEFAULT_BUDGET, |p| p.budget()));
-    automatic_with(bytes, budget, version, reading, || Store::open(path))
+    let shape = Shape::of(profile, budget, version);
+    automatic_with(bytes, shape, version, || Store::open(path))
 }
 
-/// `reading`: the bytes are a file being read, not a command's outcome.
 fn automatic_with(
     bytes: &[u8],
-    budget: usize,
+    shape: Shape,
     version: Version,
-    reading: bool,
     store: impl FnOnce() -> Result<Store>,
 ) -> Result<(Cow<'_, [u8]>, Decision)> {
     let unchanged = |reason| Ok((Cow::Borrowed(bytes), Decision::unchanged(reason)));
     ensure!(
-        (1024..=1024 * 1024).contains(&budget),
+        (1024..=1024 * 1024).contains(&shape.budget),
         "max_bytes must be 1024..1048576"
     );
     let max_lines = if version == Version::V3 {
@@ -249,7 +331,7 @@ fn automatic_with(
     } else {
         MAX_LINES
     };
-    if bytes.len() <= SMALL {
+    if bytes.len() <= shape.small {
         return unchanged(Reason::Small);
     }
     if memchr::memchr_iter(b'\n', bytes).count() > max_lines {
@@ -287,11 +369,11 @@ fn automatic_with(
     let (mut result, shown) = view(
         &data,
         PLACEHOLDER,
-        budget,
+        shape.budget,
         version,
         Some(text),
         max_lines,
-        reading,
+        shape.reading,
     )?;
     if shown == 0 || result.len() + 512 > bytes.len() || result.len() * 5 > bytes.len() * 4 {
         return unchanged(Reason::Savings);
@@ -325,7 +407,10 @@ fn automatic_with(
     // Only substitute our header, never placeholder-looking text in original evidence.
     let end = result.find('\n').unwrap() + 1;
     result.replace_range(..end, &header(&data, &artifact, version));
-    ensure!(result.len() <= budget, "compact metadata exceeds budget");
+    ensure!(
+        result.len() <= shape.budget,
+        "compact metadata exceeds budget"
+    );
     let decision = Decision {
         reason: Reason::Compressed,
         blob: Some(data.snapshots[0].blob.clone()),

@@ -5,6 +5,7 @@
 //! 12-character prefixes of the artifact and original it produced. No
 //! content, command or path is recorded. Writing is best effort and
 //! `SCOPELET_EVENTS=0` turns it off.
+use crate::compress::Reason;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::io::Write;
@@ -20,20 +21,30 @@ pub struct Event {
     pub ts: String,
     /// `claude`, `opencode`, `run` (Codex's wrapper and direct use), `cli`.
     pub host: String,
-    /// `compress` or `expand`.
-    pub kind: String,
+    pub kind: Kind,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub profile: Option<String>,
     pub bytes_in: usize,
     pub bytes_out: usize,
-    /// Why the output was or was not replaced (`compress::Reason`).
-    pub reason: String,
+    /// Why the output was or was not replaced; none for an expansion.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reason: Option<Reason>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<u8>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub artifact: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub blob: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Kind {
+    /// An automatic compression decision.
+    #[default]
+    Compress,
+    /// A recovery with `expand`.
+    Expand,
 }
 
 /// The first characters of a reference's hash.
@@ -113,14 +124,6 @@ pub fn record(cache: Option<PathBuf>, mut event: Event) {
     })();
 }
 
-fn version_number(version: crate::compress::Version) -> u8 {
-    match version {
-        crate::compress::Version::V1 => 1,
-        crate::compress::Version::V2 => 2,
-        crate::compress::Version::V3 => 3,
-    }
-}
-
 /// Journal an output left unchanged before compression was attempted.
 pub fn unchanged(
     host: &str,
@@ -136,58 +139,15 @@ pub fn unchanged(
         None,
         Event {
             host: host.into(),
-            kind: "compress".into(),
-            profile: profile.map(|p| p.name().into()),
+            kind: Kind::Compress,
+            profile: crate::compress::effective_profile(profile, version).map(|p| p.name().into()),
             bytes_in: bytes,
             bytes_out: bytes,
-            reason: reason.as_str().into(),
-            version: Some(version_number(version)),
+            reason: Some(reason),
+            version: Some(version.number()),
             ..Event::default()
         },
     );
-}
-
-/// Compress like `compress::automatic_profile` and journal the decision. Any
-/// failure leaves the original bytes, journaled as `error`.
-pub fn automatic<'a>(
-    host: &str,
-    bytes: &'a [u8],
-    cache: Option<PathBuf>,
-    profile: Option<crate::commands::Profile>,
-    budget: Option<usize>,
-    version: crate::compress::Version,
-) -> std::borrow::Cow<'a, [u8]> {
-    let decided =
-        crate::compress::automatic_decision(bytes, cache.clone(), profile, budget, version);
-    let (output, reason, artifact, blob) = match decided {
-        Ok((output, decision)) => (
-            output,
-            decision.reason.as_str(),
-            decision.artifact,
-            decision.blob,
-        ),
-        Err(_) => (std::borrow::Cow::Borrowed(bytes), "error", None, None),
-    };
-    if !bytes.is_empty() {
-        record(
-            cache,
-            Event {
-                host: host.into(),
-                kind: "compress".into(),
-                profile: profile
-                    .filter(|_| version == crate::compress::Version::V3)
-                    .map(|p| p.name().into()),
-                bytes_in: bytes.len(),
-                bytes_out: output.len(),
-                reason: reason.into(),
-                version: Some(version_number(version)),
-                artifact: artifact.map(|a| prefix(&a)),
-                blob: blob.map(|b| prefix(&b)),
-                ..Event::default()
-            },
-        );
-    }
-    output
 }
 
 /// Journal a recovery of a stored reference.
@@ -196,8 +156,7 @@ pub fn expanded(cache: Option<PathBuf>, reference: &str) {
         cache,
         Event {
             host: "cli".into(),
-            kind: "expand".into(),
-            reason: "expand".into(),
+            kind: Kind::Expand,
             artifact: Some(prefix(reference)),
             ..Event::default()
         },
@@ -208,6 +167,9 @@ pub fn expanded(cache: Option<PathBuf>, reference: &str) {
 #[derive(Debug, Default, Serialize, PartialEq)]
 pub struct Stats {
     pub days: u64,
+    /// False when `SCOPELET_EVENTS=0`: the counts below then cover only what
+    /// was journaled before, not what happened since.
+    pub journal_enabled: bool,
     pub events: usize,
     pub compressions: usize,
     pub bytes_in: u64,
@@ -253,14 +215,15 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
     }
     let mut stats = Stats {
         days,
+        journal_enabled: enabled(),
         events: events.len(),
         journal,
         ..Stats::default()
     };
     let mut compressed: Vec<&Event> = Vec::new();
     for event in &events {
-        match event.kind.as_str() {
-            "compress" if event.reason == "compressed" => {
+        match (event.kind, event.reason) {
+            (Kind::Compress, Some(Reason::Compressed)) => {
                 stats.compressions += 1;
                 stats.bytes_in += event.bytes_in as u64;
                 stats.bytes_out += event.bytes_out as u64;
@@ -270,9 +233,14 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
                     .or_default() += 1;
                 compressed.push(event);
             }
-            "compress" => *stats.pass_through.entry(event.reason.clone()).or_default() += 1,
-            "expand" => stats.expands += 1,
-            _ => {}
+            (Kind::Compress, Some(reason)) => {
+                *stats
+                    .pass_through
+                    .entry(reason.as_str().into())
+                    .or_default() += 1
+            }
+            (Kind::Expand, _) => stats.expands += 1,
+            (Kind::Compress, None) => {}
         }
     }
     stats.bytes_saved = stats.bytes_in.saturating_sub(stats.bytes_out);
@@ -281,7 +249,7 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
         .iter()
         .filter(|c| {
             events.iter().any(|e| {
-                e.kind == "expand"
+                e.kind == Kind::Expand
                     && e.ts >= c.ts
                     && e.artifact.as_ref().is_some_and(|x| {
                         Some(x) == c.artifact.as_ref() || Some(x) == c.blob.as_ref()

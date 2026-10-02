@@ -567,10 +567,7 @@ impl Store {
             let metadata = item.metadata()?;
             if !content_hash_name(&name) {
                 // Foreign files are never cache items: leave them where they are.
-                if let Some(bytes) = reap_temporary(&item, &name, now, age)? {
-                    report.removed_items += 1;
-                    report.removed_bytes += bytes;
-                }
+                report.reaped(reap_temporary(&item, &name, now, age)?);
                 continue;
             }
             if aged(metadata.modified()?) {
@@ -595,12 +592,7 @@ impl Store {
                     for blob in &blobs {
                         *referenced.entry(blob.clone()).or_default() += 1;
                     }
-                    kept.push(Kept {
-                        path: item.path(),
-                        modified: metadata.modified()?,
-                        bytes: metadata.len(),
-                        blobs,
-                    });
+                    kept.push(Kept::new(&item, &metadata, blobs)?);
                 }
                 Err(_) => {
                     // Intact but unreadable here: keep it and its originals.
@@ -617,22 +609,14 @@ impl Store {
             let name = item.file_name().to_string_lossy().into_owned();
             let metadata = item.metadata()?;
             if !content_hash_name(&name) {
-                if let Some(bytes) = reap_temporary(&item, &name, now, age)? {
-                    report.removed_items += 1;
-                    report.removed_bytes += bytes;
-                }
+                report.reaped(reap_temporary(&item, &name, now, age)?);
                 continue;
             }
             let id = format!("blob:{name}");
             if originals_known && !referenced.contains_key(&id) && aged(metadata.modified()?) {
                 remove(&item.path(), metadata.len(), &mut report)?;
             } else if originals_known {
-                kept.push(Kept {
-                    path: item.path(),
-                    modified: metadata.modified()?,
-                    bytes: metadata.len(),
-                    blobs: Vec::new(),
-                });
+                kept.push(Kept::new(&item, &metadata, Vec::new())?);
             } else {
                 report.kept_bytes += metadata.len();
             }
@@ -717,6 +701,16 @@ pub struct CleanReport {
     pub corrupt: usize,
 }
 
+impl CleanReport {
+    /// Count a temporary `reap_temporary` removed, if it did.
+    fn reaped(&mut self, bytes: Option<u64>) {
+        if let Some(bytes) = bytes {
+            self.removed_items += 1;
+            self.removed_bytes += bytes;
+        }
+    }
+}
+
 /// A cache item that survived the age pass.
 struct Kept {
     path: PathBuf,
@@ -724,4 +718,15 @@ struct Kept {
     bytes: u64,
     /// Originals an artifact names; empty for originals and indexes.
     blobs: Vec<String>,
+}
+
+impl Kept {
+    fn new(item: &fs::DirEntry, metadata: &fs::Metadata, blobs: Vec<String>) -> Result<Self> {
+        Ok(Self {
+            path: item.path(),
+            modified: metadata.modified()?,
+            bytes: metadata.len(),
+            blobs,
+        })
+    }
 }

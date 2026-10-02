@@ -312,8 +312,7 @@ fn top_view(
     view.total_records = data.records.len();
     view.omitted_records = view.total_records - view.shown_records;
     view.next_offset = (view.blocked_record.is_none()).then_some(view.shown_records);
-    view.display_complete = false;
-    view.notes.push(NOTE.into());
+    view.stop_early(NOTE);
     Ok(view)
 }
 
@@ -389,7 +388,7 @@ fn execute(cli: Cli) -> Result<i32> {
         )?;
         let code = process::exit_code(&result);
         for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
-            let output = scopelet::events::automatic(
+            let output = compress::automatic_recorded(
                 "run",
                 bytes,
                 cli.cache_dir.clone(),
@@ -424,7 +423,7 @@ fn execute(cli: Cli) -> Result<i32> {
             .take(MAX_INPUT as u64 + 1)
             .read_to_end(&mut bytes)?;
         ensure!(bytes.len() <= MAX_INPUT, "input exceeds 32 MiB");
-        let output = scopelet::events::automatic(
+        let output = compress::automatic_recorded(
             "cli",
             &bytes,
             cli.cache_dir,
@@ -715,7 +714,9 @@ fn execute(cli: Cli) -> Result<i32> {
                 "max_bytes must be 1024..1048576"
             );
             let id = store.resolve(&id)?;
-            scopelet::events::expanded(Some(store.root.clone()), &id);
+            if store.contains(&id) {
+                scopelet::events::expanded(Some(store.root.clone()), &id);
+            }
             if !find.is_empty() {
                 let data = scopelet::recovery::search(
                     &store,
@@ -787,8 +788,9 @@ fn execute(cli: Cli) -> Result<i32> {
             max_size,
         } => {
             let report = store.clean_with(older_days, max_size)?;
-            // Session markers only gate hook context; losing one is harmless.
-            let sessions = integration::clean_sessions(older_days).unwrap_or(0);
+            // Session markers only gate hook context: a failure to purge them
+            // does not fail the cleanup, but the count is then unknown (null).
+            let sessions = integration::clean_sessions(older_days).ok();
             let mut value = serde_json::to_value(report)?;
             value["sessions_removed"] = json!(sessions);
             value["cache"] = json!(store.root);

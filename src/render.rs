@@ -24,6 +24,15 @@ pub struct View {
     pub notes: Vec<String>,
 }
 
+impl View {
+    /// Mark a view that deliberately stops before the end of its result,
+    /// saying why and how to continue.
+    pub fn stop_early(&mut self, note: &str) {
+        self.display_complete = false;
+        self.notes.push(note.into());
+    }
+}
+
 pub fn render(
     data: &Dataset,
     store: &Store,

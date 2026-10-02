@@ -114,8 +114,7 @@ pub fn page(store: &Store, id: &str, start: usize, end: usize, budget: usize) ->
         }
         if next.is_some() {
             view.next_start = next;
-            view.display_complete = false;
-            view.notes.push(NOTE.into());
+            view.stop_early(NOTE);
         }
         (serde_json::to_vec(&view).ok()?.len() < budget).then_some(view)
     };
@@ -149,8 +148,7 @@ pub fn page(store: &Store, id: &str, start: usize, end: usize, budget: usize) ->
     }
     let mut view = crate::render::render(&take(fits), store, Mode::Default, budget, 0)?;
     view.next_start = Some(first + fits);
-    view.display_complete = false;
-    view.notes.push(NOTE.into());
+    view.stop_early(NOTE);
     Ok(view)
 }
 

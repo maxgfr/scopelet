@@ -54,9 +54,18 @@ fn name(arg: &str) -> &str {
 
 /// Scopelet itself, or another wrapper whose output is already shaped.
 pub fn is_wrapper(args: &[String]) -> bool {
-    args.first()
-        .is_some_and(|a| matches!(name(a), "scopelet" | "rtk"))
-        || args.get(1).is_some_and(|a| a.ends_with("scopelet.mjs"))
+    args.first().is_some_and(|a| wrapper_program(a))
+        || args.get(1).is_some_and(|a| wrapper_launcher(a))
+}
+
+/// The `scopelet` or `rtk` program.
+fn wrapper_program(word: &str) -> bool {
+    matches!(name(word), "scopelet" | "rtk")
+}
+
+/// The skill's Node launcher, run as `node .../scopelet.mjs`.
+fn wrapper_launcher(word: &str) -> bool {
+    word.ends_with("scopelet.mjs")
 }
 
 /// The profile of the first recognized command in a command line, for hosts
@@ -75,7 +84,7 @@ pub fn invokes_wrapper(command: &str) -> bool {
         Some(script) => script.commands().any(|simple| is_wrapper(&simple.argv)),
         None => command
             .split_whitespace()
-            .any(|word| matches!(name(word), "scopelet" | "rtk") || word.ends_with("scopelet.mjs")),
+            .any(|word| wrapper_program(word) || wrapper_launcher(word)),
     }
 }
 
@@ -92,10 +101,10 @@ fn known_tool(args: &[String]) -> bool {
     }
 }
 
-/// `-f`, `-F` or `--follow`: the command never ends on its own.
+/// `-f`/`-F` (alone or in a cluster such as `-fn5`) or `--follow`: the
+/// command never ends on its own.
 fn follows(args: &[String]) -> bool {
-    args.iter()
-        .any(|a| matches!(a.as_str(), "-f" | "-F") || a.starts_with("--follow"))
+    has_flag(args, &['f', 'F'], &["follow", "retry"])
 }
 
 pub fn profile(args: &[String]) -> Option<Profile> {
@@ -186,27 +195,35 @@ pub fn profile(args: &[String]) -> Option<Profile> {
         {
             Some(Profile::Search)
         }
-        "tree" => Some(Profile::Search),
+        // `-o FILE` writes the listing to a file.
+        "tree" if !args.iter().any(|a| a.starts_with("-o")) => Some(Profile::Search),
         "git" => {
-            // Options before the subcommand: `-p`/`--paginate` there starts a pager.
+            // Options before the subcommand: `-p`/`--paginate` there starts a
+            // pager and `-c` can name a program (`core.fsmonitor`,
+            // `diff.external`), so only `--no-pager` and `-C DIR` are allowed.
             let mut rest = &args[1..];
             while let Some(first) = rest.first() {
                 match first.as_str() {
                     "--no-pager" => rest = &rest[1..],
-                    "-C" | "-c" if rest.len() > 1 => rest = &rest[2..],
+                    "-C" if rest.len() > 1 => rest = &rest[2..],
                     _ => break,
                 }
             }
             let command = rest.first().map(String::as_str).unwrap_or("");
-            (matches!(
-                command,
-                "diff" | "log" | "show" | "status" | "blame" | "grep"
-            ) && !rest.iter().any(|a| {
+            // Options that run a program, start a pager or write a file.
+            let unsafe_option = |a: &String| {
                 matches!(
                     a.as_str(),
                     "--paginate" | "--ext-diff" | "--textconv" | "--interactive"
-                )
-            }))
+                ) || ["--output", "--open-files-in-pager"]
+                    .iter()
+                    .any(|o| a == o || a.starts_with(&format!("{o}=")))
+                    || (command == "grep" && a.starts_with("-O"))
+            };
+            (matches!(
+                command,
+                "diff" | "log" | "show" | "status" | "blame" | "grep"
+            ) && !rest.iter().any(unsafe_option))
             .then_some(Profile::Git)
         }
         "docker" | "kubectl" if second == "logs" && !follows(args) => Some(Profile::Logs),
@@ -274,7 +291,7 @@ fn sed_prints_only(args: &[String]) -> bool {
 /// anything that can write, execute or wait (`tee`, `xargs`, `awk`,
 /// `sed` other than printing, `sort -o`, `tail -f`).
 pub fn filter(args: &[String]) -> Option<Filter> {
-    let name = Path::new(args.first()?).file_name()?.to_str()?;
+    let name = name(args.first()?);
     let bounded = Filter {
         bounds_output: true,
     };
@@ -302,8 +319,19 @@ pub fn filter(args: &[String]) -> Option<Filter> {
                 bounds_output: counts,
             })
         }
-        "sort" if !has_flag(args, &['o'], &["output"]) => Some(open),
-        "uniq" if args.iter().skip(1).filter(|a| !a.starts_with('-')).count() <= 1 => Some(open),
+        // `-o` writes a file and `--compress-program` runs one.
+        "sort" if !has_flag(args, &['o'], &["output", "compress-program"]) => Some(open),
+        // A second operand is an output file; `-` names standard input.
+        "uniq"
+            if args
+                .iter()
+                .skip(1)
+                .filter(|a| *a == "-" || !a.starts_with('-'))
+                .count()
+                <= 1 =>
+        {
+            Some(open)
+        }
         "cut" | "tr" | "nl" | "cat" | "jq" => Some(open),
         "sed" if sed_prints_only(args) => Some(open),
         _ => None,
@@ -333,7 +361,6 @@ pub fn safe_env(name: &str) -> bool {
             | "PYTHONUNBUFFERED"
             | "PYTHONDONTWRITEBYTECODE"
             | "PYTHONHASHSEED"
-            | "PYTHONWARNINGS"
             | "NODE_ENV"
             | "GOOS"
             | "GOARCH"

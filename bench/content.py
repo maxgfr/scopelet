@@ -10,6 +10,7 @@ and rejects a compressor change that loses a fact or a byte.
 """
 from __future__ import annotations
 import argparse
+import functools
 import hashlib
 import json
 import math
@@ -29,6 +30,7 @@ RECOVERY_ONLY = {'giant_unicode_line'}
 FIXTURES = Path(__file__).resolve().parent / 'fixtures'
 
 
+@functools.cache
 def file_fixtures():
     """Manifest entries of `bench/fixtures`, keyed by fixture name."""
     manifest = json.loads((FIXTURES / 'manifest.json').read_text())
@@ -46,14 +48,11 @@ def source_form(fact):
     return fact.replace('\n ', '\n')
 
 
-# Manifest profile names as `scopelet compress --profile` takes them.
-PROFILES = {'tests': 'tests', 'search': 'search', 'git': 'git', 'logs': 'logs', 'fileread': 'file-read'}
-
-
 def profile_args(name):
-    """`--profile P` for a fixture produced by a recognized command."""
+    """`--profile P` for a fixture produced by a recognized command; the
+    manifest uses the names `scopelet compress --profile` takes."""
     spec = file_fixtures().get(name)
-    return ['--profile', PROFILES[spec['profile']]] if spec and spec['profile'] else []
+    return ['--profile', spec['profile']] if spec and spec['profile'] else []
 
 
 def fixtures():

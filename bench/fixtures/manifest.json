@@ -91,14 +91,14 @@
     "pending_facts": []
   },
   "rust_small": {
-    "profile": "fileread",
+    "profile": "file-read",
     "min_reduction": null,
     "visible": true,
     "facts": ["pub(crate) fn apply(&self, records: Vec<Record>) -> Vec<Record> {"],
     "pending_facts": []
   },
   "rust_large": {
-    "profile": "fileread",
+    "profile": "file-read",
     "min_reduction": 20,
     "visible": true,
     "facts": ["\n }\n", "\n \n", "pub fn install(agent: Agent, remove: bool) -> Result<Value> {"],

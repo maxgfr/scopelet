@@ -45,7 +45,7 @@ class ContentTests(unittest.TestCase):
         for name, spec in files.items():
             self.assertEqual(merged[name], (spec['bytes'], spec['facts']))
             self.assertTrue(spec['facts'] or spec['pending_facts'], name)
-            self.assertIn(spec['profile'], {None, 'tests', 'search', 'git', 'fileread', 'logs'}, name)
+            self.assertIn(spec['profile'], {None, 'tests', 'search', 'git', 'file-read', 'logs'}, name)
 
     def test_file_fixtures_are_compressed_with_their_profile(self):
         self.assertEqual(content.profile_args('rust_large'), ['--profile', 'file-read'])

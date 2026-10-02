@@ -488,10 +488,8 @@ fn guidance(mode: Preference) -> String {
 /// The recognized profile of a command line and the size up to which its
 /// output stays exact: the profile's in compact-v3, the default otherwise.
 fn limits(command: &str, version: compress::Version) -> (Option<Profile>, usize) {
-    match crate::commands::classify(command) {
-        Some(profile) if version == compress::Version::V3 => (Some(profile), profile.small()),
-        profile => (profile, compress::SMALL),
-    }
+    let profile = compress::effective_profile(crate::commands::classify(command), version);
+    (profile, profile.map_or(compress::SMALL, Profile::small))
 }
 
 /// OpenCode's plugin sends two events: a system-prompt pass (rebuilt on every
@@ -528,7 +526,8 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
     if raw.len() > MAX_INPUT {
         return Ok(json!({}));
     }
-    let small = crate::events::automatic("opencode", raw.as_bytes(), None, profile, None, version);
+    let small =
+        compress::automatic_recorded("opencode", raw.as_bytes(), None, profile, None, version);
     if small.as_ref() == raw.as_bytes() {
         return Ok(json!({}));
     }
@@ -572,12 +571,8 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         let Some((args, profile)) = command_args(command) else {
             return Ok(json!({}));
         };
-        // Profile thresholds, like budgets, apply to compact-v3 only.
-        let small = if version == compress::Version::V3 {
-            profile.small()
-        } else {
-            compress::SMALL
-        };
+        let small = compress::effective_profile(Some(profile), version)
+            .map_or(compress::SMALL, Profile::small);
         if small_file_read(&args, small, event) {
             return Ok(json!({}));
         }
@@ -585,12 +580,14 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         let command = format!(
             "{} run --auto --timeout 3600 {} -- {}",
             quote(&binary.to_string_lossy()),
-            match version {
-                compress::Version::V1 => "--compact-version 1".to_owned(),
-                compress::Version::V2 => "--compact-version 2".to_owned(),
+            match compress::effective_profile(Some(profile), version) {
                 // Each profile has its own budget, in v3 only.
-                compress::Version::V3 =>
-                    format!("--compact-version 3 --profile {}", profile.name()),
+                Some(profile) => format!(
+                    "--compact-version {} --profile {}",
+                    version.number(),
+                    profile.name()
+                ),
+                None => format!("--compact-version {}", version.number()),
             },
             args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" ")
         );
@@ -613,6 +610,11 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         {
             return Ok(json!({}));
         }
+        // Both streams are strings here (checked above).
+        let total = output["stdout"].as_str().map_or(0, str::len)
+            + output["stderr"].as_str().map_or(0, str::len);
+        let unchanged =
+            |reason| crate::events::unchanged("claude", profile, version, total, reason);
         // Claude can attach persistence metadata before rendering its preview.
         // Replacing stdout here would make that preview truncate our compact
         // view a second time, hiding its final diagnostics and omission footer.
@@ -623,15 +625,7 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
                 .as_u64()
                 .is_some_and(|size| size > 0)
         {
-            let bytes = output["stdout"].as_str().map_or(0, str::len)
-                + output["stderr"].as_str().map_or(0, str::len);
-            crate::events::unchanged(
-                "claude",
-                profile,
-                version,
-                bytes,
-                compress::Reason::Persisted,
-            );
+            unchanged(compress::Reason::Persisted);
             return Ok(json!({}));
         }
         if ["stdout", "stderr"].iter().all(|stream| {
@@ -639,9 +633,7 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
                 .as_str()
                 .is_some_and(|text| text.len() <= small)
         }) {
-            let bytes = output["stdout"].as_str().map_or(0, str::len)
-                + output["stderr"].as_str().map_or(0, str::len);
-            crate::events::unchanged("claude", profile, version, bytes, compress::Reason::Small);
+            unchanged(compress::Reason::Small);
             return Ok(json!({}));
         }
         let mut changed = false;
@@ -650,8 +642,14 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             if raw.len() > MAX_INPUT {
                 return Ok(json!({}));
             }
-            let small =
-                crate::events::automatic("claude", raw.as_bytes(), None, profile, None, version);
+            let small = compress::automatic_recorded(
+                "claude",
+                raw.as_bytes(),
+                None,
+                profile,
+                None,
+                version,
+            );
             if small.as_ref() != raw.as_bytes() {
                 output[stream] = json!(String::from_utf8(small.into_owned())?);
                 changed = true;

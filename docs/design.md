@@ -170,8 +170,9 @@ reported outside the compressed view; a hook only retains bytes supplied by its
 host and cannot recover an earlier truncation.
 
 Automatic runs and Claude hooks avoid opening the store when both streams fit
-the small-output threshold. Codex also bypasses the wrapper for a plain `cat`
-whose regular-file metadata reports at most 2048 bytes. Relative paths require
+the small-output threshold. Codex also bypasses the wrapper for a plain `cat` or
+`nl` of a regular file whose metadata reports at most the file-read threshold
+(16 KiB in compact-v3, 2048 bytes before). Relative paths require
 a known absolute working directory. Metadata only chooses whether to compress:
 the native command still reads the current file and enforces host permissions.
 A file growing after the check stays correct, though that read may miss savings.
@@ -297,8 +298,11 @@ test|check|build|lint`, `go test|build|vet`, `ruff`, `mypy`, Gradle/Maven/.NET
 test or build, `node --test`, and `jest`, `vitest run`, `tsc`, `eslint`,
 `prettier --check` or `playwright test` through `npx`, `bunx`, `pnpm exec` or
 `uv run`); searches and listings (`rg`, `grep`, `find` without
-`-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree`); Git `diff`, `log` (with
-`-p`), `show`, `status`, `blame` and `grep` without a pager; logs (`docker
+`-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree` without `-o`); Git `diff`, `log` (with
+`-p`), `show`, `status`, `blame` and `grep` with no option before the
+subcommand other than `--no-pager` or `-C DIR` (`-c` can name a program) and
+none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
+`--textconv`, `--output`, `grep -O`); logs (`docker
 logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
 `nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
 `rtk` are recognized by the program they run, not by a substring.
