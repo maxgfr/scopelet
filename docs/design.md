@@ -262,7 +262,19 @@ lower priority of its in-place neighbours. It is therefore shown when the
 lines it separates are, so a read of source code keeps its braces and blank
 lines inside range blocks. A trivial line between lines shown elsewhere has
 nothing to hold together and folds by exact text like any other line; it is
-never promoted as the rare line of a mostly folded record.
+never promoted as the rare line of a mostly folded record. Glue reaches three
+lines, the context Git shows around a change.
+
+A record containing a unified diff (`diff --git`, or `---` then `+++` then
+`@@`) is read by role. Lines inside it are never diagnostics: code that
+mentions `error` is a change. File headers (`diff --git`, the `---`/`+++`
+pair of a plain diff, and `git log -p`'s `commit <hash>`) never fold by
+template, only with identical text, and rank as context does (tier 2).
+Changed lines and commit messages fold only with identical text; a distinct
+one ranks in tier 2, one repeated across files or commits in tier 1. Hunk
+headers and context lines are glued like trivial lines, so a hunk is shown
+with the change it locates; a file header ends what can glue and metadata
+lines (`index`, modes, renames, `Author:`, `Date:`) are transparent to it.
 
 V3 ranks units in five tiers: the first and last line of a record; the first
 occurrence of each strong diagnostic template (`error`, `failed`, `panic`,

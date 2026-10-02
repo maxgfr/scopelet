@@ -267,6 +267,42 @@ fn timestamped_diagnostics_fold_and_keep_their_identifiers() {
     assert!(text.contains("omitted_units=0"), "{text}");
 }
 
+/// A unified diff is read file by file: every file and hunk header keeps its
+/// place, changed lines outrank context, context never folds away from its
+/// hunk, and code that mentions `error` is a change, not a diagnostic.
+#[test]
+fn unified_diffs_keep_file_headers_and_changes_in_place() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = String::new();
+    for f in 0..12 {
+        raw.push_str(&format!(
+            "diff --git a/src/m{f}.rs b/src/m{f}.rs\nindex 1a2b3c{f}..4d5e6f{f} 100644\n--- a/src/m{f}.rs\n+++ b/src/m{f}.rs\n@@ -{0},7 +{0},7 @@ fn run() {{\n     let a = 1;\n     let b = 2;\n-    return Err(error_{f});\n+    return Ok(value_{f});\n     }}\n }}\n",
+            10 + f
+        ));
+    }
+    for i in 0..300 {
+        raw.push_str(&format!(" unchanged context line {i}\n"));
+    }
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    for f in 0..12 {
+        assert!(
+            text.contains(&format!("diff --git a/src/m{f}.rs b/src/m{f}.rs")),
+            "header {f} missing in:\n{text}"
+        );
+        assert!(
+            text.contains(&format!("+    return Ok(value_{f});")),
+            "{text}"
+        );
+    }
+    // Context stays beside its change instead of folding into a distant copy.
+    assert!(!text.contains("repeat=12 last="), "{text}");
+    assert!(
+        text.contains("-    return Err(error_0);\n +    return Ok(value_0);\n      }\n"),
+        "{text}"
+    );
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
 #[test]
 fn warnings_do_not_evict_errors_from_a_small_budget() {
     let dir = tempfile::tempdir().unwrap();

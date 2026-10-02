@@ -30,6 +30,9 @@ const FOLD_MAJORITY_TENTHS: usize = 9;
 /// Share of the budget ordinary lines may take beside diagnostics they cannot
 /// all fit into, as a divisor.
 const ORDINARY_SHARE: usize = 4;
+/// How far a trivial or diff context line glues to the line it belongs with:
+/// the three lines of context Git shows around a change.
+const GLUE_REACH: usize = 3;
 /// Consecutive plain lines needed before a range block pays for its header.
 const BLOCK_MIN_LINES: usize = 3;
 /// Passes that re-spend the bytes range blocks saved. Each pass can only add
@@ -523,6 +526,9 @@ impl Bits {
     fn set(&mut self, i: usize) {
         self.0[i / 64] |= 1 << (i % 64);
     }
+    fn clear(&mut self, i: usize) {
+        self.0[i / 64] &= !(1 << (i % 64));
+    }
     fn fill(&mut self, range: std::ops::Range<usize>) {
         for i in range {
             self.set(i);
@@ -596,6 +602,24 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
             }
         }
     }
+    // In a unified diff, code that mentions `error` is a change, not a
+    // diagnostic. Hunk headers and context lines are glued like trivial
+    // lines: they stay beside their changes and only fold with contiguous
+    // copies, so a hunk is shown with the change it locates.
+    let roles = diff_roles(&views);
+    let role = |i: usize| roles.as_ref().map_or(Diff::None, |r| r[i]);
+    if let Some(roles) = &roles {
+        for (i, &role) in roles.iter().enumerate() {
+            if role != Diff::None {
+                strong.clear(i);
+                weak.clear(i);
+                trivial.clear(i);
+                if matches!(role, Diff::Context | Diff::Hunk) {
+                    trivial.set(i);
+                }
+            }
+        }
+    }
     // Context is the window around a diagnostic; head and tail lines only
     // count for priority.
     let mut context = Bits::new(n);
@@ -659,6 +683,11 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         let origin = first[i] as usize;
         let slot = if slot_of_first[origin] != NONE {
             slot_of_first[origin]
+        } else if matches!(role(i), Diff::File | Diff::Change) {
+            // Headers and changes are evidence: they never fold by template,
+            // only with the very same text (a file every commit touches).
+            slot_of_first[i] = groups.len() as u32;
+            groups.len() as u32
         } else if strong.get(i) || weak.get(i) {
             // Repetitions of one diagnostic differ by their timestamps only.
             clean::diagnostic_key_into(view, &mut key);
@@ -696,19 +725,28 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         let group = &groups[owner[i] as usize];
         !folds(group) || group.first as usize == i
     };
+    // In a diff, a file header ends what can glue and its metadata lines are
+    // transparent, so a hunk glues to its own changes only.
     let mut glued = Bits::new(n);
     for order in [true, false] {
-        let mut beside = false;
         let lines: Box<dyn Iterator<Item = usize>> = if order {
             Box::new(0..n)
         } else {
             Box::new((0..n).rev())
         };
+        // Lines since the last nontrivial line shown in place, if any.
+        let mut reach: Option<usize> = None;
         for i in lines {
-            if !trivial.get(i) {
-                beside = in_place(i);
-            } else if beside {
-                glued.set(i);
+            match role(i) {
+                Diff::File => reach = None,
+                Diff::Meta => {}
+                _ if !trivial.get(i) => reach = in_place(i).then_some(0),
+                _ => {
+                    reach = reach.map(|r| r + 1);
+                    if reach.is_some_and(|r| r <= GLUE_REACH) {
+                        glued.set(i);
+                    }
+                }
             }
         }
     }
@@ -783,6 +821,15 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         };
         let priority = if first_line == 0 || last + 1 == n {
             4
+        } else if role(i) == Diff::File {
+            2
+        } else if matches!(role(i), Diff::Change | Diff::Message) {
+            // A distinct change or commit message is the evidence; one
+            // repeated across files or commits is mechanical and ranks below
+            // the headers that list them.
+            if count == 1 { 2 } else { 1 }
+        } else if role(i) == Diff::Meta {
+            0
         } else if glued.get(i) {
             trivial_units.push((units.len(), first_line, last));
             TRIVIAL
@@ -829,7 +876,11 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
             line
         };
         units.push(Unit::text_v3(record, label, view, raw, priority, limit));
-        if !trivial.get(i) {
+        if role(i) == Diff::File {
+            // A file header ends the previous hunk: nothing glues across it.
+        } else if role(i) == Diff::Meta {
+            line_priority[i] = TRIVIAL;
+        } else if !trivial.get(i) {
             let shown = if folds[slot] { i..=i } else { i..=last };
             line_priority[shown].fill(priority);
         }
@@ -838,33 +889,152 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     // A glued unit ranks with the lower of its neighbours shown in place: it
     // is shown when both lines it separates are, so retained code keeps its
     // braces and blank lines and reads as one block.
-    let carried = |carry: &mut Option<u8>, priority: u8| match priority {
+    // Each carry is the priority and line of the nearest such neighbour; one
+    // further than GLUE_REACH lines away does not count.
+    let carried = |carry: &mut Option<(u8, usize)>, priority: u8, line: usize| match priority {
         TRIVIAL => {}
         AWAY => *carry = None,
-        priority => *carry = Some(priority),
+        priority => *carry = Some((priority, line)),
     };
     let mut before = vec![None; trivial_units.len()];
     let (mut k, mut carry) = (0, None);
     for (line, &priority) in line_priority.iter().enumerate() {
         while k < trivial_units.len() && trivial_units[k].1 == line {
-            before[k] = carry;
+            before[k] = carry
+                .filter(|&(_, at)| line - at <= GLUE_REACH)
+                .map(|(p, _)| p);
             k += 1;
         }
-        carried(&mut carry, priority);
+        carried(&mut carry, priority, line);
     }
     let (mut k, mut carry) = (trivial_units.len(), None);
     for (line, &priority) in line_priority.iter().enumerate().rev() {
         while k > 0 && trivial_units[k - 1].2 == line {
             k -= 1;
             let (unit, ..) = trivial_units[k];
-            units[unit].priority = match (before[k], carry) {
+            let after = carry
+                .filter(|&(_, at)| at - line <= GLUE_REACH)
+                .map(|(p, _)| p);
+            units[unit].priority = match (before[k], after) {
                 (Some(a), Some(b)) => a.min(b),
                 (Some(p), None) | (None, Some(p)) => p,
                 (None, None) => 0,
             };
         }
-        carried(&mut carry, priority);
+        carried(&mut carry, priority, line);
     }
+}
+
+/// The role of a line inside a unified diff.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Diff {
+    /// Not part of a diff: ranked by the ordinary rules.
+    None,
+    /// `diff --git`, `---`/`+++` of a diff without one, or `commit <hash>`.
+    File,
+    /// `index`, mode, rename and the `---`/`+++` a `diff --git` already names.
+    Meta,
+    /// `@@ -a,b +c,d @@`.
+    Hunk,
+    /// An added or removed line.
+    Change,
+    /// Unchanged context inside a hunk.
+    Context,
+    /// A commit message line of `git log -p`.
+    Message,
+}
+
+/// Classify every line of a record that contains a unified diff (`diff
+/// --git`, or `---` then `+++` then `@@`); None when it contains none.
+fn diff_roles(views: &[Cow<'_, str>]) -> Option<Vec<Diff>> {
+    let starts = |i: usize, prefix: &str| views.get(i).is_some_and(|v| v.starts_with(prefix));
+    let plain = |i: usize| starts(i, "--- ") && starts(i + 1, "+++ ") && starts(i + 2, "@@ ");
+    if !(0..views.len()).any(|i| starts(i, "diff --git ") || plain(i)) {
+        return None;
+    }
+    #[derive(PartialEq)]
+    enum State {
+        Outside,
+        /// After `git log`'s `commit <hash>`, before the first diff.
+        Commit,
+        Header,
+        Hunk,
+    }
+    let commit = |view: &str| {
+        view.strip_prefix("commit ").is_some_and(|rest| {
+            let hash = rest.split(' ').next().unwrap_or("");
+            hash.len() >= 7 && hash.bytes().all(|b| b.is_ascii_hexdigit())
+        })
+    };
+    let mut state = State::Outside;
+    let mut roles = vec![Diff::None; views.len()];
+    let mut i = 0;
+    while i < views.len() {
+        let view = views[i].as_ref();
+        roles[i] = if view.starts_with("diff --git ") {
+            state = State::Header;
+            Diff::File
+        } else if commit(view) {
+            state = State::Commit;
+            Diff::File
+        } else if state == State::Commit && view.starts_with("    ") {
+            Diff::Message
+        } else if state == State::Commit
+            && (view.is_empty()
+                || [
+                    "Author:",
+                    "AuthorDate:",
+                    "Commit:",
+                    "CommitDate:",
+                    "Date:",
+                    "Merge:",
+                ]
+                .iter()
+                .any(|p| view.starts_with(p)))
+        {
+            Diff::Meta
+        } else if state == State::Outside && plain(i) {
+            roles[i + 1] = Diff::File;
+            state = State::Header;
+            i += 1;
+            Diff::File
+        } else if state != State::Outside && view.starts_with("@@ ") {
+            state = State::Hunk;
+            Diff::Hunk
+        } else if state == State::Header
+            && [
+                "index ",
+                "--- ",
+                "+++ ",
+                "new file mode",
+                "deleted file mode",
+                "old mode",
+                "new mode",
+                "similarity index",
+                "dissimilarity index",
+                "rename from",
+                "rename to",
+                "copy from",
+                "copy to",
+                "Binary files",
+            ]
+            .iter()
+            .any(|p| view.starts_with(p))
+        {
+            Diff::Meta
+        } else if state == State::Hunk && (view.starts_with('+') || view.starts_with('-')) {
+            Diff::Change
+        } else if state == State::Hunk
+            && (view.is_empty() || view.starts_with(' ') || view.starts_with('\\'))
+        {
+            Diff::Context
+        } else {
+            state = State::Outside;
+            Diff::None
+        };
+        i += 1;
+    }
+    Some(roles)
 }
 
 /// At most three visible characters: a closing brace, a blank line, a gutter.

@@ -50,7 +50,7 @@
   },
   "git_diff": {
     "profile": "git",
-    "min_reduction": 82,
+    "min_reduction": 65,
     "visible": true,
     "facts": ["+        self.expires_at >= now", "diff --git a/src/auth.rs b/src/auth.rs", "+        gross - self.discount", "diff --git a/src/billing/invoice.rs b/src/billing/invoice.rs"],
     "pending_facts": []
