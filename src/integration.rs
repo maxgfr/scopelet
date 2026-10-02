@@ -126,7 +126,9 @@ fn plugin_source(config: &Path, binary: &Path) -> Result<String> {
         .replace(
             "__SCOPELET_CONFIG__",
             &serde_json::to_string(&config.to_string_lossy())?,
-        ))
+        )
+        .replace("__SCOPELET_SMALL__", &compress::SMALL.to_string())
+        .replace("__SCOPELET_MAX_INPUT__", &MAX_INPUT.to_string()))
 }
 fn backup(config: &Path, name: &str, bytes: &[u8], extension: &str) -> Result<()> {
     let path = config
@@ -295,7 +297,38 @@ pub fn doctor() -> Value {
         };
         json!({"host":name,"config":path,"hooks_configured":configured,"config_exists":path.as_ref().is_some_and(|p|p.is_file())})
     }).collect();
-    json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash PostToolUse; Codex simple noninteractive Bash PreToolUse; OpenCode bash tool.execute.after plugin; hook trust and host versions must be verified"})
+    let mut status = json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.as_ref().is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash PostToolUse; Codex recognized Bash commands in a quoted shell subset, PreToolUse; OpenCode bash tool.execute.after plugin; hook trust and host versions must be verified"});
+    if let Some(binary) = binary.filter(|p| p.is_file()) {
+        let (current, version) = pinned_binary(&binary);
+        status["binary"] = json!(binary);
+        status["binary_version"] = json!(version);
+        status["running_version"] = json!(format!("scopelet {}", env!("CARGO_PKG_VERSION")));
+        status["binary_current"] = json!(current);
+        if current == Some(false) {
+            status["binary_note"] = json!(
+                "Hooks run an older copy than this scopelet; run `scopelet install --agent all` and restart sessions."
+            );
+        }
+    }
+    status
+}
+
+/// Whether the pinned hook binary is byte for byte the running one (None
+/// when either cannot be read), and the version it reports.
+fn pinned_binary(binary: &Path) -> (Option<bool>, Option<String>) {
+    let pinned = fs::read(binary).ok();
+    let running = std::env::current_exe().ok().and_then(|p| fs::read(p).ok());
+    let current = pinned.zip(running).map(|(a, b)| a == b);
+    let version = crate::process::capture(
+        std::process::Command::new(binary).arg("--version"),
+        std::time::Duration::from_secs(5),
+        4096,
+        std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+    )
+    .ok()
+    .filter(|result| crate::process::exit_code(result) == 0)
+    .map(|result| String::from_utf8_lossy(&result.stdout).trim().to_owned());
+    (current, version)
 }
 
 /// The argv `run --auto` executes for a command the hook may wrap, or None to
@@ -433,15 +466,23 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
     write_atomic(&state, &current)?;
     Ok(json!({"hookSpecificOutput":{"hookEventName":name,"additionalContext":guidance(mode)}}))
 }
-fn guidance(mode: Preference) -> &'static str {
+fn guidance(mode: Preference) -> String {
+    // The pinned binary works whether or not `scopelet` is on the PATH.
+    let binary = root().map_or_else(
+        |_| "scopelet".to_owned(),
+        |root| quote(&root.join("bin/scopelet").to_string_lossy()),
+    );
+    let recover = format!(
+        "Recover partial evidence when needed: {binary} expand ID --find TEXT (ID: last, the view's artifact or 8+ hex characters of it; --regex, --ignore-case)."
+    );
     match mode {
-        Preference::Default => {
-            "Scopelet auto: for routine edits, inspect relevant code and existing checks; preserve their intended behavior and verify the change. Report outcome and validation in 1–3 short sentences. Expand for requested detail, uncertainty or next steps. Recover partial evidence when needed."
-        }
-        Preference::Caveman => {
-            "Scopelet caveman: routine replies target 30 words, telegraphic, in the user's language. Preserve errors, qualifications, negation, numbers and next actions; exceed the target when needed or requested. Inspect relevant code and existing checks; verify intended behavior. Documents use normal prose. Recover partial evidence when needed."
-        }
-        Preference::Off => "Scopelet is off. Resume normal tools and response style.",
+        Preference::Default => format!(
+            "Scopelet auto: for routine edits, inspect relevant code and existing checks; preserve their intended behavior and verify the change. Report outcome and validation in 1–3 short sentences. Expand for requested detail, uncertainty or next steps. {recover}"
+        ),
+        Preference::Caveman => format!(
+            "Scopelet caveman: routine replies target 30 words, telegraphic, in the user's language. Preserve errors, qualifications, negation, numbers and next actions; exceed the target when needed or requested. Inspect relevant code and existing checks; verify intended behavior. Documents use normal prose. {recover}"
+        ),
+        Preference::Off => "Scopelet is off. Resume normal tools and response style.".into(),
     }
 }
 /// The recognized profile of a command line and the size up to which its

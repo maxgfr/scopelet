@@ -89,13 +89,18 @@ scopelet uninstall --agent all
 Install accepts `claude`, `codex`, `opencode`, or `all`. It copies the resolved
 binary to `$XDG_CONFIG_HOME/scopelet/bin/scopelet` (otherwise `~/.config/scopelet`),
 merges user hooks, and backs up replaced configuration bytes. `SCOPELET_CONFIG_DIR`
-overrides that root. Reinstall after upgrading the binary. Existing sessions
-need restarting; in Codex review the hooks with `/hooks` when prompted.
+overrides that root. Reinstall after upgrading the binary: `doctor` compares the
+pinned copy with the running binary (`binary_current`, `binary_version`,
+`running_version`) and says when hooks still run an older one. The session
+guidance names the pinned binary's absolute path for recovery, so `expand`
+works without `scopelet` on the PATH. Existing sessions need restarting; in
+Codex review the hooks with `/hooks` when prompted.
 
 OpenCode has no hooks file: install writes a self-contained plugin to
 `plugin/scopelet.js` under `OPENCODE_CONFIG_DIR`, otherwise
 `$XDG_CONFIG_HOME/opencode` (`~/.config/opencode`). The plugin calls the pinned
-binary from `tool.execute.after` for the `bash` tool and adds the mode text to
+binary asynchronously from `tool.execute.after` for the `bash` tool, with the
+binary's own size thresholds written in at installation, and adds the mode text to
 the system prompt on every step, so a mode change applies immediately there.
 Install refuses to replace a plugin file it did not write, and uninstall removes
 only its own file; backups land in the Scopelet config directory like the

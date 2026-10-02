@@ -653,3 +653,56 @@ fn run_auto_through_sh_matches_the_shell_byte_for_byte() {
         assert_eq!(wrapped.stderr, native.stderr, "{script}");
     }
 }
+
+#[test]
+fn guidance_names_the_pinned_binary_for_recovery() {
+    let dir = tempfile::tempdir().unwrap();
+    let event = json!({"hook_event_name":"SessionStart","session_id":"session-path"});
+    let context = hook(dir.path(), "claude", event)["hookSpecificOutput"]["additionalContext"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let pinned = dir.path().join("config/bin/scopelet");
+    assert!(
+        context.contains(&format!("'{}' expand ID --find TEXT", pinned.display())),
+        "{context}"
+    );
+    assert!(context.contains("last"), "{context}");
+}
+
+#[test]
+fn doctor_reports_a_stale_pinned_binary() {
+    let dir = tempfile::tempdir().unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    let plugin = fs::read_to_string(opencode_plugin(dir.path())).unwrap();
+    assert!(!plugin.contains("__SCOPELET_"), "{plugin}");
+    assert!(plugin.contains("const SMALL = 2048;"), "{plugin}");
+    let doctor = |dir: &std::path::Path| -> Value {
+        let out = cli(dir).arg("doctor").output().unwrap();
+        assert!(out.status.success());
+        serde_json::from_slice::<Value>(&out.stdout).unwrap()["integration"].clone()
+    };
+    let status = doctor(dir.path());
+    assert_eq!(status["binary_current"], true, "{status}");
+    assert_eq!(
+        status["binary_version"], status["running_version"],
+        "{status}"
+    );
+    assert!(status.get("binary_note").is_none());
+
+    // An older copy left behind by a previous installation.
+    let pinned = dir.path().join("config/bin/scopelet");
+    fs::write(&pinned, "#!/bin/sh\necho scopelet 0.5.0\n").unwrap();
+    let status = doctor(dir.path());
+    assert_eq!(status["binary_current"], false, "{status}");
+    assert_eq!(status["binary_version"], "scopelet 0.5.0");
+    assert!(
+        status["binary_note"]
+            .as_str()
+            .unwrap()
+            .contains("install --agent all")
+    );
+}
