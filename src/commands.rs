@@ -146,12 +146,20 @@ pub fn profile(args: &[String]) -> Option<Profile> {
             if name == "pnpm" && second == "exec" {
                 return known_tool(&args[2..]).then_some(Profile::Tests);
             }
+            // `yarn <bin>` runs a package binary, like `npx`.
+            if name == "yarn" && known_tool(&args[1..]) {
+                return tests;
+            }
             let script = if second == "run" {
                 args.get(2).map(String::as_str).unwrap_or("")
             } else {
                 second
             };
             matches!(script, "test" | "build" | "lint" | "typecheck").then_some(Profile::Tests)
+        }
+        // `-y`/`--yes` only skips npx's install prompt.
+        "npx" if matches!(second, "-y" | "--yes") => {
+            known_tool(&args[2..]).then_some(Profile::Tests)
         }
         "npx" | "bunx" => known_tool(&args[1..]).then_some(Profile::Tests),
         "uv" if second == "run" => known_tool(&args[2..]).then_some(Profile::Tests),

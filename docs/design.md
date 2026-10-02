@@ -301,7 +301,8 @@ The shared command classifier recognizes builds, tests and checks (`cargo test|c
 `npm`/`pnpm`/`yarn` test/build/lint/typecheck, `bun test`, `make
 test|check|build|lint`, `go test|build|vet`, `ruff`, `mypy`, Gradle/Maven/.NET
 test or build, `node --test`, and `jest`, `vitest run`, `tsc`, `eslint`,
-`prettier --check` or `playwright test` through `npx`, `bunx`, `pnpm exec` or
+`prettier --check` or `playwright test` through `npx` (also `-y`), `bunx`,
+`yarn`, `pnpm exec` or
 `uv run`); searches and listings (`rg`, `grep`, `find` without
 `-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree` without `-o`); Git `diff`, `log` (with
 `-p`), `show`, `status`, `blame` and `grep` with no option before the
