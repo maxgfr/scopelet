@@ -534,7 +534,7 @@ fn expanding_an_artifact_keeps_it_out_of_age_based_cleanup() {
         .stdout
         .clone();
     assert_eq!(
-        serde_json::from_slice::<Value>(&removed).unwrap()["removed"],
+        serde_json::from_slice::<Value>(&removed).unwrap()["removed_items"],
         json!(0),
         "a just-expanded artifact must survive cleanup"
     );

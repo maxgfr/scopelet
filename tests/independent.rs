@@ -451,3 +451,146 @@ fn paging_a_stored_artifact_writes_no_new_cache_items() {
         "paging must not persist another copy of the dataset"
     );
 }
+
+fn age(path: &std::path::Path, days: u64) {
+    let when = std::time::SystemTime::now() - Duration::from_secs(days * 86400);
+    std::fs::File::options()
+        .write(true)
+        .open(path)
+        .expect("cache item")
+        .set_modified(when)
+        .expect("set mtime");
+}
+
+/// An artifact and its original, both stored by `render`.
+fn stored(store: &Store, text: &str) -> (String, String) {
+    let mut data = Dataset::default();
+    sources::ingest(
+        &mut data,
+        store,
+        "f",
+        text.as_bytes().to_vec(),
+        None,
+        Format::Text,
+    )
+    .expect("ingest");
+    let view = render::render(&data, store, Mode::Default, 4096, 0).expect("render");
+    (view.artifact, data.snapshots[0].blob.clone())
+}
+
+fn item(store: &Store, id: &str) -> std::path::PathBuf {
+    let (kind, hash) = id.split_once(':').unwrap();
+    store
+        .root
+        .join(if kind == "blob" { "blobs" } else { "artifacts" })
+        .join(hash)
+}
+
+#[test]
+fn clean_reports_bytes_and_removes_corrupt_artifacts() {
+    let (_dir, store) = test_store();
+    let (artifact, blob) = stored(&store, "keep me\n");
+    let (old, old_blob) = stored(&store, "old evidence\n");
+    age(&item(&store, &old), 30);
+    age(&item(&store, &old_blob), 30);
+    let old_bytes = std::fs::metadata(item(&store, &old)).unwrap().len()
+        + std::fs::metadata(item(&store, &old_blob)).unwrap().len();
+
+    let report = store.clean_with(7, None).expect("clean");
+    assert_eq!(report.removed_items, 2);
+    assert_eq!(report.removed_bytes, old_bytes);
+    assert_eq!(report.corrupt, 0);
+    assert!(report.kept_bytes > 0);
+
+    // A surviving artifact whose bytes no longer match its name is removed.
+    std::fs::write(item(&store, &artifact), b"{\"schema_version\":1}").unwrap();
+    let report = store.clean_with(7, None).expect("clean");
+    assert_eq!(report.corrupt, 1);
+    assert!(!item(&store, &artifact).exists());
+    // Its original was modified recently: it waits for the age limit.
+    assert!(store.get(&blob).is_ok());
+}
+
+#[test]
+fn clean_keeps_an_unreadable_artifact_and_every_original() {
+    let (_dir, store) = test_store();
+    // Intact (its name is its hash) but from a newer schema.
+    let future = br#"{"schema_version":9,"records_from":"elsewhere"}"#;
+    let future_id = store.put("artifact", future).expect("artifact");
+    let orphan = store.put("blob", b"orphan original\n").expect("blob");
+    age(&item(&store, &orphan), 30);
+
+    let report = store.clean_with(7, None).expect("clean continues");
+    assert_eq!(report.corrupt, 0);
+    assert!(store.get(&future_id).is_ok(), "unreadable artifact kept");
+    assert!(
+        store.get(&orphan).is_ok(),
+        "originals kept: references unknown"
+    );
+
+    std::fs::remove_file(item(&store, &future_id)).unwrap();
+    assert_eq!(store.clean_with(7, None).expect("clean").removed_items, 1);
+    assert!(store.get(&orphan).is_err());
+}
+
+#[test]
+fn clean_max_size_evicts_least_recently_used_but_never_recent_items() {
+    let (_dir, store) = test_store();
+    let (oldest, oldest_blob) = stored(&store, &"oldest evidence\n".repeat(100));
+    let (older, older_blob) = stored(&store, &"older evidence\n".repeat(100));
+    let (recent, recent_blob) = stored(&store, &"recent evidence\n".repeat(100));
+    // The oldest original predates its artifact: it waits until the artifact
+    // naming it goes, then goes too.
+    age(&item(&store, &oldest_blob), 4);
+    age(&item(&store, &oldest), 3);
+    age(&item(&store, &older_blob), 2);
+    age(&item(&store, &older), 2);
+    let size = |id: &str| std::fs::metadata(item(&store, id)).unwrap().len();
+    let keep = size(&older) + size(&older_blob) + size(&recent) + size(&recent_blob);
+
+    let report = store.clean_with(7, Some(keep)).expect("clean");
+    assert_eq!(report.removed_items, 2);
+    assert_eq!(report.kept_bytes, keep);
+    assert!(store.get(&oldest).is_err() && store.get(&oldest_blob).is_err());
+    assert!(store.dataset(&older).is_ok());
+
+    // Even a zero limit never touches what was modified within the hour.
+    let report = store.clean_with(7, Some(0)).expect("clean");
+    assert_eq!(report.removed_items, 2);
+    assert!(store.dataset(&recent).is_ok());
+    assert!(store.get(&recent_blob).is_ok());
+}
+
+#[test]
+fn clean_command_reports_and_purges_aged_session_markers() {
+    let dir = tempdir().unwrap();
+    let sessions = dir.path().join("config/sessions");
+    std::fs::create_dir_all(&sessions).unwrap();
+    let (old, fresh) = ("a".repeat(64), "b".repeat(64));
+    for name in [&old, &fresh, &"notes".to_owned()] {
+        std::fs::write(sessions.join(name), b"\"default\"").unwrap();
+    }
+    age(&sessions.join(&old), 30);
+    age(&sessions.join("notes"), 30);
+    let run = |args: &[&str]| {
+        assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
+            .env("SCOPELET_CONFIG_DIR", dir.path().join("config"))
+            .arg("--cache-dir")
+            .arg(dir.path().join("cache"))
+            .args(args)
+            .output()
+            .unwrap()
+    };
+    let output = run(&["clean", "--max-size", "1G"]);
+    assert!(output.status.success(), "{output:?}");
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["sessions_removed"], 1);
+    for field in ["removed_items", "removed_bytes", "kept_bytes", "corrupt"] {
+        assert!(report[field].is_u64(), "{field} in {report}");
+    }
+    assert!(!sessions.join(&old).exists());
+    assert!(sessions.join(&fresh).exists() && sessions.join("notes").exists());
+
+    let output = run(&["clean", "--max-size", "12X"]);
+    assert!(!output.status.success());
+}

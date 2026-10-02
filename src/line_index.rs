@@ -146,12 +146,22 @@ pub(crate) fn slice(
     (selected, count)
 }
 
-pub(crate) fn clean(root: &Path, now: SystemTime, age: Duration) -> anyhow::Result<usize> {
+/// Path, modification time and size of an index left in place.
+pub(crate) type KeptIndex = (std::path::PathBuf, SystemTime, u64);
+
+/// Remove aged indexes and indexes whose original blob is gone; the items
+/// and bytes removed, and the path, modification time and size of each
+/// index kept.
+pub(crate) fn clean(
+    root: &Path,
+    now: SystemTime,
+    age: Duration,
+) -> anyhow::Result<(usize, u64, Vec<KeptIndex>)> {
     let folder = root.join(DIRECTORY);
+    let (mut items, mut bytes, mut kept) = (0, 0, Vec::new());
     if !fs::symlink_metadata(&folder).is_ok_and(|m| m.is_dir() && !m.file_type().is_symlink()) {
-        return Ok(0);
+        return Ok((items, bytes, kept));
     }
-    let mut removed = 0;
     for entry in fs::read_dir(folder)? {
         let entry = entry?;
         let name = entry.file_name();
@@ -161,19 +171,24 @@ pub(crate) fn clean(root: &Path, now: SystemTime, age: Duration) -> anyhow::Resu
         if !entry.file_type()?.is_file() {
             continue;
         }
+        let metadata = entry.metadata()?;
         if name.len() != 64 || !name.bytes().all(|c| c.is_ascii_hexdigit()) {
-            removed += usize::from(crate::store::reap_temporary(&entry, name, now, age)?);
+            if let Some(reaped) = crate::store::reap_temporary(&entry, name, now, age)? {
+                items += 1;
+                bytes += reaped;
+            }
             continue;
         }
+        let modified = metadata.modified()?;
         if !root.join("blobs").join(name).exists()
-            || now
-                .duration_since(entry.metadata()?.modified()?)
-                .unwrap_or_default()
-                >= age
+            || now.duration_since(modified).unwrap_or_default() >= age
         {
             fs::remove_file(entry.path())?;
-            removed += 1;
+            items += 1;
+            bytes += metadata.len();
+        } else {
+            kept.push((entry.path(), modified, metadata.len()));
         }
     }
-    Ok(removed)
+    Ok((items, bytes, kept))
 }

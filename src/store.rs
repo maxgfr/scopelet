@@ -1,5 +1,6 @@
 use anyhow::{Context, Result, bail, ensure};
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::{BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
@@ -99,6 +100,31 @@ fn flush(file: &fs::File) -> std::io::Result<()> {
     }
 }
 
+/// Blobs named by artifact bytes: snapshots and records (schema 1), or
+/// snapshots and the records' source (schema 2).
+fn references_in(bytes: &[u8]) -> Result<Vec<String>> {
+    use crate::model::{Dataset, DatasetRef};
+    Ok(match artifact_schema(bytes)? {
+        1 => {
+            let data: Dataset = serde_json::from_slice(bytes)?;
+            data.snapshots
+                .into_iter()
+                .map(|s| s.blob)
+                .chain(data.records.into_iter().filter_map(|r| r.blob))
+                .collect()
+        }
+        2 => {
+            let data: DatasetRef = serde_json::from_slice(bytes)?;
+            data.snapshots
+                .into_iter()
+                .map(|s| s.blob)
+                .chain([data.records_from.blob])
+                .collect()
+        }
+        version => bail!("unsupported artifact schema {version}"),
+    })
+}
+
 /// The schema version of dataset artifact bytes, read before their body.
 pub fn artifact_schema(bytes: &[u8]) -> Result<u32> {
     // Scopelet serializes the version first; anything else is parsed whole.
@@ -125,25 +151,24 @@ fn content_hash_name(name: &str) -> bool {
     name.len() == 64 && name.bytes().all(|c| c.is_ascii_hexdigit())
 }
 
-/// Discard an aged leftover from a write that was killed before it persisted.
+/// Discard an aged leftover from a write that was killed before it persisted;
+/// the bytes it held when it was removed.
 pub(crate) fn reap_temporary(
     item: &fs::DirEntry,
     name: &str,
     now: SystemTime,
     age: Duration,
-) -> Result<bool> {
+) -> Result<Option<u64>> {
     let suffix = name.strip_prefix(TEMP_PREFIX).unwrap_or("");
+    let metadata = item.metadata()?;
     if suffix.len() != 12
         || !suffix.bytes().all(|c| c.is_ascii_alphanumeric())
-        || now
-            .duration_since(item.metadata()?.modified()?)
-            .unwrap_or_default()
-            < age
+        || now.duration_since(metadata.modified()?).unwrap_or_default() < age
     {
-        return Ok(false);
+        return Ok(None);
     }
     fs::remove_file(item.path())?;
-    Ok(true)
+    Ok(Some(metadata.len()))
 }
 
 pub fn read_bounded(path: &Path, limit: usize) -> Result<Vec<u8>> {
@@ -415,27 +440,7 @@ impl Store {
 
     /// Blobs a verified artifact refers to, without parsing its records again.
     pub fn references(&self, id: &str) -> Result<Vec<String>> {
-        use crate::model::{Dataset, DatasetRef};
-        let bytes = self.get(id)?;
-        Ok(match artifact_schema(&bytes)? {
-            1 => {
-                let data: Dataset = serde_json::from_slice(&bytes)?;
-                data.snapshots
-                    .into_iter()
-                    .map(|s| s.blob)
-                    .chain(data.records.into_iter().filter_map(|r| r.blob))
-                    .collect()
-            }
-            2 => {
-                let data: DatasetRef = serde_json::from_slice(&bytes)?;
-                data.snapshots
-                    .into_iter()
-                    .map(|s| s.blob)
-                    .chain([data.records_from.blob])
-                    .collect()
-            }
-            version => bail!("unsupported artifact schema {version}"),
-        })
+        references_in(&self.get(id)?)
     }
 
     /// Mark an item as used so age-based cleanup does not drop it mid-session.
@@ -444,56 +449,201 @@ impl Store {
         Ok(())
     }
 
+    /// Age-based cleanup; the number of items removed. See `clean_with`.
     pub fn clean(&self, older_days: u64) -> Result<usize> {
+        Ok(self.clean_with(older_days, None)?.removed_items)
+    }
+
+    /// Remove cache items older than `older_days`, then, while the cache
+    /// holds more than `max_size` bytes, the least recently used ones that
+    /// were not modified within the last hour.
+    ///
+    /// A surviving artifact whose bytes do not match its name is removed and
+    /// counted as corrupt. One that is intact but cannot be read (a schema
+    /// from a newer release, unreadable permissions) is kept, and no original
+    /// is removed in this pass, because the originals it names are unknown.
+    /// Originals named by a surviving artifact are never removed by age, and
+    /// size eviction only removes an original once no surviving artifact
+    /// names it.
+    pub fn clean_with(&self, older_days: u64, max_size: Option<u64>) -> Result<CleanReport> {
         let age = Duration::from_secs(older_days.saturating_mul(86400));
         let now = SystemTime::now();
-        let mut removed = 0;
-        let mut referenced = std::collections::BTreeSet::new();
+        let aged = |modified: SystemTime| now.duration_since(modified).unwrap_or_default() >= age;
+        let mut report = CleanReport::default();
+        let remove = |path: &Path, bytes: u64, report: &mut CleanReport| -> Result<()> {
+            fs::remove_file(path)?;
+            report.removed_items += 1;
+            report.removed_bytes += bytes;
+            Ok(())
+        };
+        // Items that survive the age pass, for size eviction.
+        let mut kept: Vec<Kept> = Vec::new();
+        let mut referenced: BTreeMap<String, usize> = BTreeMap::new();
+        let mut originals_known = true;
         for item in fs::read_dir(self.root.join("artifacts"))? {
             let item = item?;
             if !item.file_type()?.is_file() {
                 continue;
             }
             let name = item.file_name().to_string_lossy().into_owned();
+            let metadata = item.metadata()?;
             if !content_hash_name(&name) {
                 // Foreign files are never cache items: leave them where they are.
-                removed += usize::from(reap_temporary(&item, &name, now, age)?);
+                if let Some(bytes) = reap_temporary(&item, &name, now, age)? {
+                    report.removed_items += 1;
+                    report.removed_bytes += bytes;
+                }
                 continue;
             }
-            if now
-                .duration_since(item.metadata()?.modified()?)
-                .unwrap_or_default()
-                >= age
-            {
-                fs::remove_file(item.path())?;
-                removed += 1;
-            } else {
-                // Fail closed on malformed surviving artifacts: do not discard their originals.
-                referenced.extend(self.references(&format!("artifact:{name}"))?);
+            if aged(metadata.modified()?) {
+                remove(&item.path(), metadata.len(), &mut report)?;
+                continue;
+            }
+            let bytes = match read_bounded(&item.path(), MAX_STORE_FILE) {
+                Ok(bytes) => bytes,
+                Err(_) => {
+                    originals_known = false;
+                    report.kept_bytes += metadata.len();
+                    continue;
+                }
+            };
+            if digest(&bytes) != name {
+                remove(&item.path(), metadata.len(), &mut report)?;
+                report.corrupt += 1;
+                continue;
+            }
+            match references_in(&bytes) {
+                Ok(blobs) => {
+                    for blob in &blobs {
+                        *referenced.entry(blob.clone()).or_default() += 1;
+                    }
+                    kept.push(Kept {
+                        path: item.path(),
+                        modified: metadata.modified()?,
+                        bytes: metadata.len(),
+                        blobs,
+                    });
+                }
+                Err(_) => {
+                    // Intact but unreadable here: keep it and its originals.
+                    originals_known = false;
+                    report.kept_bytes += metadata.len();
+                }
             }
         }
         for item in fs::read_dir(self.root.join("blobs"))? {
             let item = item?;
-            let name = item.file_name().to_string_lossy().into_owned();
             if !item.file_type()?.is_file() {
                 continue;
             }
+            let name = item.file_name().to_string_lossy().into_owned();
+            let metadata = item.metadata()?;
             if !content_hash_name(&name) {
-                removed += usize::from(reap_temporary(&item, &name, now, age)?);
+                if let Some(bytes) = reap_temporary(&item, &name, now, age)? {
+                    report.removed_items += 1;
+                    report.removed_bytes += bytes;
+                }
                 continue;
             }
             let id = format!("blob:{name}");
-            if !referenced.contains(&id)
-                && now
-                    .duration_since(item.metadata()?.modified()?)
-                    .unwrap_or_default()
-                    >= age
-            {
-                fs::remove_file(item.path())?;
-                removed += 1;
+            if originals_known && !referenced.contains_key(&id) && aged(metadata.modified()?) {
+                remove(&item.path(), metadata.len(), &mut report)?;
+            } else if originals_known {
+                kept.push(Kept {
+                    path: item.path(),
+                    modified: metadata.modified()?,
+                    bytes: metadata.len(),
+                    blobs: Vec::new(),
+                });
+            } else {
+                report.kept_bytes += metadata.len();
             }
         }
-        removed += crate::line_index::clean(&self.root, now, age)?;
-        Ok(removed)
+        let (items, bytes, indexes) = crate::line_index::clean(&self.root, now, age)?;
+        report.removed_items += items;
+        report.removed_bytes += bytes;
+        // Offset indexes are disposable: evicted like unreferenced originals.
+        kept.extend(indexes.into_iter().map(|(path, modified, bytes)| Kept {
+            path,
+            modified,
+            bytes,
+            blobs: Vec::new(),
+        }));
+        // Items that cannot be evicted (unreadable artifacts and the originals
+        // they may name) still count against the limit.
+        let mut total: u64 = report.kept_bytes + kept.iter().map(|k| k.bytes).sum::<u64>();
+        if let Some(limit) = max_size {
+            // Least recently used first. An original still named by a kept
+            // artifact waits until that artifact goes.
+            kept.sort_by_key(|k| k.modified);
+            let recent = |k: &Kept| {
+                now.duration_since(k.modified).unwrap_or_default() < Duration::from_secs(3600)
+            };
+            let blob_id = |k: &Kept| {
+                k.path
+                    .parent()
+                    .and_then(|p| p.file_name())
+                    .filter(|d| *d == "blobs")
+                    .and_then(|_| k.path.file_name())
+                    .map(|n| format!("blob:{}", n.to_string_lossy()))
+            };
+            let mut evicted = vec![false; kept.len()];
+            let mut waiting: Vec<usize> = Vec::new();
+            for i in 0..kept.len() {
+                if total <= limit {
+                    break;
+                }
+                if recent(&kept[i]) {
+                    continue;
+                }
+                if let Some(id) = blob_id(&kept[i])
+                    && referenced.get(&id).is_some_and(|&n| n > 0)
+                {
+                    waiting.push(i);
+                    continue;
+                }
+                remove(&kept[i].path, kept[i].bytes, &mut report)?;
+                evicted[i] = true;
+                total -= kept[i].bytes;
+                for blob in std::mem::take(&mut kept[i].blobs) {
+                    if let Some(n) = referenced.get_mut(&blob) {
+                        *n -= 1;
+                    }
+                }
+                // Originals freed by this artifact are older: they go first.
+                for &w in &waiting {
+                    if total > limit
+                        && !evicted[w]
+                        && blob_id(&kept[w]).is_some_and(|id| referenced.get(&id) == Some(&0))
+                    {
+                        remove(&kept[w].path, kept[w].bytes, &mut report)?;
+                        evicted[w] = true;
+                        total -= kept[w].bytes;
+                    }
+                }
+            }
+        }
+        report.kept_bytes = total;
+        Ok(report)
     }
+}
+
+/// What `Store::clean_with` did.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct CleanReport {
+    pub removed_items: usize,
+    pub removed_bytes: u64,
+    /// Bytes of cache items left in place.
+    pub kept_bytes: u64,
+    /// Artifacts removed because their bytes no longer match their name.
+    pub corrupt: usize,
+}
+
+/// A cache item that survived the age pass.
+struct Kept {
+    path: PathBuf,
+    modified: SystemTime,
+    bytes: u64,
+    /// Originals an artifact names; empty for originals and indexes.
+    blobs: Vec<String>,
 }

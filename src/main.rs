@@ -141,6 +141,10 @@ enum Cmd {
     Clean {
         #[arg(long, default_value_t = 7)]
         older_days: u64,
+        /// Then evict least recently used items until the cache fits, e.g.
+        /// 500M or 2G; items modified within the last hour are kept.
+        #[arg(long, value_parser = parse_size)]
+        max_size: Option<u64>,
     },
 }
 
@@ -158,6 +162,34 @@ fn main() {
             std::process::exit(2);
         }
     }
+}
+
+/// A byte size: digits with an optional K, M or G suffix (binary multiples).
+fn parse_size(text: &str) -> Result<u64, String> {
+    let (digits, unit) = match text.find(|c: char| !c.is_ascii_digit()) {
+        Some(i) => text.split_at(i),
+        None => (text, ""),
+    };
+    let shift = match unit
+        .to_ascii_uppercase()
+        .trim_end_matches("IB")
+        .trim_end_matches('B')
+    {
+        "" => 0,
+        "K" => 10,
+        "M" => 20,
+        "G" => 30,
+        _ => {
+            return Err(format!(
+                "invalid size {text:?}; use bytes or a K, M or G suffix"
+            ));
+        }
+    };
+    digits
+        .parse::<u64>()
+        .ok()
+        .and_then(|n| n.checked_mul(1 << shift))
+        .ok_or_else(|| format!("invalid size {text:?}"))
 }
 
 fn print(value: &impl serde::Serialize) -> Result<()> {
@@ -629,8 +661,17 @@ fn execute(cli: Cli) -> Result<i32> {
                 print(&render::render(&data, &store, Mode::Default, max_bytes, 0)?)?;
             }
         }
-        Cmd::Clean { older_days } => {
-            print(&json!({"removed":store.clean(older_days)?,"cache":store.root}))?
+        Cmd::Clean {
+            older_days,
+            max_size,
+        } => {
+            let report = store.clean_with(older_days, max_size)?;
+            // Session markers only gate hook context; losing one is harmless.
+            let sessions = integration::clean_sessions(older_days).unwrap_or(0);
+            let mut value = serde_json::to_value(report)?;
+            value["sessions_removed"] = json!(sessions);
+            value["cache"] = json!(store.root);
+            print(&value)?
         }
         Cmd::Doctor
         | Cmd::Bench

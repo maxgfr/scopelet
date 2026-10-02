@@ -389,6 +389,35 @@ fn small_file_read(args: &[String], event: &Value) -> bool {
     fs::metadata(path).is_ok_and(|meta| meta.is_file() && meta.len() <= compress::SMALL as u64)
 }
 
+/// Remove per-session context markers older than `older_days`; how many.
+pub fn clean_sessions(older_days: u64) -> Result<usize> {
+    let folder = root()?.join("sessions");
+    let age = std::time::Duration::from_secs(older_days.saturating_mul(86400));
+    let now = std::time::SystemTime::now();
+    let mut removed = 0;
+    let entries = match fs::read_dir(&folder) {
+        Ok(entries) => entries,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(0),
+        Err(e) => return Err(e.into()),
+    };
+    for entry in entries {
+        let entry = entry?;
+        let name = entry.file_name();
+        let ours = name
+            .to_str()
+            .is_some_and(|n| n.len() == 64 && n.bytes().all(|b| b.is_ascii_hexdigit()));
+        let metadata = entry.metadata()?;
+        if ours
+            && metadata.is_file()
+            && now.duration_since(metadata.modified()?).unwrap_or_default() >= age
+        {
+            fs::remove_file(entry.path())?;
+            removed += 1;
+        }
+    }
+    Ok(removed)
+}
+
 fn context(event: &Value, mode: Preference) -> Result<Value> {
     let name = event["hook_event_name"].as_str().unwrap_or("");
     let Some(session) = event["session_id"].as_str() else {

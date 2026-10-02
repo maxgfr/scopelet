@@ -57,7 +57,16 @@ command timeout 120 seconds (maximum 3600). New store directories are private on
 Unix; existing directory permissions are preserved; writes are atomic (a synced temporary renamed into place, data flushed to the device without forcing a full disk cache flush) and content hashes are checked on reads, so an interrupted write yields a missing or rejected item, never a wrong one. Publishing bytes that are already stored reuses the existing item by address and length without re-reading it; a stored item of the wrong length is replaced. Storage subdirectories get local `.ignore` and `.gitignore` markers so ordinary searches and Git staging do not re-ingest saved evidence. Existing markers and read-only caches are preserved; marker creation is skipped when permissions forbid it; explicit no-ignore searches can still include the cache. Storage grows
 with distinct observations until explicit cleanup; no silent eviction expires
 active references. Cleanup retains blobs referenced by surviving artifacts, and
-paging an artifact does not store it again. Only content-hash-named files are
+paging an artifact does not store it again. It reports the items and bytes it
+removed, the bytes it kept and the corrupt artifacts it found. A surviving
+artifact whose bytes no longer match its name is removed as corrupt; one that
+is intact but unreadable (a newer schema, a permission) is kept, and no
+original is removed in that pass because the originals it names are unknown.
+`--max-size` then evicts least recently modified items until the cache fits,
+never one modified within the last hour, and removes an original only once no
+surviving artifact names it; disposable offset indexes count and evict like
+originals. Cleanup also removes per-session hook markers older than the age
+limit. Only content-hash-named files are
 cache items: cleanup leaves anything else in the directory alone, apart from its
 aged temporaries in the reserved `.scopelet-write-` namespace (12 alphanumeric
 suffix characters). Legacy `.tmp*` files are left alone because their owner

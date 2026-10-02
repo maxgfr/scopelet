@@ -57,7 +57,12 @@ substitute an unverified binary.
 
 Cache: `SCOPELET_CACHE_DIR`, otherwise `$XDG_CACHE_HOME/scopelet`, otherwise
 `~/.cache/scopelet`. `scopelet clean --older-days 7` removes old originals and
-artifacts; `--older-days 0` removes all. References to removed snapshots expire.
+artifacts; `--older-days 0` removes all. Add `--max-size 500M` (K, M or G) to
+then evict least recently used items until the cache fits; items modified in
+the last hour stay. It prints `removed_items`, `removed_bytes`, `kept_bytes`,
+`corrupt` (damaged artifacts removed) and `sessions_removed` (aged hook session
+markers). An artifact from a newer release is kept, with every original, until
+that release cleans it. References to removed snapshots expire.
 Run cleanup when no Scopelet operation is using those artifacts. The `blobs` and
 `artifacts` directories create local ignore markers to keep saved evidence out of
 ordinary searches and Git staging, including when the cache is inside a repository.
