@@ -725,12 +725,8 @@ fn execute(cli: Cli) -> Result<i32> {
                     context,
                     source.as_deref(),
                 )?;
-                print(&render::render(
-                    &data,
-                    &store,
-                    Mode::Default,
-                    max_bytes,
-                    offset,
+                print(&scopelet::recovery::render(
+                    &data, &store, max_bytes, offset,
                 )?)?;
                 return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
                     130

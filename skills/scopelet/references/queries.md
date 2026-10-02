@@ -233,6 +233,7 @@ not a computed aggregate. Complete cells, exact numbers and missing/null
 semantics survive. A partial table cannot establish an exhaustive count.
 V2 prioritizes distinct diagnostics before repetitions, and links directly to
 saved-source search. Version 1 remains selectable with `--compact-version 1`.
-The query schema is version 1. Artifacts are schema 1, except compact-v3
-automatic compression's schema 2, which names the original blob instead of
-copying its records; `expand` and queries read both.
+The query schema is version 1. Artifacts are schema 1, except schema 2 for
+compact-v3 automatic compression and for a recovery that shows a whole text
+original as its only record, which names the original blob instead of copying
+it; `expand` and queries read both.

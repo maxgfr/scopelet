@@ -95,6 +95,35 @@ pub fn search(
     Ok(data)
 }
 
+/// Store a recovery result and render its page at `offset`. A result that is
+/// one whole text original (a single-line blob paged or searched shows its
+/// only line) names that blob, as a compact-v3 artifact does (schema 2),
+/// instead of storing the line a second time for every recovery.
+pub fn render(data: &Dataset, store: &Store, budget: usize, offset: usize) -> Result<View> {
+    if let [record] = data.records.as_slice()
+        && let Some(blob) = record.blob.as_deref()
+        && blob.starts_with("blob:")
+        && record.value.is_none()
+        && record.start_line == Some(1)
+        && record.end_line == Some(crate::clean::line_count(&record.text))
+        && record.omitted_lines.is_none()
+        && !record.text_truncated
+        // Hashing settles that the text is the whole blob, not a prefix.
+        && blob.ends_with(&digest(record.text.as_bytes()))
+    {
+        let artifact = store.put_json(&DatasetRef::new(
+            data,
+            RecordsRef {
+                blob: blob.into(),
+                format: Format::Text,
+                source: record.source.clone(),
+            },
+        ))?;
+        return crate::render::render_stored(data, artifact, Mode::Default, budget, offset);
+    }
+    crate::render::render(data, store, Mode::Default, budget, offset)
+}
+
 /// Lines `start..=end` of a blob, or as many of them as fit `budget`: a view
 /// that cannot show them all shows the first ones and sets `next_start`.
 /// Only a single line larger than the budget is still a blocked record.
@@ -119,7 +148,7 @@ pub fn page(store: &Store, id: &str, start: usize, end: usize, budget: usize) ->
         (serde_json::to_vec(&view).ok()?.len() < budget).then_some(view)
     };
     if data.records.is_empty() || measure(&data, None).is_some() {
-        return crate::render::render(&data, store, Mode::Default, budget, 0);
+        return render(&data, store, budget, 0);
     }
     let record = &data.records[0];
     let lines: Vec<&str> = record.text.split_inclusive('\n').collect();
@@ -144,9 +173,9 @@ pub fn page(store: &Store, id: &str, start: usize, end: usize, budget: usize) ->
     }
     if fits == 0 {
         // A single line larger than the budget: report it as blocked.
-        return crate::render::render(&data, store, Mode::Default, budget, 0);
+        return render(&data, store, budget, 0);
     }
-    let mut view = crate::render::render(&take(fits), store, Mode::Default, budget, 0)?;
+    let mut view = render(&take(fits), store, budget, 0)?;
     view.next_start = Some(first + fits);
     view.stop_early(NOTE);
     Ok(view)

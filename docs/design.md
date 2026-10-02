@@ -7,8 +7,9 @@ call another model to compress data.
 `Source -> Dataset -> operations -> immutable artifact -> bounded View` is the
 single pipeline. The Rust library exposes the same types used by the CLI.
 Request version is 1. Saved artifacts are schema 1 (records stored) or, for
-compact-v3 automatic compression, schema 2 (records named by their original
-blob). Unknown request fields fail.
+compact-v3 automatic compression and for a recovery whose only record is a
+whole text original (a single-line blob paged or searched), schema 2 (records
+named by their original blob). Unknown request fields fail.
 
 Source loading owns scope and freshness. A dataset carries full records,
 snapshots, the number of examined files/streams and observed skip counts.

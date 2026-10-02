@@ -174,3 +174,43 @@ fn offset_with_a_line_range_is_rejected_instead_of_ignored() {
     assert_eq!(output.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&output.stderr).contains("cannot be used with"));
 }
+
+/// Total bytes of stored artifacts.
+fn artifact_bytes(cache: &std::path::Path) -> u64 {
+    std::fs::read_dir(cache.join("artifacts"))
+        .unwrap()
+        .map(|entry| entry.unwrap().metadata().unwrap())
+        .filter(|meta| meta.is_file())
+        .map(|meta| meta.len())
+        .sum()
+}
+
+/// Paging or searching a single-line original shows that whole line as one
+/// record. Its artifact names the blob instead of storing the line again, so
+/// recovering a 2 MB line twice stores kilobytes, not two more copies, and
+/// the artifact still expands to the exact line.
+#[test]
+fn recovering_a_single_line_original_stores_no_second_copy() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(Some(dir.path().into())).unwrap();
+    let line = format!(
+        "{{\"payload\":\"{}\",\"key\":\"k39\"}}",
+        "x".repeat(2_000_000)
+    );
+    let blob = store.put("blob", line.as_bytes()).unwrap();
+    let before = artifact_bytes(dir.path());
+    let page = json(&cli(dir.path(), &["expand", &blob]));
+    let found = json(&cli(dir.path(), &["expand", &blob, "--find", "k39"]));
+    let stored = artifact_bytes(dir.path()) - before;
+    assert!(
+        stored < 64 * 1024,
+        "{stored} artifact bytes for two recoveries"
+    );
+    for view in [page, found] {
+        let artifact = view["artifact"].as_str().unwrap();
+        let data = store.dataset(artifact).unwrap();
+        assert_eq!(data.records.len(), 1);
+        assert_eq!(data.records[0].text, line);
+        assert_eq!(data.records[0].blob.as_deref(), Some(blob.as_str()));
+    }
+}
