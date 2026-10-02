@@ -122,12 +122,17 @@ long output before the plugin sees it and writes the whole result to its
 Claude Code uses `PostToolUse.updatedToolOutput` for Bash results with known
 stdout/stderr fields. Other fields survive unchanged. Failure events without a
 replaceable output, images and unknown envelopes pass through. Codex uses
-`PreToolUse.updatedInput` for simple Bash calls: cargo test/check/clippy/build,
-pytest, python3 scripts, package-manager tests and single-file cat. Shell
-expansions, pipelines, unsupported control operators, interactive flags and
-existing wrappers pass through. Simple `&&` lists are supported as described below. This is not interception of all host tools or conversation history.
+`PreToolUse.updatedInput` for recognized Bash calls: cargo test/check/clippy/build,
+pytest, python3 scripts, package-manager tests and single-file cat. Quoted
+arguments, `2>&1`, `cd DIR &&`, `&&`, `|| true`, display and test variable
+prefixes and pipes into read-only filters are understood (see below); shell
+expansions, other control operators, interactive flags and existing wrappers
+pass through. This is not interception of all host tools or conversation history.
 Codex's hook requires its documented `allow` rewrite decision; it does not set
-sandbox, escalation, permission rules or permission mode. Other policy hooks
+sandbox, escalation, permission rules or permission mode. Checked against the
+Codex 0.160 source: `allow` only carries the rewritten input, which then goes
+through Codex's normal approval and sandbox policy, so wrapping a command
+never skips a prompt the native command would have needed. Other policy hooks
 must remain enabled. Interactive commands should always use native tools.
 
 Small automatic outputs do not open the cache. Codex leaves a plain `cat` of a
@@ -144,11 +149,19 @@ previews and Scopelet output pass through. Capture is bounded at 32 MiB per
 stream; interruption or overflow is reported. Storage/compression failures in an
 automatic run return captured native output without rerunning the command.
 
-A Codex AND-list (`cmd && cmd`) of at most eight individually recognized simple
-commands is supported. It is reconstructed from quoted argv in `/bin/sh`;
-short-circuiting and the final process status are preserved. Other shell control
-operators and pipelines still pass through. Interactive/background tool calls
-also pass through when the host exposes those flags.
+Codex commands are parsed, not matched on raw characters: single quotes,
+double quotes without expansions and backslash escapes are understood. Up to
+eight recognized commands may be joined by `&&`, preceded by `cd DIR &&` or
+followed by `|| true`; `2>&1` and redirections to `/dev/null` are kept; a
+command may pipe into read-only filters (`grep`, `rg`, `sort`, `uniq`, `cut`,
+`tr`, `nl`, `cat`, `jq`, print-only `sed -n`). A pipeline already ending in
+`head`, `tail`, `wc` or `grep -c`/`-l`/`-q` stays native. Variable prefixes are
+limited to display, locale and test knobs (`CI`, `NO_COLOR`, `RUST_BACKTRACE`,
+`LC_*`...). Anything else (expansions, `;`, `&`, other redirections, `tee`,
+`xargs`, `awk`) runs natively. Composed commands run through `/bin/sh -c`
+unchanged, so short-circuiting and exit status are the shell's.
+Interactive/background tool calls also pass through when the host exposes
+those flags.
 
 To upgrade a global installation, run `npx skills update scopelet --global -y`,
 then invoke the updated launcher with `install --agent all` and `doctor` again.

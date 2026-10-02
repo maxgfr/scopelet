@@ -371,7 +371,6 @@ fn recognized_and_lists_preserve_short_circuiting_and_status() {
     for command in [
         "python3 checks.py && touch marker",
         "python3 checks.py || python3 acceptance.py",
-        "cat 'a && b'",
         "python3 checks.py & python3 acceptance.py",
     ] {
         assert_eq!(
@@ -545,4 +544,112 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
             .unwrap()
             .contains("Scopelet auto")
     );
+}
+
+fn rewritten(dir: &std::path::Path, command: &str) -> Option<String> {
+    let event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":dir,"tool_input":{"command":command}});
+    let result = hook(dir, "codex", event);
+    result["hookSpecificOutput"]["updatedInput"]["command"]
+        .as_str()
+        .map(str::to_owned)
+}
+
+/// Commands are judged on their parsed words, not on raw characters, so
+/// quoting no longer hides a recognized command, and a pipeline ending in a
+/// filter that already bounds the output stays native.
+#[test]
+fn codex_grammar_accepts_quoted_and_composed_commands_it_understands() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir(dir.path().join("sub")).unwrap();
+    for (command, executed) in [
+        ("cargo test", "'cargo' 'test'"),
+        ("cat 'a && b'", "'cat' 'a && b'"),
+        (r"rg 'fn \w+\(' src", r"'rg' 'fn \w+\(' 'src'"),
+        (
+            "cargo check && cargo test",
+            r"'/bin/sh' '-c' ''\''cargo'\'' '\''check'\'' && '\''cargo'\'' '\''test'\'''",
+        ),
+        ("cargo test 2>&1", "'/bin/sh' '-c' 'cargo test 2>&1'"),
+        (
+            "RUST_BACKTRACE=1 cargo test",
+            "'/bin/sh' '-c' 'RUST_BACKTRACE=1 cargo test'",
+        ),
+        (
+            "cd sub && cargo test",
+            "'/bin/sh' '-c' 'cd sub && cargo test'",
+        ),
+        ("npm test || true", "'/bin/sh' '-c' 'npm test || true'"),
+        (
+            "cargo test 2>&1 | grep -v Compiling",
+            "'/bin/sh' '-c' 'cargo test 2>&1 | grep -v Compiling'",
+        ),
+        (
+            "go test ./... 2>/dev/null",
+            "'/bin/sh' '-c' 'go test ./... 2>/dev/null'",
+        ),
+    ] {
+        let command_line =
+            rewritten(dir.path(), command).unwrap_or_else(|| panic!("left native: {command}"));
+        assert!(command_line.contains("run --auto"), "{command_line}");
+        assert!(
+            command_line.ends_with(&format!(" -- {executed}")),
+            "{command}: {command_line}"
+        );
+    }
+    for command in [
+        "cargo test 2>&1 | tail -n 20",
+        "cargo test | head",
+        "cargo test | wc -l",
+        "cargo test | grep -c ok",
+        "rg foo | rg -l bar",
+        "cargo test | tee log",
+        "cargo test | xargs rm",
+        "cargo test | awk '{print}'",
+        "cargo test | sed -i s/a/b/ x",
+        "cargo test | sort -o out",
+        "LD_PRELOAD=/tmp/x.so cargo test",
+        "GIT_EXTERNAL_DIFF=/tmp/x git diff",
+        "PAGER=/tmp/x git log",
+        "cd sub",
+        "cd sub || true",
+        "cd a b && cargo test",
+        "cd sub && cd other",
+        "echo x | cat",
+        "cargo test > out.txt",
+        "cargo test; rm x",
+        "cargo test `id`",
+        "cargo test && rm -rf target",
+    ] {
+        assert_eq!(rewritten(dir.path(), command), None, "rewritten: {command}");
+    }
+}
+
+/// Whatever the hook hands to `/bin/sh -c`, `run --auto` reproduces: same
+/// stdout, stderr and exit status for outputs small enough to stay exact.
+#[test]
+fn run_auto_through_sh_matches_the_shell_byte_for_byte() {
+    let dir = tempfile::tempdir().unwrap();
+    for script in [
+        r"printf 'out\n'; printf 'err\n' >&2; exit 3",
+        r"printf 'a\n' 2>&1 && printf 'b\n' >&2",
+        "false || true",
+        r"false && printf 'never\n'",
+        r"printf 'x\ny\n' | grep y",
+        r#"FOO=1 sh -c 'printf "%s\n" "$FOO"'"#,
+        r"printf 'gone\n' >/dev/null; printf 'kept\n' 2>/dev/null",
+        "cd / && pwd",
+        "exit 42",
+    ] {
+        let native = std::process::Command::new("/bin/sh")
+            .args(["-c", script])
+            .output()
+            .unwrap();
+        let wrapped = cli(dir.path())
+            .args(["run", "--auto", "--", "/bin/sh", "-c", script])
+            .output()
+            .unwrap();
+        assert_eq!(wrapped.status.code(), native.status.code(), "{script}");
+        assert_eq!(wrapped.stdout, native.stdout, "{script}");
+        assert_eq!(wrapped.stderr, native.stderr, "{script}");
+    }
 }

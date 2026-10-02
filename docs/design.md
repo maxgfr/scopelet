@@ -128,6 +128,10 @@ entries are removed. The resolved executable is copied during installation so
 hooks never trigger downloads. Host permission/trust mechanisms remain in force;
 Codex's input-rewrite protocol requires an explicit hook `allow` decision, but
 Scopelet never changes permission rules, mode, sandbox or escalation parameters.
+In Codex 0.160 that decision only carries `updatedInput`: the rewritten call
+then goes through Codex's normal approval and sandbox policy (only a
+`PermissionRequest` hook can approve a call), so wrapping never grants a
+command more than it had.
 
 The version-1 JSON request/artifact/view contracts remain unchanged. `--output
 compact` is a separate textual presentation (compact-v3 by default, v1 and v2
@@ -172,8 +176,8 @@ A file growing after the check stays correct, though that read may miss savings.
 `run --auto` executes once and returns stdout/stderr independently, preserving
 exit status. Failed storage/compression returns captured native bytes; the
 command is never rerun. Its stdin remains closed, so only noninteractive commands
-belong in this path. The Codex adapter intentionally skips shell expansions,
-control operators, pipelines and recognized interactive flags. Claude's adapter
+belong in this path. The Codex adapter only wraps the shell subset described
+below and skips recognized interactive flags. Claude's adapter
 replaces only known Bash output shapes after execution and keeps all other
 fields. Results carrying a nonempty `persistedOutputPath` or positive
 `persistedOutputSize` pass through before Claude renders its own preview, so the
@@ -185,11 +189,24 @@ thresholds, by calling the pinned binary. Any plugin or binary failure leaves
 the native output untouched, and the mode text reaches the model through the
 system prompt on every step rather than through per-session hook context.
 
-A Codex AND-list (`cmd && cmd`) of at most eight individually recognized simple
-commands is supported. It is reconstructed from quoted argv in `/bin/sh`;
-short-circuiting and the final process status are preserved. Other shell control
-operators and pipelines still pass through. Interactive/background tool calls
-also pass through when the host exposes those flags.
+A Codex command is parsed in a small POSIX subset (`src/shell.rs`) that reads
+the same in `sh`, `bash` and `zsh`: words may be single quoted, double quoted
+without `$`, backticks or backslashes inside, or backslash-escaped; literal
+`NAME=value` prefixes, `cd DIR &&`, `&&`, a final `|| true`, pipes, `2>&1`
+and output or errors to `/dev/null` are accepted. Expansions (`$`, backticks,
+globs, `~`, braces), grouping, `;`, a lone `&`, `|&`, `&>`, `>|`, input and
+other redirections, heredocs, newlines, and words starting with `=` or `#`
+leave the command native. Every command in it must be recognized; after a pipe
+only read-only filters are allowed (`grep`, `rg`, `sort` without `-o`, `uniq`,
+`cut`, `tr`, `nl`, `cat`, `jq`, `sed -n` with a print-only script, `head`,
+`tail` without `-f`, `wc`), and a pipeline that already ends in `head`, `tail`,
+`wc` or `grep -c`/`-l`/`-q` is left alone. Prefixes are limited to display,
+locale and test variables, never one that loads or runs a program. A single
+command is executed from its argv; an AND-list of at most eight plain commands
+is rebuilt from quoted argv in `/bin/sh`; anything else runs as the original
+string through `/bin/sh -c`, so short-circuiting, pipes and the exit status
+are the shell's. Interactive/background tool calls pass through when the host
+exposes those flags.
 
 ## Execution and compact-v2
 

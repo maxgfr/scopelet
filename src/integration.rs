@@ -297,69 +297,72 @@ pub fn doctor() -> Value {
     json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash PostToolUse; Codex simple noninteractive Bash PreToolUse; OpenCode bash tool.execute.after plugin; hook trust and host versions must be verified"})
 }
 
-/// A deliberately small shell grammar. Any expansion, pipeline or control operator passes through.
-fn simple_args(command: &str) -> Option<Vec<String>> {
-    if command.contains([
-        '\n', '\r', '$', '`', '|', '&', ';', '<', '>', '(', ')', '{', '}', '*', '?', '[', ']', '!',
-        '\\',
-    ]) {
-        return None;
-    }
-    let mut args = Vec::new();
-    let mut token = String::new();
-    let mut quoted = None;
-    let mut started = false;
-    for c in command.chars() {
-        match quoted {
-            Some(q) if c == q => quoted = None,
-            Some(_) => token.push(c),
-            None if c == '\'' || c == '"' => {
-                quoted = Some(c);
-                started = true;
+/// The argv `run --auto` executes for a command the hook may wrap, or None to
+/// leave it to the host. The command must parse in the shell subset of
+/// `shell`, every command in it must be a recognized noninteractive one (or
+/// `cd DIR &&`, `|| true`, or a read-only filter after a pipe), and its
+/// output must not already be bounded by a final `head`, `tail`, `wc` or
+/// `grep -c`/`-l`/`-q`.
+fn command_args(command: &str) -> Option<Vec<String>> {
+    use crate::shell::{Joint, Plan};
+    let script = crate::shell::parse(command)?;
+    let last = script.steps.len() - 1;
+    let mut recognized = false;
+    for (i, (joint, pipeline)) in script.steps.iter().enumerate() {
+        let first = &pipeline[0];
+        if *joint == Joint::OrTrue {
+            continue; // `|| true`, checked by the parser
+        }
+        if first.argv[0] == "cd" && pipeline.len() == 1 {
+            // `cd DIR &&` only: a directory change that leads somewhere.
+            if first.argv.len() != 2 || !first.env.is_empty() || i == last {
+                return None;
             }
-            None if c.is_whitespace() => {
-                if started {
-                    args.push(std::mem::take(&mut token));
-                    started = false;
-                }
+            if script
+                .steps
+                .get(i + 1)
+                .is_none_or(|(j, _)| *j != Joint::And)
+            {
+                return None;
             }
-            None => {
-                token.push(c);
-                started = true;
+            continue;
+        }
+        if !eligible(&first.argv)
+            || !first
+                .env
+                .iter()
+                .all(|(name, _)| crate::commands::safe_env(name))
+        {
+            return None;
+        }
+        recognized = true;
+        for filter in &pipeline[1..] {
+            if !filter.env.is_empty() {
+                return None;
             }
+            crate::commands::filter(&filter.argv)?;
+        }
+        if pipeline.len() > 1
+            && crate::commands::filter(&pipeline.last().unwrap().argv)?.bounds_output
+        {
+            return None;
         }
     }
-    if quoted.is_some() {
+    if !recognized {
         return None;
     }
-    if started {
-        args.push(token);
-    }
-    if args.is_empty() {
-        return None;
-    }
-    Some(args)
-}
-/// A short AND-list of eligible argv commands has well-defined noninteractive
-/// semantics. Reconstruct only that grammar; never reinterpret arbitrary shell.
-fn command_args(command: &str) -> Option<Vec<String>> {
-    if !command.contains("&&") {
-        return simple_args(command).filter(|args| eligible(args));
-    }
-    let parts: Vec<_> = command.split("&&").collect();
-    if parts.len() > 8 {
-        return None;
-    }
-    let commands: Option<Vec<_>> = parts
-        .iter()
-        .map(|part| simple_args(part).filter(|args| eligible(args)))
-        .collect();
-    let script = commands?
-        .iter()
-        .map(|args| args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" "))
-        .collect::<Vec<_>>()
-        .join(" && ");
-    Some(vec!["/bin/sh".into(), "-c".into(), script])
+    Some(match script.plan() {
+        Plan::Direct(argv) => argv,
+        Plan::AndList(commands) => {
+            let script = commands
+                .iter()
+                .map(|args| args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" "))
+                .collect::<Vec<_>>()
+                .join(" && ");
+            vec!["/bin/sh".into(), "-c".into(), script]
+        }
+        Plan::Shell => vec!["/bin/sh".into(), "-c".into(), command.into()],
+    })
 }
 
 fn eligible(args: &[String]) -> bool {
