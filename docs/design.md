@@ -195,10 +195,13 @@ system prompt on every step rather than through per-session hook context.
 
 A Codex command is parsed in a small POSIX subset (`src/shell.rs`) that reads
 the same in `sh`, `bash` and `zsh`: words may be single quoted, double quoted
-without `$`, backticks or backslashes inside, or backslash-escaped; literal
-`NAME=value` prefixes, `cd DIR &&`, `&&`, a final `|| true`, pipes, `2>&1`
-and output or errors to `/dev/null` are accepted. Expansions (`$`, backticks,
-globs, `~`, braces), grouping, `;`, a lone `&`, `|&`, `&>`, `>|`, input and
+without `$` or backticks inside (a backslash there only before an ordinary
+character, where it stays literal: `"\d+"`), or backslash-escaped; a `~`
+inside a word (`HEAD~1`) is literal; literal `NAME=value` prefixes,
+`cd DIR &&`, `&&`, a final `|| true`, pipes, `2>&1` and output or errors to
+`/dev/null` are accepted. Expansions (`$`, backticks, globs, a `~` starting a
+word or following an assignment's `=` or `:`, braces), grouping, `;`, a lone
+`&`, `|&`, `&>`, `>|`, input and
 other redirections, heredocs, newlines, and words starting with `=` or `#`
 leave the command native. Every command in it must be recognized; after a pipe
 only read-only filters are allowed (`grep`, `rg`, `sort` without `-o`, `uniq`,

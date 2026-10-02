@@ -173,6 +173,19 @@ fn codex_rewrites_carry_the_profile_budget_in_v3() {
     );
     // A 10 KB source read is below the FileRead threshold: it stays native.
     assert_eq!(command("cat mid.rs"), None);
+    // A literal tilde inside a revision and a backslash in a double-quoted
+    // pattern read the same in every shell: both are wrapped, words intact.
+    let revision = command("git diff HEAD~1").unwrap();
+    assert!(
+        revision.ends_with("--profile git -- 'git' 'diff' 'HEAD~1'"),
+        "{revision}"
+    );
+    let pattern = command("rg \"\\d+\" src").unwrap();
+    assert!(
+        pattern.ends_with("--profile search -- 'rg' '\\d+' 'src'"),
+        "{pattern}"
+    );
+    assert_eq!(command("git diff ~/x"), None);
 }
 
 #[test]

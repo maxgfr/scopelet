@@ -2,12 +2,14 @@
 //!
 //! The hook may only wrap a command whose meaning it fully understands, so
 //! this grammar accepts what reads the same in `sh`, `bash` and `zsh` and
-//! rejects everything else: no expansion (`$`, backticks, globs, `~`, braces,
-//! history), no grouping, no input redirection, no background job, no
-//! sequencing other than `&&`, `|| true` and pipes. Words may be single
-//! quoted, double quoted (without `$`, backticks or backslashes inside) or
-//! escaped with a backslash. The only redirections are `2>&1` and output or
-//! error to `/dev/null`. A rejected command is left to the host untouched.
+//! rejects everything else: no expansion (`$`, backticks, globs, a `~` that
+//! would expand, braces, history), no grouping, no input redirection, no
+//! background job, no sequencing other than `&&`, `|| true` and pipes. Words
+//! may be single quoted, double quoted (without `$` or backticks inside, and
+//! with a backslash only before an ordinary character, where it is literal)
+//! or escaped with a backslash. A `~` inside a word (`HEAD~1`) is literal. The
+//! only redirections are `2>&1` and output or error to `/dev/null`. A
+//! rejected command is left to the host untouched.
 
 /// A redirection the grammar accepts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -110,10 +112,15 @@ fn lex(command: &str) -> Option<Vec<Token>> {
             '"' => {
                 let end = chars[i + 1..].iter().position(|&c| c == '"')? + i + 1;
                 let inner = &chars[i + 1..end];
-                if inner
-                    .iter()
-                    .any(|c| matches!(c, '$' | '`' | '\\' | '\n' | '\r'))
-                {
+                if inner.iter().any(|c| matches!(c, '$' | '`' | '\n' | '\r')) {
+                    return None;
+                }
+                // A backslash stays literal before an ordinary character
+                // (`"\d+"`); before `"` or `\` it escapes, which this
+                // scanner does not model.
+                if inner.iter().enumerate().any(|(k, &c)| {
+                    c == '\\' && inner.get(k + 1).is_none_or(|n| matches!(n, '"' | '\\'))
+                }) {
                     return None;
                 }
                 word.extend(inner);
@@ -200,8 +207,12 @@ fn lex(command: &str) -> Option<Vec<Token>> {
                 }
                 tokens.push(Token::Redirect(redirect));
             }
-            '\n' | '\r' | ';' | '<' | '(' | ')' | '{' | '}' | '$' | '`' | '*' | '?' | '[' | '~'
-            | '!' => return None,
+            // A tilde expands at the start of a word and after the `=` or `:`
+            // of an assignment-like word; anywhere else (`HEAD~1`) it is literal.
+            '~' if !started || matches!(word.chars().last(), Some('=' | ':')) => return None,
+            '\n' | '\r' | ';' | '<' | '(' | ')' | '{' | '}' | '$' | '`' | '*' | '?' | '[' | '!' => {
+                return None;
+            }
             '#' | '=' if !started => return None,
             c => {
                 word.push(c);
@@ -345,6 +356,13 @@ mod tests {
                 &[&["rg", "-e", "a|b", "--glob", "*.rs"]],
             ),
             ("rg 'x#y' a#b", &[&["rg", "x#y", "a#b"]]),
+            // A tilde inside a word is literal; only a leading one expands.
+            ("git diff HEAD~1", &[&["git", "diff", "HEAD~1"]]),
+            ("git log main~3..HEAD~", &[&["git", "log", "main~3..HEAD~"]]),
+            // Inside double quotes a backslash before an ordinary character
+            // is itself literal.
+            ("rg \"\\d+\" src", &[&["rg", "\\d+", "src"]]),
+            ("grep -E \"a\\.b\" x", &[&["grep", "-E", "a\\.b", "x"]]),
         ];
         for (command, expected) in cases {
             let script = parse(command).unwrap_or_else(|| panic!("rejected: {command}"));
@@ -390,6 +408,14 @@ mod tests {
             "ls file?.txt",
             "ls [ab].txt",
             "ls ~/x",
+            "cd ~",
+            "ls ~user",
+            "echo a=~/x",
+            "PATH=a:~/b cmd",
+            "echo \"a\\$b\"",
+            "echo \"a\\`b\"",
+            "echo \"a\\\\b\"",
+            "echo \"a\\\"",
             "echo {a,b}",
             "(cd x && make)",
             "! cargo test",
