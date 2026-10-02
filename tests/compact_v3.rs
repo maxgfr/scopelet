@@ -85,14 +85,64 @@ fn oversized_lines_are_cut_behind_a_marker_and_recovered_exactly() {
     assert_eq!(original(dir.path(), &text), raw.as_bytes());
 }
 
+/// A JSON record is never split, but a document no whole record of which
+/// fits (one large object) is shown by its source lines instead of passing
+/// through whole: labels are absolute lines of the original text.
 #[test]
-fn oversized_json_records_are_never_split() {
+fn oversized_json_records_fall_back_to_lines() {
     let dir = tempfile::tempdir().unwrap();
-    let raw = serde_json::json!({"value":"x".repeat(50000)}).to_string();
+    let pods: Vec<_> = (0..300)
+        .map(|i| {
+            let state = if i == 141 {
+                "CrashLoopBackOff"
+            } else {
+                "Running"
+            };
+            serde_json::json!({"name": format!("api-{i}"), "restarts": i % 3, "state": state})
+        })
+        .collect();
+    let raw =
+        serde_json::to_string_pretty(&serde_json::json!({"kind": "List", "items": pods})).unwrap();
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    assert!(text.contains("\"CrashLoopBackOff\""), "{text}");
+    assert!(
+        text.lines().nth(1).unwrap().starts_with("input:1"),
+        "{text}"
+    );
+    assert!(!text.contains("#record="), "{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+
+    // A minified document is one line: it is cut behind a marker.
+    let raw = serde_json::json!({"title": "keep me", "value": "x".repeat(50000)}).to_string();
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    assert!(text.contains("input:1 text_truncated bytes="), "{text}");
+    assert!(text.contains("\"title\":\"keep me\""), "{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
+/// Selection memory grows with the line count, so automatic compression has
+/// a line limit: compact-v3 compresses up to 250000 lines, earlier versions
+/// keep their 100000.
+#[test]
+fn automatic_line_limit_is_higher_for_v3_only() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw: String = (0..150_000)
+        .map(|i| format!("{i} ok\n"))
+        .chain(std::iter::once("error: late failure\n".to_owned()))
+        .collect();
+    let v3 = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    assert!(v3.contains("error: late failure"), "{v3}");
+    for version in [Version::V1, Version::V2] {
+        let output =
+            compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 4096, version)
+                .unwrap();
+        assert_eq!(output.as_ref(), raw.as_bytes());
+    }
+    let over: String = "ok\n".repeat(compress::V3_MAX_LINES + 1);
     let output =
-        compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 4096, Version::V3)
+        compress::automatic_lazy(over.as_bytes(), Some(dir.path().into()), 4096, Version::V3)
             .unwrap();
-    assert_eq!(output.as_ref(), raw.as_bytes());
+    assert_eq!(output.as_ref(), over.as_bytes());
 }
 
 #[test]

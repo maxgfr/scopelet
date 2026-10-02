@@ -10,6 +10,13 @@ type HashSet<K> = foldhash::HashSet<K>;
 
 pub const DEFAULT_BUDGET: usize = 4096;
 pub const SMALL: usize = 2048;
+/// Line limit of automatic compression in v1/v2 and of explicit compact
+/// queries: selection memory grows with the number of units.
+pub const MAX_LINES: usize = 100_000;
+/// Compact-v3's lighter units keep the peak resident size of automatic
+/// compression under 128 MB up to this many lines (measured with
+/// `bench/performance.py --stress`).
+pub const V3_MAX_LINES: usize = 250_000;
 
 // Compact-v3 tuning. These are judgement calls, not derived constants: they
 // were chosen to behave well on the shared fixtures in `bench/content.py` and
@@ -155,7 +162,12 @@ fn automatic_with(
         (1024..=1024 * 1024).contains(&budget),
         "max_bytes must be 1024..1048576"
     );
-    if bytes.len() <= SMALL || memchr::memchr_iter(b'\n', bytes).count() > 100_000 {
+    let max_lines = if version == Version::V3 {
+        V3_MAX_LINES
+    } else {
+        MAX_LINES
+    };
+    if bytes.len() <= SMALL || memchr::memchr_iter(b'\n', bytes).count() > max_lines {
         return Ok(Cow::Borrowed(bytes));
     }
     // Existing Scopelet output and host previews are never compressed again.
@@ -171,7 +183,7 @@ fn automatic_with(
     };
     data.notes
         .push("Bytes supplied to the compressor; completeness before capture is unknown.".into());
-    let (mut result, shown) = view(&data, PLACEHOLDER, budget, version)?;
+    let (mut result, shown) = view(&data, PLACEHOLDER, budget, version, Some(text), max_lines)?;
     if shown == 0 || result.len() + 512 > bytes.len() || result.len() * 5 > bytes.len() * 4 {
         return Ok(Cow::Borrowed(bytes));
     }
@@ -203,7 +215,7 @@ pub fn compact_version(
     budget: usize,
     version: Version,
 ) -> Result<String> {
-    let (mut text, _) = view(data, PLACEHOLDER, budget, version)?;
+    let (mut text, _) = view(data, PLACEHOLDER, budget, version, None, MAX_LINES)?;
     let id = store.put_json(data)?;
     let end = text.find('\n').unwrap() + 1;
     text.replace_range(..end, &header(data, &id, version));
@@ -1181,11 +1193,43 @@ fn select(units: &[Unit<'_>], available: usize) -> Vec<usize> {
         .collect()
 }
 
+/// Compact-v3 selection and rendering, spending what range blocks save.
+fn fill_v3(units: &[Unit<'_>], available: usize) -> (String, Vec<usize>) {
+    let plan = Tiers::new(units);
+    let mut selected = select_v3(units, &plan, available, available);
+    let mut body = String::new();
+    render_v3(units, &selected, &mut body);
+    // Range blocks cost less than the per-line labels selection counted.
+    // Spend that slack on more evidence, re-measuring the rendered bytes
+    // each time and keeping only a pass that still fits the budget.
+    let mut extra = 0;
+    for _ in 0..REFILL_PASSES {
+        let slack = available.saturating_sub(body.len());
+        if slack == 0 {
+            break;
+        }
+        let more = select_v3(units, &plan, available + extra + slack, available);
+        let mut extended = String::new();
+        render_v3(units, &more, &mut extended);
+        if more.len() <= selected.len() || extended.len() > available {
+            break;
+        }
+        extra += slack;
+        selected = more;
+        body = extended;
+    }
+    (body, selected)
+}
+
+/// `original` is the text the records were parsed from, when there is one:
+/// compact-v3 shows it line by line when no whole JSON record fits.
 fn view(
     data: &Dataset,
     artifact: &str,
     budget: usize,
     version: Version,
+    original: Option<&str>,
+    max_units: usize,
 ) -> Result<(String, usize)> {
     ensure!(
         (512..=1024 * 1024).contains(&budget),
@@ -1203,8 +1247,8 @@ fn view(
         })
         .unwrap_or(usize::MAX);
     ensure!(
-        count <= 100_000,
-        "compact input exceeds 100000 units; use an explicit query"
+        count <= max_units,
+        "compact input exceeds {max_units} units; use an explicit query"
     );
     let mut output = header(data, artifact, version);
     // V3 reserves exactly the widest footer it can emit; earlier versions keep
@@ -1264,28 +1308,33 @@ fn view(
         units = self::units(data, available, version);
     }
     let selected = if version == Version::V3 {
-        let plan = Tiers::new(&units);
-        let mut selected = select_v3(&units, &plan, available, available);
-        let mut body = String::new();
-        render_v3(&units, &selected, &mut body);
-        // Range blocks cost less than the per-line labels selection counted.
-        // Spend that slack on more evidence, re-measuring the rendered bytes
-        // each time and keeping only a pass that still fits the budget.
-        let mut extra = 0;
-        for _ in 0..REFILL_PASSES {
-            let slack = available.saturating_sub(body.len());
-            if slack == 0 {
-                break;
-            }
-            let more = select_v3(&units, &plan, available + extra + slack, available);
-            let mut extended = String::new();
-            render_v3(&units, &more, &mut extended);
-            if more.len() <= selected.len() || extended.len() > available {
-                break;
-            }
-            extra += slack;
-            selected = more;
-            body = extended;
+        let (body, selected) = fill_v3(&units, available);
+        if selected.is_empty()
+            && let Some(text) = original
+            && data.records.iter().any(|r| r.value.is_some())
+        {
+            // No whole JSON record fits: show the document by its source
+            // lines, which keep absolute labels into the same original.
+            let lines = clean::line_count(text);
+            let record = Record {
+                source: "input".into(),
+                blob: data.records[0].blob.clone(),
+                start_line: Some(1),
+                end_line: Some(lines),
+                text: text.to_owned(),
+                value: None,
+                omitted_lines: None,
+                text_truncated: false,
+            };
+            let available = budget.saturating_sub(output.len() + footer(lines).len());
+            let mut seen = Seen::default();
+            let mut units = Vec::new();
+            text_units_v3(&record, available, &mut seen, &mut units);
+            let (body, selected) = fill_v3(&units, available);
+            output.push_str(&body);
+            output.push_str(&footer(units.len() - selected.len()));
+            ensure!(output.len() <= budget, "compact metadata exceeds budget");
+            return Ok((output, selected.len()));
         }
         output.push_str(&body);
         selected

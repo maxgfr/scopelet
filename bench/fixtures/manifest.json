@@ -64,16 +64,16 @@
   },
   "kubectl_json": {
     "profile": null,
-    "min_reduction": null,
+    "min_reduction": 92,
     "visible": true,
-    "facts": ["CrashLoopBackOff", "\"restartCount\": 14"],
+    "facts": ["CrashLoopBackOff", "\"ready\": false"],
     "pending_facts": []
   },
   "gh_api": {
     "profile": null,
-    "min_reduction": null,
+    "min_reduction": 84,
     "visible": true,
-    "facts": ["\"mergeable_state\":\"dirty\"", "\"title\":\"Rotate tokens before expiry\""],
+    "facts": ["\"title\":\"Rotate tokens before expiry\""],
     "pending_facts": []
   },
   "service_log": {

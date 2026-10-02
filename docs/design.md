@@ -117,9 +117,10 @@ back to text selection and never asserts an exact aggregate.
 Automatic inputs up to 2048 bytes remain unchanged. Larger inputs have a 4096
 byte target per stream and need both 512 bytes and 20% savings including all
 metadata before replacement. Non-UTF-8 input, existing Scopelet output and host
-persisted-output previews remain unchanged. Inputs over 100000 lines bypass
-automatic compression to bound selection memory; explicit compact queries reject
-more than 100000 units. Byte thresholds are not tokenizer or session savings.
+persisted-output previews remain unchanged. Inputs over 100000 lines (250000
+in compact-v3, whose lighter units keep the peak resident size under 128 MB at
+that count with a full 32 MiB stream) bypass automatic compression to bound
+selection memory; explicit compact queries reject more than 100000 units. Byte thresholds are not tokenizer or session savings.
 The original capture limit remains 32 MiB per stream. Capture incompleteness is
 reported outside the compressed view; a hook only retains bytes supplied by its
 host and cannot recover an earlier truncation.
@@ -236,7 +237,10 @@ the number of lines, so `input:N` labels stay absolute and `expand --find`
 still searches the original bytes. A single line larger than the budget is cut
 on a character boundary behind `text_truncated bytes=N`, where N is the
 original line length without its terminator, so a giant line no longer forces
-the whole stream through unchanged. JSON records are still never split.
+the whole stream through unchanged. JSON records are still never split; when
+no whole record of an automatically compressed JSON document fits (one large
+object), v3 selects its source lines instead, with absolute `input:N` labels
+into the same original, rather than passing the document through.
 
 Repetitions fold wherever they occur. `input:a-b repeat=N` (N = b−a+1) is a
 contiguous run of one text; `input:a repeat=N last=b` (N < b−a+1) is the same
