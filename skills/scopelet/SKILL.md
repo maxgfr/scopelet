@@ -23,15 +23,17 @@ scopelet query --file events.jsonl --format jsonl --filter /status --equals '"fa
 scopelet run --auto -- npm test
 ```
 
-Unknown JSON fields: inspect at most 2 KiB first. `--find` is literal.
-Read [queries.md](references/queries.md) for regex, composed operations,
-structured data or recovery. Partial results cannot establish absence or an
-exhaustive count. Recover exact source bytes before editing abridged evidence.
+Unknown JSON fields: inspect at most 2 KiB first. `--find` is literal unless
+`--regex`. Recover views: `scopelet expand last --find TEXT` (or the artifact,
+or 8+ hex of it). Read [queries.md](references/queries.md) for composed
+operations, structured data or recovery. Partial results cannot establish
+absence or an exhaustive count. Recover exact source bytes before editing
+abridged evidence.
 
 `scopelet mode default|caveman|off` controls installed hooks and response style.
-Caveman uses minimal telegraphic replies while preserving necessary information;
-saved documents use normal prose. `--mode ultra` separately abridges CLI views.
-Read [setup.md](references/setup.md) for automatic installation, host coverage,
-mode details, failures or optional adapters. Byte savings are not session savings.
+Caveman: terse replies keeping necessary information; documents use normal
+prose. `--mode ultra` separately abridges CLI views. Read
+[setup.md](references/setup.md) for installation, hosts, modes, failures or
+adapters. Byte savings are not session savings.
 
 MIT · [maxgfr / support](https://github.com/maxgfr/scopelet/issues).

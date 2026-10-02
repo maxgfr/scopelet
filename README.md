@@ -253,14 +253,18 @@ Every view links the artifact that holds the original bytes. Reading them back
 does not involve the model.
 
 ```sh
-scopelet expand artifact:HASH --find 'Received:' --context 3
+scopelet expand last --find 'Received:' --context 3
+scopelet expand 3f9c2d1e --find 'panick(ed)? at' --regex --ignore-case
 scopelet expand artifact:HASH --manifest
 scopelet expand blob:HASH --start 240 --end 260
 scopelet expand blob:HASH --raw > original.log
 ```
 
-Artifact IDs hash the complete dataset and blob IDs hash the original bytes, so
-recovery is byte-exact or it fails loudly. `--find` searches the saved
+`last` is the latest automatic view; any unique prefix of 8 hex characters or
+more names an artifact or original. A large original comes back a page of
+lines at a time, with `next_start` for the next one. Artifact IDs hash the
+complete dataset and blob IDs hash the original bytes, so recovery is
+byte-exact or it fails loudly. `--find` searches the saved
 originals, including evidence a query had already filtered out. A partial view
 cannot prove absence or an exhaustive count: recover the exact bytes before
 editing something you only saw a summary of.
@@ -294,15 +298,23 @@ and document extraction. Files, logs, JSON and repository queries need neither.
 
 ## What gets compressed
 
-Codex hooks wrap recognized noninteractive shell commands, including tests,
-builds, Python scripts and simple eligible `&&` chains. Claude Code hooks
-replace Bash output when the host supplies a supported result shape. The
-OpenCode plugin replaces the `bash` tool's output from `tool.execute.after`
-under the same thresholds. Other tools, unsupported shell syntax, existing
-output wrappers and outputs the host has already persisted all pass through
-untouched. Small automatic outputs skip
-cache setup entirely, and Codex leaves a plain `cat` of a known regular file up
-to 2 KiB native.
+Codex hooks wrap recognized noninteractive commands (tests, builds, linters,
+searches, Git history, logs, file reads), parsed in a small shell subset that
+understands quotes, `2>&1`, `cd DIR &&`, `&&`, `|| true` and pipes into
+read-only filters. A wrapped command still goes through Codex's own approval.
+Claude Code hooks replace Bash output when the host supplies a supported result
+shape. The OpenCode plugin replaces the `bash` tool's output from
+`tool.execute.after` under the same thresholds. Other tools, MCP results,
+unsupported shell syntax, existing output wrappers and outputs the host has
+already persisted all pass through untouched.
+
+Each recognized command gets a budget that fits what its output is for: 4 KiB
+for tests, 8 KiB for searches, Git and logs, 16 KiB for file reads, which stay
+whole up to 16 KiB so an ordinary source file is read as written. Small
+automatic outputs never open the cache store. A local journal, never
+transmitted, records each decision; `scopelet stats` shows compressions, bytes
+saved, why outputs passed through and how often a view was expanded
+(`SCOPELET_EVENTS=0` turns it off).
 
 Inside a view, `compact-v3` reads each line the way a terminal would, dropping
 colour codes and keeping only the final state of a progress bar. Then:
@@ -363,8 +375,8 @@ npx skills remove scopelet --global -a codex claude-code opencode -y
 ```
 
 Uninstall preserves configuration backups and cached originals. Clean old
-artifacts separately with `clean --older-days 7`; references expire when their
-snapshots are removed.
+artifacts separately with `clean --older-days 7`, and cap the cache with
+`--max-size 500M`; references expire when their snapshots are removed.
 [Paths, backups and cleanup](skills/scopelet/references/setup.md).
 
 ## License

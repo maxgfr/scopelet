@@ -132,7 +132,10 @@ long output before the plugin sees it and writes the whole result to its
 `expand` recovers what OpenCode handed over and the file holds the rest.
 Claude Code uses `PostToolUse.updatedToolOutput` for Bash results with known
 stdout/stderr fields. Other fields survive unchanged. Failure events without a
-replaceable output, images and unknown envelopes pass through. Codex uses
+replaceable output, images and unknown envelopes pass through. MCP tool results
+pass through too: Claude Code's hook documentation does not say how a
+PostToolUse replacement applies to an MCP result's content, and Scopelet does
+not rely on unverified behavior. Codex uses
 `PreToolUse.updatedInput` for recognized Bash calls: cargo test/check/clippy/build,
 pytest, python3 scripts, package-manager tests and single-file cat. Quoted
 arguments, `2>&1`, `cd DIR &&`, `&&`, `|| true`, display and test variable
@@ -141,9 +144,13 @@ expansions, other control operators, interactive flags and existing wrappers
 pass through. This is not interception of all host tools or conversation history.
 Codex's hook requires its documented `allow` rewrite decision; it does not set
 sandbox, escalation, permission rules or permission mode. Checked against the
-Codex 0.160 source: `allow` only carries the rewritten input, which then goes
-through Codex's normal approval and sandbox policy, so wrapping a command
-never skips a prompt the native command would have needed. Other policy hooks
+Codex 0.160 source, then with its own test harness (mock model, no network):
+`allow` only carries the rewritten input, which then goes through Codex's
+normal approval and sandbox policy. Under an untrusted policy, and for an
+escalated on-request call, the rewritten command raised the approval prompt and
+did not run before it was answered; only a `PermissionRequest` hook approves a
+call. Wrapping a command never skips a prompt the native command would have
+needed. Other policy hooks
 must remain enabled. Interactive commands should always use native tools.
 
 Small automatic outputs do not open the cache. Codex leaves a plain `cat` of a

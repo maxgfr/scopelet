@@ -22,7 +22,9 @@ Java, Jest, ESLint, Git diffs and logs, kubectl and gh JSON, a service log, rg
 with context and two Rust sources), described by `fixtures/manifest.json`:
 facts that must be visible, a minimum reduction (`null` means the output must
 pass through), and pending facts that a planned change should reveal, which
-are reported but not enforced. `tests/content_gate.rs` reads the same files.
+are reported but not enforced. Each real output is compressed with its
+manifest profile (`--profile`), as the hooks would. `tests/content_gate.rs`
+reads the same files.
 For every fixture it records bytes in and out, cold and warm timings,
 whether every fact is visible in the view, and whether the original bytes come
 back through the artifact manifest and source blob. It exits non-zero when a
