@@ -196,7 +196,22 @@ fn termination_signals_cancel_a_wrapped_command() {
             .stderr(std::process::Stdio::null())
             .spawn()
             .unwrap();
-        thread::sleep(Duration::from_millis(500));
+        // The handler is installed before the command starts: once `sleep`
+        // runs under the binary, a signal can no longer kill it unhandled.
+        let ready = Instant::now();
+        while !Command::new("pgrep")
+            .args(["-P", &child.id().to_string(), "sleep"])
+            .output()
+            .unwrap()
+            .status
+            .success()
+        {
+            assert!(
+                ready.elapsed() < Duration::from_secs(10),
+                "the wrapped command never started"
+            );
+            thread::sleep(Duration::from_millis(20));
+        }
         unsafe { libc::kill(child.id() as i32, signal) };
         let start = Instant::now();
         let status = loop {
