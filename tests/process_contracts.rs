@@ -68,14 +68,17 @@ fn cap_discards_excess_without_preventing_command_side_effects() {
 fn timeout_allows_term_handler_then_returns_124() {
     let dir = tempfile::tempdir().unwrap();
     let marker = dir.path().join("term-received");
-    let mut command = Command::new("python3");
+    // A shell installs its trap within milliseconds. An interpreter could
+    // still be starting when the timeout fires on a loaded machine, and die
+    // from the signal before its handler existed.
+    let mut command = Command::new("sh");
     command.args([
         "-c",
-        "import signal,time,sys; signal.signal(signal.SIGTERM,lambda *_: (open(sys.argv[1],'w').write('term'),sys.exit(0))); time.sleep(30)",
+        "trap 'printf term > \"$0\"; exit 0' TERM; while :; do sleep 1; done",
         marker.to_str().unwrap(),
     ]);
     let start = Instant::now();
-    let result = capture(command, Duration::from_millis(500), 1024);
+    let result = capture(command, Duration::from_secs(1), 1024);
     assert_eq!(process::exit_code(&result), 124);
     assert!(result.timed_out);
     assert!(!result.interrupted);
