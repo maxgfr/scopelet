@@ -40,6 +40,12 @@ def pending_facts():
     return {name: spec['pending_facts'] for name, spec in file_fixtures().items() if spec['pending_facts']}
 
 
+def source_form(fact):
+    """A fact in range-block notation (lines after a newline indented by one
+    space) names the source lines without that indent."""
+    return fact.replace('\n ', '\n')
+
+
 def fixtures():
     return {**synthetic_fixtures(),
             **{name: (spec['bytes'], spec['facts']) for name, spec in file_fixtures().items()}}
@@ -134,7 +140,7 @@ def measure(binary, out, warmups, repetitions):
                     **summarize(samples), 'samples': samples, 'output_bytes': len(output),
                     'byte_reduction_percent': 100 * (1 - len(output) / len(original)),
                     'facts_visible': visible,
-                    'facts_available_after_recovery': [v or bool(recovered and fact.encode() in recovered) for v, fact in zip(visible, facts)],
+                    'facts_available_after_recovery': [v or bool(recovered and source_form(fact).encode() in recovered) for v, fact in zip(visible, facts)],
                     'original_byte_roundtrip_verified': exact}
                 if name in pending:
                     case['states'][state]['pending_facts_visible'] = [

@@ -538,6 +538,9 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
             .collect()
     };
     let (mut strong, mut weak) = (Bits::new(n), Bits::new(n));
+    // Trivial lines (`}`, a blank line, a `|` gutter) carry no evidence of
+    // their own: they stay where they are, between the lines they separate.
+    let mut trivial = Bits::new(n);
     for i in 0..n {
         let origin = first[i] as usize;
         if origin == i {
@@ -545,6 +548,8 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
                 strong.set(i);
             } else if WEAK.is_match(&views[i]) {
                 weak.set(i);
+            } else if is_trivial(&views[i]) {
+                trivial.set(i);
             }
         } else {
             if strong.get(origin) {
@@ -552,6 +557,9 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
             }
             if weak.get(origin) {
                 weak.set(i);
+            }
+            if trivial.get(origin) {
+                trivial.set(i);
             }
         }
     }
@@ -570,14 +578,46 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     // Diagnostics group by exact text: their variable parts (counters, ids)
     // are evidence and stay visible. Other lines group by template.
     let mut groups: Vec<Group> = Vec::new();
-    let mut owner: Vec<u32> = Vec::with_capacity(n);
+    let mut owner: Vec<u32> = vec![NONE; n];
     // The group of each first occurrence; repetitions look it up by index.
     let mut slot_of_first: Vec<u32> = vec![NONE; n];
     let mut by_template: HashMap<String, u32> = HashMap::default();
     // One reusable buffer: a template key is only copied when it is new, so a
     // scan over many same-shaped lines allocates once, not once per line.
     let mut key = String::new();
+    fn join(
+        groups: &mut Vec<Group>,
+        first: &[u32],
+        slot: u32,
+        i: usize,
+        context: bool,
+        nearby: bool,
+    ) {
+        if slot as usize == groups.len() {
+            groups.push(Group {
+                first: i as u32,
+                last: i as u32,
+                count: 1,
+                exact: true,
+                context,
+                nearby,
+            });
+        } else {
+            let group = &mut groups[slot as usize];
+            group.last = i as u32;
+            group.count += 1;
+            group.exact &= first[group.first as usize] == first[i];
+            group.context |= context;
+            group.nearby |= nearby;
+        }
+    }
+    // A few repetitions inside a diagnostic's context stay in source order;
+    // massive repetition folds wherever it is.
+    let folds = |g: &Group| g.count > 1 && (!g.context || g.count as usize >= FOLD_IN_CONTEXT);
     for (i, view) in views.iter().enumerate() {
+        if trivial.get(i) {
+            continue;
+        }
         // Identical text always shares a group, and identical text has an
         // identical template, so a repetition skips building one. On a log of
         // repeated lines that is every line after the first.
@@ -599,33 +639,57 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
             slot_of_first[i] = slot;
             slot
         };
-        if slot as usize == groups.len() {
-            groups.push(Group {
-                first: i as u32,
-                last: i as u32,
-                count: 1,
-                exact: true,
-                context: context.get(i),
-                nearby: nearby.get(i),
-            });
-        } else {
-            let group = &mut groups[slot as usize];
-            group.last = i as u32;
-            group.count += 1;
-            group.exact &= first[group.first as usize] as usize == origin;
-            group.context |= context.get(i);
-            group.nearby |= nearby.get(i);
-        }
-        owner.push(slot);
+        join(&mut groups, &first, slot, i, context.get(i), nearby.get(i));
+        owner[i] = slot;
     }
     drop(by_template);
+    // A nontrivial line is shown in place unless it folds into an earlier
+    // occurrence. A trivial line next to one (ignoring other trivial lines)
+    // is glued: it stays where it is. One between lines shown elsewhere has
+    // nothing to hold together and folds by exact text, as any other line.
+    let in_place = |i: usize| {
+        let group = &groups[owner[i] as usize];
+        !folds(group) || group.first as usize == i
+    };
+    let mut glued = Bits::new(n);
+    for order in [true, false] {
+        let mut beside = false;
+        let lines: Box<dyn Iterator<Item = usize>> = if order {
+            Box::new(0..n)
+        } else {
+            Box::new((0..n).rev())
+        };
+        for i in lines {
+            if !trivial.get(i) {
+                beside = in_place(i);
+            } else if beside {
+                glued.set(i);
+            }
+        }
+    }
+    for i in 0..n {
+        if !trivial.get(i) {
+            continue;
+        }
+        let origin = first[i] as usize;
+        let slot = if glued.get(i) {
+            // Only a contiguous run of the same glued text folds.
+            if i > 0 && glued.get(i - 1) && first[i - 1] == first[i] {
+                owner[i - 1]
+            } else {
+                groups.len() as u32
+            }
+        } else if slot_of_first[origin] != NONE {
+            slot_of_first[origin]
+        } else {
+            slot_of_first[origin] = groups.len() as u32;
+            groups.len() as u32
+        };
+        join(&mut groups, &first, slot, i, context.get(i), nearby.get(i));
+        owner[i] = slot;
+    }
     drop(slot_of_first);
-    // A few repetitions inside a diagnostic's context stay in source order;
-    // massive repetition folds wherever it is.
-    let folds: Vec<bool> = groups
-        .iter()
-        .map(|g| g.count > 1 && (!g.context || g.count as usize >= FOLD_IN_CONTEXT))
-        .collect();
+    let folds: Vec<bool> = groups.iter().map(folds).collect();
     let folded: usize = groups
         .iter()
         .zip(&folds)
@@ -638,6 +702,16 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
     // are emitted in increasing line order, so one forward cursor serves all.
     let mut raw_lines = record.text.split_inclusive('\n');
     let mut raw_at = 0;
+    // The priority of the unit showing each nontrivial line in place, so a
+    // glued unit can take its neighbours' once every unit is known. A line
+    // folded into an earlier occurrence is `AWAY`: nothing glues to it.
+    const TRIVIAL: u8 = u8::MAX;
+    const AWAY: u8 = u8::MAX - 1;
+    let mut line_priority: Vec<u8> = (0..n)
+        .map(|i| if trivial.get(i) { TRIVIAL } else { AWAY })
+        .collect();
+    // (unit index, first line, last line) of each glued unit.
+    let mut trivial_units: Vec<(usize, usize, usize)> = Vec::new();
     let mut i = 0;
     while i < n {
         let slot = owner[i] as usize;
@@ -664,6 +738,9 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         };
         let priority = if first_line == 0 || last + 1 == n {
             4
+        } else if glued.get(i) {
+            trivial_units.push((units.len(), first_line, last));
+            TRIVIAL
         } else if strong.get(i) {
             // The first diagnostic of each template, then its variants.
             if first_of_template(&mut seen.strong, &views[i], &mut key) {
@@ -677,7 +754,7 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
             } else {
                 1
             }
-        } else if group.count == 1 && mostly_folded {
+        } else if group.count == 1 && mostly_folded && !trivial.get(i) {
             // The rare line among folded noise is what the reader is after.
             2
         } else if context.get(first_line) || FRAME.is_match(&views[i]) {
@@ -707,8 +784,47 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
             line
         };
         units.push(Unit::text_v3(record, label, view, raw, priority, limit));
+        if !trivial.get(i) {
+            let shown = if folds[slot] { i..=i } else { i..=last };
+            line_priority[shown].fill(priority);
+        }
         i = if folds[slot] { i + 1 } else { last + 1 };
     }
+    // A glued unit ranks with the lower of its neighbours shown in place: it
+    // is shown when both lines it separates are, so retained code keeps its
+    // braces and blank lines and reads as one block.
+    let carried = |carry: &mut Option<u8>, priority: u8| match priority {
+        TRIVIAL => {}
+        AWAY => *carry = None,
+        priority => *carry = Some(priority),
+    };
+    let mut before = vec![None; trivial_units.len()];
+    let (mut k, mut carry) = (0, None);
+    for (line, &priority) in line_priority.iter().enumerate() {
+        while k < trivial_units.len() && trivial_units[k].1 == line {
+            before[k] = carry;
+            k += 1;
+        }
+        carried(&mut carry, priority);
+    }
+    let (mut k, mut carry) = (trivial_units.len(), None);
+    for (line, &priority) in line_priority.iter().enumerate().rev() {
+        while k > 0 && trivial_units[k - 1].2 == line {
+            k -= 1;
+            let (unit, ..) = trivial_units[k];
+            units[unit].priority = match (before[k], carry) {
+                (Some(a), Some(b)) => a.min(b),
+                (Some(p), None) | (None, Some(p)) => p,
+                (None, None) => 0,
+            };
+        }
+        carried(&mut carry, priority);
+    }
+}
+
+/// At most three visible characters: a closing brace, a blank line, a gutter.
+fn is_trivial(line: &str) -> bool {
+    line.chars().filter(|c| !c.is_whitespace()).take(4).count() <= 3
 }
 
 /// Compact-v3 selection: tiers are filled alternately from the head and the

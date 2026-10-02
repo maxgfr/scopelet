@@ -521,6 +521,65 @@ fn terminal_view(line: &str) -> String {
         .to_owned()
 }
 
+/// The displayed text of a unit line, after its label and metadata tokens.
+fn shown_text(line: &str) -> Option<&str> {
+    let (label, mut body) = line.split_once(' ')?;
+    if !label.starts_with("input:") {
+        return None;
+    }
+    while let Some((token, rest)) = body.split_once(' ') {
+        if ["repeat=", "similar=", "last="]
+            .iter()
+            .any(|name| token.starts_with(name))
+        {
+            body = rest;
+        } else {
+            break;
+        }
+    }
+    Some(body)
+}
+
+/// Reading source code is the common case that folding hurt: closing braces
+/// and blank lines folded into one far-away `repeat=` unit, so no function
+/// could be read whole. Trivial lines stay where they are, and the retained
+/// code reads as contiguous blocks.
+#[test]
+fn a_code_read_keeps_its_braces_and_blank_lines_in_place() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/bench/fixtures/rust_large.txt"
+    ))
+    .unwrap();
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    for line in text.lines().filter(|l| l.contains(" last=")) {
+        let shown = shown_text(line).unwrap();
+        assert!(
+            shown.chars().filter(|c| !c.is_whitespace()).count() > 3,
+            "trivial line folded away from its place: {line:?} in:\n{text}"
+        );
+    }
+    assert!(
+        text.contains("\n }\n"),
+        "no closing brace in a block:\n{text}"
+    );
+    assert!(text.contains("\n \n"), "no blank line in a block:\n{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+
+    // A trivial line between two retained diagnostic lines stays between them.
+    let raw = format!(
+        "{}error[E0425]: cannot find value `beta`\n   |\n12 |     let total = alpha + beta;\n   |\n{}",
+        noise_lines(400),
+        noise_lines(400)
+    );
+    let text = compress_v3(dir.path(), raw.as_bytes(), 4096);
+    assert!(
+        text.contains(" error[E0425]: cannot find value `beta`\n    |\n 12 |     let total = alpha + beta;\n    |\n"),
+        "{text}"
+    );
+}
+
 /// The most common real shape: one failing test among hundreds of passes.
 /// The failure's own detail is the reason the view exists, so it must survive
 /// the passes, which fold into a single line.

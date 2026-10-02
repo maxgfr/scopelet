@@ -250,6 +250,17 @@ promoted ahead of context, because the rare line among noise is usually the
 evidence being looked for. All of these markers are metadata, never bytes
 claimed to occur in the source.
 
+A trivial line has at most three visible characters and no diagnostic (`}`,
+a blank line, a `|` gutter, an `rg` `--` separator). When the nearest
+nontrivial line on either side is shown in place (it is not folded into an
+earlier occurrence), the trivial line is glued: it never joins a distant
+copy, folds only with contiguous identical neighbours, and ranks with the
+lower priority of its in-place neighbours. It is therefore shown when the
+lines it separates are, so a read of source code keeps its braces and blank
+lines inside range blocks. A trivial line between lines shown elsewhere has
+nothing to hold together and folds by exact text like any other line; it is
+never promoted as the rare line of a mostly folded record.
+
 V3 ranks units in five tiers: the first and last line of a record; the first
 occurrence of each strong diagnostic template (`error`, `failed`, `panic`,
 `exception`, `traceback`, `fatal`, `npm ERR!`, `FAILED`, `✗`, test summaries

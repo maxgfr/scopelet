@@ -47,6 +47,10 @@ class ContentTests(unittest.TestCase):
             self.assertTrue(spec['facts'] or spec['pending_facts'], name)
             self.assertIn(spec['profile'], {None, 'tests', 'search', 'git', 'fileread', 'logs'}, name)
 
+    def test_block_notation_facts_map_to_their_source_lines(self):
+        self.assertEqual(content.source_form('\n }\n \n'), '\n}\n\n')
+        self.assertEqual(content.source_form('error: x'), 'error: x')
+
     def test_every_fixture_file_has_a_manifest_entry(self):
         stems = {path.stem for path in content.FIXTURES.glob('*.txt')}
         self.assertEqual(stems, set(content.file_fixtures()))

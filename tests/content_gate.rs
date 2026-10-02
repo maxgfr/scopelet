@@ -218,6 +218,12 @@ fn fixtures_match_the_published_benchmark_bytes() {
     }
 }
 
+/// A fact written in range-block notation (each line after a newline
+/// indented by one space) names the source lines without that indent.
+fn source_form(fact: &str) -> String {
+    fact.replace("\n ", "\n")
+}
+
 /// Pending facts missing from the view, or an error when a gate fails.
 fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<String>, String> {
     let output = compress::automatic_lazy(
@@ -283,7 +289,7 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
         return Err(format!("{name}: original bytes do not round-trip"));
     }
     for fact in &fixture.facts {
-        if !String::from_utf8_lossy(&original).contains(fact.as_str()) {
+        if !String::from_utf8_lossy(&original).contains(&source_form(fact)) {
             return Err(format!("{name}: {fact:?} lost from the original"));
         }
     }

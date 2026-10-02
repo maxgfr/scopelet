@@ -101,7 +101,7 @@
     "profile": "fileread",
     "min_reduction": 87,
     "visible": true,
-    "facts": [],
-    "pending_facts": ["pub fn install(agent: Agent, remove: bool) -> Result<Value> {", "fn simple_args(command: &str) -> Option<Vec<String>> {", "\n }\n", "\n \n"]
+    "facts": ["\n }\n", "\n \n"],
+    "pending_facts": ["pub fn install(agent: Agent, remove: bool) -> Result<Value> {", "fn simple_args(command: &str) -> Option<Vec<String>> {"]
   }
 }
