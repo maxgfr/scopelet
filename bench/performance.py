@@ -4,7 +4,7 @@
 Measures one or more Scopelet binaries on the same synthetic workloads: a 3 MB
 log, a 12,000-row JSONL table, an aggregate query, a 400-file repository search,
 a paged recovery from a stored original and, with --stress, a stream just under
-the 32 MiB capture limit. Arms alternate order every repetition so neither
+the 32 MiB capture limit and logs of 100k, 250k and 500k lines. Arms alternate order every repetition so neither
 binary always runs on a warm OS cache. Wall time and peak resident size come
 from /usr/bin/time. Every arm must produce identical bytes on every case, so a
 candidate that changes the output fails the run instead of looking faster.
@@ -54,7 +54,21 @@ def fixtures(root, stress=False):
         (root/'limit').write_text(('ordinary '+'x'*621+'\n')*53000+'error: boundary\n')
         assert (root/'limit').stat().st_size <= 32*1024*1024
         cases['limit_32m']=(['compress'],root/'limit')
+        # Line count, not bytes, bounds selection memory: distinct short lines
+        # with a rare failure, around the automatic line limit.
+        for count in MANY_LINES:
+            path=root/f'lines_{count}'
+            path.write_text(many_lines(count))
+            cases[f'many_lines_{count//1000}k']=(['compress'],path)
     return cases
+
+
+MANY_LINES=(100_000,250_000,500_000)
+
+
+def many_lines(count):
+    return ''.join(f'{i:07d} worker={i%16} processed item {i*7919%1000003} ok\n' if i!=count*2//3
+                   else f'{i:07d} worker={i%16} error: item {i} failed checksum\n' for i in range(count-1))+'done\n'
 
 
 def measure(binary, args, stdin, cache):

@@ -29,6 +29,21 @@ class SummaryTests(unittest.TestCase):
             performance.parse_arm('=path')
 
 
+class FixtureTests(unittest.TestCase):
+    def test_many_lines_have_the_requested_count_and_one_failure(self):
+        text = performance.many_lines(1000)
+        self.assertEqual(text.count('\n'), 1000)
+        self.assertEqual(text.count('error:'), 1)
+        self.assertTrue(text.endswith('done\n'))
+
+    def test_stress_adds_the_line_count_cases(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(performance, 'MANY_LINES', (1000,)):
+            stressed = performance.fixtures(Path(temp) / 'f', stress=True)
+            plain = performance.fixtures(Path(temp) / 'g')
+        self.assertIn('many_lines_1k', stressed)
+        self.assertNotIn('many_lines_1k', plain)
+
+
 class RunTests(unittest.TestCase):
     def run_arms(self, arms, outputs):
         with tempfile.TemporaryDirectory() as temp:

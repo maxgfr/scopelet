@@ -438,7 +438,7 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
     if raw.len() <= compress::SMALL || raw.len() > MAX_INPUT {
         return Ok(json!({}));
     }
-    let small = compress::automatic_lazy(raw.as_bytes(), None, 4096, version)?;
+    let small = compress::automatic_lazy(raw.as_bytes(), None, compress::DEFAULT_BUDGET, version)?;
     if small.as_ref() == raw.as_bytes() {
         return Ok(json!({}));
     }
@@ -541,7 +541,8 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             if raw.len() > MAX_INPUT {
                 return Ok(json!({}));
             }
-            let small = compress::automatic_lazy(raw.as_bytes(), None, 4096, version)?;
+            let small =
+                compress::automatic_lazy(raw.as_bytes(), None, compress::DEFAULT_BUDGET, version)?;
             if small.as_ref() != raw.as_bytes() {
                 output[stream] = json!(String::from_utf8(small.into_owned())?);
                 changed = true;

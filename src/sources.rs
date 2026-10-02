@@ -168,10 +168,24 @@ pub(crate) enum Parsed {
 
 impl Parsed {
     pub(crate) fn detected(text: String) -> Self {
+        // A JSON document can only start with one of these bytes after
+        // whitespace; anything else is text without paying for a parse.
+        let json = text
+            .bytes()
+            .find(|b| !matches!(b, b' ' | b'\t' | b'\n' | b'\r'))
+            .is_some_and(|b| {
+                matches!(
+                    b,
+                    b'{' | b'[' | b'"' | b'-' | b'0'..=b'9' | b't' | b'f' | b'n'
+                )
+            });
+        if !json {
+            return Self::Text(text);
+        }
         if let Ok(value) = serde_json::from_str(&text) {
             return Self::Json(value);
         }
-        if text.lines().count() > 1 {
+        if crate::clean::line_count(&text) > 1 {
             let rows: Result<Vec<_>, _> = text
                 .lines()
                 .enumerate()
@@ -223,7 +237,7 @@ impl Parsed {
         };
         match self {
             Self::Text(text) => vec![Record {
-                end_line: Some(text.lines().count()),
+                end_line: Some(crate::clean::line_count(&text)),
                 start_line: Some(1),
                 text,
                 ..base

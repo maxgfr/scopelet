@@ -12,6 +12,13 @@ pub(crate) fn body(line: &str) -> &str {
     line.strip_suffix('\r').unwrap_or(line)
 }
 
+/// `text.lines().count()` in one vectorized pass: one line per `\n`, plus an
+/// unterminated final line.
+pub(crate) fn line_count(text: &str) -> usize {
+    memchr::memchr_iter(b'\n', text.as_bytes()).count()
+        + usize::from(!text.is_empty() && !text.ends_with('\n'))
+}
+
 /// What a terminal would have left on screen for this line: terminal control
 /// sequences removed and only the last carriage-return overwrite kept.
 pub(crate) fn line_view(line: &str) -> Cow<'_, str> {
@@ -219,6 +226,13 @@ mod tests {
             let mut out = String::new();
             template_into(line, &mut out);
             assert_eq!(out, reference_template(line), "{line:?}");
+        }
+    }
+
+    #[test]
+    fn line_count_matches_str_lines() {
+        for text in ["", "a", "a\n", "\n", "a\nb", "a\n\n", "a\r\nb\r\n", "\n\nx"] {
+            assert_eq!(line_count(text), text.lines().count(), "{text:?}");
         }
     }
 

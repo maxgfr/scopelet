@@ -38,6 +38,10 @@ const BLOCK_MIN_LINES: usize = 3;
 const REFILL_PASSES: usize = 4;
 const PLACEHOLDER: &str =
     "artifact:0000000000000000000000000000000000000000000000000000000000000000";
+static SCOPELET_MARKER: LazyLock<memchr::memmem::Finder<'static>> =
+    LazyLock::new(|| memchr::memmem::Finder::new("[scopelet "));
+static PERSISTED_MARKER: LazyLock<memchr::memmem::Finder<'static>> =
+    LazyLock::new(|| memchr::memmem::Finder::new("<persisted-output>"));
 static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r"(?i)\b(error|failed|failure|panic|panicked|exception|traceback|warning|assertionerror|caused by|test result|tests? passed|tests? failed)\b|^\s*(FAIL|PASS|E\s+|FATAL|×|✕)").unwrap()
 });
@@ -120,15 +124,16 @@ fn automatic_with(
         (1024..=1024 * 1024).contains(&budget),
         "max_bytes must be 1024..1048576"
     );
-    if bytes.len() <= SMALL || bytes.iter().filter(|&&b| b == b'\n').count() > 100_000 {
+    if bytes.len() <= SMALL || memchr::memchr_iter(b'\n', bytes).count() > 100_000 {
+        return Ok(Cow::Borrowed(bytes));
+    }
+    // Existing Scopelet output and host previews are never compressed again.
+    if SCOPELET_MARKER.find(bytes).is_some() || PERSISTED_MARKER.find(bytes).is_some() {
         return Ok(Cow::Borrowed(bytes));
     }
     let Ok(text) = std::str::from_utf8(bytes) else {
         return Ok(Cow::Borrowed(bytes));
     };
-    if text.contains("[scopelet ") || text.contains("<persisted-output>") {
-        return Ok(Cow::Borrowed(bytes));
-    }
     let mut data = Dataset {
         records: Parsed::detected(text.to_owned()).records("input", String::new()),
         ..Dataset::default()
@@ -202,74 +207,158 @@ struct Unit<'a> {
     record: &'a Record,
     /// Displayed text of a text unit; JSON units serialize their value.
     line: Option<Cow<'a, str>>,
-    /// Label and metadata before the text, including the separating space.
-    prefix: String,
+    /// Label and metadata before the text.
+    label: Label,
+    /// Original length of a v3 line cut behind `text_truncated`; 0 when whole.
+    truncated: usize,
     size: usize,
     priority: u8,
-    /// Source line of a plain single-line unit that may join a range block.
-    block: Option<usize>,
 }
+
+/// The label in front of a unit. Compact-v3 labels are written when the unit
+/// is rendered, so building units for a large input allocates no strings.
+enum Label {
+    /// Earlier versions: the complete prefix, including the separating space.
+    Prefix(String),
+    /// `source:a`
+    Line(usize),
+    /// `source:a-b repeat=n`: n contiguous identical lines.
+    Run { a: usize, b: usize, n: usize },
+    /// `source:a repeat=n last=b`: the same text at n dispersed lines.
+    Repeat { a: usize, n: usize, b: usize },
+    /// `source:a similar=n last=b`: n lines sharing a template.
+    Similar { a: usize, n: usize, b: usize },
+}
+
 fn digits(n: usize) -> usize {
     if n == 0 { 1 } else { n.ilog10() as usize + 1 }
 }
+
+/// " text_truncated bytes=" before the original line length.
+const TRUNCATED_MARK: &str = " text_truncated bytes=";
+
 impl<'a> Unit<'a> {
     fn text(record: &'a Record, prefix: String, line: Cow<'a, str>, priority: u8) -> Self {
         let size = prefix.len() + line.len() + usize::from(!line.ends_with('\n'));
         Self {
             record,
             line: Some(line),
-            prefix,
+            label: Label::Prefix(prefix),
+            truncated: 0,
             size,
             priority,
-            block: None,
         }
     }
     /// Compact-v3 text unit; a line too large for the budget is cut on a
-    /// character boundary behind a `text_truncated bytes=N` marker.
+    /// character boundary behind a `text_truncated bytes=N` marker. `raw`
+    /// yields the source line and is only called for a line that is cut.
     fn text_v3(
         record: &'a Record,
-        label: String,
+        label: Label,
         view: Cow<'a, str>,
-        raw: &str,
+        raw: impl FnOnce() -> &'a str,
         priority: u8,
         limit: usize,
-        block: Option<usize>,
     ) -> Self {
-        let size = label.len() + 1 + view.len() + 1;
+        let label_len = label.len(&record.source);
+        let mut unit = Self {
+            record,
+            size: label_len + 1 + view.len() + 1,
+            line: None,
+            label,
+            truncated: 0,
+            priority,
+        };
         let cap = limit.min(TRUNCATED_PREFIX);
-        let prefix = format!("{label} text_truncated bytes={} ", clean::body(raw).len());
-        if size <= limit || prefix.len() + 1 >= cap {
-            return Self {
-                block,
-                ..Self::text(record, label + " ", view, priority)
-            };
+        let bytes = if unit.size > limit {
+            clean::body(raw()).len()
+        } else {
+            0
+        };
+        let prefix = label_len + TRUNCATED_MARK.len() + digits(bytes) + 1;
+        if unit.size <= limit || prefix + 1 >= cap {
+            unit.line = Some(view);
+            return unit;
         }
-        let cut = (0..=cap - prefix.len() - 1)
+        let cut = (0..=cap - prefix - 1)
             .rev()
             .find(|&i| view.is_char_boundary(i))
             .unwrap();
-        Self {
-            record,
-            line: Some(Cow::Owned(view[..cut].to_owned())),
-            size: prefix.len() + cut + 1,
-            prefix,
-            priority,
-            block: None,
+        unit.line = Some(match view {
+            Cow::Borrowed(view) => Cow::Borrowed(&view[..cut]),
+            Cow::Owned(mut view) => {
+                view.truncate(cut);
+                Cow::Owned(view)
+            }
+        });
+        unit.truncated = bytes;
+        unit.size = prefix + cut + 1;
+        unit
+    }
+    /// Source line of a plain single-line unit that may join a range block.
+    fn block(&self) -> Option<usize> {
+        match self.label {
+            Label::Line(a) if self.truncated == 0 => Some(a),
+            _ => None,
         }
     }
     fn append(&self, output: &mut String) {
         if let Some(line) = &self.line {
-            output.push_str(&self.prefix);
+            let start = output.len();
+            self.label.write(&self.record.source, output);
+            if self.truncated > 0 {
+                output.push_str(TRUNCATED_MARK);
+                output.push_str(&self.truncated.to_string());
+            }
+            if !matches!(self.label, Label::Prefix(_)) {
+                output.push(' ');
+            }
             output.push_str(line);
             if !line.ends_with('\n') {
                 output.push('\n');
             }
+            debug_assert_eq!(output.len() - start, self.size, "unit size drifted");
         } else {
             output.push_str(&self.record.source);
             output.push_str(": ");
             output.push_str(&self.record.value.as_ref().unwrap().to_string());
             output.push('\n');
         }
+    }
+}
+
+impl Label {
+    /// Byte length of the label, without the space that follows it.
+    fn len(&self, source: &str) -> usize {
+        source.len()
+            + 1
+            + match *self {
+                Self::Prefix(ref prefix) => return prefix.len(),
+                Self::Line(a) => digits(a),
+                Self::Run { a, b, n } => digits(a) + 1 + digits(b) + " repeat=".len() + digits(n),
+                Self::Repeat { a, n, b } => {
+                    digits(a) + " repeat=".len() + digits(n) + " last=".len() + digits(b)
+                }
+                Self::Similar { a, n, b } => {
+                    digits(a) + " similar=".len() + digits(n) + " last=".len() + digits(b)
+                }
+            }
+    }
+    fn write(&self, source: &str, output: &mut String) {
+        use std::fmt::Write;
+        if let Self::Prefix(prefix) = self {
+            output.push_str(prefix);
+            return;
+        }
+        output.push_str(source);
+        // Writing into a String cannot fail.
+        let _ = match *self {
+            Self::Prefix(_) => unreachable!(),
+            Self::Line(a) => write!(output, ":{a}"),
+            Self::Run { a, b, n } => write!(output, ":{a}-{b} repeat={n}"),
+            Self::Repeat { a, n, b } => write!(output, ":{a} repeat={n} last={b}"),
+            Self::Similar { a, n, b } => write!(output, ":{a} similar={n} last={b}"),
+        };
     }
 }
 
@@ -327,10 +416,10 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
             units.push(Unit {
                 record,
                 line: None,
-                prefix: String::new(),
+                label: Label::Prefix(String::new()),
+                truncated: 0,
                 size: encoding::size(value, limit).unwrap_or(limit + 1) + record.source.len() + 3,
                 priority,
-                block: None,
             });
             continue;
         }
@@ -388,64 +477,103 @@ fn units(data: &Dataset, limit: usize, version: Version) -> Vec<Unit<'_>> {
     units
 }
 
+/// Per-line flags, one bit per line: a large input keeps a bit per line and
+/// flag instead of a byte.
+struct Bits(Vec<u64>);
+impl Bits {
+    fn new(n: usize) -> Self {
+        Self(vec![0; n.div_ceil(64)])
+    }
+    fn get(&self, i: usize) -> bool {
+        self.0[i / 64] >> (i % 64) & 1 == 1
+    }
+    fn set(&mut self, i: usize) {
+        self.0[i / 64] |= 1 << (i % 64);
+    }
+    fn fill(&mut self, range: std::ops::Range<usize>) {
+        for i in range {
+            self.set(i);
+        }
+    }
+    fn any(&self, range: std::ops::RangeInclusive<usize>) -> bool {
+        range.into_iter().any(|i| self.get(i))
+    }
+}
+
 /// Compact-v3 text units work on display copies of the lines (terminal
 /// control sequences and carriage-return overwrites removed) while labels stay
 /// absolute source lines. Identical lines fold into their first occurrence
 /// wherever they are; lines without a diagnostic fold with the lines sharing
 /// their template; oversized lines are cut instead of vetoing the view.
+///
+/// Line indices are `u32` (a capture is at most 32 MiB) and flags are bits,
+/// so the working set stays near the units themselves on a large input.
 fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &mut Vec<Unit<'a>>) {
+    const NONE: u32 = u32::MAX;
     struct Group {
-        first: usize,
-        last: usize,
-        count: usize,
+        first: u32,
+        last: u32,
+        count: u32,
         /// Every member is the same text (otherwise members share a template).
         exact: bool,
         context: bool,
         nearby: bool,
     }
-    let lines: Vec<&str> = record.text.split_inclusive('\n').collect();
-    let n = lines.len();
-    let views: Vec<Cow<'a, str>> = lines.iter().map(|line| clean::line_view(line)).collect();
+    let mut views: Vec<Cow<'a, str>> = record
+        .text
+        .split_inclusive('\n')
+        .map(clean::line_view)
+        .collect();
+    let n = views.len();
     // Identical text is classified once: `first[i]` is the earliest line with
     // this exact view, and it carries the vocabulary matches and, later, the
     // group for every repetition. A log of the same line five hundred times
     // runs the diagnostic patterns once, not five hundred times.
-    let mut by_text: HashMap<&str, usize> = HashMap::default();
-    let first: Vec<usize> = views
-        .iter()
-        .enumerate()
-        .map(|(i, view)| *by_text.entry(view.as_ref()).or_insert(i))
-        .collect();
-    let mut strong = vec![false; n];
-    let mut weak = vec![false; n];
+    let first: Vec<u32> = {
+        let mut by_text: HashMap<&str, u32> = HashMap::default();
+        views
+            .iter()
+            .enumerate()
+            .map(|(i, view)| *by_text.entry(view.as_ref()).or_insert(i as u32))
+            .collect()
+    };
+    let (mut strong, mut weak) = (Bits::new(n), Bits::new(n));
     for i in 0..n {
-        if first[i] == i {
-            strong[i] = STRONG.is_match(&views[i]);
-            weak[i] = !strong[i] && WEAK.is_match(&views[i]);
+        let origin = first[i] as usize;
+        if origin == i {
+            if STRONG.is_match(&views[i]) {
+                strong.set(i);
+            } else if WEAK.is_match(&views[i]) {
+                weak.set(i);
+            }
         } else {
-            strong[i] = strong[first[i]];
-            weak[i] = weak[first[i]];
+            if strong.get(origin) {
+                strong.set(i);
+            }
+            if weak.get(origin) {
+                weak.set(i);
+            }
         }
     }
     // Context is the window around a diagnostic; head and tail lines only
     // count for priority.
-    let mut context = vec![false; n];
-    for (i, &strong) in strong.iter().enumerate() {
-        if strong {
-            context[i.saturating_sub(3)..(i + 9).min(n)].fill(true);
+    let mut context = Bits::new(n);
+    for i in 0..n {
+        if strong.get(i) {
+            context.fill(i.saturating_sub(3)..(i + 9).min(n));
         }
     }
-    let mut nearby = context.clone();
-    nearby[..n.min(3)].fill(true);
-    nearby[n.saturating_sub(5)..].fill(true);
+    let mut nearby = Bits(context.0.clone());
+    nearby.fill(0..n.min(3));
+    nearby.fill(n.saturating_sub(5)..n);
 
     // Diagnostics group by exact text: their variable parts (counters, ids)
     // are evidence and stay visible. Other lines group by template.
     let mut groups: Vec<Group> = Vec::new();
-    let mut owner = Vec::with_capacity(n);
+    let mut owner: Vec<u32> = Vec::with_capacity(n);
     // The group of each first occurrence; repetitions look it up by index.
-    let mut slot_of_first: Vec<Option<usize>> = vec![None; n];
-    let mut by_template: HashMap<String, usize> = HashMap::default();
+    let mut slot_of_first: Vec<u32> = vec![NONE; n];
+    let mut by_template: HashMap<String, u32> = HashMap::default();
     // One reusable buffer: a template key is only copied when it is new, so a
     // scan over many same-shaped lines allocates once, not once per line.
     let mut key = String::new();
@@ -453,90 +581,97 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         // Identical text always shares a group, and identical text has an
         // identical template, so a repetition skips building one. On a log of
         // repeated lines that is every line after the first.
-        let slot = if let Some(slot) = slot_of_first[first[i]] {
-            slot
-        } else if strong[i] || weak[i] {
-            slot_of_first[i] = Some(groups.len());
-            groups.len()
+        let origin = first[i] as usize;
+        let slot = if slot_of_first[origin] != NONE {
+            slot_of_first[origin]
+        } else if strong.get(i) || weak.get(i) {
+            slot_of_first[i] = groups.len() as u32;
+            groups.len() as u32
         } else {
             clean::template_into(view, &mut key);
             let slot = match by_template.get(key.as_str()) {
                 Some(&slot) => slot,
                 None => {
-                    by_template.insert(key.clone(), groups.len());
-                    groups.len()
+                    by_template.insert(key.clone(), groups.len() as u32);
+                    groups.len() as u32
                 }
             };
-            slot_of_first[i] = Some(slot);
+            slot_of_first[i] = slot;
             slot
         };
-        if slot == groups.len() {
+        if slot as usize == groups.len() {
             groups.push(Group {
-                first: i,
-                last: i,
+                first: i as u32,
+                last: i as u32,
                 count: 1,
                 exact: true,
-                context: context[i],
-                nearby: nearby[i],
+                context: context.get(i),
+                nearby: nearby.get(i),
             });
         } else {
-            let group = &mut groups[slot];
-            group.last = i;
+            let group = &mut groups[slot as usize];
+            group.last = i as u32;
             group.count += 1;
-            group.exact &= views[group.first] == *view;
-            group.context |= context[i];
-            group.nearby |= nearby[i];
+            group.exact &= first[group.first as usize] as usize == origin;
+            group.context |= context.get(i);
+            group.nearby |= nearby.get(i);
         }
         owner.push(slot);
     }
+    drop(by_template);
+    drop(slot_of_first);
     // A few repetitions inside a diagnostic's context stay in source order;
     // massive repetition folds wherever it is.
     let folds: Vec<bool> = groups
         .iter()
-        .map(|g| g.count > 1 && (!g.context || g.count >= FOLD_IN_CONTEXT))
+        .map(|g| g.count > 1 && (!g.context || g.count as usize >= FOLD_IN_CONTEXT))
         .collect();
     let folded: usize = groups
         .iter()
         .zip(&folds)
         .filter(|(_, folds)| **folds)
-        .map(|(g, _)| g.count)
+        .map(|(g, _)| g.count as usize)
         .sum();
     let mostly_folded = n >= FOLD_MAJORITY_MIN_LINES && folded * 10 >= n * FOLD_MAJORITY_TENTHS;
     let base = record.start_line.unwrap_or(1);
+    // Source lines are only needed to measure a line that is cut, and units
+    // are emitted in increasing line order, so one forward cursor serves all.
+    let mut raw_lines = record.text.split_inclusive('\n');
+    let mut raw_at = 0;
     let mut i = 0;
     while i < n {
-        let slot = owner[i];
+        let slot = owner[i] as usize;
         let group = &groups[slot];
-        let (first, last, count, exact, nearby) = if folds[slot] {
-            if group.first != i {
+        let (first_line, last, count, exact, near) = if folds[slot] {
+            if group.first as usize != i {
                 i += 1;
                 continue;
             }
             (
-                group.first,
-                group.last,
-                group.count,
+                i,
+                group.last as usize,
+                group.count as usize,
                 group.exact,
                 group.nearby,
             )
         } else {
             // Unfolded members still merge with contiguous identical lines.
             let mut j = i;
-            while j + 1 < n && owner[j + 1] == slot && views[j + 1] == views[i] {
+            while j + 1 < n && owner[j + 1] as usize == slot && first[j + 1] == first[i] {
                 j += 1;
             }
-            (i, j, j + 1 - i, true, nearby[i..=j].iter().any(|&v| v))
+            (i, j, j + 1 - i, true, nearby.any(i..=j))
         };
-        let priority = if first == 0 || last + 1 == n {
+        let priority = if first_line == 0 || last + 1 == n {
             4
-        } else if strong[i] {
+        } else if strong.get(i) {
             // The first diagnostic of each template, then its variants.
             if first_of_template(&mut seen.strong, &views[i], &mut key) {
                 3
             } else {
                 2
             }
-        } else if weak[i] {
+        } else if weak.get(i) {
             if first_of_template(&mut seen.weak, &views[i], &mut key) {
                 2
             } else {
@@ -545,34 +680,33 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
         } else if group.count == 1 && mostly_folded {
             // The rare line among folded noise is what the reader is after.
             2
-        } else if context[first] || FRAME.is_match(&views[i]) {
+        } else if context.get(first_line) || FRAME.is_match(&views[i]) {
             // A failure's own detail outranks the head and tail padding, which
             // would otherwise fill the budget and leave only its first line.
             2
-        } else if nearby {
+        } else if near {
             1
         } else {
             0
         };
-        let (a, b) = (base + first, base + last);
+        let (a, b) = (base + first_line, base + last);
         let label = if count == 1 {
-            format!("{}:{a}", record.source)
-        } else if exact && last + 1 - first == count {
-            format!("{}:{a}-{b} repeat={count}", record.source)
+            Label::Line(a)
+        } else if exact && last + 1 - first_line == count {
+            Label::Run { a, b, n: count }
         } else if exact {
-            format!("{}:{a} repeat={count} last={b}", record.source)
+            Label::Repeat { a, n: count, b }
         } else {
-            format!("{}:{a} similar={count} last={b}", record.source)
+            Label::Similar { a, n: count, b }
         };
-        units.push(Unit::text_v3(
-            record,
-            label,
-            views[i].clone(),
-            lines[i],
-            priority,
-            limit,
-            (count == 1).then_some(a),
-        ));
+        // Each line's view is displayed at most once: move it into its unit.
+        let view = std::mem::take(&mut views[i]);
+        let raw = || {
+            let line = raw_lines.nth(i - raw_at).unwrap();
+            raw_at = i + 1;
+            line
+        };
+        units.push(Unit::text_v3(record, label, view, raw, priority, limit));
         i = if folds[slot] { i + 1 } else { last + 1 };
     }
 }
@@ -584,32 +718,66 @@ fn text_units_v3<'a>(record: &'a Record, limit: usize, seen: &mut Seen, units: &
 /// evidence does instead of filling up with noise. `available` may exceed
 /// `budget` on a second pass that spends range-block savings, which must not
 /// raise that ceiling.
-fn select_v3(units: &[Unit<'_>], available: usize, budget: usize) -> Vec<usize> {
+/// The fill order of `select_v3`, computed once for every refill pass.
+struct Tiers {
+    /// Units in fill order: tier by tier, alternating head and tail.
+    order: Vec<usize>,
+    /// Each tier's (priority, end in `order`, total size).
+    tiers: Vec<(u8, usize, usize)>,
+    /// Smallest unit size from each position of `order` to its end: once the
+    /// remaining budget is below it, no later unit can be selected.
+    smallest_after: Vec<usize>,
+    diagnostics: bool,
+}
+impl Tiers {
+    fn new(units: &[Unit<'_>]) -> Self {
+        let mut order = Vec::with_capacity(units.len());
+        let mut tiers = Vec::with_capacity(5);
+        for priority in [4, 3, 2, 1, 0] {
+            let tier: Vec<usize> = (0..units.len())
+                .filter(|&i| units[i].priority == priority)
+                .collect();
+            let (mut head, mut tail) = (0, tier.len());
+            while head < tail {
+                order.push(tier[head]);
+                head += 1;
+                if head < tail {
+                    tail -= 1;
+                    order.push(tier[tail]);
+                }
+            }
+            let total = tier.iter().map(|&i| units[i].size).sum();
+            tiers.push((priority, order.len(), total));
+        }
+        let mut smallest_after = vec![usize::MAX; order.len() + 1];
+        for k in (0..order.len()).rev() {
+            smallest_after[k] = smallest_after[k + 1].min(units[order[k]].size);
+        }
+        Self {
+            order,
+            tiers,
+            smallest_after,
+            diagnostics: units.iter().any(|u| matches!(u.priority, 2 | 3)),
+        }
+    }
+}
+
+fn select_v3(units: &[Unit<'_>], plan: &Tiers, available: usize, budget: usize) -> Vec<usize> {
     let mut selected = vec![false; units.len()];
     let mut used = 0;
-    let diagnostics = units.iter().any(|u| matches!(u.priority, 2 | 3));
-    for priority in [4, 3, 2, 1, 0] {
-        let tier: Vec<usize> = (0..units.len())
-            .filter(|&i| units[i].priority == priority)
-            .collect();
-        let mut order = Vec::with_capacity(tier.len());
-        let (mut head, mut tail) = (0, tier.len());
-        while head < tail {
-            order.push(tier[head]);
-            head += 1;
-            if head < tail {
-                tail -= 1;
-                order.push(tier[tail]);
-            }
-        }
-        let total: usize = tier.iter().map(|&i| units[i].size).sum();
-        let cap = if priority == 0 && diagnostics && total > available.saturating_sub(used) {
+    let mut start = 0;
+    'tiers: for &(priority, end, total) in &plan.tiers {
+        let cap = if priority == 0 && plan.diagnostics && total > available.saturating_sub(used) {
             budget / ORDINARY_SHARE
         } else {
             available
         };
         let mut tier_used = 0;
-        for i in order {
+        for k in start..end {
+            if available.saturating_sub(used) < plan.smallest_after[k] {
+                break 'tiers;
+            }
+            let i = plan.order[k];
             let size = units[i].size;
             if size <= available.saturating_sub(used) && tier_used + size <= cap {
                 selected[i] = true;
@@ -617,6 +785,7 @@ fn select_v3(units: &[Unit<'_>], available: usize, budget: usize) -> Vec<usize> 
                 tier_used += size;
             }
         }
+        start = end;
     }
     selected
         .into_iter()
@@ -626,7 +795,7 @@ fn select_v3(units: &[Unit<'_>], available: usize, budget: usize) -> Vec<usize> 
 }
 
 fn consecutive(a: &Unit<'_>, b: &Unit<'_>) -> bool {
-    match (a.block, b.block) {
+    match (a.block(), b.block()) {
         (Some(x), Some(y)) => std::ptr::eq(a.record, b.record) && y == x + 1,
         _ => false,
     }
@@ -646,8 +815,8 @@ fn render_v3(units: &[Unit<'_>], selected: &[usize], output: &mut String) {
             output.push_str(&format!(
                 "{}:{}-{}\n",
                 first.record.source,
-                first.block.unwrap(),
-                last.block.unwrap()
+                first.block().unwrap(),
+                last.block().unwrap()
             ));
             for &k in &selected[i..=j] {
                 output.push(' ');
@@ -698,7 +867,7 @@ fn view(
             n.checked_add(if r.value.is_some() {
                 1
             } else {
-                r.text.lines().count()
+                clean::line_count(&r.text)
             })
         })
         .unwrap_or(usize::MAX);
@@ -764,7 +933,8 @@ fn view(
         units = self::units(data, available, version);
     }
     let selected = if version == Version::V3 {
-        let mut selected = select_v3(&units, available, available);
+        let plan = Tiers::new(&units);
+        let mut selected = select_v3(&units, &plan, available, available);
         let mut body = String::new();
         render_v3(&units, &selected, &mut body);
         // Range blocks cost less than the per-line labels selection counted.
@@ -776,7 +946,7 @@ fn view(
             if slack == 0 {
                 break;
             }
-            let more = select_v3(&units, available + extra + slack, available);
+            let more = select_v3(&units, &plan, available + extra + slack, available);
             let mut extended = String::new();
             render_v3(&units, &more, &mut extended);
             if more.len() <= selected.len() || extended.len() > available {

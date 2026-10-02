@@ -52,7 +52,7 @@ enum Cmd {
     },
     /// Adaptively compress stdin; small or unsuitable inputs remain byte-exact.
     Compress {
-        #[arg(long, default_value_t = 4096)]
+        #[arg(long, default_value_t = compress::DEFAULT_BUDGET)]
         max_bytes: usize,
     },
     /// Compose search, filtering and aggregation. Request schema: skills/scopelet/references/queries.md
@@ -274,9 +274,13 @@ fn execute(cli: Cli) -> Result<i32> {
         )?;
         let code = process::exit_code(&result);
         for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
-            let output =
-                compress::automatic_lazy(bytes, cli.cache_dir.clone(), 4096, compact_version)
-                    .unwrap_or(std::borrow::Cow::Borrowed(bytes));
+            let output = compress::automatic_lazy(
+                bytes,
+                cli.cache_dir.clone(),
+                compress::DEFAULT_BUDGET,
+                compact_version,
+            )
+            .unwrap_or(std::borrow::Cow::Borrowed(bytes));
             if stderr {
                 std::io::stderr().write_all(&output)?;
             } else {
@@ -395,7 +399,7 @@ fn execute(cli: Cli) -> Result<i32> {
                 let text = compress::compact_version(
                     &data,
                     &store,
-                    request.max_bytes.unwrap_or(4096),
+                    request.max_bytes.unwrap_or(compress::DEFAULT_BUDGET),
                     compact_version,
                 )?;
                 std::io::stdout().write_all(text.as_bytes())?;
