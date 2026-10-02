@@ -107,6 +107,10 @@ pub enum Operation {
     Count,
     Group {
         pointer: String,
+        /// `key` (default) sorts groups by key; `count` by decreasing count,
+        /// then key.
+        #[serde(default)]
+        order: GroupOrder,
     },
     Unique,
     Read {
@@ -116,6 +120,14 @@ pub enum Operation {
     Rank {
         query: String,
     },
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum GroupOrder {
+    #[default]
+    Key,
+    Count,
 }
 
 fn default_context() -> usize {

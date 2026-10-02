@@ -64,14 +64,28 @@ enum Cmd {
         repo: Option<String>,
         #[arg(long, conflicts_with_all = ["spec", "repo"])]
         file: Option<String>,
-        #[arg(long, value_enum, default_value = "text", conflicts_with = "spec")]
-        format: Format,
-        /// Literal text; repeat --find for alternatives. Regex is available in a spec.
+        /// How to parse --file (text by default).
+        #[arg(long, value_enum, requires = "file", conflicts_with = "spec")]
+        format: Option<Format>,
+        /// Repository glob to include; repeatable.
+        #[arg(long, conflicts_with_all = ["spec", "file"])]
+        include: Vec<String>,
+        /// Repository glob to exclude; repeatable.
+        #[arg(long, conflicts_with_all = ["spec", "file"])]
+        exclude: Vec<String>,
+        /// Literal text; repeat --find for alternatives.
         #[arg(long, conflicts_with = "spec")]
         find: Vec<String>,
+        /// Treat --find patterns as regular expressions.
+        #[arg(long, requires = "find", conflicts_with = "spec")]
+        regex: bool,
+        /// Match --find patterns without regard to case.
+        #[arg(long, requires = "find", conflicts_with = "spec")]
+        ignore_case: bool,
         // A spec carries its own operations: never accept flags it will ignore.
-        #[arg(long, default_value_t = 3, conflicts_with = "spec")]
-        context: usize,
+        /// Lines around each match (default 3).
+        #[arg(long, requires = "find", conflicts_with = "spec")]
+        context: Option<usize>,
         #[arg(long, conflicts_with = "spec")]
         count: bool,
         #[arg(long, conflicts_with = "spec")]
@@ -80,8 +94,16 @@ enum Cmd {
         equals: Option<String>,
         #[arg(long, conflicts_with = "spec")]
         project: Vec<String>,
+        /// Drop records identical to an earlier one.
+        #[arg(long, conflicts_with = "spec")]
+        unique: bool,
+        /// Group by a JSON pointer; groups come largest first.
         #[arg(long, conflicts_with = "spec")]
         group: Option<String>,
+        /// Show only the first N records (the N largest groups); the saved
+        /// artifact keeps every record.
+        #[arg(long)]
+        top: Option<usize>,
         #[arg(long, value_enum, default_value = "json")]
         output: Output,
         #[arg(long, value_enum)]
@@ -254,6 +276,32 @@ fn manifest_view(data: &Dataset, max_bytes: usize, schema: u32) -> Result<serde_
     Ok(value)
 }
 
+/// The first `top` records of a stored dataset. The artifact keeps them all;
+/// the view counts them all, so the rest is omitted, never absent.
+fn top_view(
+    data: &Dataset,
+    store: &Store,
+    mode: Mode,
+    budget: usize,
+    top: usize,
+) -> Result<render::View> {
+    const NOTE: &str =
+        "--top limited this view; the artifact holds every record (page it with expand --offset).";
+    let artifact = store.put_json(data)?;
+    let shown = Dataset {
+        records: data.records[..top].to_vec(),
+        ..data.clone()
+    };
+    // Leave room for the note and the larger counts patched in below.
+    let mut view = render::render_stored(&shown, artifact, mode, budget - NOTE.len() - 64, 0)?;
+    view.total_records = data.records.len();
+    view.omitted_records = view.total_records - view.shown_records;
+    view.next_offset = (view.blocked_record.is_none()).then_some(view.shown_records);
+    view.display_complete = false;
+    view.notes.push(NOTE.into());
+    Ok(view)
+}
+
 fn execute(cli: Cli) -> Result<i32> {
     let compact_version = compress::Version::configured(cli.compact_version);
     match &cli.command {
@@ -366,17 +414,35 @@ fn execute(cli: Cli) -> Result<i32> {
             repo,
             file,
             format,
+            include,
+            exclude,
             find,
+            regex,
+            ignore_case,
             context,
             count,
             filter,
             equals,
             project,
+            unique,
             group,
+            top,
             output,
             mode,
             max_bytes,
         } => {
+            let compact = matches!(output, Output::Compact);
+            ensure!(
+                !(compact && mode.is_some()),
+                "--mode applies to JSON output; compact output has its own selection"
+            );
+            ensure!(!(compact && top.is_some()), "--top applies to JSON output");
+            ensure!(top.is_none_or(|n| n > 0), "--top must be at least 1");
+            // clap does not enforce `requires` next to a conflicting --repo.
+            ensure!(
+                format.is_none() || file.is_some(),
+                "--format applies to --file; a repository is searched as text"
+            );
             let mut request = if let Some(spec) = spec {
                 let bytes = if spec == "-" {
                     let mut bytes = Vec::new();
@@ -391,12 +457,15 @@ fn execute(cli: Cli) -> Result<i32> {
                 serde_json::from_slice::<Request>(&bytes).context("invalid request JSON")?
             } else {
                 let source = if let Some(path) = file {
-                    Source::File { path, format }
+                    Source::File {
+                        path,
+                        format: format.unwrap_or_default(),
+                    }
                 } else {
                     Source::Repo {
                         path: repo.unwrap_or_else(|| ".".into()),
-                        include: Vec::new(),
-                        exclude: Vec::new(),
+                        include,
+                        exclude,
                     }
                 };
                 let mut operations = Vec::new();
@@ -404,9 +473,9 @@ fn execute(cli: Cli) -> Result<i32> {
                     operations.push(Operation::Search {
                         patterns: find,
                         all: false,
-                        regex: false,
-                        ignore_case: false,
-                        context,
+                        regex,
+                        ignore_case,
+                        context: context.unwrap_or(3),
                     });
                 }
                 if let Some(pointer) = filter {
@@ -420,8 +489,15 @@ fn execute(cli: Cli) -> Result<i32> {
                 if !project.is_empty() {
                     operations.push(Operation::Project { pointers: project });
                 }
+                if unique {
+                    operations.push(Operation::Unique);
+                }
                 if let Some(pointer) = group {
-                    operations.push(Operation::Group { pointer });
+                    // A shortcut answers "which are most common": largest first.
+                    operations.push(Operation::Group {
+                        pointer,
+                        order: GroupOrder::Count,
+                    });
                 }
                 if count {
                     operations.push(Operation::Count);
@@ -456,13 +532,13 @@ fn execute(cli: Cli) -> Result<i32> {
                     0
                 });
             }
-            print(&render::render(
-                &data,
-                &store,
-                request.mode,
-                request.max_bytes.unwrap_or(request.mode.budget()),
-                0,
-            )?)?;
+            let budget = request.max_bytes.unwrap_or(request.mode.budget());
+            match top {
+                Some(top) if top < data.records.len() => {
+                    print(&top_view(&data, &store, request.mode, budget, top)?)?
+                }
+                _ => print(&render::render(&data, &store, request.mode, budget, 0)?)?,
+            }
         }
         Cmd::Run {
             auto: _,

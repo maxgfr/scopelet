@@ -20,7 +20,12 @@ certify completeness, so their datasets explicitly say so.
 Operations own transformations. A count is the number of records at that stage,
 not necessarily files, regex occurrences or all possible real-world entities.
 JSONL ingestion is transactional; malformed input cannot produce a partial
-aggregate. JSON numbers retain their source decimal representation. Computed
+aggregate. JSON numbers retain their source decimal representation. Groups
+sort by key, or by decreasing count (ties by key) when the operation asks for
+`order: count`, as the `--group` shortcut does. After `project`, records are
+keyed by the pointers themselves, so a pointer that resolves nowhere falls back
+to that literal key. `--top N` limits a JSON view to its first records; the
+artifact keeps them all and the view counts them as omitted. Computed
 values retain source provenance through the full artifact's snapshots.
 
 Presentation owns the byte budget. `scan_complete` describes source traversal;
@@ -112,9 +117,9 @@ hooks never trigger downloads. Host permission/trust mechanisms remain in force;
 Codex's input-rewrite protocol requires an explicit hook `allow` decision, but
 Scopelet never changes permission rules, mode, sandbox or escalation parameters.
 
-The version-1 JSON request/artifact/view contracts remain unchanged. The new
-`--output compact` is a separate textual compact-v1 presentation, not a JSON
-schema migration. Every compact view links the full dataset artifact; its
+The version-1 JSON request/artifact/view contracts remain unchanged. `--output
+compact` is a separate textual presentation (compact-v3 by default, v1 and v2
+on request), not a JSON schema migration. Every compact view links the full dataset artifact; its
 manifest maps source labels to immutable blobs. A unit is a complete JSON record
 or consecutive identical text lines represented by an exact line plus a repeat
 count. Source line labels remain absolute; ordered gaps and omitted-unit counts

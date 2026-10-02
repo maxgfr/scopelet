@@ -21,7 +21,7 @@ JSON
 `all:true` selects files/records containing EVERY pattern, even on different
 lines. Returned windows cover the matching lines and merge overlaps. Patterns
 are literal by default; `regex:true` enables Rust regex syntax. Search is
-case-sensitive; regex anchors are multiline and CRLF-aware. `count` counts resulting records/windows, not regex occurrences
+case-sensitive unless `ignore_case:true`; regex anchors are multiline and CRLF-aware. `count` counts resulting records/windows, not regex occurrences
 or necessarily files. Empty operations return the source records.
 
 ## Structured logs and JSON
@@ -40,11 +40,11 @@ Operations execute in array order:
 
 | Operation | Parameters | Result |
 |---|---|---|
-| search | patterns, all=false, regex=false, context=3 | matching text windows or whole JSON records |
+| search | patterns, all=false, regex=false, ignore_case=false, context=3 | matching text windows or whole JSON records |
 | filter | pointer, equals | records whose JSON Pointer equals the given JSON value |
 | project | pointers | object mapping each pointer to its value; missing fields fail |
 | count | none | one `{count:N}` record |
-| group | pointer | `{key:V,count:N}` records; missing fields fail |
+| group | pointer, order=key | `{key:V,count:N}` records by key, or by decreasing count with `order:"count"`; missing fields fail |
 | unique | none | first record for each exact text/JSON value |
 | read | start, end | inclusive **source** line range, text only |
 | rank | query | deterministic keyword-coverage order; keeps every record |
@@ -129,8 +129,9 @@ capture is capped at 32 MiB per stream and truncation is explicitly reported.
 ## Compact output and shortcut operations
 
 `query` and `run` accept `--output compact`; their default JSON interface is
-unchanged. Compact-v1 groups provenance behind an artifact reference and labels
-source lines, exact repetitions and omitted units. A unit is a whole JSON record
+unchanged. Compact output (v3 by default, `--compact-version` 1 or 2 on
+request) groups provenance behind an artifact reference and labels source
+lines, repetitions and omitted units. A unit is a whole JSON record
 or a run of identical text lines. `display_complete` concerns these units,
 not unobserved source data. Open the artifact manifest for original blob IDs.
 
@@ -141,8 +142,19 @@ scopelet compress < build.log
 scopelet run --auto -- python3 checks.py
 ```
 
-Shortcut operations run in order: search, filter, project, group, count. For a
-different order use a spec. `--equals` is a JSON literal: strings need JSON
+```sh
+scopelet query --repo . --find 'todo|fixme' --regex --ignore-case --include 'src/**' --count
+scopelet query --file events.jsonl --format jsonl --group /suite --top 5
+```
+
+Shortcut operations run in order: search, filter, project, unique, group,
+count. For a different order use a spec. `--group` lists the largest groups
+first (a spec's group keeps key order unless `"order":"count"`); `--top N`
+shows the first N records of a JSON view while the artifact keeps them all.
+`--include`/`--exclude` are repository globs; `--regex` and `--ignore-case`
+modify `--find`. Flags that would be ignored fail instead: `--format` without
+`--file`, `--context`/`--regex`/`--ignore-case` without `--find`, and `--mode`
+or `--top` with `--output compact`. `--equals` is a JSON literal: strings need JSON
 quotes, while `null`, numbers and booleans do not. Unknown/missing fields retain
 the spec interface's validation behavior. All shortcuts conflict with `--spec`.
 `compress` detects valid JSON/JSONL conservatively and otherwise selects text;

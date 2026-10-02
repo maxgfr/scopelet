@@ -52,7 +52,7 @@ fn streamable(operations: &[Operation]) -> bool {
         return false;
     };
     (matches!(last, Operation::Count)
-        || matches!(last, Operation::Group { pointer } if valid_pointer(pointer)))
+        || matches!(last, Operation::Group { pointer, .. } if valid_pointer(pointer)))
         && filters
             .iter()
             .all(|op| matches!(op, Operation::Filter { pointer, .. } if valid_pointer(pointer)))
@@ -85,7 +85,7 @@ fn aggregate(path: &str, operations: &[Operation], store: &Store) -> Result<Data
             continue;
         }
         count += 1;
-        if let Operation::Group { pointer } = last {
+        if let Operation::Group { pointer, .. } = last {
             if let Some(v) = value.pointer(pointer) {
                 let key = v.to_string();
                 if let Some((_, count)) = groups.get_mut(&key) {
@@ -112,10 +112,8 @@ fn aggregate(path: &str, operations: &[Operation], store: &Store) -> Result<Data
         }],
         records: match last {
             Operation::Count => vec![Record::derived(json!({"count":count}))],
-            _ => groups
-                .into_values()
-                .map(|(key, count)| Record::derived(json!({"key":key,"count":count})))
-                .collect(),
+            Operation::Group { order, .. } => pipeline::group_records(groups, *order),
+            _ => unreachable!(),
         },
         ..Dataset::default()
     })

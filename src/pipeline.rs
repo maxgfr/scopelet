@@ -1,4 +1,4 @@
-use crate::model::{Dataset, Operation, Record};
+use crate::model::{Dataset, GroupOrder, Operation, Record};
 use anyhow::{Result, bail, ensure};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -16,10 +16,13 @@ fn pointer<'a>(record: &'a Record, path: &str) -> Result<&'a Value> {
         path.is_empty() || path.starts_with('/'),
         "use a JSON Pointer, e.g. /status"
     );
+    // After `project`, a record's keys are the pointers themselves
+    // (`{"/status": ...}`): a pointer that resolves nowhere falls back to the
+    // literal key, so `--project /status --group /status` works.
     record
         .value
         .as_ref()
-        .and_then(|v| v.pointer(path))
+        .and_then(|v| v.pointer(path).or_else(|| v.get(path)))
         .ok_or_else(|| anyhow::anyhow!("missing JSON pointer {path:?} in {}", record.source))
 }
 
@@ -72,17 +75,17 @@ fn transform(records: Vec<Record>, op: &Operation) -> Result<Vec<Record>> {
                 .collect()
         }
         Operation::Count => Ok(vec![Record::derived(json!({"count": records.len()}))]),
-        Operation::Group { pointer: path } => {
+        Operation::Group {
+            pointer: path,
+            order,
+        } => {
             let mut groups: BTreeMap<String, (Value, usize)> = BTreeMap::new();
             for record in &records {
                 let v = pointer(record, path)?.clone();
                 let (_, count) = groups.entry(v.to_string()).or_insert((v, 0));
                 *count += 1;
             }
-            Ok(groups
-                .into_values()
-                .map(|(value, count)| Record::derived(json!({"key": value, "count": count})))
-                .collect())
+            Ok(group_records(groups, *order))
         }
         Operation::Unique => {
             let mut seen = BTreeSet::new();
@@ -128,6 +131,22 @@ fn transform(records: Vec<Record>, op: &Operation) -> Result<Vec<Record>> {
             Ok(ranked.into_iter().map(|(_, _, r)| r).collect())
         }
     }
+}
+
+/// Group records in key order, or by decreasing count with ties in key order.
+pub(crate) fn group_records(
+    groups: BTreeMap<String, (Value, usize)>,
+    order: GroupOrder,
+) -> Vec<Record> {
+    let mut groups: Vec<(Value, usize)> = groups.into_values().collect();
+    if order == GroupOrder::Count {
+        // Stable: equal counts keep their key order.
+        groups.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
+    }
+    groups
+        .into_iter()
+        .map(|(value, count)| Record::derived(json!({"key": value, "count": count})))
+        .collect()
 }
 
 pub fn validate(request: &crate::model::Request) -> Result<()> {

@@ -114,6 +114,7 @@ fn json_operations_preserve_large_numbers_and_distinguish_missing_from_null() {
         &mut grouped,
         &[Operation::Group {
             pointer: "/id".into(),
+            order: Default::default(),
         }],
     )
     .expect("group");
