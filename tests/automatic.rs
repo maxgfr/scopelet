@@ -510,15 +510,30 @@ fn opencode_plugin_file_drives_the_binary_from_node() {
         .success();
     let plugin = opencode_plugin(dir.path());
     let script = format!(
-        r#"import {{ ScopeletPlugin }} from {};
-const hooks = await ScopeletPlugin({{ directory: process.cwd() }});
+        r#"import plugin from {};
+// OpenCode 1: the legacy `server` entrypoint returns the hook map.
+const hooks = await plugin.server({{ directory: process.cwd() }});
 const output = {{ title: "npm test", output: "noise\n".repeat(2000), metadata: {{}} }};
 await hooks["tool.execute.after"]({{ tool: "bash", sessionID: "s1", callID: "c1", args: {{ command: "npm test" }} }}, output);
 const small = {{ title: "ls", output: "fine\n", metadata: {{}} }};
 await hooks["tool.execute.after"]({{ tool: "bash", sessionID: "s1", callID: "c2", args: {{ command: "ls" }} }}, small);
 const system = {{ system: ["base"] }};
 await hooks["experimental.chat.system.transform"]({{ sessionID: "s1" }}, system);
-console.log(JSON.stringify({{ compressed: output.output, small: small.output, title: output.title, system }}));
+// OpenCode 2: `setup` registers the same work on the owning domains; capture
+// the callbacks through a stub context and drive them like OpenCode would.
+const registered = {{}};
+const ctx = {{
+  session: {{ hook: async (name, cb) => {{ registered["session." + name] = cb; }} }},
+  tool: {{ hook: async (name, cb) => {{ registered["tool." + name] = cb; }} }},
+}};
+await plugin.setup(ctx);
+const v2Output = {{ title: "npm test", output: "noise\n".repeat(2000), metadata: {{}} }};
+await registered["tool.execute.after"]({{ tool: "bash", sessionID: "s1", status: "completed", input: {{ command: "npm test" }}, result: v2Output }});
+const v2Small = {{ title: "ls", output: "fine\n", metadata: {{}} }};
+await registered["tool.execute.after"]({{ tool: "bash", sessionID: "s1", status: "completed", input: {{ command: "ls" }}, result: v2Small }});
+const v2System = {{ system: [{{ type: "text", text: "base" }}] }};
+await registered["session.context"]({{ sessionID: "s1", system: v2System.system }});
+console.log(JSON.stringify({{ compressed: output.output, small: small.output, title: output.title, system, v2: {{ compressed: v2Output.output, small: v2Small.output, system: v2System }} }}));
 "#,
         serde_json::to_string(&plugin).unwrap()
     );
@@ -547,6 +562,21 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
     assert_eq!(result["system"]["system"][0], "base");
     assert!(
         result["system"]["system"][1]
+            .as_str()
+            .unwrap()
+            .contains("Scopelet auto")
+    );
+    // The OpenCode 2 entrypoint registers and behaves identically.
+    assert!(
+        result["v2"]["compressed"]
+            .as_str()
+            .unwrap()
+            .contains("[scopelet compact-v1")
+    );
+    assert_eq!(result["v2"]["small"], "fine\n");
+    assert_eq!(result["v2"]["system"]["system"][0]["text"], "base");
+    assert!(
+        result["v2"]["system"]["system"][1]["text"]
             .as_str()
             .unwrap()
             .contains("Scopelet auto")
