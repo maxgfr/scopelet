@@ -127,6 +127,36 @@ fn install_preserves_other_hooks_is_idempotent_and_uninstall_removes_only_ours()
     let value: Value = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
     assert_eq!(value, other);
 }
+#[test]
+fn uninstall_reports_its_own_note_for_every_host() {
+    let dir = tempfile::tempdir().unwrap();
+    let report = |args: &[&str]| -> Value {
+        let out = cli(dir.path()).args(args).output().unwrap();
+        assert!(out.status.success());
+        serde_json::from_slice(&out.stdout).unwrap()
+    };
+    for agent in ["claude", "codex", "opencode", "all"] {
+        let installed = report(&["install", "--agent", agent]);
+        assert_eq!(installed["installed"], true);
+        assert!(
+            installed["note"]
+                .as_str()
+                .unwrap()
+                .contains("after installation")
+        );
+        let removed = report(&["uninstall", "--agent", agent]);
+        assert_eq!(removed["installed"], false);
+        let note = removed["note"].as_str().unwrap();
+        assert!(
+            !note.contains("installation") && !note.contains("/hooks"),
+            "{agent}: {note}"
+        );
+        assert!(
+            note.contains("stop running the removed hooks"),
+            "{agent}: {note}"
+        );
+    }
+}
 fn hook(dir: &std::path::Path, agent: &str, event: Value) -> Value {
     let result = cli(dir)
         .args(["hook", agent])
@@ -509,6 +539,34 @@ fn opencode_plugin_file_drives_the_binary_from_node() {
         .assert()
         .success();
     let plugin = opencode_plugin(dir.path());
+    // OpenCode 2 truncates `seq 1 3000` before the hook: the event carries the
+    // last 2000 lines and a notice naming the whole output it saved under
+    // `$XDG_DATA_HOME/opencode/shell/<project id>`.
+    let saved = dir.path().join("data/opencode/shell/p1");
+    fs::create_dir_all(&saved).unwrap();
+    let full: String = (1..=3000).map(|i| format!("{i}\n")).collect();
+    let tail: String = (1001..=3000).map(|i| format!("{i}\n")).collect();
+    let truncated = |file: &std::path::Path| {
+        format!(
+            "{tail}\n[showing lines 1001-3000 of 3000; full output saved to {}]",
+            file.display()
+        )
+    };
+    fs::write(saved.join("sh_01truncated.out"), &full).unwrap();
+    // A path named by the visible text is followed only into OpenCode's own directory.
+    let outside = dir.path().join("outside");
+    fs::create_dir(&outside).unwrap();
+    fs::write(outside.join("sh_02outside.out"), format!("forged\n{full}")).unwrap();
+    std::os::unix::fs::symlink(
+        outside.join("sh_02outside.out"),
+        saved.join("sh_03link.out"),
+    )
+    .unwrap();
+    let texts = json!({
+        "truncated": truncated(&saved.join("sh_01truncated.out")),
+        "outside": truncated(&outside.join("sh_02outside.out")),
+        "link": truncated(&saved.join("sh_03link.out")),
+    });
     let script = format!(
         r#"import plugin from {};
 // OpenCode 1: the legacy `server` entrypoint returns the hook map.
@@ -523,6 +581,7 @@ await hooks["experimental.chat.system.transform"]({{ sessionID: "s1" }}, system)
 // the callbacks through a stub context and drive them like OpenCode would.
 const registered = {{}};
 const ctx = {{
+  location: {{ directory: process.cwd(), project: {{ id: "p1", directory: process.cwd() }} }},
   session: {{ hook: async (name, cb) => {{ registered["session." + name] = cb; }} }},
   tool: {{ hook: async (name, cb) => {{ registered["tool." + name] = cb; }} }},
 }};
@@ -536,9 +595,20 @@ const v2Bash = v2Event("bash", "npm test", "noise\n".repeat(2000));
 await registered["tool.execute.after"](v2Bash);
 const v2System = {{ system: [{{ type: "text", text: "base" }}] }};
 await registered["session.context"]({{ sessionID: "s1", system: v2System.system }});
-console.log(JSON.stringify({{ compressed: output.output, small: small.output, title: output.title, system, v2: {{ compressed: v2Output.result, small: v2Small.result, bash: v2Bash.result, system: v2System }} }}));
+// The truncated shape observed from OpenCode 2.0.26 for `seq 1 3000`.
+const texts = {};
+const truncated = {{}};
+for (const [name, text] of Object.entries(texts)) {{
+  const event = v2Event("shell", "seq 1 3000", text);
+  event.result.output.truncated = true;
+  event.result.metadata.truncated = true;
+  await registered["tool.execute.after"](event);
+  truncated[name] = event.result;
+}}
+console.log(JSON.stringify({{ compressed: output.output, small: small.output, title: output.title, system, v2: {{ compressed: v2Output.result, small: v2Small.result, bash: v2Bash.result, system: v2System, truncated }} }}));
 "#,
-        serde_json::to_string(&plugin).unwrap()
+        serde_json::to_string(&plugin).unwrap(),
+        texts
     );
     let entry = dir.path().join("smoke.mjs");
     fs::write(&entry, script).unwrap();
@@ -546,6 +616,7 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
         .arg(&entry)
         .env("SCOPELET_CACHE_DIR", dir.path().join("cache"))
         .env("SCOPELET_COMPACT_VERSION", "1")
+        .env("XDG_DATA_HOME", dir.path().join("data"))
         .output()
         .unwrap();
     assert!(
@@ -593,6 +664,32 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
             .unwrap()
             .contains("Scopelet auto")
     );
+    // A truncated result is compressed from the saved whole output, so its
+    // artifact recovers the lines OpenCode cut; untrusted paths keep the tail.
+    let find = |name: &str, pattern: &str| -> Value {
+        let result = &result["v2"]["truncated"][name];
+        let text = result["content"][0]["text"].as_str().unwrap();
+        assert!(text.contains("[scopelet compact-v1"), "{name}: {text}");
+        assert_eq!(result["output"]["output"], result["content"][0]["text"]);
+        let artifact = text
+            .split_whitespace()
+            .find(|s| s.starts_with("artifact:"))
+            .unwrap();
+        let out = cli(dir.path())
+            .args(["expand", artifact, "--find", pattern, "--regex"])
+            .output()
+            .unwrap();
+        assert!(out.status.success());
+        serde_json::from_slice::<Value>(&out.stdout).unwrap()["records"].clone()
+    };
+    let recovered = find("truncated", "^1$");
+    assert_eq!(recovered[0]["start_line"], 1, "{recovered}");
+    assert!(recovered[0]["text"].as_str().unwrap().starts_with("1\n2\n"));
+    for name in ["outside", "link"] {
+        assert_eq!(find(name, "^1$"), json!([]), "{name}");
+        assert_eq!(find(name, "^forged$"), json!([]), "{name}");
+        assert_eq!(find(name, "^1001$")[0]["start_line"], 1, "{name}");
+    }
 }
 
 fn rewritten(dir: &std::path::Path, command: &str) -> Option<String> {

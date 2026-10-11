@@ -191,7 +191,10 @@ host cannot truncate an already compressed view again. Failure events without
 a replaceable result and unknown host/tool shapes pass through unchanged.
 OpenCode has no hook protocol; a generated plugin file mutates the `bash`
 tool's `output` string in place from `tool.execute.after`, under the same
-thresholds, by calling the pinned binary. Any plugin or binary failure leaves
+thresholds, by calling the pinned binary. When OpenCode 2 has already truncated
+a shell result, the plugin compresses the whole output OpenCode saved, read
+only as a regular file inside OpenCode's own shell output directory for the
+project and within the input limit. Any plugin or binary failure leaves
 the native output untouched, and the mode text reaches the model through the
 system prompt on every step rather than through per-session hook context.
 

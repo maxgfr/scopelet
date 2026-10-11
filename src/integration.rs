@@ -272,9 +272,12 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
         }
         paths.push(path);
     }
-    Ok(
-        json!({"installed":!remove,"files":paths,"binary":binary,"mode":preference()?,"note":"Codex: review new hooks with /hooks. Restart active sessions after installation."}),
-    )
+    let note = if remove {
+        "Restart active sessions so they stop running the removed hooks. The pinned binary, mode and backups stay in the Scopelet config directory."
+    } else {
+        "Codex: review new hooks with /hooks. Restart active sessions after installation."
+    };
+    Ok(json!({"installed":!remove,"files":paths,"binary":binary,"mode":preference()?,"note":note}))
 }
 pub fn doctor() -> Value {
     let config = root().ok();

@@ -4,6 +4,9 @@
 // One default export serves both OpenCode generations: OpenCode 2 runs `setup`
 // (plugin API v2), OpenCode 1 (>= 1.18.29) runs `server` (legacy hook map).
 import { execFile } from "node:child_process";
+import { lstat, readFile, realpath } from "node:fs/promises";
+import { homedir } from "node:os";
+import { basename, dirname, isAbsolute, join } from "node:path";
 
 const BINARY = __SCOPELET_BINARY__;
 const CONFIG = __SCOPELET_CONFIG__;
@@ -12,6 +15,8 @@ const SMALL = __SCOPELET_SMALL__;
 const MAX_INPUT = __SCOPELET_MAX_INPUT__;
 // OpenCode 2 names its shell tool `shell`; OpenCode 1 named it `bash`.
 const SHELL_TOOLS = new Set(["shell", "bash"]);
+// OpenCode 2 keeps the tail of a long shell result and ends it with this notice.
+const TRUNCATED = /\n+\[showing lines \d+-\d+ of \d+; full output saved to ([^\n\]]+)\]$/;
 
 // Asynchronous, so a compression never blocks OpenCode's event loop.
 function hook(event) {
@@ -44,6 +49,33 @@ function hook(event) {
   });
 }
 
+// The whole output OpenCode 2 saved for a truncated shell result, or null. The
+// path comes from model-visible text, so it is read only when it names a regular
+// file directly inside OpenCode's shell output directory for this project
+// (`<XDG data>/opencode/shell/<project id>`, derived the way OpenCode does),
+// fits MAX_INPUT, is valid UTF-8 and ends with the tail OpenCode showed.
+async function savedOutput(text, project) {
+  const notice = TRUNCATED.exec(text);
+  if (!notice || typeof project !== "string" || !/^[\w-]+$/.test(project)) return null;
+  const file = notice[1];
+  if (!isAbsolute(file) || !/^sh_\w+\.out$/.test(basename(file))) return null;
+  const data = process.env.XDG_DATA_HOME || join(homedir(), ".local", "share");
+  try {
+    const [directory, parent] = await Promise.all([
+      realpath(join(data, "opencode", "shell", project)),
+      realpath(dirname(file)),
+    ]);
+    if (parent !== directory) return null;
+    const stat = await lstat(file);
+    if (!stat.isFile() || stat.size > MAX_INPUT) return null;
+    const full = new TextDecoder("utf-8", { fatal: true }).decode(await readFile(file));
+    const shown = text.slice(0, notice.index).replace(/\n+$/, "").slice(-1000);
+    return full.replace(/\n+$/, "").endsWith(shown) ? full : null;
+  } catch {
+    return null;
+  }
+}
+
 const ScopeletPlugin = {
   id: "scopelet",
   // OpenCode 2: hooks are registered on the domain that owns the operation.
@@ -67,14 +99,17 @@ const ScopeletPlugin = {
       const texts = result.content.filter((part) => part?.type === "text" && typeof part.text === "string");
       if (texts.length === 0) return;
       const text = texts.map((part) => part.text).join("");
-      const bytes = Buffer.byteLength(text);
+      // OpenCode truncates before this hook; compress the saved whole output
+      // instead, so `scopelet expand` recovers every line.
+      const output = (await savedOutput(text, ctx.location?.project?.id)) ?? text;
+      const bytes = Buffer.byteLength(output);
       if (bytes <= SMALL || bytes > MAX_INPUT) return;
       const command = event.input?.command;
       const compressed = await hook({
         hook_event_name: "ToolOutput",
         tool_name: "Bash",
         tool_input: { command: typeof command === "string" ? command : "" },
-        tool_response: { output: text },
+        tool_response: { output },
       });
       if (typeof compressed.output !== "string") return;
       // In place: the first text part carries the compression, the others go.

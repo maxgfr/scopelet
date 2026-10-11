@@ -127,9 +127,12 @@ or changes to the model's reasoning effort.
 OpenCode's plugin replaces the `bash` tool's `output` string in place when the
 same thresholds apply; other tools, MCP results and failures pass through, and
 any plugin or binary error leaves the native output untouched. OpenCode caps
-long output before the plugin sees it and writes the whole result to its
-`tool-output` directory; the view keeps that "Full output saved to" line, so
-`expand` recovers what OpenCode handed over and the file holds the rest.
+long output before the plugin sees it and saves the whole result. OpenCode 2
+saves it under `$XDG_DATA_HOME/opencode/shell/<project id>`; the plugin
+compresses that saved file instead (only a regular file in that directory,
+within the input limit), so `expand` recovers every line. Otherwise, and on
+OpenCode 1, the view keeps the "full output saved to" line, so `expand`
+recovers what OpenCode handed over and the file holds the rest.
 Claude Code uses `PostToolUse.updatedToolOutput` for Bash results with known
 stdout/stderr fields. Other fields survive unchanged. Failure events without a
 replaceable output, images and unknown envelopes pass through. MCP tool results
