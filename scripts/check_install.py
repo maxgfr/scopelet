@@ -51,19 +51,33 @@ def verify(skill, binary=None):
         assert health['binary_installed'] and health['mode'] == 'default'
         assert len(health['hosts']) == 3 and all(h['hooks_configured'] for h in health['hosts'])
         # Drive the OpenCode plugin the way OpenCode does: import it, mutate in place.
+        # OpenCode 1 calls `server` for a hook map; OpenCode 2 calls `setup` to register hooks.
         smoke = root / 'smoke.mjs'
         smoke.write_text(
-            f'import {{ ScopeletPlugin }} from {json.dumps(str(plugin))};\n'
-            'const hooks = await ScopeletPlugin({ directory: process.cwd() });\n'
-            'const output = { title: "npm test", output: "noise\\n".repeat(2000), metadata: {} };\n'
+            f'import plugin from {json.dumps(str(plugin))};\n'
+            'const noise = "noise\\n".repeat(2000);\n'
+            'const hooks = await plugin.server({ directory: process.cwd() });\n'
+            'const output = { title: "npm test", output: noise, metadata: {} };\n'
             'await hooks["tool.execute.after"]({ tool: "bash", sessionID: "s", callID: "c", args: { command: "npm test" } }, output);\n'
             'const system = { system: [] };\n'
             'await hooks["experimental.chat.system.transform"]({ sessionID: "s" }, system);\n'
-            'console.log(JSON.stringify({ output: output.output, system: system.system }));\n')
+            'const v2 = {};\n'
+            'const register = (name, cb) => { v2[name] = cb; };\n'
+            'await plugin.setup({ directory: process.cwd(), session: { hook: register }, tool: { hook: register } });\n'
+            'const event = { tool: "shell", sessionID: "s", agent: "build", messageID: "m", id: "c", input: { command: "npm test" }, status: "completed",\n'
+            '  result: { output: { exit: 0, truncated: false, output: noise, status: "completed" }, content: [{ type: "text", text: noise }],\n'
+            '    metadata: { status: "completed", truncated: false, exit: 0 } } };\n'
+            'await v2["execute.after"](event);\n'
+            'const context = { sessionID: "s", system: [] };\n'
+            'await v2["context"](context);\n'
+            'console.log(JSON.stringify({ output: output.output, system: system.system,\n'
+            '  v2_text: event.result.content[0].text, v2_system: context.system }));\n')
         plugin_result = json.loads(subprocess.check_output(['node', str(smoke)], env=env, cwd=root,
                                                            text=True, timeout=60))
         assert '[scopelet compact-v' in plugin_result['output'] and len(plugin_result['output']) < 6000
         assert 'Scopelet auto' in plugin_result['system'][0]
+        assert '[scopelet compact-v' in plugin_result['v2_text'] and len(plugin_result['v2_text']) < 6000
+        assert any('Scopelet auto' in item.get('text', '') for item in plugin_result['v2_system'])
         for path in files:
             value = json.loads(path.read_text())
             assert value['unrelated_setting'] is True
