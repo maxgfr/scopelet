@@ -527,13 +527,16 @@ const ctx = {{
   tool: {{ hook: async (name, cb) => {{ registered["tool." + name] = cb; }} }},
 }};
 await plugin.setup(ctx);
-const v2Output = {{ title: "npm test", output: "noise\n".repeat(2000), metadata: {{}} }};
-await registered["tool.execute.after"]({{ tool: "bash", sessionID: "s1", status: "completed", input: {{ command: "npm test" }}, result: v2Output }});
-const v2Small = {{ title: "ls", output: "fine\n", metadata: {{}} }};
-await registered["tool.execute.after"]({{ tool: "bash", sessionID: "s1", status: "completed", input: {{ command: "ls" }}, result: v2Small }});
+const v2Event = (tool, command, text) => ({{ tool, sessionID: "s1", agent: "build", messageID: "m1", id: "c1", input: {{ command }}, status: "completed", result: {{ output: {{ exit: 0, truncated: false, output: text, status: "completed" }}, content: [{{ type: "text", text }}], metadata: {{ status: "completed", truncated: false, exit: 0 }} }} }});
+const v2Output = v2Event("shell", "npm test", "noise\n".repeat(2000));
+await registered["tool.execute.after"](v2Output);
+const v2Small = v2Event("shell", "ls", "fine\n");
+await registered["tool.execute.after"](v2Small);
+const v2Bash = v2Event("bash", "npm test", "noise\n".repeat(2000));
+await registered["tool.execute.after"](v2Bash);
 const v2System = {{ system: [{{ type: "text", text: "base" }}] }};
 await registered["session.context"]({{ sessionID: "s1", system: v2System.system }});
-console.log(JSON.stringify({{ compressed: output.output, small: small.output, title: output.title, system, v2: {{ compressed: v2Output.output, small: v2Small.output, system: v2System }} }}));
+console.log(JSON.stringify({{ compressed: output.output, small: small.output, title: output.title, system, v2: {{ compressed: v2Output.result, small: v2Small.result, bash: v2Bash.result, system: v2System }} }}));
 "#,
         serde_json::to_string(&plugin).unwrap()
     );
@@ -566,14 +569,23 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
             .unwrap()
             .contains("Scopelet auto")
     );
-    // The OpenCode 2 entrypoint registers and behaves identically.
+    // The OpenCode 2 entrypoint compresses the text parts the model reads.
+    let v2 = &result["v2"]["compressed"];
     assert!(
-        result["v2"]["compressed"]
+        v2["content"][0]["text"]
             .as_str()
             .unwrap()
             .contains("[scopelet compact-v1")
     );
-    assert_eq!(result["v2"]["small"], "fine\n");
+    assert_eq!(v2["output"]["output"], v2["content"][0]["text"]);
+    assert_eq!(result["v2"]["small"]["content"][0]["text"], "fine\n");
+    assert_eq!(result["v2"]["small"]["output"]["output"], "fine\n");
+    assert!(
+        result["v2"]["bash"]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("[scopelet compact-v1")
+    );
     assert_eq!(result["v2"]["system"]["system"][0]["text"], "base");
     assert!(
         result["v2"]["system"]["system"][1]["text"]

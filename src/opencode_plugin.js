@@ -10,6 +10,8 @@ const CONFIG = __SCOPELET_CONFIG__;
 // Thresholds of the Rust binary, written at installation.
 const SMALL = __SCOPELET_SMALL__;
 const MAX_INPUT = __SCOPELET_MAX_INPUT__;
+// OpenCode 2 names its shell tool `shell`; OpenCode 1 named it `bash`.
+const SHELL_TOOLS = new Set(["shell", "bash"]);
 
 // Asynchronous, so a compression never blocks OpenCode's event loop.
 function hook(event) {
@@ -55,21 +57,34 @@ const ScopeletPlugin = {
         event.system.push({ type: "text", text: result.system });
       }
     });
+    // The shell tool is `shell`, its `result.output` is a structured object, and
+    // the model reads `result.content`: the text parts are what gets compressed.
     await ctx.tool.hook("execute.after", async (event) => {
       if (!event || event.status !== "completed") return;
-      const output = event.result;
-      if (!output || typeof output.output !== "string") return;
-      if (String(event.tool ?? "").toLowerCase() !== "bash") return;
-      const bytes = Buffer.byteLength(output.output);
+      if (!SHELL_TOOLS.has(String(event.tool ?? "").toLowerCase())) return;
+      const result = event.result;
+      if (!result || !Array.isArray(result.content)) return;
+      const texts = result.content.filter((part) => part?.type === "text" && typeof part.text === "string");
+      if (texts.length === 0) return;
+      const text = texts.map((part) => part.text).join("");
+      const bytes = Buffer.byteLength(text);
       if (bytes <= SMALL || bytes > MAX_INPUT) return;
       const command = event.input?.command;
-      const result = await hook({
+      const compressed = await hook({
         hook_event_name: "ToolOutput",
         tool_name: "Bash",
         tool_input: { command: typeof command === "string" ? command : "" },
-        tool_response: { output: output.output },
+        tool_response: { output: text },
       });
-      if (typeof result.output === "string") output.output = result.output;
+      if (typeof compressed.output !== "string") return;
+      // In place: the first text part carries the compression, the others go.
+      texts[0].text = compressed.output;
+      for (let i = result.content.length - 1; i >= 0; i--) {
+        if (texts.includes(result.content[i]) && result.content[i] !== texts[0]) result.content.splice(i, 1);
+      }
+      if (result.output && typeof result.output === "object" && typeof result.output.output === "string") {
+        result.output.output = compressed.output;
+      }
     });
   },
   // OpenCode 1: the legacy hook map. Hook output objects are mutated in place.
