@@ -646,6 +646,8 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         // Claude can attach persistence metadata before rendering its preview.
         // Replacing stdout here would make that preview truncate our compact
         // view a second time, hiding its final diagnostics and omission footer.
+        // The model only saw a preview of a persisted output: it is neither
+        // compressed nor remembered as shown.
         if output["persistedOutputPath"]
             .as_str()
             .is_some_and(|path| !path.is_empty())
@@ -656,16 +658,52 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             unchanged(compress::Reason::Persisted);
             return Ok(json!({}));
         }
-        if ["stdout", "stderr"].iter().all(|stream| {
-            output[stream]
-                .as_str()
-                .is_some_and(|text| text.len() <= small)
-        }) {
+        let mut changed = false;
+        // Compact-v4 replaces a stream identical to one this context was
+        // already shown (whole, as a view or raw) by a reference to it.
+        let mut repeated = [false; 2];
+        let context = context_key(event).filter(|_| version == compress::Version::V4);
+        let mut state = context.as_deref().map(crate::session::load);
+        if let Some(state) = &mut state {
+            for (i, stream) in ["stdout", "stderr"].into_iter().enumerate() {
+                let raw = output[stream].as_str().unwrap();
+                if raw.len() <= compress::SMALL || raw.len() > MAX_INPUT {
+                    continue;
+                }
+                let hash = digest(raw.as_bytes());
+                let hash = crate::session::short(&hash);
+                if state.saw(hash)
+                    && let Some(marker) =
+                        compress::repeat_recorded("claude", raw.as_bytes(), None, profile)
+                {
+                    output[stream] = json!(String::from_utf8(marker)?);
+                    repeated[i] = true;
+                    changed = true;
+                }
+                state.remember(hash);
+            }
+        }
+        let remembered = || {
+            if let (Some(key), Some(state)) = (&context, &state) {
+                // Best effort: a lost write only misses a later repeat.
+                let _ = crate::session::save(key, state);
+            }
+        };
+        if !changed
+            && ["stdout", "stderr"].iter().all(|stream| {
+                output[stream]
+                    .as_str()
+                    .is_some_and(|text| text.len() <= small)
+            })
+        {
             unchanged(compress::Reason::Small);
+            remembered();
             return Ok(json!({}));
         }
-        let mut changed = false;
-        for stream in ["stdout", "stderr"] {
+        for (i, stream) in ["stdout", "stderr"].into_iter().enumerate() {
+            if repeated[i] {
+                continue;
+            }
             let raw = output[stream].as_str().unwrap();
             if raw.len() > MAX_INPUT {
                 return Ok(json!({}));
@@ -683,6 +721,7 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
                 changed = true;
             }
         }
+        remembered();
         if changed {
             return Ok(
                 json!({"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":output}}),
