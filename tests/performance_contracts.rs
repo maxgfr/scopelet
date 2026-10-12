@@ -472,17 +472,19 @@ fn standalone_compression_preserves_interruption_exit_status() {
 }
 
 #[test]
-fn compact_defaults_to_v3_and_explicit_version_overrides_environment() {
+fn compact_defaults_to_v4_and_explicit_version_overrides_environment() {
     use assert_cmd::Command;
     let dir = tempfile::tempdir().unwrap();
     let raw = "working\n".repeat(1000);
     for (env, explicit, expected) in [
-        (None, None, "3"),
+        (None, None, "4"),
         (Some("1"), None, "1"),
         (Some("2"), None, "2"),
         (Some("3"), None, "3"),
+        (Some("4"), None, "4"),
         (Some("2"), Some("1"), "1"),
         (Some("1"), Some("3"), "3"),
+        (Some("3"), Some("4"), "4"),
         (Some("invalid"), Some("2"), "2"),
     ] {
         let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
@@ -495,15 +497,18 @@ fn compact_defaults_to_v3_and_explicit_version_overrides_environment() {
             cmd.args(["--compact-version", value]);
         }
         let result = cmd.write_stdin(raw.as_bytes()).assert().success();
-        assert!(
-            String::from_utf8_lossy(&result.get_output().stdout)
-                .starts_with(&format!("[scopelet compact-v{expected} "))
-        );
+        let header = if expected == "4" {
+            "[scopelet v4 ".to_owned()
+        } else {
+            format!("[scopelet compact-v{expected} ")
+        };
+        assert!(String::from_utf8_lossy(&result.get_output().stdout).starts_with(&header));
     }
 }
 
-/// Earlier presentations are frozen: their bytes match the released 0.3.2
-/// binary for the shared `repeated_errors` and `diagnostics` fixtures.
+/// Earlier presentations are frozen: v1 and v2 bytes match the released 0.3.2
+/// binary and v3 bytes the released 0.7.2 binary for the shared
+/// `repeated_errors` and `diagnostics` fixtures.
 #[test]
 fn legacy_compact_versions_stay_byte_identical_and_unknown_versions_fail() {
     use assert_cmd::Command;
@@ -538,6 +543,16 @@ fn legacy_compact_versions_stay_byte_identical_and_unknown_versions_fail() {
             "2",
             "b9449d6f073b2ebdd07b7ed30e077f5d3150b299403d7e8ac9f90e19a5c87eae",
         ),
+        (
+            &repeated,
+            "3",
+            "498e5673c727ec8625a36cbd109ed407e1b660ab3a48104aeb6a4aeddedc9f15",
+        ),
+        (
+            &diagnostics,
+            "3",
+            "0fa36251df3471838628fef32697dc9458884f9f5525598dceb71b3e24010091",
+        ),
     ] {
         let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
         let result = cmd
@@ -554,17 +569,17 @@ fn legacy_compact_versions_stay_byte_identical_and_unknown_versions_fail() {
         );
     }
     Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
-        .args(["--compact-version", "4", "compress"])
+        .args(["--compact-version", "5", "compress"])
         .write_stdin(repeated.as_bytes())
         .assert()
         .failure();
     let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
     let out = cmd
         .args(["--cache-dir", dir.path().to_str().unwrap(), "compress"])
-        .env("SCOPELET_COMPACT_VERSION", "4")
+        .env("SCOPELET_COMPACT_VERSION", "5")
         .write_stdin(repeated.as_bytes())
         .output()
         .unwrap();
     assert!(!out.status.success());
-    assert!(String::from_utf8_lossy(&out.stderr).contains("must be 1, 2 or 3"));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("must be 1, 2, 3 or 4"));
 }

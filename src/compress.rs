@@ -109,9 +109,11 @@ pub enum Version {
     V1,
     #[value(name = "2")]
     V2,
-    #[default]
     #[value(name = "3")]
     V3,
+    #[default]
+    #[value(name = "4")]
+    V4,
 }
 impl Version {
     /// The number `--compact-version` and `SCOPELET_COMPACT_VERSION` take.
@@ -120,6 +122,7 @@ impl Version {
             Self::V1 => 1,
             Self::V2 => 2,
             Self::V3 => 3,
+            Self::V4 => 4,
         }
     }
 
@@ -131,9 +134,15 @@ impl Version {
             Ok(v) if v == "1" => Ok(Self::V1),
             Ok(v) if v == "2" => Ok(Self::V2),
             Ok(v) if v == "3" => Ok(Self::V3),
+            Ok(v) if v == "4" => Ok(Self::V4),
             Err(std::env::VarError::NotPresent) => Ok(Self::default()),
-            _ => anyhow::bail!("SCOPELET_COMPACT_VERSION must be 1, 2 or 3"),
+            _ => anyhow::bail!("SCOPELET_COMPACT_VERSION must be 1, 2, 3 or 4"),
         }
+    }
+    /// Compact-v3 and later: command profiles, display copies, folding and
+    /// tiered selection. V4 only changes the envelope around the same body.
+    pub fn profiled(self) -> bool {
+        matches!(self, Self::V3 | Self::V4)
     }
     /// Partial JSON tables with indices and provenance (everything after v1).
     fn tables(self) -> bool {
@@ -201,12 +210,12 @@ impl Decision {
 }
 
 /// The profile that shapes an output: a recognized command's, in compact-v3
-/// only. Earlier versions keep their single default shape.
+/// and later. Earlier versions keep their single default shape.
 pub fn effective_profile(
     profile: Option<crate::commands::Profile>,
     version: Version,
 ) -> Option<crate::commands::Profile> {
-    profile.filter(|_| version == Version::V3)
+    profile.filter(|_| version.profiled())
 }
 
 /// How one output is compressed: its byte target, the size up to which it
@@ -329,7 +338,7 @@ fn automatic_with(
         (1024..=1024 * 1024).contains(&shape.budget),
         "max_bytes must be 1024..1048576"
     );
-    let max_lines = if version == Version::V3 {
+    let max_lines = if version.profiled() {
         V3_MAX_LINES
     } else {
         MAX_LINES
@@ -344,7 +353,7 @@ fn automatic_with(
     // Compact-v3 only recognizes their markers where they are written, at the
     // start of a line: a source file quoting `"[scopelet "` is not a view.
     let marked = |finder: &memchr::memmem::Finder<'_>| {
-        if version == Version::V3 {
+        if version.profiled() {
             finder
                 .find_iter(bytes)
                 .any(|i| i == 0 || bytes[i - 1] == b'\n')
@@ -394,7 +403,7 @@ fn automatic_with(
     });
     // Compact-v3 artifacts name the original blob instead of storing every
     // record a second time; earlier versions keep their exact v1 artifacts.
-    let artifact = if version == Version::V3 {
+    let artifact = if version.profiled() {
         store.put_json(&DatasetRef::new(
             &data,
             RecordsRef {
@@ -407,9 +416,7 @@ fn automatic_with(
         store.put_json(&data)?
     };
     store.set_last(&artifact);
-    // Only substitute our header, never placeholder-looking text in original evidence.
-    let end = result.find('\n').unwrap() + 1;
-    result.replace_range(..end, &header(&data, &artifact, version));
+    identify(&mut result, &data, &artifact, version);
     ensure!(
         result.len() <= shape.budget,
         "compact metadata exceeds budget"
@@ -433,9 +440,20 @@ pub fn compact_version(
 ) -> Result<String> {
     let (mut text, _) = view(data, PLACEHOLDER, budget, version, None, MAX_LINES, false)?;
     let id = store.put_json(data)?;
-    let end = text.find('\n').unwrap() + 1;
-    text.replace_range(..end, &header(data, &id, version));
+    identify(&mut text, data, &id, version);
     Ok(text)
+}
+
+/// Write the stored artifact's reference into a view's header. Only our
+/// header is substituted, never placeholder-looking text in original evidence.
+fn identify(text: &mut String, data: &Dataset, artifact: &str, version: Version) {
+    if version == Version::V4 {
+        let at = V4_PREFIX.len();
+        text.replace_range(at..at + SHORT_ID, short_id(artifact));
+    } else {
+        let end = text.find('\n').unwrap() + 1;
+        text.replace_range(..end, &header(data, artifact, version));
+    }
 }
 
 fn header(data: &Dataset, artifact: &str, version: Version) -> String {
@@ -453,6 +471,38 @@ fn header(data: &Dataset, artifact: &str, version: Version) -> String {
             "[scopelet compact-v3 {artifact} scan_complete={}; recover: scopelet expand ID --find TEXT (or --manifest)]\n",
             data.scan_complete
         ),
+        Version::V4 => header_v4(short_id(artifact), 0, data.scan_complete),
+    }
+}
+
+/// Hex characters of the artifact hash a compact-v4 header shows. `expand`
+/// resolves it like any unique prefix of 8 or more characters.
+const SHORT_ID: usize = 16;
+const V4_PREFIX: &str = "[scopelet v4 ";
+const PLACEHOLDER_ID: &str = "0000000000000000";
+
+/// The first `SHORT_ID` hex characters of a reference, or the placeholder.
+fn short_id(reference: &str) -> &str {
+    let hash = reference.split_once(':').map_or(reference, |(_, h)| h);
+    hash.get(..SHORT_ID).unwrap_or(PLACEHOLDER_ID)
+}
+
+/// The single line that frames a compact-v4 view: its short artifact ID,
+/// whether the display is complete or how many units it omits, and
+/// `scan_complete=false` only when the source scan was incomplete. There is
+/// no footer.
+fn header_v4(id: &str, omitted: usize, scan_complete: bool) -> String {
+    let scan = if scan_complete {
+        ""
+    } else {
+        " scan_complete=false"
+    };
+    if omitted == 0 {
+        format!("{V4_PREFIX}{id}{scan} complete]\n")
+    } else {
+        format!(
+            "{V4_PREFIX}{id}{scan} omitted={omitted}; gaps are not absence; expand ID --find TEXT]\n"
+        )
     }
 }
 fn footer(omitted: usize) -> String {
@@ -657,7 +707,7 @@ fn units(data: &Dataset, limit: usize, version: Version, reading: bool) -> Vec<U
     let mut seen = Seen::default();
     let v2_signal = |s: &str| SIGNAL.is_match(s);
     let v3_signal = |s: &str| diagnostic(&STRONG, s);
-    let signal: &dyn Fn(&str) -> bool = if version == Version::V3 {
+    let signal: &dyn Fn(&str) -> bool = if version.profiled() {
         &v3_signal
     } else {
         &v2_signal
@@ -687,7 +737,7 @@ fn units(data: &Dataset, limit: usize, version: Version, reading: bool) -> Vec<U
             });
             continue;
         }
-        if version == Version::V3 {
+        if version.profiled() {
             text_units_v3(record, limit, reading, &mut seen, &mut units);
             continue;
         }
@@ -1456,6 +1506,63 @@ fn fill_v3(units: &[Unit<'_>], available: usize) -> (String, Vec<usize>) {
     (body, selected)
 }
 
+/// The metadata around a view's body. Compact-v1 to v3 open with a header
+/// naming the artifact and close with a footer counting omissions; compact-v4
+/// writes one header line, once the omitted count is known.
+struct Frame {
+    version: Version,
+    scan_complete: bool,
+    /// The opening header of v1 to v3; empty in v4.
+    head: String,
+}
+
+impl Frame {
+    fn new(data: &Dataset, artifact: &str, version: Version) -> Self {
+        Self {
+            version,
+            scan_complete: data.scan_complete,
+            head: if version == Version::V4 {
+                String::new()
+            } else {
+                header(data, artifact, version)
+            },
+        }
+    }
+    /// Bytes of metadata a view of `units` units may need. V3 reserves exactly
+    /// the widest footer it can emit and v4 its widest header; earlier
+    /// versions keep their fixed reserve so their bytes stay identical.
+    fn reserve(&self, units: usize) -> usize {
+        match self.version {
+            Version::V4 => header_v4(PLACEHOLDER_ID, units, self.scan_complete).len(),
+            Version::V3 => self.head.len() + footer(units).len(),
+            Version::V1 | Version::V2 => self.head.len() + 160,
+        }
+    }
+    /// Metadata of a complete table.
+    fn complete_reserve(&self) -> usize {
+        match self.version {
+            Version::V4 => header_v4(PLACEHOLDER_ID, 0, self.scan_complete).len(),
+            _ => self.head.len() + TABLE_TAIL.len(),
+        }
+    }
+    fn complete(&self, table: &str) -> String {
+        match self.version {
+            Version::V4 => header_v4(PLACEHOLDER_ID, 0, self.scan_complete) + table,
+            _ => format!("{}{table}{TABLE_TAIL}", self.head),
+        }
+    }
+    fn finish(&self, body: &str, omitted: usize) -> String {
+        match self.version {
+            Version::V4 => header_v4(PLACEHOLDER_ID, omitted, self.scan_complete) + body,
+            _ => format!("{}{body}{}", self.head, footer(omitted)),
+        }
+    }
+}
+
+/// The footer of a complete table before compact-v4.
+const TABLE_TAIL: &str =
+    "[scopelet display_complete=true omitted_units=0; rows map positionally to columns]\n";
+
 /// `original` is the text the records were parsed from, when there is one:
 /// compact-v3 shows it line by line when no whole JSON record fits.
 fn view(
@@ -1486,29 +1593,18 @@ fn view(
         count <= max_units,
         "compact input exceeds {max_units} units; use an explicit query"
     );
-    let mut output = header(data, artifact, version);
-    // V3 reserves exactly the widest footer it can emit; earlier versions keep
-    // their fixed reserve so their bytes stay identical.
-    let reserve = if version == Version::V3 {
-        footer(count).len()
-    } else {
-        160
-    };
-    let available = budget.saturating_sub(output.len() + reserve);
+    let frame = Frame::new(data, artifact, version);
+    let available = budget.saturating_sub(frame.reserve(count));
     let uniform = compact_table::uniform(data);
     if uniform {
         let indices: Vec<_> = (0..data.records.len()).collect();
-        let tail =
-            "[scopelet display_complete=true omitted_units=0; rows map positionally to columns]\n";
         if let Some(table) = compact_table::encode(
             data,
             &indices,
             version.tables(),
-            budget.saturating_sub(output.len() + tail.len()),
+            budget.saturating_sub(frame.complete_reserve()),
         ) {
-            output.push_str(&table);
-            output.push_str(tail);
-            return Ok((output, indices.len()));
+            return Ok((frame.complete(&table), indices.len()));
         }
     }
     let mut units = units(data, available, version, reading);
@@ -1535,15 +1631,14 @@ fn view(
             if !indices.is_empty()
                 && let Some(table) = compact_table::encode(data, &indices, true, available)
             {
-                output.push_str(&table);
-                output.push_str(&footer(units.len() - indices.len()));
+                let output = frame.finish(&table, units.len() - indices.len());
                 return Ok((output, indices.len()));
             }
         }
         // No table row fits: recompute ordinary-record costs before falling back.
         units = self::units(data, available, version, reading);
     }
-    let selected = if version == Version::V3 {
+    let (body, selected) = if version.profiled() {
         let (body, selected) = fill_v3(&units, available);
         if selected.is_empty()
             && let Some(text) = original
@@ -1562,26 +1657,25 @@ fn view(
                 omitted_lines: None,
                 text_truncated: false,
             };
-            let available = budget.saturating_sub(output.len() + footer(lines).len());
+            let available = budget.saturating_sub(frame.reserve(lines));
             let mut seen = Seen::default();
             let mut units = Vec::new();
             text_units_v3(&record, available, reading, &mut seen, &mut units);
             let (body, selected) = fill_v3(&units, available);
-            output.push_str(&body);
-            output.push_str(&footer(units.len() - selected.len()));
+            let output = frame.finish(&body, units.len() - selected.len());
             ensure!(output.len() <= budget, "compact metadata exceeds budget");
             return Ok((output, selected.len()));
         }
-        output.push_str(&body);
-        selected
+        (body, selected)
     } else {
         let selected = select(&units, available);
+        let mut body = String::new();
         for &i in &selected {
-            units[i].append(&mut output);
+            units[i].append(&mut body);
         }
-        selected
+        (body, selected)
     };
-    output.push_str(&footer(units.len() - selected.len()));
+    let output = frame.finish(&body, units.len() - selected.len());
     ensure!(output.len() <= budget, "compact metadata exceeds budget");
     Ok((output, selected.len()))
 }
