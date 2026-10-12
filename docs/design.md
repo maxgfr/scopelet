@@ -329,7 +329,9 @@ test or build, `node --test`, and `jest`, `vitest run`, `tsc`, `eslint`,
 `uv run` (after uv's own options, and `python -m pytest|unittest|mypy` too));
 package installs (`npm`/`pnpm`/`yarn`/`bun` `install|i|ci|add`, `pip install`,
 `python -m pip install`, `uv sync`, `uv pip install`, `brew install|upgrade`,
-`bundle install`); searches and listings (`rg`, `grep`, `find` without
+`bundle install`; these, `git ls-files` and `uv run` with uv options or a
+`python -m` tool are recognized from compact-v4 on and stay native before
+it); searches and listings (`rg`, `grep`, `find` without
 `-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree` without `-o`, `git
 ls-files`); Git `diff`, `log` (with
 `-p`), `show`, `status`, `blame` and `grep` with no option before the
@@ -545,8 +547,9 @@ json`'s `items`) is shown, when every row fits, as `envelope {...}` (its other
 fields) and `table=/POINTER {...}`. Minified JSON whose records are too large
 to select whole (a quarter of the budget or more, such as `gh api` responses)
 is shown as a table of the short scalar fields every object has, one link
-column kept (`html_url`, else `url`), the other fields named under
-`omitted_columns`, and as many rows as fit, rows carrying a diagnostic or an
+column kept (`html_url`, else `url`), every other field of any object named
+under `omitted_columns` (an envelope keeps its scalars and names its nested
+fields as `omitted_fields`), and as many rows as fit, rows carrying a diagnostic or an
 anchor first; the rows shown count as abridged and the others as omitted.
 Pretty-printed JSON keeps the line view, whose folding keeps rare values
 visible. No missing field becomes null and decimals stay exact.

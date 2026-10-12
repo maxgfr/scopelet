@@ -1501,3 +1501,36 @@ fn stats_report_expand_kinds_repeats_anchors_and_tight_budgets() {
     assert!(!journal.contains("zzanchor"), "{journal}");
     assert!(journal.contains("\"anchored\":true"), "{journal}");
 }
+
+/// Audit finding: commands first recognized with compact-v4 (installs, `git
+/// ls-files`, `uv run` with options) stay native for Codex under earlier
+/// versions, as they always did, and are wrapped under v4.
+#[test]
+fn codex_wraps_commands_new_in_v4_only_under_v4() {
+    let dir = tempfile::tempdir().unwrap();
+    for command in [
+        "npm install",
+        "git ls-files",
+        "uv run --with pytest python -m pytest -q",
+    ] {
+        let event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":command}});
+        for version in ["1", "3"] {
+            let out = cli(dir.path())
+                .env("SCOPELET_COMPACT_VERSION", version)
+                .args(["hook", "codex"])
+                .write_stdin(event.to_string())
+                .output()
+                .unwrap();
+            let value: Value = serde_json::from_slice(&out.stdout).unwrap();
+            assert_eq!(value, json!({}), "v{version}: {command}");
+        }
+        let wrapped = hook_v4(dir.path(), "codex", event);
+        assert!(
+            wrapped["hookSpecificOutput"]["updatedInput"]["command"]
+                .as_str()
+                .unwrap()
+                .contains("--compact-version 4"),
+            "{command}: {wrapped}"
+        );
+    }
+}

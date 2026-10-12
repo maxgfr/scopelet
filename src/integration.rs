@@ -352,7 +352,7 @@ fn pinned_binary(binary: &Path) -> (Option<bool>, Option<String>) {
 /// `cd DIR &&`, `|| true`, or a read-only filter after a pipe), and its
 /// output must not already be bounded by a final `head`, `tail`, `wc` or
 /// `grep -c`/`-l`/`-q`.
-fn command_args(command: &str) -> Option<(Vec<String>, Profile)> {
+fn command_args(command: &str, version: compress::Version) -> Option<(Vec<String>, Profile)> {
     use crate::shell::{Joint, Plan};
     let script = crate::shell::parse(command)?;
     let last = script.steps.len() - 1;
@@ -377,7 +377,7 @@ fn command_args(command: &str) -> Option<(Vec<String>, Profile)> {
             }
             continue;
         }
-        let profile = crate::commands::profile(&first.argv)?;
+        let profile = crate::commands::profile_for(&first.argv, version == compress::Version::V4)?;
         if !first
             .env
             .iter()
@@ -727,7 +727,10 @@ fn subagent_guidance() -> String {
 /// The recognized profile of a command line and the size up to which its
 /// output stays exact: the profile's in compact-v3, the default otherwise.
 fn limits(command: &str, version: compress::Version) -> (Option<Profile>, usize) {
-    let profile = compress::effective_profile(crate::commands::classify(command), version);
+    let profile = compress::effective_profile(
+        crate::commands::classify_for(command, version == compress::Version::V4),
+        version,
+    );
     (profile, profile.map_or(compress::SMALL, Profile::small))
 }
 
@@ -825,7 +828,7 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         let Some(command) = event["tool_input"]["command"].as_str() else {
             return Ok(json!({}));
         };
-        let Some((args, profile)) = command_args(command) else {
+        let Some((args, profile)) = command_args(command, version) else {
             return Ok(json!({}));
         };
         let small = compress::effective_profile(Some(profile), version)

@@ -495,6 +495,9 @@ fn automatic_with<'a>(
     } else {
         None
     };
+    // The line takes at most a quarter of the budget; a longer one is left
+    // out rather than starving the view of the output it describes.
+    let failed = failed.filter(|line| line.len() * 4 <= shape.budget);
     let failed_len = failed.as_ref().map_or(0, String::len);
     let mut anchoring = Anchoring::new(anchors);
     anchoring.focus(text);
@@ -2669,12 +2672,7 @@ fn view(
         && let Some(projection) = compact_table::projection(data, available, &important)
     {
         let omitted = projection.total - projection.shown;
-        let abridged = if projection.abridged {
-            projection.shown
-        } else {
-            0
-        };
-        let output = frame.finish_abridged(&projection.text, omitted, abridged);
+        let output = frame.finish_abridged(&projection.text, omitted, projection.abridged);
         ensure!(output.len() <= budget, "compact metadata exceeds budget");
         return Ok((output, projection.shown));
     }
