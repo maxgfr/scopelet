@@ -1033,3 +1033,184 @@ fn codex_passes_the_context_key_to_the_wrapped_run() {
         .assert()
         .failure();
 }
+
+fn hook_v4(dir: &std::path::Path, agent: &str, event: Value) -> Value {
+    let result = cli(dir)
+        .env("SCOPELET_COMPACT_VERSION", "4")
+        .args(["hook", agent])
+        .write_stdin(event.to_string())
+        .output()
+        .unwrap();
+    assert!(result.status.success());
+    serde_json::from_slice(&result.stdout).unwrap()
+}
+
+/// The text Claude would show for a PostToolUse result: the replaced stream,
+/// or the original when the hook left it alone.
+fn shown(event: &Value, result: &Value, stream: &str) -> String {
+    let replaced = &result["hookSpecificOutput"]["updatedToolOutput"][stream];
+    replaced
+        .as_str()
+        .unwrap_or_else(|| event["tool_response"][stream].as_str().unwrap())
+        .to_owned()
+}
+
+fn bash_result(session: &str, command: &str, stdout: &str) -> Value {
+    json!({"hook_event_name":"PostToolUse","session_id":session,"tool_name":"Bash","tool_input":{"command":command},"tool_response":{"stdout":stdout,"stderr":"","interrupted":false,"isImage":false}})
+}
+
+/// The original bytes behind a repeat reference, through `expand`.
+fn recovered(dir: &std::path::Path, text: &str) -> Vec<u8> {
+    let id = text
+        .strip_prefix("[scopelet v4 ")
+        .and_then(|rest| rest.get(..16))
+        .unwrap();
+    let manifest = cli(dir)
+        .args(["expand", id, "--manifest"])
+        .output()
+        .unwrap();
+    assert!(manifest.status.success(), "{manifest:?}");
+    let manifest: Value = serde_json::from_slice(&manifest.stdout).unwrap();
+    let blob = manifest["snapshots"][0]["blob"].as_str().unwrap();
+    cli(dir)
+        .args(["expand", blob, "--raw"])
+        .output()
+        .unwrap()
+        .stdout
+}
+
+/// An output identical to one this context was already shown becomes a
+/// one-line reference that recovers the original, whether the first
+/// occurrence was a view or passed through unchanged.
+#[test]
+fn repeat_outputs_become_a_reference_to_what_was_shown() {
+    let dir = tempfile::tempdir().unwrap();
+    let log: String = (0..400)
+        .map(|i| format!("worker {i} finished batch\n"))
+        .collect();
+    let event = bash_result("r1", "npm test", &log);
+    let first = shown(
+        &event,
+        &hook_v4(dir.path(), "claude", event.clone()),
+        "stdout",
+    );
+    assert!(first.starts_with("[scopelet v4 "), "{first}");
+    assert!(!first.contains("repeat:"), "{first}");
+    let second = shown(
+        &event,
+        &hook_v4(dir.path(), "claude", event.clone()),
+        "stdout",
+    );
+    let id = &first[13..29];
+    assert_eq!(
+        second,
+        format!(
+            "[scopelet v4 {id} repeat: identical to output already shown in this conversation (400 lines); expand ID]\n"
+        )
+    );
+    assert_eq!(recovered(dir.path(), &second), log.as_bytes());
+
+    // A file read up to 16 KiB is shown whole the first time, then referenced.
+    let source = "fn parse(input: &str) -> usize { input.len() }\n".repeat(80);
+    let read = bash_result("r1", "cat src/parse.rs", &source);
+    assert_eq!(hook_v4(dir.path(), "claude", read.clone()), json!({}));
+    let again = shown(
+        &read,
+        &hook_v4(dir.path(), "claude", read.clone()),
+        "stdout",
+    );
+    assert!(again.contains(" repeat: identical"), "{again}");
+    assert_eq!(recovered(dir.path(), &again), source.as_bytes());
+
+    // Small outputs are never referenced: they cost less than the marker.
+    let small = bash_result("r1", "git status", "On branch main\n");
+    assert_eq!(hook_v4(dir.path(), "claude", small.clone()), json!({}));
+    assert_eq!(hook_v4(dir.path(), "claude", small), json!({}));
+}
+
+/// Repeats are judged per context: another subagent, a compaction, a
+/// persisted preview, a missing session or an earlier compact version never
+/// produce a reference.
+#[test]
+fn repeat_references_stay_inside_one_uncompacted_context() {
+    let dir = tempfile::tempdir().unwrap();
+    let log: String = (0..400)
+        .map(|i| format!("worker {i} finished batch\n"))
+        .collect();
+    let is_repeat = |event: &Value| {
+        shown(
+            event,
+            &hook_v4(dir.path(), "claude", event.clone()),
+            "stdout",
+        )
+        .contains("repeat:")
+    };
+    let main = bash_result("r2", "npm test", &log);
+    assert!(!is_repeat(&main));
+    let mut subagent = main.clone();
+    subagent["agent_id"] = json!("explorer-1");
+    assert!(!is_repeat(&subagent));
+    assert!(is_repeat(&subagent));
+    assert!(is_repeat(&main));
+    let compact = json!({"hook_event_name":"SessionStart","session_id":"r2","source":"compact"});
+    hook_v4(dir.path(), "claude", compact);
+    assert!(!is_repeat(&main));
+    assert!(is_repeat(&main));
+
+    // Only a preview of a persisted output reached the model.
+    let mut persisted = bash_result("r3", "npm test", &log);
+    persisted["tool_response"]["persistedOutputPath"] = json!("/synthetic/tool-results/a.txt");
+    assert_eq!(hook_v4(dir.path(), "claude", persisted), json!({}));
+    assert!(!is_repeat(&bash_result("r3", "npm test", &log)));
+
+    let mut anonymous = bash_result("r4", "npm test", &log);
+    anonymous.as_object_mut().unwrap().remove("session_id");
+    assert!(!is_repeat(&anonymous));
+    assert!(!is_repeat(&anonymous));
+
+    let v3 = bash_result("r5", "npm test", &log);
+    for _ in 0..2 {
+        let result = cli(dir.path())
+            .env("SCOPELET_COMPACT_VERSION", "3")
+            .args(["hook", "claude"])
+            .write_stdin(v3.to_string())
+            .output()
+            .unwrap();
+        let result: Value = serde_json::from_slice(&result.stdout).unwrap();
+        assert!(shown(&v3, &result, "stdout").starts_with("[scopelet compact-v3 "));
+    }
+}
+
+/// A repeat is journaled with the bytes it saved, and nothing of its content.
+#[test]
+fn repeat_references_are_journaled() {
+    let dir = tempfile::tempdir().unwrap();
+    let log: String = (0..400)
+        .map(|i| format!("worker {i} finished batch\n"))
+        .collect();
+    let event = bash_result("r6", "npm test", &log);
+    hook_v4(dir.path(), "claude", event.clone());
+    let marker = shown(
+        &event,
+        &hook_v4(dir.path(), "claude", event.clone()),
+        "stdout",
+    );
+    let folder = dir.path().join("cache/events");
+    let events: Vec<Value> = fs::read_dir(folder)
+        .unwrap()
+        .flatten()
+        .filter(|e| e.path().extension().is_some_and(|x| x == "jsonl"))
+        .flat_map(|e| {
+            fs::read_to_string(e.path())
+                .unwrap()
+                .lines()
+                .map(|l| serde_json::from_str::<Value>(l).unwrap())
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    let repeat = events.iter().find(|e| e["reason"] == "repeat").unwrap();
+    assert_eq!(repeat["bytes_in"], log.len());
+    assert_eq!(repeat["bytes_out"], marker.len());
+    assert_eq!(repeat["version"], 4);
+    assert!(!repeat.to_string().contains("worker"), "{repeat}");
+}

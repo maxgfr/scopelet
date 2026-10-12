@@ -173,6 +173,9 @@ pub enum Reason {
     Compressed,
     /// Compression failed; the original bytes were kept.
     Error,
+    /// Identical to an output already shown in the same context: replaced by
+    /// a reference to it.
+    Repeat,
 }
 
 impl Reason {
@@ -186,6 +189,7 @@ impl Reason {
             Self::Persisted => "persisted",
             Self::Compressed => "compressed",
             Self::Error => "error",
+            Self::Repeat => "repeat",
         }
     }
 }
@@ -374,10 +378,9 @@ fn automatic_with(
     let format = parsed.format();
     let mut data = Dataset {
         records: parsed.records("input", String::new()),
+        notes: vec![SUPPLIED.into()],
         ..Dataset::default()
     };
-    data.notes
-        .push("Bytes supplied to the compressor; completeness before capture is unknown.".into());
     let (mut result, shown) = view(
         &data,
         PLACEHOLDER,
@@ -391,28 +394,18 @@ fn automatic_with(
         return unchanged(Reason::Savings);
     }
     let store = store()?;
-    let blob = store.put("blob", bytes)?;
-    for record in &mut data.records {
-        record.blob = Some(blob.clone());
-    }
-    data.snapshots.push(Snapshot {
-        source: "input".into(),
-        blob,
-        bytes: bytes.len(),
-        local_path: None,
-    });
     // Compact-v3 artifacts name the original blob instead of storing every
     // record a second time; earlier versions keep their exact v1 artifacts.
     let artifact = if version.profiled() {
-        store.put_json(&DatasetRef::new(
-            &data,
-            RecordsRef {
-                blob: data.snapshots[0].blob.clone(),
-                format,
-                source: "input".into(),
-            },
-        ))?
+        let (artifact, blob) = store_original(&store, bytes, format)?;
+        data.snapshots.push(snapshot(blob, bytes.len()));
+        artifact
     } else {
+        let blob = store.put("blob", bytes)?;
+        for record in &mut data.records {
+            record.blob = Some(blob.clone());
+        }
+        data.snapshots.push(snapshot(blob, bytes.len()));
         store.put_json(&data)?
     };
     store.set_last(&artifact);
@@ -427,6 +420,80 @@ fn automatic_with(
         artifact: Some(artifact),
     };
     Ok((Cow::Owned(result.into_bytes()), decision))
+}
+
+const SUPPLIED: &str = "Bytes supplied to the compressor; completeness before capture is unknown.";
+
+fn snapshot(blob: String, bytes: usize) -> Snapshot {
+    Snapshot {
+        source: "input".into(),
+        blob,
+        bytes,
+        local_path: None,
+    }
+}
+
+/// Store supplied bytes and the schema-2 artifact that names them as the
+/// records of `format`; returns (artifact, blob). The same bytes always
+/// yield the same artifact, whether a view or a repeat reference stored it.
+fn store_original(store: &Store, bytes: &[u8], format: Format) -> Result<(String, String)> {
+    let blob = store.put("blob", bytes)?;
+    let data = Dataset {
+        notes: vec![SUPPLIED.into()],
+        snapshots: vec![snapshot(blob.clone(), bytes.len())],
+        ..Dataset::default()
+    };
+    let artifact = store.put_json(&DatasetRef::new(
+        &data,
+        RecordsRef {
+            blob: blob.clone(),
+            format,
+            source: "input".into(),
+        },
+    ))?;
+    Ok((artifact, blob))
+}
+
+/// The compact-v4 reference that replaces an output already shown in the
+/// same context.
+fn repeat_marker(id: &str, lines: usize) -> String {
+    format!(
+        "{V4_PREFIX}{id} repeat: identical to output already shown in this conversation ({lines} lines); expand ID]\n"
+    )
+}
+
+/// Replace output identical to one already shown in this context by a
+/// reference to it, journaled as `repeat`. The original is stored as a view's
+/// would be, so `expand` recovers it even when the first occurrence passed
+/// through unchanged. None when it cannot be stored or is not UTF-8: the
+/// caller then treats the output as new.
+pub fn repeat_recorded(
+    host: &str,
+    bytes: &[u8],
+    path: Option<PathBuf>,
+    profile: Option<crate::commands::Profile>,
+) -> Option<Vec<u8>> {
+    let text = std::str::from_utf8(bytes).ok()?;
+    let format = Parsed::detected(text.to_owned()).format();
+    let store = Store::open(path.clone()).ok()?;
+    let (artifact, blob) = store_original(&store, bytes, format).ok()?;
+    store.set_last(&artifact);
+    let marker = repeat_marker(short_id(&artifact), clean::line_count(text)).into_bytes();
+    crate::events::record(
+        path,
+        crate::events::Event {
+            host: host.into(),
+            profile: effective_profile(profile, Version::V4).map(|p| p.name().into()),
+            bytes_in: bytes.len(),
+            bytes_out: marker.len(),
+            reason: Some(Reason::Repeat),
+            version: Some(Version::V4.number()),
+            artifact: Some(crate::events::prefix(&artifact)),
+            blob: Some(crate::events::prefix(&blob)),
+            ..Default::default()
+        },
+    );
+    Some(marker)
 }
 
 pub fn compact(data: &Dataset, store: &Store, budget: usize) -> Result<String> {
