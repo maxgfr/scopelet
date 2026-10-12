@@ -31,7 +31,7 @@ Your test suite prints 481 results. One of them matters.
 <table>
 <tr>
 <th width="50%">Without Scopelet · 17,549 bytes</th>
-<th width="50%">With Scopelet · 760 bytes</th>
+<th width="50%">With Scopelet · 593 bytes</th>
 </tr>
 <tr>
 <td valign="top">
@@ -65,8 +65,8 @@ Time:        84.113 s
 <td valign="top">
 
 ```
-[scopelet compact-v3 artifact:90da6b1f… scan_complete=true;
- recover: scopelet expand ID --find TEXT (or --manifest)]
+[scopelet v4 47487d02d1c057f5 omitted=0 abridged=1;
+ gaps are not absence; expand ID --find TEXT]
 input:1-3
  > app@1.4.2 test
  > jest --runInBand
@@ -87,8 +87,6 @@ input:493-496
  Test Suites: 1 failed, 480 passed, 481 total
  Tests:       1 failed, 1327 passed, 1328 total
  Time:        84.113 s
-[scopelet display_complete=true omitted_units=0; gaps are
- omitted, not evidence of absence]
 ```
 
 </td>
@@ -97,8 +95,10 @@ input:493-496
 
 The failure kept its expected value, its received value and its stack frame.
 The 480 passes became one line that still says there were 480 and where the
-last one was. `display_complete=true` means nothing at all was dropped: every
-line of that log is either shown or folded into a counted group.
+last one was. The header says what that cost: `omitted=0` means every line of
+the log is shown or folded into a counted group, and `abridged=1` that one
+group stands for lines that differ (here, by their numbers). A view with
+nothing left out says `complete` instead.
 
 This happens automatically, on the machine, with no second model call, no API
 key and no proxy. The original 17,549 bytes are still on disk, and the header
@@ -196,14 +196,14 @@ it, so the second column says what survived.
 
 | What the command printed | What the agent reads instead | Printed | Read | Removed |
 | --- | --- | ---: | ---: | ---: |
-| 480 passing tests, one failure | The failing test with its expected value, received value and stack frame; the 480 passes as one line marked `similar=480` | 17,549 | 760 | **95.7%** |
-| A retry loop hiding one fatal error | `error: retry failed` once, marked `repeat=1000`, then the single fatal line with its line number | 28,039 | 421 | **98.5%** |
-| 1000 progress lines, then two diagnostics | Both diagnostics word for word; the progress as one line marked `similar=1000` | 136,063 | 516 | **99.6%** |
-| The same log with CRLF endings | The same view; the original `\r\n` bytes stay intact on disk | 137,031 | 472 | **99.7%** |
-| A receipt buried in the middle of a log | The receipt line at `input:501`, amount and currency exact | 136,193 | 634 | **99.5%** |
-| A 1000-row JSON array | A table with the first rows, the one row whose status is `failed`, and the last row; the 21-digit integer exact, every other row counted | 171,834 | 4,061 | **97.6%** |
-| A 1000-row JSONL stream | The same table, each row tagged with its position in the stream | 171,832 | 3,984 | **97.7%** |
-| One 12 KB line with no newline | Its first 1.2 KB behind a `text_truncated bytes=12000` marker | 12,000 | 1,288 | **89.3%** |
+| 480 passing tests, one failure | The failing test with its expected value, received value and stack frame; the 480 passes as one line marked `similar=480` | 17,549 | 593 | **96.6%** |
+| A retry loop hiding one fatal error | `error: retry failed` once, marked `repeat=1000`, then the single fatal line with its line number | 28,039 | 197 | **99.3%** |
+| 1000 progress lines, then two diagnostics | Both diagnostics word for word; the progress as one line marked `similar=1000` | 136,063 | 349 | **99.7%** |
+| The same log with CRLF endings | The same view; the original `\r\n` bytes stay intact on disk | 137,031 | 305 | **99.8%** |
+| A receipt buried in the middle of a log | The receipt line at `input:501`, amount and currency exact | 136,193 | 467 | **99.7%** |
+| A 1000-row JSON array | A table with the first rows, the one row whose status is `failed`, and the last row; the two columns identical in every row named once, the 21-digit integer exact, every other row counted | 171,834 | 3,979 | **97.7%** |
+| A 1000-row JSONL stream | The same table, each row tagged with its position in the stream | 171,832 | 4,025 | **97.7%** |
+| One 12 KB line with no newline | Its first 1.2 KB behind a `text_truncated bytes=12000` marker | 12,000 | 1,121 | **90.7%** |
 | A 32-byte command output | The 32 bytes exactly as printed | 32 | 32 | untouched |
 
 Small outputs are the last row on purpose. Under 2 KiB nothing happens at all,
@@ -238,12 +238,15 @@ rejected item, never a wrong one. Sending the same output twice reuses the
 stored original by address instead of reading and re-hashing it.
 
 > [!IMPORTANT]
-> **Bytes are not tokens, and none of the numbers above is a bill.** Earlier
-> live-agent campaigns found no functional regression but could not measure a
-> token saving above their own run-to-run noise, and they ran against binaries
-> that no longer ship, so they were removed rather than kept as stale evidence.
-> Whole-session cost depends on your host, model and task. Measure your own
-> setup before you tell anyone a percentage.
+> **Bytes are not tokens, and none of the numbers above is a bill.** A live
+> campaign (`bench/live.py`, Claude Code 2.1.296 with Haiku, four synthetic
+> tasks, three paired rounds, 36 sessions) found every task done correctly
+> with Scopelet off, with 0.7.2's compact-v3 and with compact-v4. It did not
+> find a session saving above run-to-run noise: one extra turn costs about
+> 20,000 input tokens, the fixed context of a session is about 37,000, and
+> the paired median ratio of v4 to off was 1.01 (from 0.50 to 1.53). The
+> report is in `bench/results/`. Whole-session cost depends on your host,
+> model and task. Measure your own setup before you tell anyone a percentage.
 > [What is verified](docs/verification.md) ·
 > [benchmark reproduction](bench/README.md).
 
@@ -302,45 +305,65 @@ Codex hooks wrap recognized noninteractive commands (tests, builds, linters,
 searches, Git history, logs, file reads), parsed in a small shell subset that
 understands quotes, `2>&1`, `cd DIR &&`, `&&`, `|| true` and pipes into
 read-only filters. A wrapped command still goes through Codex's own approval.
-Claude Code hooks replace Bash output when the host supplies a supported result
-shape. The OpenCode plugin replaces the `bash` tool's output from
-`tool.execute.after` under the same thresholds. Other tools, MCP results,
-unsupported shell syntax, existing output wrappers and outputs the host has
-already persisted all pass through untouched.
+Claude Code hooks replace Bash output, and the text of a Grep in content mode,
+when the host supplies a supported result shape; a subagent starts with the
+recovery command and is asked for a final report of conclusions with
+`file:line` evidence. The OpenCode plugin replaces the `bash` tool's output from
+`tool.execute.after` under the same thresholds. Other tools (Read among them),
+MCP results, unsupported shell syntax, existing output wrappers and outputs the
+host has already persisted all pass through untouched.
 
-Each recognized command gets a budget that fits what its output is for: 4 KiB
-for tests, 8 KiB for searches, Git and logs, 16 KiB for file reads, which stay
-whole up to 16 KiB so an ordinary source file is read as written. Small
-automatic outputs never open the cache store. A local journal, never
-transmitted, records each decision; `scopelet stats` shows compressions, bytes
-saved, why outputs passed through and how often a view was expanded
-(`SCOPELET_EVENTS=0` turns it off).
+In Claude Code, an output identical to one the same conversation was already
+shown becomes a one-line reference to it, until the conversation is compacted
+or cleared; a subagent keeps its own memory of what it was shown. Terms of your
+prompt (identifiers, paths, quoted text, error codes) and of the command (a
+search pattern, a test filter) rank the lines that contain them into the view.
+They stay in a private per-session file, never in the journal.
 
-Inside a view, `compact-v3` reads each line the way a terminal would, dropping
-colour codes and keeping only the final state of a progress bar. Then:
+Each recognized command gets a budget that fits what its output is for: 2 KiB
+for package installs, 4 KiB for tests, 8 KiB for searches, Git and logs, 16 KiB
+for file reads, which stay whole up to 16 KiB so an ordinary source file is read
+as written. Small automatic outputs never open the cache store. A local
+journal, never transmitted, records each decision; `scopelet stats` shows
+compressions, bytes saved, why outputs passed through, repeats, and per profile
+how often a view was expanded and how, flagging a profile whose views are
+expanded too often (`SCOPELET_EVENTS=0` turns it off).
+
+Inside a view, `compact-v4` (the default) reads each line the way a terminal
+would, dropping colour codes and keeping only the final state of a progress bar.
+Then:
 
 | Notation | Meaning |
 | --- | --- |
+| `[scopelet v4 ID complete]` | the whole output is shown or folded into exact repeats |
+| `[scopelet v4 ID omitted=N abridged=M; …]` | N units left out, M shown in part; `expand ID --find TEXT` recovers them |
+| `[scopelet v4 ID repeat: identical to output already shown …]` | this conversation already saw these exact bytes |
+| `failed=2: name (file:line), …` | below a test view's header: the failures to open first |
 | `input:42 text` | line 42, shown as displayed |
 | `input:10-14 repeat=5 text` | lines 10 to 14 are all this line |
 | `input:4 similar=480 last=492 text` | 480 lines share this shape, first at 4, last at 492 |
 | `input:7 text_truncated bytes=12000 prefix…` | one line too big for the budget, cut on a character boundary |
 | `input:40-44` then indented lines | lines 40 to 44 verbatim, one space of indent each |
+| `input:40-44 file=src/a.rs more=7` then ` 12:text` | search results of one file, its path written once; 7 of its matches not shown |
+| `input:9-95 file=Cargo.lock changed=+43/-3 omitted` | a lockfile's or generated file's diff, counted |
+| `src/components/ files=402 ext=tsx:400,ts:2` | a large directory of a listing, with its first and last entries |
+| `envelope {…}` then `table=/items {…}` | a JSON object's other fields, then its dominant array as a table |
+| `"constant":{…}`, `"omitted_columns":[…]` | columns equal in every row, named once; fields left out of the rows |
 
 Line numbers are always absolute positions in the original. Markers are
 metadata: they are never bytes claimed to appear in your output. Selection
 keeps the first and last line, then the first occurrence of each distinct
 diagnostic, then repeats, warnings and the lines around a failure, filling
 from both ends so a final summary survives a flood of errors.
-`--compact-version 1|2` still produce the earlier formats byte for byte.
+`--compact-version 1|2|3` still produce the earlier formats byte for byte.
 [Contracts and limits](docs/design.md).
 
 ## Response style
 
 | Mode | Behavior |
 | --- | --- |
-| `default` | Adaptive compression; routine edits use existing checks, then 1–3 short outcome/validation sentences. Enabled on first install. |
-| `caveman` | Same compression; routine replies target 30 words, exceeding that when needed to retain meaning or meet the request. |
+| `default` | Adaptive compression; routine edits reuse existing code and make the smallest change that passes existing checks, then 1–3 short outcome/validation sentences. Enabled on first install. |
+| `caveman` | Same compression and reuse rule; routine replies target 30 words, exceeding that when needed to retain meaning or meet the request. |
 | `off` | Disable automatic compression and its response preference. |
 
 ```sh

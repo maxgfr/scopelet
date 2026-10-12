@@ -118,7 +118,9 @@ matching Scopelet hooks and keeps backups.
 
 Default asks for relevant code and existing checks to be inspected before a
 routine edit is verified, then reports outcome and validation in 1–3 short
-sentences. Caveman targets 30 words for routine replies, retaining failures,
+sentences. Both modes also ask, before writing code, to reuse existing code,
+the standard library or installed dependencies and make the smallest change
+that passes existing checks. Caveman targets 30 words for routine replies, retaining failures,
 qualifications, numbers, negation and necessary next actions in the user's
 language. Required information or requested detail can exceed these targets;
 saved documents use normal prose. These are preferences, not output truncation
@@ -133,9 +135,18 @@ compresses that saved file instead (only a regular file in that directory,
 within the input limit), so `expand` recovers every line. Otherwise, and on
 OpenCode 1, the view keeps the "full output saved to" line, so `expand`
 recovers what OpenCode handed over and the file holds the rest.
-Claude Code uses `PostToolUse.updatedToolOutput` for Bash results with known
-stdout/stderr fields. Other fields survive unchanged. Failure events without a
-replaceable output, images and unknown envelopes pass through. MCP tool results
+Claude Code uses `PostToolUse.updatedToolOutput` (matcher `Bash|Grep`) for Bash
+results with known stdout/stderr fields and for the `content` text of a Grep in
+`content` mode, compressed as search results. Other fields survive unchanged;
+Grep's `files_with_matches` and `count` modes, Read, failure events without a
+replaceable output, images and unknown envelopes pass through. In compact-v4 an
+output identical to one the same conversation was already shown becomes a
+one-line repeat reference (recoverable like any view) until a compaction or a
+clear; each subagent keeps its own memory. Prompt terms and the command's
+search pattern or test filter rank matching lines into the view; they stay in
+a private per-session file under the config directory, never in the journal. A
+`SubagentStart` hook gives each subagent the recovery command and asks its
+final report for conclusions with `file:line` evidence. MCP tool results
 pass through too: Claude Code's hook documentation does not say how a
 PostToolUse replacement applies to an MCP result's content, and Scopelet does
 not rely on unverified behavior. Codex uses
@@ -157,14 +168,15 @@ needed. Other policy hooks
 must remain enabled. Interactive commands should always use native tools.
 
 Small automatic outputs do not open the cache. Codex leaves a plain `cat` of a
-known regular file up to 2 KiB native; missing paths, unknown working directories
+known regular file up to 16 KiB native in compact-v3 and later (2 KiB in v1
+and v2); missing paths, unknown working directories
 and larger files retain the normal command path. The host still reads the file
 and enforces its permissions, so a subsequent file change is not hidden.
 
 Compression leaves outputs up to 2 KiB intact (16 KiB for a recognized file
 read). Larger outputs are replaced only if the complete replacement saves at
 least 20% and 512 bytes, with a 4 KiB target per stream, or the recognized
-command's target in compact-v3. Repetitions have counts; selected lines stay exact; omissions and
+command's target in compact-v3 and later. Repetitions have counts; selected lines stay exact; omissions and
 immutable recovery references are explicit. A host-truncated input cannot be
 restored to bytes the compressor never received. Existing persisted-output
 previews and Scopelet output pass through. Capture is bounded at 32 MiB per
@@ -192,12 +204,15 @@ copies too; they can shadow the global skill.
 
 ## Compact version and additional commands
 
-Compact-v3 is the default. Set `SCOPELET_COMPACT_VERSION=1` or `2` in the agent
-process environment to restore an earlier presentation for installed hooks;
-unset it or set `3` to use v3. Direct CLI calls can override it with
-`--compact-version 1|2|3`. V2 added partial JSON tables and broader diagnostic
-coverage; v3 adds a leaner envelope; see [queries.md](queries.md) for exact
-recovery semantics.
+Compact-v4 is the default. Set `SCOPELET_COMPACT_VERSION=1`, `2` or `3` in the
+agent process environment to restore an earlier presentation for installed
+hooks; unset it or set `4` to use v4. Direct CLI calls can override it with
+`--compact-version 1|2|3|4`. V2 added partial JSON tables and broader
+diagnostic coverage; v3 a leaner envelope and command profiles; v4 a one-line
+header with a 16-character ID, repeat references, relevance anchors, failure
+lines for tests, file-grouped search results, folded listings, collapsed
+lockfile diffs, an install profile and JSON envelope tables; see
+[queries.md](queries.md) for exact recovery semantics.
 The JSON query interface and old saved artifacts remain compatible.
 
 Hooks recognize builds, tests and checks (`cargo test|check|clippy|build|nextest|doc`,
@@ -207,8 +222,11 @@ test|check|build|lint`, `go test|build|vet`, `ruff`, `mypy`, Gradle/Maven/.NET
 test or build, `node --test`, and `jest`, `vitest run`, `tsc`, `eslint`,
 `prettier --check` or `playwright test` through `npx` (also `-y`), `bunx`,
 `yarn`, `pnpm exec` or
-`uv run`); searches and listings (`rg`, `grep`, `find` without
-`-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree` without `-o`); Git `diff`, `log` (with
+`uv run`, after uv's own options); package installs (`npm`/`pnpm`/`yarn`/`bun`
+`install|i|ci|add`, `pip install`, `uv sync`, `uv pip install`, `brew
+install|upgrade`, `bundle install`); searches and listings (`rg`, `grep`,
+`find` without `-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree` without
+`-o`, `git ls-files`); Git `diff`, `log` (with
 `-p`), `show`, `status`, `blame` and `grep` with no option before the
 subcommand other than `--no-pager` or `-C DIR` (`-c` can name a program) and
 none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
@@ -217,7 +235,7 @@ logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
 `nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
 `rtk` are recognized by the program they run, not by a substring.
 In compact-v3 each kind has its own byte target: 4 KiB for tests, 8 KiB for
-searches, Git and logs, 16 KiB for file reads, which also stay exact up to
+searches, Git and logs, 16 KiB for file reads (and in v4 2 KiB for installs), which also stay exact up to
 16 KiB so an ordinary source file is read whole. Unsupported syntax still runs
 natively. Recognition
 permits wrapping; it does not guarantee compression. Outputs are replaced only
