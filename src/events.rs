@@ -1,9 +1,10 @@
 //! A local journal of compression decisions, never transmitted.
 //!
 //! One JSON line per event in `<cache>/events/YYYY-MM.jsonl`, under 512
-//! bytes: time, host, kind, profile, byte counts, reason, compact version and
-//! 12-character prefixes of the artifact and original it produced. No
-//! content, command or path is recorded. Writing is best effort and
+//! bytes: time, host, kind, profile, byte counts, reason, compact version,
+//! 12-character prefixes of the artifact and original it produced, whether
+//! relevance anchors ranked lines up, and for an expansion its kind. No
+//! content, command, path or anchor term is recorded. Writing is best effort and
 //! `SCOPELET_EVENTS=0` turns it off.
 use crate::compress::Reason;
 use serde::{Deserialize, Serialize};
@@ -35,6 +36,13 @@ pub struct Event {
     pub artifact: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub blob: Option<String>,
+    /// A compression in which relevance anchors ranked lines up.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub anchored: bool,
+    /// How an expansion read the evidence: `find`, `range`, `page`,
+    /// `manifest` or `raw`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expand: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -150,17 +158,42 @@ pub fn unchanged(
     );
 }
 
-/// Journal a recovery of a stored reference.
-pub fn expanded(cache: Option<PathBuf>, reference: &str) {
+/// Journal a recovery of a stored reference and how it read it.
+pub fn expanded(cache: Option<PathBuf>, reference: &str, how: &str) {
     record(
         cache,
         Event {
             host: "cli".into(),
             kind: Kind::Expand,
             artifact: Some(prefix(reference)),
+            expand: Some(how.into()),
             ..Event::default()
         },
     );
+}
+
+/// Expansions above this share of a profile's compressions suggest its
+/// budget is too tight (with at least `TIGHT_MIN` compressions).
+const TIGHT_RATE: f64 = 0.25;
+/// Compressions needed before a profile's expand rate means anything.
+const TIGHT_MIN: usize = 4;
+
+/// One profile's figures in `scopelet stats`.
+#[derive(Debug, Default, Serialize, PartialEq)]
+pub struct ProfileStats {
+    pub compressions: usize,
+    /// Compressions whose artifact or original was expanded afterwards.
+    pub expanded: usize,
+    pub expand_rate: Option<f64>,
+    /// Compressions in which relevance anchors ranked lines up.
+    pub anchored: usize,
+    /// Outputs replaced by a reference to an identical one already shown.
+    pub repeats: usize,
+    pub repeat_bytes_saved: u64,
+    /// More than 25% of at least four compressions were expanded: the
+    /// views probably leave out what the agent needs. A report, not a
+    /// setting: nothing is adjusted automatically.
+    pub budget_probably_tight: bool,
 }
 
 /// What `scopelet stats` reports.
@@ -180,10 +213,21 @@ pub struct Stats {
     /// Compressions by profile (`none` when unrecognized).
     pub by_profile: BTreeMap<String, usize>,
     pub expands: usize,
+    /// Expansions by how they read the evidence (`find`, `range`, `page`,
+    /// `manifest`, `raw`; `unknown` before this was journaled).
+    pub expands_by_kind: BTreeMap<String, usize>,
     /// Compressions whose artifact or original was expanded afterwards.
     pub expanded_after_compression: usize,
     /// `expanded_after_compression / compressions`, when there were any.
     pub expand_rate: Option<f64>,
+    /// Outputs replaced by a reference to one already shown, and the bytes
+    /// that saved.
+    pub repeats: usize,
+    pub repeat_bytes_saved: u64,
+    /// Compressions in which relevance anchors ranked lines up.
+    pub anchored: usize,
+    /// The same figures per profile (`none` when unrecognized).
+    pub profiles: BTreeMap<String, ProfileStats>,
     pub journal: PathBuf,
 }
 
@@ -221,17 +265,29 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
         ..Stats::default()
     };
     let mut compressed: Vec<&Event> = Vec::new();
+    let profile_of = |e: &Event| e.profile.clone().unwrap_or_else(|| "none".into());
     for event in &events {
         match (event.kind, event.reason) {
             (Kind::Compress, Some(Reason::Compressed)) => {
                 stats.compressions += 1;
                 stats.bytes_in += event.bytes_in as u64;
                 stats.bytes_out += event.bytes_out as u64;
-                *stats
-                    .by_profile
-                    .entry(event.profile.clone().unwrap_or_else(|| "none".into()))
-                    .or_default() += 1;
+                *stats.by_profile.entry(profile_of(event)).or_default() += 1;
+                let profile = stats.profiles.entry(profile_of(event)).or_default();
+                profile.compressions += 1;
+                if event.anchored {
+                    stats.anchored += 1;
+                    profile.anchored += 1;
+                }
                 compressed.push(event);
+            }
+            (Kind::Compress, Some(Reason::Repeat)) => {
+                let saved = event.bytes_in.saturating_sub(event.bytes_out) as u64;
+                stats.repeats += 1;
+                stats.repeat_bytes_saved += saved;
+                let profile = stats.profiles.entry(profile_of(event)).or_default();
+                profile.repeats += 1;
+                profile.repeat_bytes_saved += saved;
             }
             (Kind::Compress, Some(reason)) => {
                 *stats
@@ -239,26 +295,43 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
                     .entry(reason.as_str().into())
                     .or_default() += 1
             }
-            (Kind::Expand, _) => stats.expands += 1,
+            (Kind::Expand, _) => {
+                stats.expands += 1;
+                *stats
+                    .expands_by_kind
+                    .entry(event.expand.clone().unwrap_or_else(|| "unknown".into()))
+                    .or_default() += 1;
+            }
             (Kind::Compress, None) => {}
         }
     }
     stats.bytes_saved = stats.bytes_in.saturating_sub(stats.bytes_out);
     // An expansion counts for a compression it follows and names.
-    stats.expanded_after_compression = compressed
-        .iter()
-        .filter(|c| {
-            events.iter().any(|e| {
-                e.kind == Kind::Expand
-                    && e.ts >= c.ts
-                    && e.artifact.as_ref().is_some_and(|x| {
-                        Some(x) == c.artifact.as_ref() || Some(x) == c.blob.as_ref()
-                    })
-            })
+    let expanded = |c: &&&Event| {
+        events.iter().any(|e| {
+            e.kind == Kind::Expand
+                && e.ts >= c.ts
+                && e.artifact
+                    .as_ref()
+                    .is_some_and(|x| Some(x) == c.artifact.as_ref() || Some(x) == c.blob.as_ref())
         })
-        .count();
+    };
+    for event in compressed.iter().filter(expanded) {
+        stats.expanded_after_compression += 1;
+        stats
+            .profiles
+            .entry(profile_of(event))
+            .or_default()
+            .expanded += 1;
+    }
     stats.expand_rate = (stats.compressions > 0)
         .then(|| stats.expanded_after_compression as f64 / stats.compressions as f64);
+    for profile in stats.profiles.values_mut() {
+        profile.expand_rate = (profile.compressions > 0)
+            .then(|| profile.expanded as f64 / profile.compressions as f64);
+        profile.budget_probably_tight = profile.compressions >= TIGHT_MIN
+            && profile.expand_rate.is_some_and(|rate| rate > TIGHT_RATE);
+    }
     stats
 }
 

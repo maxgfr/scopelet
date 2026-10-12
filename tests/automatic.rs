@@ -1418,3 +1418,86 @@ fn guidance_hooks_install_and_uninstall_subagent_start() {
     let value: Value = serde_json::from_slice(&fs::read(&claude).unwrap()).unwrap();
     assert!(value.get("hooks").is_none(), "{value}");
 }
+
+/// `stats` reports per profile how often views were expanded and how, what
+/// repeats saved, which views anchors shaped, and flags a profile whose
+/// views are expanded too often; the journal holds no anchor term.
+#[test]
+fn stats_report_expand_kinds_repeats_anchors_and_tight_budgets() {
+    let dir = tempfile::tempdir().unwrap();
+    let words = |seed: usize| -> String {
+        (0..300)
+            .map(|i| {
+                let w: String = (seed * 1000 + i)
+                    .to_string()
+                    .bytes()
+                    .map(|b| (b'a' + (b - b'0')) as char)
+                    .collect();
+                format!("{w} test step done\n")
+            })
+            .collect()
+    };
+    let prompt = json!({"hook_event_name":"UserPromptSubmit","session_id":"st","prompt":"why does `zzanchor_term` break?"});
+    hook_v4(dir.path(), "claude", prompt);
+    let mut views = Vec::new();
+    for seed in 0..4 {
+        let mut out = words(seed + 1);
+        if seed == 3 {
+            out.insert_str(out.len() / 2, "bcd zzanchor_term step done\n");
+        }
+        let event = bash_result("st", "npm test", &out);
+        let result = hook_v4(dir.path(), "claude", event.clone());
+        views.push(shown(&event, &result, "stdout"));
+    }
+    // The first output again: a repeat reference.
+    let again = bash_result("st", "npm test", &words(1));
+    assert!(
+        shown(
+            &again,
+            &hook_v4(dir.path(), "claude", again.clone()),
+            "stdout"
+        )
+        .contains("repeat:")
+    );
+    let id = |view: &str| view[13..29].to_owned();
+    cli(dir.path())
+        .args(["expand", &id(&views[0]), "--find", "step"])
+        .assert()
+        .success();
+    cli(dir.path())
+        .args(["expand", &id(&views[1]), "--manifest"])
+        .assert()
+        .success();
+    let out = cli(dir.path())
+        .args(["stats", "--days", "1"])
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let stats: Value = serde_json::from_slice(&out.stdout).unwrap();
+    let tests = &stats["profiles"]["tests"];
+    assert_eq!(tests["compressions"], 4, "{stats}");
+    assert_eq!(tests["expanded"], 2, "{stats}");
+    assert_eq!(tests["expand_rate"], 0.5, "{stats}");
+    assert_eq!(tests["budget_probably_tight"], true, "{stats}");
+    assert_eq!(tests["repeats"], 1, "{stats}");
+    assert_eq!(tests["anchored"], 1, "{stats}");
+    assert_eq!(stats["repeats"], 1, "{stats}");
+    assert!(
+        stats["repeat_bytes_saved"].as_u64().unwrap() > 5000,
+        "{stats}"
+    );
+    assert_eq!(
+        stats["expands_by_kind"],
+        json!({"find": 1, "manifest": 1}),
+        "{stats}"
+    );
+    assert!(stats["pass_through"].get("repeat").is_none(), "{stats}");
+    let journal: String = fs::read_dir(dir.path().join("cache/events"))
+        .unwrap()
+        .flatten()
+        .filter(|e| e.path().extension().is_some_and(|x| x == "jsonl"))
+        .map(|e| fs::read_to_string(e.path()).unwrap())
+        .collect();
+    assert!(!journal.contains("zzanchor"), "{journal}");
+    assert!(journal.contains("\"anchored\":true"), "{journal}");
+}

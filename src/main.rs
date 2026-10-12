@@ -736,7 +736,18 @@ fn execute(cli: Cli) -> Result<i32> {
             );
             let id = store.resolve(&id)?;
             if store.contains(&id) {
-                scopelet::events::expanded(Some(store.root.clone()), &id);
+                let how = if !find.is_empty() {
+                    "find"
+                } else if raw {
+                    "raw"
+                } else if manifest {
+                    "manifest"
+                } else if id.starts_with("blob:") {
+                    "range"
+                } else {
+                    "page"
+                };
+                scopelet::events::expanded(Some(store.root.clone()), &id, how);
             }
             if !find.is_empty() {
                 let data = scopelet::recovery::search(
