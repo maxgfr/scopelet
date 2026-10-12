@@ -7,7 +7,7 @@ call another model to compress data.
 `Source -> Dataset -> operations -> immutable artifact -> bounded View` is the
 single pipeline. The Rust library exposes the same types used by the CLI.
 Request version is 1. Saved artifacts are schema 1 (records stored) or, for
-compact-v3 automatic compression and for a recovery whose only record is a
+compact-v3 and v4 automatic compression and for a recovery whose only record is a
 whole stored text original (a blob paged or searched whose view is all of it,
 such as a single long line), schema 2 (records named by their original blob).
 Unknown request fields fail.
@@ -84,8 +84,8 @@ original is removed in that pass because the originals it names are unknown.
 `--max-size` then evicts least recently modified items until the cache fits,
 never one modified within the last hour, and removes an original only once no
 surviving artifact names it; disposable offset indexes count and evict like
-originals. Cleanup also removes per-session hook markers older than the age
-limit. Only content-hash-named files are
+originals. Cleanup also removes per-context hook states (`<config>/sessions/`)
+older than the age limit. Only content-hash-named files are
 cache items: cleanup leaves anything else in the directory alone, apart from its
 aged temporaries in the reserved `.scopelet-write-` namespace (12 alphanumeric
 suffix characters). Legacy `.tmp*` files are left alone because their owner
@@ -121,10 +121,17 @@ activation. They use the same immutable store and do not alter API requests or
 conversation history. Default and caveman share the compression engine; caveman
 only changes the host's concise response instruction. Off returns native calls.
 Routine-edit guidance asks the agent to inspect relevant code and existing
-checks, preserve intended behavior and verify the change. Default asks for
+checks, preserve intended behavior and verify the change, and, before writing
+code, to reuse existing code, the standard library or installed dependencies
+and make the smallest change that passes existing checks. Default asks for
 1–3 short outcome/validation sentences; caveman targets 30 words with explicit
-exceptions for required information and requested detail. These are preferences,
-never forced truncation or a reason to omit verification.
+exceptions for required information and requested detail. Both end with the
+recovery line `Recover: BIN expand ID --find TEXT [--regex] [--ignore-case]
+(ID or last)`; with a 45-byte pinned path they fit 380 and 430 bytes. In Claude
+Code a `SubagentStart` hook gives each subagent the recovery line and asks its
+final report for conclusions with `file:line` evidence, without restating
+commands or raw output, since that report becomes its parent's input. These
+are preferences, never forced truncation or a reason to omit verification.
 Host settings are merged, original bytes backed up, and only exact Scopelet hook
 entries are removed. The resolved executable is copied during installation so
 hooks never trigger downloads. Host permission/trust mechanisms remain in force;
@@ -152,8 +159,12 @@ cannot fit, the engine selects whole records rather than clipping fields.
 Text presentation preserves first/final lines, then selects diagnostic lines
 before context and ordinary lines. In v1 and v2, automatic compression passes
 through when no whole evidence unit fits; compact-v3 instead cuts a single
-oversized line on a character boundary and marks it (see below). No version
-substitutes a recovery-only envelope: every view carries source bytes.
+oversized line on a character boundary and marks it (see below). Up to
+compact-v3, no version substitutes a recovery-only envelope: every view
+carries source bytes. Compact-v4 amends this in one case only: an output
+identical to one the same conversation context was already shown becomes a
+one-line repeat reference that recovers it (see Compact-v4). Every other view
+still carries source bytes.
 All originals remain available. Automatic detection of malformed JSONL falls
 back to text selection and never asserts an exact aggregate.
 
@@ -184,8 +195,12 @@ exit status. Failed storage/compression returns captured native bytes; the
 command is never rerun. Its stdin remains closed, so only noninteractive commands
 belong in this path. The Codex adapter only wraps the shell subset described
 below and skips recognized interactive flags. Claude's adapter
-replaces only known Bash output shapes after execution and keeps all other
-fields. Results carrying a nonempty `persistedOutputPath` or positive
+replaces only known Bash output shapes after execution, and the `content` text
+of a Grep in `content` mode (compressed as search results; its
+`files_with_matches` and `count` modes and unknown shapes pass through), and
+keeps all other fields. The Grep shape was captured from Claude Code 2.1.296
+(`tests/fixtures/claude_grep_*.json`); a live run confirmed the model receives
+the replaced text. Results carrying a nonempty `persistedOutputPath` or positive
 `persistedOutputSize` pass through before Claude renders its own preview, so the
 host cannot truncate an already compressed view again. Failure events without
 a replaceable result and unknown host/tool shapes pass through unchanged.
@@ -236,25 +251,30 @@ small/binary inputs and persisted previews perform no store writes; each
 decision appends one line under 512 bytes to the local event journal,
 `<cache>/events/YYYY-MM.jsonl` (time, host, profile, byte counts, a typed reason
 `small`, `non_utf8`, `too_many_lines`, `already_compressed`, `savings`,
-`persisted`, `compressed` or `error`, compact version, and 12-character
-prefixes of the artifact and original; `expand` adds one line with the
-reference prefix). No content, command or path is recorded, nothing is
-transmitted, writing is best effort, and `SCOPELET_EVENTS=0` disables it.
-`stats --days N` summarizes compressions, bytes saved, pass-through reasons and
-the share of compressions whose artifact or original was expanded later. Accepted
+`persisted`, `compressed`, `repeat` or `error`, compact version, 12-character
+prefixes of the artifact and original, and `anchored` when relevance anchors
+ranked lines up; `expand` adds one line with the reference prefix and how it
+read the evidence: `find`, `range`, `page`, `manifest` or `raw`). No content,
+command, path or anchor term is recorded, nothing is transmitted, writing is
+best effort, and `SCOPELET_EVENTS=0` disables it. `stats --days N` summarizes
+compressions, bytes saved, pass-through reasons, the share of compressions
+whose artifact or original was expanded later, expansions by kind, repeats and
+the bytes they saved, anchored views and, per profile, the same figures with
+`budget_probably_tight` when more than 25% of at least four compressions were
+expanded. Stats report; nothing is tuned automatically. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact JSON
 serialization. Compact-v1 and v2 store schema-1 artifacts, byte for byte as
 before; compact-v3 stores a schema-2 artifact that names the original blob, so
 an accepted view caches the original once plus well under a kilobyte. A storage/compression failure returns native captured bytes.
 Explicit queries still report storage errors. Compact-v2 became the CLI and hook default after a bounded live rollout
-comparison, and compact-v3 replaced it as the default (see below); v2 remains
-selectable and byte-identical. Legacy
+comparison, compact-v3 replaced it as the default, and compact-v4 replaced v3
+(see below); v2 and v3 remain selectable and byte-identical. Legacy
 library helpers `automatic` and `compact` retain v1 behavior.
 
 `--compact-version 2` selects compact-v2; `SCOPELET_COMPACT_VERSION=2` selects it
-for automatic hooks too. An explicit CLI version takes precedence. Only `1`, `2`
-and `3` are accepted. Version 2 retains complete tables when they fit, otherwise
+for automatic hooks too. An explicit CLI version takes precedence. Only `1`, `2`,
+`3` and `4` are accepted. Version 2 retains complete tables when they fit, otherwise
 selects whole rows with `indices` (zero-based dataset positions), `total_records`
 and positional `record_sources` when source labels differ. Columns require
 identical keys across every row, including missing/null distinctions. Selected
@@ -306,8 +326,12 @@ test|check|build|lint`, `go test|build|vet`, `ruff`, `mypy`, Gradle/Maven/.NET
 test or build, `node --test`, and `jest`, `vitest run`, `tsc`, `eslint`,
 `prettier --check` or `playwright test` through `npx` (also `-y`), `bunx`,
 `yarn`, `pnpm exec` or
-`uv run`); searches and listings (`rg`, `grep`, `find` without
-`-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree` without `-o`); Git `diff`, `log` (with
+`uv run` (after uv's own options, and `python -m pytest|unittest|mypy` too));
+package installs (`npm`/`pnpm`/`yarn`/`bun` `install|i|ci|add`, `pip install`,
+`python -m pip install`, `uv sync`, `uv pip install`, `brew install|upgrade`,
+`bundle install`); searches and listings (`rg`, `grep`, `find` without
+`-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree` without `-o`, `git
+ls-files`); Git `diff`, `log` (with
 `-p`), `show`, `status`, `blame` and `grep` with no option before the
 subcommand other than `--no-pager` or `-C DIR` (`-c` can name a program) and
 none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
@@ -316,7 +340,9 @@ logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
 `nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
 `rtk` are recognized by the program they run, not by a substring.
 Each recognized command has a profile that sets its compact-v3 byte target:
-4 KiB for tests, 8 KiB for searches, Git and logs, 16 KiB for file reads. A
+4 KiB for tests, 8 KiB for searches, Git and logs, 16 KiB for file reads, and in
+compact-v4 2 KiB for installs (earlier versions treat an install as the
+unrecognized command it was). A
 file read also stays exact up to 16 KiB, and it is not ranked by diagnostic
 words (a string saying `error` in source code is not an outcome). Hooks take
 the profile from the parsed command (Codex passes `run --auto --profile`;
@@ -328,11 +354,10 @@ remain independent of presentation.
 
 ## Compact-v3
 
-Compact-v3 is the CLI and hook default. `--compact-version 3` and
-`SCOPELET_COMPACT_VERSION=3` select it explicitly; `1` and `2` remain
-selectable and their output stays byte-identical to the releases that
-introduced them (`tests/performance_contracts.rs` pins both against 0.3.2).
-Only `1`, `2` and `3` are accepted. The query and saved-dataset schemas remain
+`--compact-version 3` and `SCOPELET_COMPACT_VERSION=3` select compact-v3;
+`1` and `2` remain selectable and their output stays byte-identical to the
+releases that introduced them (`tests/performance_contracts.rs` pins both
+against 0.3.2, and v3 against 0.7.2). Compact-v4 is the default (see below). The query and saved-dataset schemas remain
 version 1, and the complete-table and partial-table paths are shared with v2.
 
 The v3 header carries the artifact reference once; `ID` in its recovery hint
@@ -421,3 +446,107 @@ Three or more selected consecutive plain lines are shown as one range block:
 line a+k is the k-th indented line. The label bytes this saves are spent on
 further evidence when it fits. A block header carries no `repeat=`, which
 distinguishes it from a contiguous run.
+
+## Compact-v4
+
+Compact-v4 is the CLI and hook default; `--compact-version 4` and
+`SCOPELET_COMPACT_VERSION=4` select it explicitly. It keeps compact-v3's body
+(display copies, folding, tiers, range blocks) and its schema-2 artifacts, and
+changes what frames and shapes it.
+
+**Envelope.** One header line and no footer: `[scopelet v4 ID complete]`, or
+`[scopelet v4 ID omitted=N abridged=M; gaps are not absence; expand ID --find
+TEXT]`, with ` scan_complete=false` after the ID only when the scan was
+incomplete. `ID` is the first 16 hex characters of the artifact hash; `expand`
+resolves it like any unique prefix and fails, naming the count, when two cached
+items share it. `omitted` counts units left out; `abridged` counts units shown
+in part: a line cut behind `text_truncated`, a `similar=N` group (its members
+differ from the line shown; an exact `repeat=N` hides nothing), or a record
+shown without some of its fields. A view is `complete` only when both are zero.
+The header reserve is the widest header the view can emit. A line starting with
+`[scopelet ` still marks an output as already compressed.
+
+**Repeat references (Claude Code).** Each conversation context (the session,
+and each subagent separately, by `agent_id`) keeps a private state under
+`<config>/sessions/`: the mode it was told, 16-character hash prefixes of at
+most 512 outputs it was shown (oldest forgotten first), and its prompt anchors.
+A Bash stream or Grep content over 2048 bytes (even a file read) whose hash is
+in that state is replaced by `[scopelet v4 ID repeat: identical to output
+already shown in this conversation (N lines); expand ID]`; its original and
+artifact are stored as a view's would be (the same bytes give the same
+artifact), so it is recoverable even when the first occurrence passed through
+raw. Every other output is remembered once shown, as a view or raw; a host
+persisted preview is neither replaced nor remembered. A `SessionStart` with
+source `compact` or `clear` forgets what was shown (a clear also drops the
+anchors). Only exact identity counts: two runs that differ in a timing or a
+thread id are two outputs. Codex and OpenCode, which signal no compaction, get
+no repeat references. A repeat is journaled with the bytes it saved. An earlier
+bare-mode marker is read as that mode.
+
+**Relevance anchors.** On `UserPromptSubmit`, the prompt's quoted text, paths
+and file names, snake_case and CamelCase identifiers, error codes and numbers
+of three digits or more (3 to 64 bytes, at most 32, newest kept) are stored in
+the context's private state, never in the journal. A tool call adds the terms
+its command names: the literal pattern of `rg`, `grep` or `git grep` (a regular
+expression with operators names nothing; `|` branches split), and the filter
+of `cargo test NAME`, `pytest -k`, `jest -t` or `go test -run`; a subagent also
+gets its session's prompt terms. Codex passes its context key to the wrapped
+run (`run --auto --session KEY`); OpenCode passes its session ID (it has no
+prompt hook, so only command terms apply there). A term found on more than
+half of an output's lines singles nothing out and is ignored for that output.
+A unit containing a remaining term ranks with first diagnostics (tier 3) while
+anchored units fit a third of the budget. File reads take anchors too. The
+view depends on the anchors; the artifact does not.
+
+**Tests.** A view of the tests profile whose output contains recognized
+failures gets a metadata line below the header: `failed=N: name (file:line),
+...`, at most five entries then `+M`. Recognized: cargo test (`---- name stdout
+----` and its panic location), pytest (`FAILED`/`ERROR` summary lines and the
+deepest `file.py:N:` of their section), jest and vitest (`●` or `FAIL file >
+name` titles and their first frame outside `node_modules`) and go test (`---
+FAIL:`, or a test that panicked, with its log line or the deepest frame
+outside the Go toolchain). An unrecognized format gets no line. The line is
+computed from the output and never claimed to occur in it.
+
+**Search results.** In the search profile, two or more consecutive selected
+lines of one file in `path:N:text` / `path-N-text` form (`grep -n`, `rg -n`,
+with context) are shown as `input:a-b file=PATH` then each line without its
+`PATH:` or `PATH-` prefix, line a+k being the k-th. The path is metadata, the
+rest of each line source bytes. Each file's first and last match, its anchored
+matches and then its earliest, up to five, rank before any file's other
+matches, which fill only leftover budget; a file's first block counts its
+matches not shown as `more=N`. A range block never runs from one file into the
+next.
+
+**Listings.** A `find`, `git ls-files`, `ls -R` or `tree` listing too long to
+show whole summarizes each directory of more than eight entries as `DIR/
+files=N ext=E:n,...` (four extensions, then `+K`) before its first entry, and
+shows only its first and last entries; smaller directories stay whole. A
+listing that fits is not folded.
+
+**Diffs.** A `diff --git` file that is a lockfile (`Cargo.lock`,
+`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `poetry.lock`, `uv.lock`,
+`go.sum`, `Gemfile.lock`, `composer.lock`) or a minified or map file
+(`*.min.js`, `*.min.css`, `*.map`) becomes one line, `input:a-b file=PATH
+changed=+A/-D omitted`; its lines lose change protection and count as omitted.
+In a diff of several files with no commit headers, each tier fills in order of
+the files' change density (changed lines per line of their section), densest
+first; `git log -p` keeps head and tail alternation.
+
+**Installs.** The install profile (2 KiB) shows diagnostics, their context, the
+first and last lines and any closing summary (`added N packages`,
+`Successfully installed`, `Resolved N packages in`, `Bundle complete`, `Done
+in`...), never ordinary progress.
+
+**JSON.** Tables name the columns identical in every record once under
+`constant`, and a complete table omits its redundant `indices`. An object whose
+array of same-keyed objects holds more than 80% of its bytes (`kubectl -o
+json`'s `items`) is shown, when every row fits, as `envelope {...}` (its other
+fields) and `table=/POINTER {...}`. Minified JSON whose records are too large
+to select whole (a quarter of the budget or more, such as `gh api` responses)
+is shown as a table of the short scalar fields every object has, one link
+column kept (`html_url`, else `url`), the other fields named under
+`omitted_columns`, and as many rows as fit, rows carrying a diagnostic or an
+anchor first; the rows shown count as abridged and the others as omitted.
+Pretty-printed JSON keeps the line view, whose folding keeps rare values
+visible. No missing field becomes null and decimals stay exact.

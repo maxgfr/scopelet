@@ -133,11 +133,11 @@ capture is capped at 32 MiB per stream and truncation is explicitly reported.
 ## Compact output and shortcut operations
 
 `query` and `run` accept `--output compact`; their default JSON interface is
-unchanged. Compact output (v3 by default, `--compact-version` 1 or 2 on
+unchanged. Compact output (v4 by default, `--compact-version` 1, 2 or 3 on
 request) groups provenance behind an artifact reference and labels source
 lines, repetitions and omitted units. A unit is a whole JSON record
-or a run of identical text lines. `display_complete` concerns these units,
-not unobserved source data. Open the artifact manifest for original blob IDs.
+or a run of identical text lines. `complete` (v4) and `display_complete`
+(earlier versions) concern these units, not unobserved source data. Open the artifact manifest for original blob IDs.
 
 ```sh
 scopelet query --file events.jsonl --format jsonl --filter /status --equals '"failed"' --group /suite
@@ -164,9 +164,9 @@ the spec interface's validation behavior. All shortcuts conflict with `--spec`.
 `compress` detects valid JSON/JSONL conservatively and otherwise selects text;
 it never computes an aggregate from malformed rows. Invalid UTF-8 passes through.
 `run --auto` preserves small stdout and stderr byte-for-byte and the process
-exit code; it takes `--max-bytes` and `--profile tests|search|git|file-read|logs`
-(the hooks' budgets, see setup.md) but no selection or mode flags. `compress`
-takes the same two options.
+exit code; it takes `--max-bytes` and `--profile
+tests|search|git|file-read|logs|install` (the hooks' budgets, see setup.md) but
+no selection or mode flags. `compress` takes the same two options.
 
 ## Search saved originals directly
 
@@ -187,17 +187,44 @@ This reads historical evidence after a local file changes. A new `query` on an
 artifact still checks freshness. Search conflicts with `--raw`, `--manifest`,
 `--start` and `--end`; use range expansion for a known line interval.
 
-## Compact-v3 (default)
+## Compact-v4 (default)
 
 ```sh
 scopelet compress < build.log
+scopelet compress --profile tests < test.log
+```
+
+Version 4 is the CLI/hook default. It has one header line and no footer; `ID`
+is 16 hex characters of the artifact, resolved like any prefix:
+
+```
+[scopelet v4 ID complete]                                          everything shown, or folded into exact repeats
+[scopelet v4 ID omitted=N abridged=M; gaps are not absence; ...]   N units left out, M shown in part (cut line,
+                                                                   similar= group, record without some fields)
+[scopelet v4 ID repeat: identical to output already shown ...]     this conversation already saw these bytes
+failed=2: name (file:line), name (file:line)                      tests: failures to open first (metadata)
+input:40-44 file=src/a.rs more=7                                   search: one file's lines without their path
+ 12:text                                                           prefix; 7 of its matches not shown
+input:9-95 file=Cargo.lock changed=+43/-3 omitted                  a lockfile or generated file's diff, counted
+src/components/ files=402 ext=tsx:400,ts:2                         a large listed directory (first and last entries follow)
+envelope {...}  /  table=/items {...}                              a JSON object's other fields, then its dominant array
+"constant":{...}  "omitted_columns":[...]                          columns equal in every row; fields left out of rows
+```
+
+Lines that name a term of the prompt or of the command (a search pattern, a
+test filter) rank ahead of ordinary ones. Use `expand ID --find TEXT` to read
+any folded, omitted or abridged line in full.
+
+## Compact-v3
+
+```sh
 scopelet compress --compact-version 3 < build.log
 ```
 
-Version 3 is the CLI/hook default. Its header names the artifact once and its
+Version 3's header names the artifact once and its
 recovery hint `scopelet expand ID --find TEXT` refers to that reference. It
-shares the JSON table forms of version 2 below. Versions 1 and 2 remain
-selectable with `--compact-version 1|2`.
+shares the JSON table forms of version 2 below; version 4 keeps its body.
+Versions 1 and 2 remain selectable with `--compact-version 1|2`.
 
 Text lines are shown as a cleaned display copy (terminal colours and
 carriage-return rewrites removed); labels stay absolute source lines and
@@ -234,6 +261,6 @@ semantics survive. A partial table cannot establish an exhaustive count.
 V2 prioritizes distinct diagnostics before repetitions, and links directly to
 saved-source search. Version 1 remains selectable with `--compact-version 1`.
 The query schema is version 1. Artifacts are schema 1, except schema 2 for
-compact-v3 automatic compression and for a recovery that shows a whole text
+compact-v3 and v4 automatic compression and for a recovery that shows a whole text
 original as its only record, which names the original blob instead of copying
 it; `expand` and queries read both.
