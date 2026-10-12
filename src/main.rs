@@ -399,14 +399,22 @@ fn execute(cli: Cli) -> Result<i32> {
             cancel.clone(),
         )?;
         let code = process::exit_code(&result);
+        // The hook context's prompt anchors, then the terms the command names.
+        let mut anchors: Vec<String> = session
+            .as_deref()
+            .and_then(scopelet::session::find)
+            .map(|key| scopelet::session::load(&key).anchors)
+            .unwrap_or_default();
+        anchors.extend(scopelet::commands::argv_anchors(command));
         for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
-            let output = compress::automatic_recorded(
+            let output = compress::automatic_anchored(
                 "run",
                 bytes,
                 cli.cache_dir.clone(),
                 *profile,
                 *max_bytes,
                 compact_version,
+                &anchors,
             );
             if stderr {
                 std::io::stderr().write_all(&output)?;

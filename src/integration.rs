@@ -463,6 +463,20 @@ fn context_key(event: &Value) -> Option<String> {
     Some(crate::session::key(session, event["agent_id"].as_str()))
 }
 
+/// The relevance anchors of a tool call: the terms of the context's prompts
+/// (a subagent also gets its session's, whose task it works on) and those
+/// its command names.
+fn anchors(event: &Value, state: Option<&crate::session::State>, command: &str) -> Vec<String> {
+    let mut terms: Vec<String> = state.map(|s| s.anchors.clone()).unwrap_or_default();
+    if event["agent_id"].as_str().is_some_and(|a| !a.is_empty())
+        && let Some(session) = event["session_id"].as_str()
+    {
+        terms.extend(crate::session::load(&crate::session::key(session, None)).anchors);
+    }
+    terms.extend(crate::commands::anchors(command));
+    terms
+}
+
 /// Guidance at a session start or a mode change. A compaction or a clear
 /// starts the context over: what it was shown is no longer in it.
 fn context(event: &Value, mode: Preference) -> Result<Value> {
@@ -478,6 +492,12 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
     }
     if start && event["source"] == "clear" {
         state.anchors.clear();
+    }
+    // Prompt terms stay in this private state, never in the event journal.
+    if name == "UserPromptSubmit"
+        && let Some(prompt) = event["prompt"].as_str()
+    {
+        state.anchor(crate::session::prompt_anchors(prompt));
     }
     let announce = start || state.mode != Some(mode);
     state.mode = Some(mode);
@@ -550,8 +570,17 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
     if raw.len() > MAX_INPUT {
         return Ok(json!({}));
     }
-    let small =
-        compress::automatic_recorded("opencode", raw.as_bytes(), None, profile, None, version);
+    let state = context_key(event).map(|key| crate::session::load(&key));
+    let anchors = anchors(event, state.as_ref(), command);
+    let small = compress::automatic_anchored(
+        "opencode",
+        raw.as_bytes(),
+        None,
+        profile,
+        None,
+        version,
+        &anchors,
+    );
     if small.as_ref() == raw.as_bytes() {
         return Ok(json!({}));
     }
@@ -683,6 +712,11 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
                 state.remember(hash);
             }
         }
+        let anchors = if version == compress::Version::V4 {
+            anchors(event, state.as_ref(), command)
+        } else {
+            Vec::new()
+        };
         let remembered = || {
             if let (Some(key), Some(state)) = (&context, &state) {
                 // Best effort: a lost write only misses a later repeat.
@@ -708,13 +742,14 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             if raw.len() > MAX_INPUT {
                 return Ok(json!({}));
             }
-            let small = compress::automatic_recorded(
+            let small = compress::automatic_anchored(
                 "claude",
                 raw.as_bytes(),
                 None,
                 profile,
                 None,
                 version,
+                &anchors,
             );
             if small.as_ref() != raw.as_bytes() {
                 output[stream] = json!(String::from_utf8(small.into_owned())?);

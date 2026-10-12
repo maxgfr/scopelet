@@ -247,6 +247,153 @@ pub fn profile(args: &[String]) -> Option<Profile> {
     }
 }
 
+/// Terms a command line names that its output is likely to contain: the
+/// pattern of a search (`rg`, `grep`, `git grep`) and the filter of a test
+/// run (`cargo test NAME`, `pytest -k EXPR`, `jest -t NAME`, `go test -run`).
+/// Only literal text counts: a regular expression with operators names
+/// nothing a line contains verbatim.
+pub fn anchors(command: &str) -> Vec<String> {
+    let Some(script) = crate::shell::parse(command) else {
+        return Vec::new();
+    };
+    let mut terms: Vec<String> = Vec::new();
+    for simple in script.commands() {
+        for term in argv_anchors(&simple.argv) {
+            if !terms.contains(&term) {
+                terms.push(term);
+            }
+        }
+    }
+    terms
+}
+
+/// `anchors` of one argument vector; `sh -c SCRIPT` is read as its script.
+pub fn argv_anchors(args: &[String]) -> Vec<String> {
+    let Some(first) = args.first() else {
+        return Vec::new();
+    };
+    if args.len() == 3 && matches!(name(first), "sh" | "bash") && args[1] == "-c" {
+        return anchors(&args[2]);
+    }
+    let second = args.get(1).map(String::as_str).unwrap_or("");
+    let found: Vec<String> = match name(first) {
+        "rg" | "grep" | "egrep" | "fgrep" => search_patterns(&args[1..]),
+        "git" => match args.iter().position(|a| a == "grep") {
+            Some(at) => search_patterns(&args[at + 1..]),
+            None => Vec::new(),
+        },
+        "cargo" if matches!(second, "test" | "nextest") => args[2..]
+            .iter()
+            .take_while(|a| *a != "--")
+            .filter(|a| !a.starts_with('-') && *a != "run")
+            .take(1)
+            .cloned()
+            .collect(),
+        "go" if second == "test" => option_value(args, &["-run", "--run"]),
+        _ if args.iter().any(|a| a == "-k") || args.iter().any(|a| a.starts_with("-k=")) => {
+            // pytest -k "parse and not slow": the names, not the operators.
+            option_value(args, &["-k"])
+                .iter()
+                .flat_map(|e| e.split(|c: char| c.is_whitespace() || "()".contains(c)))
+                .filter(|w| !matches!(*w, "and" | "or" | "not" | ""))
+                .map(str::to_owned)
+                .collect()
+        }
+        _ => option_value(args, &["-t", "--testNamePattern", "--test-name-pattern"]),
+    };
+    found
+        .into_iter()
+        .flat_map(|p| literal(&p))
+        .filter(|t| crate::session::ANCHOR_BYTES.contains(&t.len()))
+        .collect()
+}
+
+/// The value of the first of these options: `-k EXPR` or `-k=EXPR`.
+fn option_value(args: &[String], options: &[&str]) -> Vec<String> {
+    for (i, arg) in args.iter().enumerate() {
+        for option in options {
+            if arg == option {
+                return args.get(i + 1).cloned().into_iter().collect();
+            }
+            if let Some(value) = arg.strip_prefix(&format!("{option}=")) {
+                return vec![value.to_owned()];
+            }
+        }
+    }
+    Vec::new()
+}
+
+/// The patterns of a `grep`/`rg` argument list: every `-e`/`--regexp`
+/// value, else the first operand. Options known to take a value skip it.
+fn search_patterns(args: &[String]) -> Vec<String> {
+    const VALUED: &[&str] = &[
+        "-A",
+        "-B",
+        "-C",
+        "-m",
+        "-g",
+        "-t",
+        "-T",
+        "-f",
+        "-j",
+        "-M",
+        "--glob",
+        "--iglob",
+        "--type",
+        "--type-not",
+        "--max-count",
+        "--context",
+        "--after-context",
+        "--before-context",
+        "--file",
+        "--max-columns",
+        "--threads",
+        "--max-depth",
+        "--include",
+        "--exclude",
+    ];
+    let mut explicit = Vec::new();
+    let mut operand = None;
+    let mut i = 0;
+    while i < args.len() {
+        let arg = args[i].as_str();
+        if arg == "--" {
+            operand = operand.or(args.get(i + 1).cloned());
+            break;
+        } else if arg == "-e" || arg == "--regexp" {
+            explicit.extend(args.get(i + 1).cloned());
+            i += 1;
+        } else if let Some(value) = arg.strip_prefix("--regexp=") {
+            explicit.push(value.to_owned());
+        } else if VALUED.contains(&arg) {
+            i += 1;
+        } else if !arg.starts_with('-') && operand.is_none() {
+            operand = Some(arg.to_owned());
+        }
+        i += 1;
+    }
+    if explicit.is_empty() {
+        operand.into_iter().collect()
+    } else {
+        explicit
+    }
+}
+
+/// The literal alternatives of a pattern: itself when it has no regular
+/// expression operator, its `|` branches when that is the only one, else
+/// nothing. A `\.` or `\-` escape is read as the character.
+fn literal(pattern: &str) -> Vec<String> {
+    let pattern = pattern.replace("\\.", ".").replace("\\-", "-");
+    if pattern.contains(['\\', '(', ')', '[', ']', '{', '}', '*', '+', '?', '^', '$']) {
+        return Vec::new();
+    }
+    pattern
+        .split('|')
+        .filter(|p| !p.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
 /// A command after a pipe that only reads its input and arguments.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Filter {
@@ -429,6 +576,48 @@ mod tests {
         ] {
             assert_eq!(filter(&args(command)), None, "{command}");
         }
+    }
+
+    #[test]
+    fn anchors_are_the_literal_terms_a_command_names() {
+        for (command, expected) in [
+            ("rg -n parse_header src", vec!["parse_header"]),
+            ("rg -g '*.rs' -C 3 HttpClient", vec!["HttpClient"]),
+            (
+                "grep -rn -e timeout -e retry_after .",
+                vec!["timeout", "retry_after"],
+            ),
+            (
+                "git grep -n 'connect|reconnect'",
+                vec!["connect", "reconnect"],
+            ),
+            ("rg 'fn \\w+\\('", vec![]),
+            ("rg 'config\\.yaml'", vec!["config.yaml"]),
+            (
+                "cargo test parses_headers -- --nocapture",
+                vec!["parses_headers"],
+            ),
+            ("cargo test", vec![]),
+            (
+                "pytest -k 'login and not slow' tests",
+                vec!["login", "slow"],
+            ),
+            (
+                "npx jest -t 'renders the header'",
+                vec!["renders the header"],
+            ),
+            ("go test ./... -run TestParse", vec!["TestParse"]),
+            ("cd sub && rg needle_one", vec!["needle_one"]),
+            ("ls -la", vec![]),
+            ("rg ab", vec![]),
+        ] {
+            assert_eq!(anchors(command), expected, "{command}");
+        }
+        let wrapped: Vec<String> = ["/bin/sh", "-c", "rg -n parse_header src"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        assert_eq!(argv_anchors(&wrapped), ["parse_header"]);
     }
 
     #[test]
