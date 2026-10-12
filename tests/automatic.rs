@@ -1304,3 +1304,117 @@ fn grep_matcher_is_installed_idempotently() {
     let value: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
     assert!(value.get("hooks").is_none(), "{value}");
 }
+
+/// The guidance text with its pinned binary path counted as the usual
+/// `'~/.config/scopelet/bin/scopelet'` (45 bytes quoted), whatever the test's
+/// temporary directory.
+fn guidance_bytes(dir: &std::path::Path, text: &str) -> usize {
+    let pinned = format!("'{}'", dir.join("config/bin/scopelet").display());
+    assert!(text.contains(&pinned), "{text}");
+    text.len() - pinned.len() + 45
+}
+
+/// Default and caveman guidance stay short, carry the reuse sentence and
+/// the recovery syntax; off says only that it is off.
+#[test]
+fn guidance_is_short_and_asks_for_the_smallest_change() {
+    let dir = tempfile::tempdir().unwrap();
+    let start = |session: &str| -> String {
+        hook(
+            dir.path(),
+            "claude",
+            json!({"hook_event_name":"SessionStart","session_id":session}),
+        )["hookSpecificOutput"]["additionalContext"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    let reuse = "Before writing code: reuse existing code, stdlib or installed deps; make the smallest change that passes existing checks.";
+    let default = start("g1");
+    assert!(guidance_bytes(dir.path(), &default) <= 380, "{default}");
+    assert!(default.contains(reuse), "{default}");
+    assert!(
+        default.contains(" expand ID --find TEXT [--regex] [--ignore-case]"),
+        "{default}"
+    );
+    cli(dir.path()).args(["mode", "caveman"]).assert().success();
+    let caveman = start("g2");
+    assert!(guidance_bytes(dir.path(), &caveman) <= 430, "{caveman}");
+    assert!(caveman.contains(reuse), "{caveman}");
+    assert!(caveman.contains("telegraphic"), "{caveman}");
+    cli(dir.path()).args(["mode", "off"]).assert().success();
+    let off = start("g3");
+    assert!(!off.contains(reuse), "{off}");
+}
+
+/// A subagent starts with the recovery line and the report its parent will
+/// read; mode off injects nothing.
+#[test]
+fn guidance_reaches_subagents_at_their_start() {
+    let dir = tempfile::tempdir().unwrap();
+    let event = json!({"hook_event_name":"SubagentStart","session_id":"s","agent_id":"a1","agent_type":"Explore"});
+    let out = hook(dir.path(), "claude", event.clone());
+    assert_eq!(out["hookSpecificOutput"]["hookEventName"], "SubagentStart");
+    let text = out["hookSpecificOutput"]["additionalContext"]
+        .as_str()
+        .unwrap();
+    assert!(text.contains(" expand ID --find TEXT"), "{text}");
+    assert!(
+        text.contains("Final report: conclusions with file:line evidence; do not restate commands or raw output."),
+        "{text}"
+    );
+    cli(dir.path()).args(["mode", "off"]).assert().success();
+    assert_eq!(hook(dir.path(), "claude", event), json!({}));
+}
+
+/// Install adds SubagentStart for Claude Code only, reinstalling changes
+/// nothing, doctor requires it and uninstall removes it.
+#[test]
+fn guidance_hooks_install_and_uninstall_subagent_start() {
+    let dir = tempfile::tempdir().unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "all"])
+        .assert()
+        .success();
+    let claude = dir.path().join("claude/settings.json");
+    let installed = fs::read(&claude).unwrap();
+    let value: Value = serde_json::from_slice(&installed).unwrap();
+    assert!(
+        value["hooks"]["SubagentStart"][0]["hooks"][0]["command"]
+            .as_str()
+            .unwrap()
+            .ends_with(" hook claude")
+    );
+    assert!(value["hooks"]["SubagentStart"][0].get("matcher").is_none());
+    let codex: Value =
+        serde_json::from_slice(&fs::read(dir.path().join("codex/hooks.json")).unwrap()).unwrap();
+    assert!(codex["hooks"].get("SubagentStart").is_none(), "{codex}");
+    cli(dir.path())
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    assert_eq!(fs::read(&claude).unwrap(), installed);
+    let doctor = |dir: &std::path::Path| -> Value {
+        let out = cli(dir).arg("doctor").output().unwrap();
+        serde_json::from_slice::<Value>(&out.stdout).unwrap()["integration"]["hosts"][0].clone()
+    };
+    assert_eq!(doctor(dir.path())["hooks_configured"], true);
+    // An installation from before SubagentStart is reported as incomplete.
+    let mut older = value.clone();
+    older["hooks"]
+        .as_object_mut()
+        .unwrap()
+        .remove("SubagentStart");
+    fs::write(&claude, serde_json::to_vec_pretty(&older).unwrap()).unwrap();
+    assert_eq!(doctor(dir.path())["hooks_configured"], false);
+    cli(dir.path())
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    cli(dir.path())
+        .args(["uninstall", "--agent", "claude"])
+        .assert()
+        .success();
+    let value: Value = serde_json::from_slice(&fs::read(&claude).unwrap()).unwrap();
+    assert!(value.get("hooks").is_none(), "{value}");
+}

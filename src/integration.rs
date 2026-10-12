@@ -217,7 +217,12 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
         let events = if agent == Agent::Codex {
             vec!["SessionStart", "UserPromptSubmit", "PreToolUse"]
         } else {
-            vec!["SessionStart", "UserPromptSubmit", "PostToolUse"]
+            vec![
+                "SessionStart",
+                "UserPromptSubmit",
+                "PostToolUse",
+                "SubagentStart",
+            ]
         };
         let object = value
             .as_object_mut()
@@ -298,7 +303,11 @@ pub fn doctor() -> Value {
             let value = bytes.as_deref().and_then(|b| serde_json::from_slice::<Value>(b).ok());
             let command = config.as_ref().zip(binary.as_ref()).map(|(c,b)| format!("SCOPELET_CONFIG_DIR={} {} hook {name}", quote(&c.to_string_lossy()), quote(&b.to_string_lossy())));
             value.as_ref().zip(command.as_ref()).is_some_and(|(v,c)| {
-                ["SessionStart", "UserPromptSubmit", event].iter().all(|e| v["hooks"][e].as_array().is_some_and(|groups| groups.iter().any(|group| owned(group,c))))
+                let mut events = vec!["SessionStart", "UserPromptSubmit", event];
+                if agent == Agent::Claude {
+                    events.push("SubagentStart");
+                }
+                events.iter().all(|e| v["hooks"][e].as_array().is_some_and(|groups| groups.iter().any(|group| owned(group,c))))
             })
         };
         json!({"host":name,"config":path,"hooks_configured":configured,"config_exists":path.as_ref().is_some_and(|p|p.is_file())})
@@ -679,24 +688,41 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
     }
     Ok(json!({"hookSpecificOutput":{"hookEventName":name,"additionalContext":guidance(mode)}}))
 }
-fn guidance(mode: Preference) -> String {
-    // The pinned binary works whether or not `scopelet` is on the PATH.
+/// How to recover what a view leaves out, with the pinned binary, which
+/// works whether or not `scopelet` is on the PATH.
+fn recover_line() -> String {
     let binary = root().map_or_else(
         |_| "scopelet".to_owned(),
         |root| quote(&root.join("bin/scopelet").to_string_lossy()),
     );
-    let recover = format!(
-        "Recover partial evidence when needed: {binary} expand ID --find TEXT (ID: last, the view's artifact or 8+ hex characters of it; --regex, --ignore-case)."
-    );
+    format!("Recover: {binary} expand ID --find TEXT [--regex] [--ignore-case] (ID or last)")
+}
+
+/// Asks for less code before any is written: the session-level saving that
+/// response style alone does not bring.
+const REUSE: &str = "Before writing code: reuse existing code, stdlib or installed deps; make the smallest change that passes existing checks.";
+
+fn guidance(mode: Preference) -> String {
+    let recover = recover_line();
     match mode {
         Preference::Default => format!(
-            "Scopelet auto: for routine edits, inspect relevant code and existing checks; preserve their intended behavior and verify the change. Report outcome and validation in 1–3 short sentences. Expand for requested detail, uncertainty or next steps. {recover}"
+            "Scopelet auto: inspect relevant code and checks; keep behavior; verify. Report outcome and checks in 1-3 sentences; more if asked or unsure. {REUSE} {recover}"
         ),
         Preference::Caveman => format!(
-            "Scopelet caveman: routine replies target 30 words, telegraphic, in the user's language. Preserve errors, qualifications, negation, numbers and next actions; exceed the target when needed or requested. Inspect relevant code and existing checks; verify intended behavior. Documents use normal prose. {recover}"
+            "Scopelet caveman: routine replies ~30 words, telegraphic, user's language; keep errors, caveats, negation, numbers, next steps; exceed if needed or asked. Verify changes. Docs: normal prose. {REUSE} {recover}"
         ),
         Preference::Off => "Scopelet is off. Resume normal tools and response style.".into(),
     }
+}
+
+/// What a subagent receives at its start: how to recover evidence, and a
+/// report that its parent reads as input, so no command or raw output is
+/// restated.
+fn subagent_guidance() -> String {
+    format!(
+        "{} Final report: conclusions with file:line evidence; do not restate commands or raw output.",
+        recover_line()
+    )
 }
 /// The recognized profile of a command line and the size up to which its
 /// output stays exact: the profile's in compact-v3, the default otherwise.
@@ -779,6 +805,14 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
     let name = event["hook_event_name"].as_str().unwrap_or("");
     if matches!(name, "SessionStart" | "UserPromptSubmit") {
         return context(event, mode);
+    }
+    if name == "SubagentStart" {
+        if mode == Preference::Off {
+            return Ok(json!({}));
+        }
+        return Ok(
+            json!({"hookSpecificOutput":{"hookEventName":"SubagentStart","additionalContext":subagent_guidance()}}),
+        );
     }
     let claude_grep = agent == Agent::Claude && event["tool_name"] == "Grep";
     if mode == Preference::Off || (event["tool_name"] != "Bash" && !claude_grep) {
