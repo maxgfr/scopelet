@@ -60,6 +60,20 @@ fn safe_families_are_recognized_with_their_profile() {
         ("sed -n 10,80p src/lib.rs", Profile::FileRead),
         ("cat scopelet.txt", Profile::FileRead),
         ("rg rtk src", Profile::Search),
+        ("git ls-files", Profile::Search),
+        ("npm install", Profile::Install),
+        ("npm ci", Profile::Install),
+        ("pnpm add -D vitest", Profile::Install),
+        ("yarn add jest", Profile::Install),
+        ("yarn install --frozen-lockfile", Profile::Install),
+        ("bun install", Profile::Install),
+        ("pip install -r requirements.txt", Profile::Install),
+        ("python3 -m pip install requests", Profile::Install),
+        ("uv sync", Profile::Install),
+        ("uv pip install ruff", Profile::Install),
+        ("brew install ripgrep", Profile::Install),
+        ("brew upgrade", Profile::Install),
+        ("bundle install", Profile::Install),
     ] {
         assert_eq!(profile(&args(command)), Some(expected), "{command}");
     }
@@ -87,12 +101,15 @@ fn writing_waiting_or_unknown_commands_are_not_recognized() {
         "npx some-tool",
         "npx -y some-tool",
         "npx -p typescript tsc",
-        "yarn add jest",
         "yarn some-tool",
         "yarn jest --watch",
         "uv run ./script",
         "python3 -m http.server",
         "make install",
+        "pip uninstall requests",
+        "brew uninstall ripgrep",
+        "python3 -m pip list",
+        "git ls-remote origin",
         "ls -la",
         "jq .",
         "tee out",
@@ -116,6 +133,22 @@ fn profile_budgets_grow_with_what_the_output_is_for() {
     }
     assert_eq!(Profile::FileRead.budget(), 16384);
     assert_eq!(Profile::FileRead.small(), 16384);
+    assert_eq!(Profile::Install.budget(), 2048);
+    assert_eq!(Profile::Install.small(), 2048);
+}
+
+/// Install arrived with compact-v4: compact-v3 keeps treating an install as
+/// the unrecognized command it was.
+#[test]
+fn the_install_profile_shapes_compact_v4_only() {
+    use scopelet::compress::{Version, effective_profile};
+    let install = Some(Profile::Install);
+    assert_eq!(effective_profile(install, Version::V4), install);
+    assert_eq!(effective_profile(install, Version::V3), None);
+    assert_eq!(
+        effective_profile(Some(Profile::Tests), Version::V3),
+        Some(Profile::Tests)
+    );
 }
 
 #[test]

@@ -680,3 +680,126 @@ fn lockfile_free_diffs_spend_the_budget_on_dense_files_first() {
     let v3 = anchored(dir.path(), &raw, Some(Profile::Git), Version::V3, &[]);
     assert!(dense_shown(&v3) < 100, "{v3}");
 }
+
+fn letters(i: usize) -> String {
+    i.to_string()
+        .bytes()
+        .map(|b| (b'a' + (b - b'0')) as char)
+        .collect()
+}
+
+/// A directory of more than eight entries in a `find` listing is summarized
+/// by count and extension, with its first and last entries; a small one is
+/// listed whole.
+#[test]
+fn listing_folds_large_directories_and_keeps_small_ones() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = String::from(".\n./README.md\n./src\n./src/lib\n");
+    for i in 0..3 {
+        raw.push_str(&format!("./src/lib/{}.rs\n", letters(i)));
+    }
+    raw.push_str("./src/components\n");
+    for i in 0..120 {
+        raw.push_str(&format!("./src/components/Widget{}.tsx\n", letters(i)));
+    }
+    raw.push_str("./src/components/index.ts\n./src/components/types.ts\n");
+    let text = anchored(dir.path(), &raw, Some(Profile::Search), Version::V4, &[]);
+    assert!(text.len() < raw.len() / 3, "{text}");
+    assert!(
+        text.contains("./src/components/ files=122 ext=tsx:120,ts:2\n"),
+        "{text}"
+    );
+    assert!(text.contains("./src/components/Widgeta.tsx\n"), "{text}");
+    assert!(text.contains("./src/components/types.ts\n"), "{text}");
+    assert!(!text.contains("Widgetbc.tsx"), "{text}");
+    for i in 0..3 {
+        assert!(
+            text.contains(&format!("./src/lib/{}.rs\n", letters(i))),
+            "{text}"
+        );
+    }
+    assert!(text.contains("./README.md\n"), "{text}");
+    let omitted: usize = first_line(&text)
+        .split("omitted=")
+        .nth(1)
+        .and_then(|rest| rest.split(';').next())
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert_eq!(omitted, 120);
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+    let v3 = anchored(dir.path(), &raw, Some(Profile::Search), Version::V3, &[]);
+    assert!(!v3.contains(" files="), "{v3}");
+}
+
+/// `ls -R` and `tree` listings fold the same way.
+#[test]
+fn listing_folds_ls_recursive_and_tree_output() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut ls = String::from(".:\nREADME.md\nsrc\n\n./src:\n");
+    for i in 0..300 {
+        ls.push_str(&format!("module_{}.py\n", letters(i)));
+    }
+    ls.push_str("\n./src/static:\napp.css\n");
+    let text = anchored(dir.path(), &ls, Some(Profile::Search), Version::V4, &[]);
+    assert!(text.contains("./src/ files=300 ext=py:300\n"), "{text}");
+    assert!(text.contains("./src/static:"), "{text}");
+    assert!(text.contains("app.css"), "{text}");
+    assert_eq!(original(dir.path(), &text), ls.as_bytes());
+
+    let mut tree = String::from(".\n├── Cargo.toml\n└── src\n    ├── main.rs\n    └── handlers\n");
+    for i in 0..150 {
+        tree.push_str(&format!("        ├── handler_{}.rs\n", letters(i)));
+    }
+    tree.push_str("        └── mod.rs\n\n3 directories, 154 files\n");
+    let text = anchored(dir.path(), &tree, Some(Profile::Search), Version::V4, &[]);
+    assert!(
+        text.contains("src/handlers/ files=151 ext=rs:151\n"),
+        "{text}"
+    );
+    assert!(text.contains("└── mod.rs"), "{text}");
+    assert!(text.contains("3 directories, 154 files"), "{text}");
+    assert_eq!(original(dir.path(), &text), tree.as_bytes());
+}
+
+/// An install view keeps its warnings, errors and closing summary, never
+/// the progress lines between them.
+#[test]
+fn listing_free_install_views_keep_only_what_decides_the_outcome() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = String::from("npm install\n");
+    for i in 0..300 {
+        raw.push_str(&format!(
+            "fetch http 200 https://registry.npmjs.org/pkg-{}\n",
+            letters(i)
+        ));
+    }
+    raw.push_str("npm WARN deprecated inflight@1.0.6: This module is not supported\n");
+    for i in 300..600 {
+        raw.push_str(&format!(
+            "reify: timing reifyNode:node_modules/pkg-{}\n",
+            letters(i)
+        ));
+    }
+    raw.push_str("added 612 packages, and audited 613 packages in 9s\n");
+    let output = compress::automatic_profile(
+        raw.as_bytes(),
+        Some(dir.path().into()),
+        Some(Profile::Install),
+        None,
+        Version::V4,
+    )
+    .unwrap();
+    let text = String::from_utf8(output.into_owned()).unwrap();
+    assert!(text.len() <= 2048, "{}", text.len());
+    assert!(
+        text.contains("npm WARN deprecated inflight@1.0.6"),
+        "{text}"
+    );
+    assert!(text.contains("added 612 packages"), "{text}");
+    assert!(
+        !text.contains("fetch http 200 https://registry.npmjs.org/pkg-ca\n"),
+        "{text}"
+    );
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}

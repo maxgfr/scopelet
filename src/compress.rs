@@ -281,7 +281,11 @@ pub fn effective_profile(
     profile: Option<crate::commands::Profile>,
     version: Version,
 ) -> Option<crate::commands::Profile> {
-    profile.filter(|_| version.profiled())
+    // Install arrived with compact-v4: earlier versions keep the defaults
+    // they gave an unrecognized command.
+    profile.filter(|p| {
+        version.profiled() && (version == Version::V4 || *p != crate::commands::Profile::Install)
+    })
 }
 
 /// How one output is compressed: its byte target, the size up to which it
@@ -1408,7 +1412,10 @@ fn text_units_v3<'a>(
                 Cow::Borrowed(""),
                 priority,
             );
-        } else if collapsed.get(i) || (count == 1 && capped.get(i)) {
+        } else if collapsed.get(i)
+            || (count == 1 && capped.get(i))
+            || (kind.install && unit.priority == 0)
+        {
             unit.priority = CAPPED;
         } else if priority != TRIVIAL {
             anchoring.promote(&mut unit);
@@ -1485,6 +1492,9 @@ struct Kind {
     /// Compact-v4 diffs: lockfiles and generated files collapse to one
     /// counted line and real files rank by change density.
     diff_files: bool,
+    /// A package install: only diagnostics, their context and the first and
+    /// last lines are shown, never ordinary progress.
+    install: bool,
 }
 
 impl Kind {
@@ -1494,8 +1504,233 @@ impl Kind {
             file_read: profile == Some(Profile::FileRead),
             search: version == Version::V4 && profile == Some(Profile::Search),
             diff_files: version == Version::V4,
+            install: version == Version::V4 && profile == Some(Profile::Install),
         }
     }
+}
+
+/// Entries above which a listed directory is folded to a summary.
+const LISTING_DIRECTORY: usize = 8;
+/// Extensions a folded directory's summary names; the rest are counted.
+const LISTING_EXTENSIONS: usize = 4;
+
+/// One line of a path listing: its directory and name, or a line that is
+/// not an entry (a `find:` error, `ls -R`'s blank lines, `tree`'s total).
+struct ListingLine {
+    directory: Option<String>,
+    name: String,
+}
+
+/// Parse `find`/`git ls-files` (a path per line), `ls -R` (`dir:` headers
+/// then names) or `tree` (`├── name` with four columns per level). None when
+/// the text is none of them, or a search result (`path:N:`).
+fn parse_listing(views: &[Cow<'_, str>]) -> Option<Vec<ListingLine>> {
+    let nonblank: Vec<&str> = views
+        .iter()
+        .map(|v| v.as_ref())
+        .filter(|v| !v.trim().is_empty())
+        .collect();
+    if nonblank.len() < 2 || nonblank.iter().any(|v| search_line(v).is_some()) {
+        return None;
+    }
+    let tree = nonblank.iter().filter(|v| v.contains("── ")).count() * 2 >= nonblank.len();
+    let ls =
+        nonblank[0].ends_with(':') && nonblank.iter().filter(|v| v.ends_with(':')).count() >= 2;
+    let paths = nonblank
+        .iter()
+        .all(|v| !v.starts_with(char::is_whitespace) && !v.contains('\t'))
+        && nonblank.iter().filter(|v| v.contains('/')).count() * 2 >= nonblank.len();
+    let other = |name: &str| ListingLine {
+        directory: None,
+        name: name.to_owned(),
+    };
+    let entry = |directory: &str, name: &str| ListingLine {
+        directory: Some(directory.to_owned()),
+        name: name.to_owned(),
+    };
+    if tree {
+        // The directory of each depth, from `tree`'s indentation.
+        let mut stack: Vec<String> = vec![String::new()];
+        return Some(
+            views
+                .iter()
+                .map(|view| {
+                    let Some(at) = view.find("── ") else {
+                        return other(view);
+                    };
+                    let depth = view[..at].chars().count() / 4;
+                    let name = &view[at + "── ".len()..];
+                    stack.truncate(depth + 1);
+                    let directory = stack.last().cloned().unwrap_or_default();
+                    stack.push(format!("{directory}{name}/"));
+                    entry(&directory, name)
+                })
+                .collect(),
+        );
+    }
+    if ls {
+        let mut directory: Option<String> = None;
+        return Some(
+            views
+                .iter()
+                .map(|view| {
+                    if let Some(header) = view.strip_suffix(':') {
+                        directory = Some(format!("{}/", header.trim_end_matches('/')));
+                        return other(view);
+                    }
+                    match &directory {
+                        Some(d) if !view.trim().is_empty() && !view.starts_with("total ") => {
+                            entry(d, view)
+                        }
+                        _ => other(view),
+                    }
+                })
+                .collect(),
+        );
+    }
+    if paths {
+        return Some(
+            views
+                .iter()
+                .map(|view| {
+                    if view.trim().is_empty() || view.contains(": ") {
+                        return other(view);
+                    }
+                    let path = view.trim_end_matches('/');
+                    match path.rsplit_once('/') {
+                        Some((directory, name)) => entry(&format!("{directory}/"), name),
+                        None => entry("", path),
+                    }
+                })
+                .collect(),
+        );
+    }
+    None
+}
+
+/// The extension a listing summary counts a name under.
+fn extension(name: &str) -> &str {
+    match name.rsplit_once('.') {
+        Some((stem, ext))
+            if !stem.is_empty() && !ext.is_empty() && ext.len() <= 8 && !ext.contains('/') =>
+        {
+            ext
+        }
+        _ => "none",
+    }
+}
+
+/// A compact-v4 listing: a directory of more than `LISTING_DIRECTORY`
+/// entries is summarized as `DIR/ files=N ext=E:n,...` before its first
+/// entry, and only its first and last entries are shown. Lines are labeled
+/// as everywhere else (`source:a`, or `source:a-b` range blocks). Returns
+/// (body, shown lines, omitted lines), or None when the text is not a
+/// listing or no directory folds.
+fn listing_view(record: &Record, available: usize) -> Option<(String, usize, usize)> {
+    use std::fmt::Write;
+    let views: Vec<Cow<'_, str>> = record
+        .text
+        .split_inclusive('\n')
+        .map(clean::line_view)
+        .collect();
+    let lines = parse_listing(&views)?;
+    let mut entries: HashMap<&str, Vec<usize>> = HashMap::default();
+    for (i, line) in lines.iter().enumerate() {
+        if let Some(directory) = &line.directory {
+            entries.entry(directory.as_str()).or_default().push(i);
+        }
+    }
+    let mut summary: HashMap<usize, String> = HashMap::default();
+    let mut hidden = Bits::new(lines.len());
+    for (directory, members) in &entries {
+        if members.len() <= LISTING_DIRECTORY {
+            continue;
+        }
+        let mut counts: HashMap<&str, usize> = HashMap::default();
+        for &i in members {
+            *counts.entry(extension(&lines[i].name)).or_default() += 1;
+        }
+        let mut counts: Vec<(&str, usize)> = counts.into_iter().collect();
+        counts.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(b.0)));
+        let mut ext: Vec<String> = counts
+            .iter()
+            .take(LISTING_EXTENSIONS)
+            .map(|(e, n)| format!("{e}:{n}"))
+            .collect();
+        if counts.len() > LISTING_EXTENSIONS {
+            ext.push(format!("+{}", counts.len() - LISTING_EXTENSIONS));
+        }
+        let shown = if directory.is_empty() { "." } else { directory };
+        summary.insert(
+            members[0],
+            format!("{shown} files={} ext={}\n", members.len(), ext.join(",")),
+        );
+        for &i in &members[1..members.len() - 1] {
+            hidden.set(i);
+        }
+    }
+    if summary.is_empty() {
+        return None;
+    }
+    // Shown lines in order, cut where the budget ends: a summary always
+    // travels with the entry it precedes.
+    let base = record.start_line.unwrap_or(1);
+    let mut body = String::new();
+    let (mut shown, mut i) = (0, 0);
+    let n = lines.len();
+    while i < n {
+        if hidden.get(i) {
+            i += 1;
+            continue;
+        }
+        let mut j = i;
+        while j + 1 < n && !hidden.get(j + 1) && !summary.contains_key(&(j + 1)) {
+            j += 1;
+        }
+        let text = |k: usize| views[k].trim_end_matches(['\n', '\r']);
+        let render = |end: usize| {
+            let mut part = summary.get(&i).cloned().unwrap_or_default();
+            if end + 1 - i >= BLOCK_MIN_LINES {
+                let _ = writeln!(part, "{}:{}-{}", record.source, base + i, base + end);
+                for k in i..=end {
+                    let _ = writeln!(part, " {}", text(k));
+                }
+            } else {
+                for k in i..=end {
+                    let _ = writeln!(part, "{}:{} {}", record.source, base + k, text(k));
+                }
+            }
+            part
+        };
+        let mut part = render(j);
+        if body.len() + part.len() > available {
+            // Keep the longest beginning of this run that fits, then stop.
+            let room = available - body.len();
+            let mut end = i;
+            let mut size = summary.get(&i).map_or(0, String::len)
+                + record.source.len()
+                + 2 * digits(base + j)
+                + 3;
+            while end <= j && size + text(end).len() + 2 <= room {
+                size += text(end).len() + 2;
+                end += 1;
+            }
+            if end == i {
+                break;
+            }
+            part = render(end - 1);
+            if body.len() + part.len() > available {
+                break;
+            }
+            body.push_str(&part);
+            shown += end - i;
+            break;
+        }
+        body.push_str(&part);
+        shown += j + 1 - i;
+        i = j + 1;
+    }
+    (shown > 0).then(|| (body, shown, n - shown))
 }
 
 /// Matches of one file a compact-v4 search shows: its first and last, then
@@ -2336,6 +2571,16 @@ fn view(
     // Matches per file of a compact-v4 search, for its `more=N` counts.
     let totals = kind.search.then(|| search_totals(data));
     let totals = totals.as_ref();
+    // A path listing folds its large directories instead.
+    if kind.search
+        && let [record] = data.records.as_slice()
+        && record.value.is_none()
+        && let Some((body, shown, omitted)) = listing_view(record, available)
+    {
+        let output = frame.finish(&body, omitted);
+        ensure!(output.len() <= budget, "compact metadata exceeds budget");
+        return Ok((output, shown));
+    }
     anchoring.reset(available);
     let mut units = units(data, available, version, kind, anchoring);
     if uniform && version.tables() {
