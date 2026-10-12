@@ -443,6 +443,14 @@ fn search_patterns(args: &[String]) -> Vec<String> {
     }
 }
 
+/// `anchors` of a search pattern given on its own (Claude Code's Grep tool).
+pub fn pattern_anchors(pattern: &str) -> Vec<String> {
+    literal(pattern)
+        .into_iter()
+        .filter(|t| crate::session::ANCHOR_BYTES.contains(&t.len()))
+        .collect()
+}
+
 /// The literal alternatives of a pattern: itself when it has no regular
 /// expression operator, its `|` branches when that is the only one, else
 /// nothing. A `\.` or `\-` escape is read as the character.

@@ -1,0 +1,21 @@
+{
+  "session_id": "synthetic-grep-session",
+  "hook_event_name": "PostToolUse",
+  "cwd": "/synthetic/repo",
+  "tool_name": "Grep",
+  "tool_input": {
+    "pattern": "refresh_token",
+    "output_mode": "content",
+    "-n": true
+  },
+  "tool_response": {
+    "mode": "content",
+    "numFiles": 0,
+    "filenames": [],
+    "content": "src/mod31.rs:2:    let token = refresh_token(31);\nsrc/mod8.rs:2:    let token = refresh_token(8);\nsrc/mod40.rs:2:    let token = refresh_token(40);\nsrc/mod17.rs:2:    let token = refresh_token(17);\nsrc/mod3.rs:2:    let token = refresh_token(3);\nsrc/mod30.rs:2:    let token = refresh_token(30);\nsrc/mod35.rs:2:    let token = refresh_token(35);\nsrc/mod10.rs:2:    let token = refresh_token(10);\nsrc/mod20.rs:2:    let token = refresh_token(20);\nsrc/mod15.rs:2:    let token = refresh_token(15);\nsrc/mod6.rs:2:    let token = refresh_token(6);\nsrc/mod14.rs:2:    let token = refresh_token(14);\nsrc/mod7.rs:2:    let token = refresh_token(7);\nsrc/mod33.rs:2:    let token = refresh_token(33);\nsrc/mod9.rs:2:    let token = refresh_token(9);\nsrc/mod2.rs:2:    let token = refresh_token(2);\nsrc/mod21.rs:2:    let token = refresh_token(21);\nsrc/mod1.rs:2:    let token = refresh_token(1);\nsrc/mod13.rs:2:    let token = refresh_token(13);\nsrc/mod28.rs:2:    let token = refresh_token(28);\nsrc/mod29.rs:2:    let token = refresh_token(29);\nsrc/mod25.rs:2:    let token = refresh_token(25);\nsrc/mod11.rs:2:    let token = refresh_token(11);\nsrc/mod4.rs:2:    let token = refresh_token(4);\nsrc/mod27.rs:2:    let token = refresh_token(27);\nsrc/mod18.rs:2:    let token = refresh_token(18);\nsrc/mod32.rs:2:    let token = refresh_token(32);\nsrc/mod26.rs:2:    let token = refresh_token(26);\nsrc/mod24.rs:2:    let token = refresh_token(24);\nsrc/mod37.rs:2:    let token = refresh_token(37);\nsrc/mod22.rs:2:    let token = refresh_token(22);\nsrc/mod12.rs:2:    let token = refresh_token(12);\nsrc/mod38.rs:2:    let token = refresh_token(38);\nsrc/mod5.rs:2:    let token = refresh_token(5);\nsrc/mod16.rs:2:    let token = refresh_token(16);\nsrc/mod23.rs:2:    let token = refresh_token(23);\nsrc/mod34.rs:2:    let token = refresh_token(34);\nsrc/mod19.rs:2:    let token = refresh_token(19);\nsrc/mod36.rs:2:    let token = refresh_token(36);\nsrc/mod39.rs:2:    let token = refresh_token(39);",
+    "numLines": 40,
+    "totalLines": 40
+  },
+  "tool_use_id": "toolu_synthetic",
+  "permission_mode": "default"
+}

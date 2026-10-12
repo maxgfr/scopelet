@@ -243,7 +243,10 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
             if !remove {
                 let mut entry =
                     json!({"hooks":[{"type":"command", "command":command,"timeout":5}]});
-                if event.ends_with("ToolUse") {
+                if event == "PostToolUse" {
+                    // Claude Code: Bash output, and Grep's text in content mode.
+                    entry["matcher"] = json!("Bash|Grep");
+                } else if event.ends_with("ToolUse") {
                     entry["matcher"] = json!("Bash");
                 }
                 groups.push(entry);
@@ -300,7 +303,7 @@ pub fn doctor() -> Value {
         };
         json!({"host":name,"config":path,"hooks_configured":configured,"config_exists":path.as_ref().is_some_and(|p|p.is_file())})
     }).collect();
-    let mut status = json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.as_ref().is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash PostToolUse; Codex recognized Bash commands in a quoted shell subset, PreToolUse; OpenCode bash tool.execute.after plugin; hook trust and host versions must be verified"});
+    let mut status = json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.as_ref().is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash and Grep (content mode) PostToolUse; Codex recognized Bash commands in a quoted shell subset, PreToolUse; OpenCode bash tool.execute.after plugin; hook trust and host versions must be verified"});
     if let Some(binary) = binary.filter(|p| p.is_file()) {
         let (current, version) = pinned_binary(&binary);
         status["binary"] = json!(binary);
@@ -463,6 +466,172 @@ fn context_key(event: &Value) -> Option<String> {
     Some(crate::session::key(session, event["agent_id"].as_str()))
 }
 
+/// What a Claude Code tool result offers for compression: the string fields
+/// that carry its text, the profile that shapes them and the size up to which
+/// they stay exact, the command its anchors come from and extra anchors.
+struct ClaudeResult<'a> {
+    fields: &'static [&'static str],
+    profile: Option<Profile>,
+    small: usize,
+    command: &'a str,
+    anchors: Vec<String>,
+}
+
+/// The fields of a Claude Code result to compress, or None for a shape left
+/// alone: Bash's `stdout` and `stderr`; Grep's `content` in `content` mode,
+/// as search results (its `files_with_matches` and `count` modes, and any
+/// unknown shape, pass through).
+fn claude_fields<'a>(event: &'a Value, version: compress::Version) -> Option<ClaudeResult<'a>> {
+    let output = &event["tool_response"];
+    if event["tool_name"] == "Grep" {
+        if output["mode"] != "content" || !output["content"].is_string() {
+            return None;
+        }
+        let profile = compress::effective_profile(Some(Profile::Search), version);
+        let anchors = event["tool_input"]["pattern"]
+            .as_str()
+            .map(crate::commands::pattern_anchors)
+            .unwrap_or_default();
+        return Some(ClaudeResult {
+            fields: &["content"],
+            profile,
+            small: compress::SMALL,
+            command: "",
+            anchors,
+        });
+    }
+    let command = event["tool_input"]["command"].as_str().unwrap_or("");
+    if crate::commands::invokes_wrapper(command)
+        || output["isImage"] == true
+        || !output["stdout"].is_string()
+        || !output["stderr"].is_string()
+    {
+        return None;
+    }
+    let (profile, small) = limits(command, version);
+    Some(ClaudeResult {
+        fields: &["stdout", "stderr"],
+        profile,
+        small,
+        command,
+        anchors: Vec::new(),
+    })
+}
+
+/// Claude Code's PostToolUse: replace the text fields of a Bash or Grep
+/// result by their views, keeping every other field as it was.
+fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
+    let Some(result) = claude_fields(event, version) else {
+        return Ok(json!({}));
+    };
+    let ClaudeResult {
+        fields,
+        profile,
+        small,
+        command,
+        anchors: extra,
+    } = result;
+    let mut output = event["tool_response"].clone();
+    let total: usize = fields
+        .iter()
+        .map(|f| output[*f].as_str().map_or(0, str::len))
+        .sum();
+    let unchanged = |reason| crate::events::unchanged("claude", profile, version, total, reason);
+    // Claude can attach persistence metadata before rendering its preview.
+    // Replacing stdout here would make that preview truncate our compact
+    // view a second time, hiding its final diagnostics and omission footer.
+    // The model only saw a preview of a persisted output: it is neither
+    // compressed nor remembered as shown.
+    if output["persistedOutputPath"]
+        .as_str()
+        .is_some_and(|path| !path.is_empty())
+        || output["persistedOutputSize"]
+            .as_u64()
+            .is_some_and(|size| size > 0)
+    {
+        unchanged(compress::Reason::Persisted);
+        return Ok(json!({}));
+    }
+    let mut changed = false;
+    // Compact-v4 replaces a field identical to one this context was already
+    // shown (whole, as a view or raw) by a reference to it.
+    let mut repeated = vec![false; fields.len()];
+    let context = context_key(event).filter(|_| version == compress::Version::V4);
+    let mut state = context.as_deref().map(crate::session::load);
+    if let Some(state) = &mut state {
+        for (i, field) in fields.iter().enumerate() {
+            let raw = output[*field].as_str().unwrap();
+            if raw.len() <= compress::SMALL || raw.len() > MAX_INPUT {
+                continue;
+            }
+            let hash = digest(raw.as_bytes());
+            let hash = crate::session::short(&hash);
+            if state.saw(hash)
+                && let Some(marker) =
+                    compress::repeat_recorded("claude", raw.as_bytes(), None, profile)
+            {
+                output[*field] = json!(String::from_utf8(marker)?);
+                repeated[i] = true;
+                changed = true;
+            }
+            state.remember(hash);
+        }
+    }
+    let anchors = if version == compress::Version::V4 {
+        let mut terms = anchors(event, state.as_ref(), command);
+        terms.extend(extra);
+        terms
+    } else {
+        Vec::new()
+    };
+    let remembered = || {
+        if let (Some(key), Some(state)) = (&context, &state) {
+            // Best effort: a lost write only misses a later repeat.
+            let _ = crate::session::save(key, state);
+        }
+    };
+    if !changed
+        && fields.iter().all(|field| {
+            output[*field]
+                .as_str()
+                .is_some_and(|text| text.len() <= small)
+        })
+    {
+        unchanged(compress::Reason::Small);
+        remembered();
+        return Ok(json!({}));
+    }
+    for (i, field) in fields.iter().enumerate() {
+        if repeated[i] {
+            continue;
+        }
+        let raw = output[*field].as_str().unwrap();
+        if raw.len() > MAX_INPUT {
+            return Ok(json!({}));
+        }
+        let small = compress::automatic_anchored(
+            "claude",
+            raw.as_bytes(),
+            None,
+            profile,
+            None,
+            version,
+            &anchors,
+        );
+        if small.as_ref() != raw.as_bytes() {
+            output[*field] = json!(String::from_utf8(small.into_owned())?);
+            changed = true;
+        }
+    }
+    remembered();
+    if changed {
+        return Ok(
+            json!({"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":output}}),
+        );
+    }
+    Ok(json!({}))
+}
+
 /// The relevance anchors of a tool call: the terms of the context's prompts
 /// (a subagent also gets its session's, whose task it works on) and those
 /// its command names.
@@ -611,7 +780,8 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
     if matches!(name, "SessionStart" | "UserPromptSubmit") {
         return context(event, mode);
     }
-    if mode == Preference::Off || event["tool_name"] != "Bash" {
+    let claude_grep = agent == Agent::Claude && event["tool_name"] == "Grep";
+    if mode == Preference::Off || (event["tool_name"] != "Bash" && !claude_grep) {
         return Ok(json!({}));
     }
     if agent == Agent::Codex && name == "PreToolUse" {
@@ -655,113 +825,7 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         );
     }
     if agent == Agent::Claude && name == "PostToolUse" {
-        let command = event["tool_input"]["command"].as_str().unwrap_or("");
-        if crate::commands::invokes_wrapper(command) {
-            return Ok(json!({}));
-        }
-        let (profile, small) = limits(command, version);
-        let mut output = event["tool_response"].clone();
-        if output["isImage"] == true
-            || !output["stdout"].is_string()
-            || !output["stderr"].is_string()
-        {
-            return Ok(json!({}));
-        }
-        // Both streams are strings here (checked above).
-        let total = output["stdout"].as_str().map_or(0, str::len)
-            + output["stderr"].as_str().map_or(0, str::len);
-        let unchanged =
-            |reason| crate::events::unchanged("claude", profile, version, total, reason);
-        // Claude can attach persistence metadata before rendering its preview.
-        // Replacing stdout here would make that preview truncate our compact
-        // view a second time, hiding its final diagnostics and omission footer.
-        // The model only saw a preview of a persisted output: it is neither
-        // compressed nor remembered as shown.
-        if output["persistedOutputPath"]
-            .as_str()
-            .is_some_and(|path| !path.is_empty())
-            || output["persistedOutputSize"]
-                .as_u64()
-                .is_some_and(|size| size > 0)
-        {
-            unchanged(compress::Reason::Persisted);
-            return Ok(json!({}));
-        }
-        let mut changed = false;
-        // Compact-v4 replaces a stream identical to one this context was
-        // already shown (whole, as a view or raw) by a reference to it.
-        let mut repeated = [false; 2];
-        let context = context_key(event).filter(|_| version == compress::Version::V4);
-        let mut state = context.as_deref().map(crate::session::load);
-        if let Some(state) = &mut state {
-            for (i, stream) in ["stdout", "stderr"].into_iter().enumerate() {
-                let raw = output[stream].as_str().unwrap();
-                if raw.len() <= compress::SMALL || raw.len() > MAX_INPUT {
-                    continue;
-                }
-                let hash = digest(raw.as_bytes());
-                let hash = crate::session::short(&hash);
-                if state.saw(hash)
-                    && let Some(marker) =
-                        compress::repeat_recorded("claude", raw.as_bytes(), None, profile)
-                {
-                    output[stream] = json!(String::from_utf8(marker)?);
-                    repeated[i] = true;
-                    changed = true;
-                }
-                state.remember(hash);
-            }
-        }
-        let anchors = if version == compress::Version::V4 {
-            anchors(event, state.as_ref(), command)
-        } else {
-            Vec::new()
-        };
-        let remembered = || {
-            if let (Some(key), Some(state)) = (&context, &state) {
-                // Best effort: a lost write only misses a later repeat.
-                let _ = crate::session::save(key, state);
-            }
-        };
-        if !changed
-            && ["stdout", "stderr"].iter().all(|stream| {
-                output[stream]
-                    .as_str()
-                    .is_some_and(|text| text.len() <= small)
-            })
-        {
-            unchanged(compress::Reason::Small);
-            remembered();
-            return Ok(json!({}));
-        }
-        for (i, stream) in ["stdout", "stderr"].into_iter().enumerate() {
-            if repeated[i] {
-                continue;
-            }
-            let raw = output[stream].as_str().unwrap();
-            if raw.len() > MAX_INPUT {
-                return Ok(json!({}));
-            }
-            let small = compress::automatic_anchored(
-                "claude",
-                raw.as_bytes(),
-                None,
-                profile,
-                None,
-                version,
-                &anchors,
-            );
-            if small.as_ref() != raw.as_bytes() {
-                output[stream] = json!(String::from_utf8(small.into_owned())?);
-                changed = true;
-            }
-        }
-        remembered();
-        if changed {
-            return Ok(
-                json!({"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":output}}),
-            );
-        }
+        return claude_result(event, version);
     }
     Ok(json!({}))
 }
