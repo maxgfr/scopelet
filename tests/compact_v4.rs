@@ -1143,3 +1143,24 @@ fn json_projections_keep_one_link_column() {
     );
     assert_eq!(table["rows"].as_array().unwrap().len(), 30, "{text}");
 }
+
+/// Found on a live Grep result: 600 lines sharing a template fold into one
+/// `similar=600` line whose members differ (their file names), so the view
+/// is not complete; an exact `repeat=N` hides nothing.
+#[test]
+fn a_template_fold_makes_the_header_partial() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw: String = (0..600)
+        .map(|i| {
+            format!(
+                "src/mod{}.rs:{}:fn handler() {{ refresh_token({i}); }}\n",
+                i / 20,
+                i % 20
+            )
+        })
+        .collect();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    assert!(text.contains(" similar="), "{text}");
+    assert!(!first_line(&text).ends_with(" complete]\n"), "{text}");
+    assert!(first_line(&text).contains(" abridged="), "{text}");
+}

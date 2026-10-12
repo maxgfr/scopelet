@@ -2563,9 +2563,14 @@ impl Frame {
     }
 }
 
-/// Selected units shown in part: lines cut behind `text_truncated`.
+/// Selected units shown in part: lines cut behind `text_truncated`, and
+/// `similar=N` groups, whose members differ from the line shown (an exact
+/// `repeat=N` hides nothing).
 fn cut(units: &[Unit<'_>], selected: &[usize]) -> usize {
-    selected.iter().filter(|&&i| units[i].truncated > 0).count()
+    selected
+        .iter()
+        .filter(|&&i| units[i].truncated > 0 || matches!(units[i].label, Label::Similar { .. }))
+        .count()
 }
 
 /// The footer of a complete table before compact-v4.

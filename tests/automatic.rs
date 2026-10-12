@@ -1214,3 +1214,93 @@ fn repeat_references_are_journaled() {
     assert_eq!(repeat["version"], 4);
     assert!(!repeat.to_string().contains("worker"), "{repeat}");
 }
+
+/// A Grep PostToolUse event captured from Claude Code 2.1.296.
+fn grep_fixture(name: &str) -> Value {
+    let path = format!("{}/tests/fixtures/{name}.json", env!("CARGO_MANIFEST_DIR"));
+    serde_json::from_slice(&fs::read(path).unwrap()).unwrap()
+}
+
+/// Claude Code's Grep in content mode: its `content` text is compressed as
+/// search results and every other field of the result is kept as it was.
+#[test]
+fn grep_content_results_are_compressed_and_other_shapes_pass() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut event = grep_fixture("claude_grep_content");
+    let words: Vec<String> = (0..600)
+        .map(|i| {
+            i.to_string()
+                .bytes()
+                .map(|b| (b'a' + (b - b'0')) as char)
+                .collect()
+        })
+        .collect();
+    let content: String = (0..600)
+        .map(|i| {
+            format!(
+                "src/mod{}.rs:{}:    let {} = refresh_token();\n",
+                i / 20,
+                2 + i % 20,
+                words[i]
+            )
+        })
+        .collect();
+    event["tool_response"]["content"] = json!(content.trim_end());
+    event["tool_response"]["numLines"] = json!(600);
+    let result = hook_v4(dir.path(), "claude", event.clone());
+    let output = &result["hookSpecificOutput"]["updatedToolOutput"];
+    let view = output["content"].as_str().unwrap();
+    assert!(view.starts_with("[scopelet v4 "), "{view}");
+    assert!(view.contains(" file=src/mod0.rs"), "{view}");
+    assert!(view.len() < content.len() / 2, "{}", view.len());
+    for field in ["mode", "numFiles", "filenames", "numLines", "totalLines"] {
+        assert_eq!(output[field], event["tool_response"][field], "{field}");
+    }
+    assert_eq!(recovered(dir.path(), view), content.trim_end().as_bytes());
+
+    // Shown twice in one context, it becomes a repeat reference.
+    let again = hook_v4(dir.path(), "claude", event.clone());
+    let again = again["hookSpecificOutput"]["updatedToolOutput"]["content"]
+        .as_str()
+        .unwrap();
+    assert!(again.contains(" repeat: identical"), "{again}");
+
+    // Other modes and unknown shapes pass through, however large.
+    let mut files = grep_fixture("claude_grep_files");
+    files["tool_response"]["filenames"] = json!(vec!["src/x.rs"; 3000]);
+    assert_eq!(hook_v4(dir.path(), "claude", files), json!({}));
+    let mut count = grep_fixture("claude_grep_count");
+    count["tool_response"]["content"] = json!("src/mod1.rs:1\n".repeat(400));
+    assert_eq!(hook_v4(dir.path(), "claude", count), json!({}));
+    let mut unknown = event.clone();
+    unknown["tool_response"] = json!({"text": content});
+    assert_eq!(hook_v4(dir.path(), "claude", unknown), json!({}));
+    // Codex has no Grep tool to compress.
+    assert_eq!(hook_v4(dir.path(), "codex", event), json!({}));
+}
+
+/// The installed Claude PostToolUse hook matches Bash and Grep; reinstalling
+/// changes nothing and uninstalling removes it.
+#[test]
+fn grep_matcher_is_installed_idempotently() {
+    let dir = tempfile::tempdir().unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    let path = dir.path().join("claude/settings.json");
+    let installed = fs::read(&path).unwrap();
+    let value: Value = serde_json::from_slice(&installed).unwrap();
+    assert_eq!(value["hooks"]["PostToolUse"][0]["matcher"], "Bash|Grep");
+    cli(dir.path())
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    assert_eq!(fs::read(&path).unwrap(), installed);
+    cli(dir.path())
+        .args(["uninstall", "--agent", "claude"])
+        .assert()
+        .success();
+    let value: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert!(value.get("hooks").is_none(), "{value}");
+}

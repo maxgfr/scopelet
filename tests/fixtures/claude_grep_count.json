@@ -1,0 +1,19 @@
+{
+  "session_id": "synthetic-grep-session",
+  "hook_event_name": "PostToolUse",
+  "cwd": "/synthetic/repo",
+  "tool_name": "Grep",
+  "tool_input": {
+    "pattern": "refresh_token",
+    "output_mode": "count"
+  },
+  "tool_response": {
+    "mode": "count",
+    "numFiles": 40,
+    "filenames": [],
+    "content": "src/mod6.rs:1\nsrc/mod2.rs:1\nsrc/mod3.rs:1\nsrc/mod7.rs:1\nsrc/mod11.rs:1\nsrc/mod40.rs:1\nsrc/mod25.rs:1\nsrc/mod35.rs:1\nsrc/mod21.rs:1\nsrc/mod15.rs:1\nsrc/mod8.rs:1\nsrc/mod31.rs:1\nsrc/mod20.rs:1\nsrc/mod14.rs:1\nsrc/mod9.rs:1\nsrc/mod30.rs:1\nsrc/mod10.rs:1\nsrc/mod24.rs:1\nsrc/mod34.rs:1\nsrc/mod23.rs:1\nsrc/mod17.rs:1\nsrc/mod33.rs:1\nsrc/mod1.rs:1\nsrc/mod13.rs:1\nsrc/mod39.rs:1\nsrc/mod12.rs:1\nsrc/mod28.rs:1\nsrc/mod19.rs:1\nsrc/mod29.rs:1\nsrc/mod36.rs:1\nsrc/mod22.rs:1\nsrc/mod5.rs:1\nsrc/mod4.rs:1\nsrc/mod32.rs:1\nsrc/mod16.rs:1\nsrc/mod38.rs:1\nsrc/mod27.rs:1\nsrc/mod37.rs:1\nsrc/mod26.rs:1\nsrc/mod18.rs:1",
+    "numMatches": 40
+  },
+  "tool_use_id": "toolu_synthetic",
+  "permission_mode": "default"
+}
