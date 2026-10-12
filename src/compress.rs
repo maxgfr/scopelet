@@ -1089,6 +1089,17 @@ fn text_units_v3<'a>(
     // A one-byte indent per line and a few labels: a text this size is shown
     // whole once identical lines fold, so nothing similar needs to.
     let exact_only = kind.similar_on_overflow && record.text.len() + 2 * n + 64 <= limit;
+    // A test run's per-binary results are its outcome: they never fold
+    // together by their numbers and rank with first diagnostics, so the
+    // results a view shows add up to the run's totals.
+    let mut results = Bits::new(n);
+    if kind.tests {
+        for (i, view) in views.iter().enumerate() {
+            if CARGO_RESULT.is_match(view) {
+                results.set(i);
+            }
+        }
+    }
     // A search shows each file's first matches before any file's others.
     let (later, first_matches) = if kind.search {
         search_ranks(&views, anchoring)
@@ -1241,7 +1252,10 @@ fn text_units_v3<'a>(
             groups.len() as u32
         } else if slot_of_first[origin] != NONE {
             slot_of_first[origin]
-        } else if exact_only || matches!(role(i), Diff::File | Diff::Change | Diff::Message) {
+        } else if exact_only
+            || results.get(i)
+            || matches!(role(i), Diff::File | Diff::Change | Diff::Message)
+        {
             // Headers, changes and commit messages are evidence: they never
             // fold by template, only with the very same text (a file every
             // commit touches). Nor does any line of a text that fits.
@@ -1383,6 +1397,8 @@ fn text_units_v3<'a>(
         };
         let priority = if first_line == 0 || last + 1 == n {
             4
+        } else if results.get(i) {
+            3
         } else if role(i) == Diff::File {
             2
         } else if matches!(role(i), Diff::Change | Diff::Message) {
@@ -1542,6 +1558,9 @@ struct Kind {
     /// Compact-v4: lines that differ only by their numbers fold together only
     /// when the text does not fit; one that fits folds identical lines only.
     similar_on_overflow: bool,
+    /// Compact-v4 test runs: cargo's per-binary `test result:` lines are
+    /// shown before ordinary lines and never fold by template.
+    tests: bool,
 }
 
 impl Kind {
@@ -1553,6 +1572,7 @@ impl Kind {
             diff_files: version == Version::V4,
             install: version == Version::V4 && profile == Some(Profile::Install),
             similar_on_overflow: version == Version::V4,
+            tests: version == Version::V4 && profile == Some(Profile::Tests),
         }
     }
 }
@@ -2529,11 +2549,15 @@ static CARGO_RESULT: LazyLock<regex::Regex> = LazyLock::new(|| {
         .unwrap()
 });
 
+/// Where a totals line's sums come from, on the line itself.
+const TOTALS_SOURCE: &str = "(every test result line, omitted ones included)";
+
 /// The totals of a cargo test run over several test binaries:
-/// `totals runs=N passed=P failed=F ignored=I`, summed from every `test
-/// result:` line, since a view rarely has room for all of them and a reader
-/// summing the ones shown gets a wrong count. None below two such lines: one
-/// is its own total.
+/// `totals runs=N passed=P failed=F ignored=I (every test result line, omitted
+/// ones included)`, since a view rarely has room for all of them and a reader
+/// summing the ones shown gets a wrong count; the parenthesis says so, or a
+/// reader may trust its own partial sum over the line. None below two such
+/// lines: one is its own total.
 fn totals_line(text: &str) -> Option<String> {
     let mut sums = [0u64; 3];
     let mut runs = 0usize;
@@ -2547,7 +2571,7 @@ fn totals_line(text: &str) -> Option<String> {
     }
     (runs >= 2).then(|| {
         format!(
-            "totals runs={runs} passed={} failed={} ignored={}\n",
+            "totals runs={runs} passed={} failed={} ignored={} {TOTALS_SOURCE}\n",
             sums[0], sums[1], sums[2]
         )
     })

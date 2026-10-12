@@ -396,15 +396,19 @@ fn passes(count: usize) -> String {
 }
 
 /// A cargo run over several test binaries carries its totals below the
-/// header (after the failure line), summed from every `test result:` line,
-/// even those the view leaves out. One binary's result is its own total.
+/// header (after the failure line), summed from every `test result:` line.
+/// Those lines are shown before ordinary ones and never fold by their
+/// numbers, so the results in view add up to the totals. One binary's result
+/// is its own total.
 #[test]
 fn cargo_totals_sum_every_test_binary() {
     let dir = tempfile::tempdir().unwrap();
+    // Binary k runs 40 + k tests, so no two result lines are identical.
     let binary = |k: usize, failed: usize| {
         let mut out = format!(
-            "     Running tests/t{k}.rs (target/debug/deps/t{k}-0123abcd)\n\nrunning 40 tests\n{}",
-            passes(40)
+            "     Running tests/t{k}.rs (target/debug/deps/t{k}-0123abcd)\n\nrunning {} tests\n{}",
+            40 + k,
+            passes(40 + k - failed)
         );
         if failed > 0 {
             out.push_str(&format!(
@@ -414,7 +418,7 @@ fn cargo_totals_sum_every_test_binary() {
         out.push_str(&format!(
             "test result: {}. {} passed; {failed} failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
             if failed > 0 { "FAILED" } else { "ok" },
-            40 - failed
+            40 + k - failed
         ));
         out
     };
@@ -422,10 +426,19 @@ fn cargo_totals_sum_every_test_binary() {
     let text = test_view(dir.path(), &raw, Version::V4);
     assert_eq!(
         text.lines().nth(1),
-        Some("totals runs=17 passed=680 failed=0 ignored=17"),
+        Some(
+            "totals runs=17 passed=816 failed=0 ignored=17 (every test result line, omitted ones included)"
+        ),
         "{text}"
     );
-    assert!(text.matches("test result:").count() < 17, "{text}");
+    assert!(text.contains(" omitted="), "{text}");
+    assert_eq!(text.matches("test result: ok. ").count(), 17, "{text}");
+    assert!(
+        !text
+            .lines()
+            .any(|l| l.contains(" similar=") && l.contains("test result:")),
+        "{text}"
+    );
 
     let raw: String = (0..17).map(|k| binary(k, usize::from(k == 9))).collect();
     let text = test_view(dir.path(), &raw, Version::V4);
@@ -436,9 +449,16 @@ fn cargo_totals_sum_every_test_binary() {
     );
     assert_eq!(
         text.lines().nth(2),
-        Some("totals runs=17 passed=679 failed=1 ignored=17"),
+        Some(
+            "totals runs=17 passed=815 failed=1 ignored=17 (every test result line, omitted ones included)"
+        ),
         "{text}"
     );
+    assert!(
+        text.contains("test result: FAILED. 48 passed; 1 failed;"),
+        "{text}"
+    );
+    assert!(text.contains("panicked at tests/t9.rs:9:5"), "{text}");
 
     let raw = binary(0, 0) + &passes(200);
     let text = test_view(dir.path(), &raw, Version::V4);
