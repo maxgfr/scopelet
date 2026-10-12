@@ -417,6 +417,7 @@ pub fn automatic_anchored<'a>(
                 version: Some(version.number()),
                 artifact: decision.artifact.as_deref().map(crate::events::prefix),
                 blob: decision.blob.as_deref().map(crate::events::prefix),
+                anchored: decision.anchored,
                 ..Default::default()
             },
         );
