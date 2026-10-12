@@ -488,16 +488,22 @@ fn automatic_with<'a>(
         notes: vec![SUPPLIED.into()],
         ..Dataset::default()
     };
-    // A compact-v4 test view names its failures right below the header.
-    let failed = if version == Version::V4 && shape.profile == Some(crate::commands::Profile::Tests)
-    {
-        failure_line(text)
-    } else {
-        None
-    };
-    // The line takes at most a quarter of the budget; a longer one is left
-    // out rather than starving the view of the output it describes.
-    let failed = failed.filter(|line| line.len() * 4 <= shape.budget);
+    // A compact-v4 test view names its failures, then its totals, right
+    // below the header. The lines take at most a quarter of the budget; a
+    // longer one is left out rather than starving the view of the output it
+    // describes.
+    let mut action = String::new();
+    if version == Version::V4 && shape.profile == Some(crate::commands::Profile::Tests) {
+        for line in [failure_line(text), totals_line(text)]
+            .into_iter()
+            .flatten()
+        {
+            if (action.len() + line.len()) * 4 <= shape.budget {
+                action.push_str(&line);
+            }
+        }
+    }
+    let failed = (!action.is_empty()).then_some(action);
     let failed_len = failed.as_ref().map_or(0, String::len);
     let mut anchoring = Anchoring::new(anchors);
     anchoring.focus(text);
@@ -2516,6 +2522,35 @@ fn failure_line(text: &str) -> Option<String> {
         found.len(),
         entries.join(", ")
     ))
+}
+
+static CARGO_RESULT: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"^test result: (?:ok|FAILED)\. (\d+) passed; (\d+) failed; (\d+) ignored;")
+        .unwrap()
+});
+
+/// The totals of a cargo test run over several test binaries:
+/// `totals runs=N passed=P failed=F ignored=I`, summed from every `test
+/// result:` line, since a view rarely has room for all of them and a reader
+/// summing the ones shown gets a wrong count. None below two such lines: one
+/// is its own total.
+fn totals_line(text: &str) -> Option<String> {
+    let mut sums = [0u64; 3];
+    let mut runs = 0usize;
+    for line in text.lines() {
+        if let Some(result) = CARGO_RESULT.captures(line.trim_end_matches('\r')) {
+            runs += 1;
+            for (sum, k) in sums.iter_mut().zip(1..) {
+                *sum = sum.saturating_add(result[k].parse().unwrap_or(u64::MAX));
+            }
+        }
+    }
+    (runs >= 2).then(|| {
+        format!(
+            "totals runs={runs} passed={} failed={} ignored={}\n",
+            sums[0], sums[1], sums[2]
+        )
+    })
 }
 
 /// The metadata around a view's body. Compact-v1 to v3 open with a header

@@ -395,6 +395,62 @@ fn passes(count: usize) -> String {
         .collect()
 }
 
+/// A cargo run over several test binaries carries its totals below the
+/// header (after the failure line), summed from every `test result:` line,
+/// even those the view leaves out. One binary's result is its own total.
+#[test]
+fn cargo_totals_sum_every_test_binary() {
+    let dir = tempfile::tempdir().unwrap();
+    let binary = |k: usize, failed: usize| {
+        let mut out = format!(
+            "     Running tests/t{k}.rs (target/debug/deps/t{k}-0123abcd)\n\nrunning 40 tests\n{}",
+            passes(40)
+        );
+        if failed > 0 {
+            out.push_str(&format!(
+                "test t{k}::breaks ... FAILED\n\nfailures:\n\n---- t{k}::breaks stdout ----\nthread 't{k}::breaks' panicked at tests/t{k}.rs:9:5:\nboom\n\nfailures:\n    t{k}::breaks\n\n"
+            ));
+        }
+        out.push_str(&format!(
+            "test result: {}. {} passed; {failed} failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s\n\n",
+            if failed > 0 { "FAILED" } else { "ok" },
+            40 - failed
+        ));
+        out
+    };
+    let raw: String = (0..17).map(|k| binary(k, 0)).collect();
+    let text = test_view(dir.path(), &raw, Version::V4);
+    assert_eq!(
+        text.lines().nth(1),
+        Some("totals runs=17 passed=680 failed=0 ignored=17"),
+        "{text}"
+    );
+    assert!(text.matches("test result:").count() < 17, "{text}");
+
+    let raw: String = (0..17).map(|k| binary(k, usize::from(k == 9))).collect();
+    let text = test_view(dir.path(), &raw, Version::V4);
+    assert_eq!(
+        action_line(&text),
+        Some("failed=1: t9::breaks (tests/t9.rs:9)"),
+        "{text}"
+    );
+    assert_eq!(
+        text.lines().nth(2),
+        Some("totals runs=17 passed=679 failed=1 ignored=17"),
+        "{text}"
+    );
+
+    let raw = binary(0, 0) + &passes(200);
+    let text = test_view(dir.path(), &raw, Version::V4);
+    assert!(!text.contains("totals "), "{text}");
+    let v3 = test_view(
+        dir.path(),
+        &(0..17).map(|k| binary(k, 0)).collect::<String>(),
+        Version::V3,
+    );
+    assert!(!v3.contains("totals "), "{v3}");
+}
+
 /// Each recognized runner's failures are named, with the location to open
 /// first, right below the header.
 #[test]

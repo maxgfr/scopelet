@@ -510,8 +510,13 @@ failures gets a metadata line below the header: `failed=N: name (file:line),
 deepest `file.py:N:` of their section), jest and vitest (`●` or `FAIL file >
 name` titles and their first frame outside `node_modules`) and go test (`---
 FAIL:`, or a test that panicked, with its log line or the deepest frame
-outside the Go toolchain). An unrecognized format gets no line. The line is
-computed from the output and never claimed to occur in it.
+outside the Go toolchain). An unrecognized format gets no line. A cargo run
+over two or more test binaries also gets `totals runs=N passed=P failed=F
+ignored=I`, summed from every `test result:` line, since a view rarely has
+room for all of them and summing the ones shown gives a wrong count. Both
+lines are computed from the output and never claimed to occur in it; together
+they take at most a quarter of the budget, and one that does not fit is left
+out.
 
 **Search results.** In the search profile, two or more consecutive selected
 lines of one file in `path:N:text` / `path-N-text` form (`grep -n`, `rg -n`,

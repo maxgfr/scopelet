@@ -203,6 +203,7 @@ is 16 hex characters of the artifact, resolved like any prefix:
                                                                    similar= group, record without some fields)
 [scopelet v4 ID repeat: identical to output already shown ...]     this conversation already saw these bytes
 failed=2: name (file:line), name (file:line)                      tests: failures to open first (metadata)
+totals runs=17 passed=362 failed=0 ignored=3                      cargo over several binaries: every result summed
 input:40-44 file=src/a.rs more=7                                   search: one file's lines without their path
  12:text                                                           prefix; 7 of its matches not shown
 input:9-95 file=Cargo.lock changed=+43/-3 omitted                  a lockfile or generated file's diff, counted
