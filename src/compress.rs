@@ -201,6 +201,8 @@ pub struct Decision {
     /// The artifact and original stored, when the output was replaced.
     pub artifact: Option<String>,
     pub blob: Option<String>,
+    /// Lines were ranked up for containing a relevance anchor.
+    pub anchored: bool,
 }
 
 impl Decision {
@@ -209,6 +211,66 @@ impl Decision {
             reason,
             artifact: None,
             blob: None,
+            anchored: false,
+        }
+    }
+}
+
+/// Share of the budget, as a divisor, that units ranked up by an anchor may
+/// take: a term found on every line cannot flood the view.
+const ANCHOR_SHARE: usize = 3;
+
+/// Literal terms that mark a line as relevant to the task (compact-v4): the
+/// prompt's and the command's. A unit containing one ranks with first
+/// diagnostics (tier 3) while anchored units fit `ANCHOR_SHARE` of the
+/// budget. The view depends on them; the artifact does not.
+struct Anchoring<'a> {
+    finders: Vec<memchr::memmem::Finder<'a>>,
+    /// Bytes anchored units may still take.
+    left: usize,
+    /// Units ranked up so far.
+    promoted: usize,
+}
+
+impl<'a> Anchoring<'a> {
+    fn new(terms: &'a [String]) -> Self {
+        Self {
+            finders: terms
+                .iter()
+                .filter(|t| !t.is_empty())
+                .map(|t| memchr::memmem::Finder::new(t.as_bytes()))
+                .collect(),
+            left: 0,
+            promoted: 0,
+        }
+    }
+    /// A new selection over `available` bytes.
+    fn reset(&mut self, available: usize) {
+        self.left = available / ANCHOR_SHARE;
+        self.promoted = 0;
+    }
+    fn matches(&self, text: &str) -> bool {
+        self.finders
+            .iter()
+            .any(|f| f.find(text.as_bytes()).is_some())
+    }
+    /// Rank a unit up when it contains an anchor and still fits the share.
+    fn promote(&mut self, unit: &mut Unit<'_>) {
+        if self.finders.is_empty() || unit.priority >= 3 || unit.size > self.left {
+            return;
+        }
+        let found = match &unit.line {
+            Some(line) => self.matches(line),
+            None => unit
+                .record
+                .value
+                .as_ref()
+                .is_some_and(|v| self.matches(&v.to_string())),
+        };
+        if found {
+            unit.priority = 3;
+            self.left -= unit.size;
+            self.promoted += 1;
         }
     }
 }
@@ -256,7 +318,7 @@ impl Shape {
 }
 
 pub fn automatic(bytes: &[u8], store: &Store, budget: usize) -> Result<Vec<u8>> {
-    automatic_with(bytes, Shape::plain(budget), Version::V1, || {
+    automatic_with(bytes, Shape::plain(budget), Version::V1, &[], || {
         Ok(store.clone())
     })
     .map(|(output, _)| output.into_owned())
@@ -269,8 +331,10 @@ pub fn automatic_lazy<'a>(
     budget: usize,
     version: Version,
 ) -> Result<Cow<'a, [u8]>> {
-    automatic_with(bytes, Shape::plain(budget), version, || Store::open(path))
-        .map(|(output, _)| output)
+    automatic_with(bytes, Shape::plain(budget), version, &[], || {
+        Store::open(path)
+    })
+    .map(|(output, _)| output)
 }
 
 /// `automatic_lazy` for the output of a recognized command: its profile's
@@ -298,8 +362,25 @@ pub fn automatic_recorded<'a>(
     budget: Option<usize>,
     version: Version,
 ) -> Cow<'a, [u8]> {
-    let (output, decision) = automatic_decision(bytes, path.clone(), profile, budget, version)
-        .unwrap_or_else(|_| (Cow::Borrowed(bytes), Decision::unchanged(Reason::Error)));
+    automatic_anchored(host, bytes, path, profile, budget, version, &[])
+}
+
+/// `automatic_recorded` that ranks up lines containing one of `anchors`
+/// (compact-v4 only; earlier versions ignore them).
+pub fn automatic_anchored<'a>(
+    host: &str,
+    bytes: &'a [u8],
+    path: Option<PathBuf>,
+    profile: Option<crate::commands::Profile>,
+    budget: Option<usize>,
+    version: Version,
+    anchors: &[String],
+) -> Cow<'a, [u8]> {
+    let shape = Shape::of(profile, budget, version);
+    let anchors = if version == Version::V4 { anchors } else { &[] };
+    let (output, decision) =
+        automatic_with(bytes, shape, version, anchors, || Store::open(path.clone()))
+            .unwrap_or_else(|_| (Cow::Borrowed(bytes), Decision::unchanged(Reason::Error)));
     if !bytes.is_empty() {
         crate::events::record(
             path,
@@ -328,15 +409,16 @@ pub fn automatic_decision<'a>(
     version: Version,
 ) -> Result<(Cow<'a, [u8]>, Decision)> {
     let shape = Shape::of(profile, budget, version);
-    automatic_with(bytes, shape, version, || Store::open(path))
+    automatic_with(bytes, shape, version, &[], || Store::open(path))
 }
 
-fn automatic_with(
-    bytes: &[u8],
+fn automatic_with<'a>(
+    bytes: &'a [u8],
     shape: Shape,
     version: Version,
+    anchors: &[String],
     store: impl FnOnce() -> Result<Store>,
-) -> Result<(Cow<'_, [u8]>, Decision)> {
+) -> Result<(Cow<'a, [u8]>, Decision)> {
     let unchanged = |reason| Ok((Cow::Borrowed(bytes), Decision::unchanged(reason)));
     ensure!(
         (1024..=1024 * 1024).contains(&shape.budget),
@@ -381,6 +463,7 @@ fn automatic_with(
         notes: vec![SUPPLIED.into()],
         ..Dataset::default()
     };
+    let mut anchoring = Anchoring::new(anchors);
     let (mut result, shown) = view(
         &data,
         PLACEHOLDER,
@@ -389,6 +472,7 @@ fn automatic_with(
         Some(text),
         max_lines,
         shape.reading,
+        &mut anchoring,
     )?;
     if shown == 0 || result.len() + 512 > bytes.len() || result.len() * 5 > bytes.len() * 4 {
         return unchanged(Reason::Savings);
@@ -418,6 +502,7 @@ fn automatic_with(
         reason: Reason::Compressed,
         blob: Some(data.snapshots[0].blob.clone()),
         artifact: Some(artifact),
+        anchored: anchoring.promoted > 0,
     };
     Ok((Cow::Owned(result.into_bytes()), decision))
 }
@@ -505,7 +590,16 @@ pub fn compact_version(
     budget: usize,
     version: Version,
 ) -> Result<String> {
-    let (mut text, _) = view(data, PLACEHOLDER, budget, version, None, MAX_LINES, false)?;
+    let (mut text, _) = view(
+        data,
+        PLACEHOLDER,
+        budget,
+        version,
+        None,
+        MAX_LINES,
+        false,
+        &mut Anchoring::new(&[]),
+    )?;
     let id = store.put_json(data)?;
     identify(&mut text, data, &id, version);
     Ok(text)
@@ -768,7 +862,13 @@ fn first_of_template(seen: &mut HashSet<String>, line: &str, key: &mut String) -
     true
 }
 
-fn units(data: &Dataset, limit: usize, version: Version, reading: bool) -> Vec<Unit<'_>> {
+fn units<'a>(
+    data: &'a Dataset,
+    limit: usize,
+    version: Version,
+    reading: bool,
+    anchoring: &mut Anchoring<'_>,
+) -> Vec<Unit<'a>> {
     let mut units = Vec::new();
     let mut distinct = BTreeSet::new();
     let mut seen = Seen::default();
@@ -794,18 +894,20 @@ fn units(data: &Dataset, limit: usize, version: Version, reading: bool) -> Vec<U
             } else {
                 0
             };
-            units.push(Unit {
+            let mut unit = Unit {
                 record,
                 line: None,
                 label: Label::Prefix(String::new()),
                 truncated: 0,
                 size: encoding::size(value, limit).unwrap_or(limit + 1) + record.source.len() + 3,
                 priority,
-            });
+            };
+            anchoring.promote(&mut unit);
+            units.push(unit);
             continue;
         }
         if version.profiled() {
-            text_units_v3(record, limit, reading, &mut seen, &mut units);
+            text_units_v3(record, limit, reading, &mut seen, anchoring, &mut units);
             continue;
         }
         let lines: Vec<_> = record.text.split_inclusive('\n').collect();
@@ -893,12 +995,13 @@ impl Bits {
 /// Line indices are `u32` (a capture is at most 32 MiB) and flags are bits,
 /// so the working set stays near the units themselves on a large input.
 ///
-/// `reading`: a file read ranks no line as a diagnostic.
+/// `reading`: a file read ranks no line as a diagnostic; anchors still apply.
 fn text_units_v3<'a>(
     record: &'a Record,
     limit: usize,
     reading: bool,
     seen: &mut Seen,
+    anchoring: &mut Anchoring<'_>,
     units: &mut Vec<Unit<'a>>,
 ) {
     const NONE: u32 = u32::MAX;
@@ -1232,7 +1335,12 @@ fn text_units_v3<'a>(
             raw_at = i + 1;
             line
         };
-        units.push(Unit::text_v3(record, label, view, raw, priority, limit));
+        let mut unit = Unit::text_v3(record, label, view, raw, priority, limit);
+        if priority != TRIVIAL {
+            anchoring.promote(&mut unit);
+        }
+        let priority = unit.priority;
+        units.push(unit);
         if role(i) == Diff::File {
             // A file header ends the previous hunk: nothing glues across it.
         } else if role(i) == Diff::Meta {
@@ -1632,6 +1740,7 @@ const TABLE_TAIL: &str =
 
 /// `original` is the text the records were parsed from, when there is one:
 /// compact-v3 shows it line by line when no whole JSON record fits.
+#[allow(clippy::too_many_arguments)]
 fn view(
     data: &Dataset,
     artifact: &str,
@@ -1640,6 +1749,7 @@ fn view(
     original: Option<&str>,
     max_units: usize,
     reading: bool,
+    anchoring: &mut Anchoring<'_>,
 ) -> Result<(String, usize)> {
     ensure!(
         (512..=1024 * 1024).contains(&budget),
@@ -1674,7 +1784,8 @@ fn view(
             return Ok((frame.complete(&table), indices.len()));
         }
     }
-    let mut units = units(data, available, version, reading);
+    anchoring.reset(available);
+    let mut units = units(data, available, version, reading, anchoring);
     if uniform && version.tables() {
         // Exact row costs include positional provenance. Fixed schema/envelope costs
         // are counted by the same serializer as the final table.
@@ -1703,7 +1814,8 @@ fn view(
             }
         }
         // No table row fits: recompute ordinary-record costs before falling back.
-        units = self::units(data, available, version, reading);
+        anchoring.reset(available);
+        units = self::units(data, available, version, reading, anchoring);
     }
     let (body, selected) = if version.profiled() {
         let (body, selected) = fill_v3(&units, available);
@@ -1727,7 +1839,10 @@ fn view(
             let available = budget.saturating_sub(frame.reserve(lines));
             let mut seen = Seen::default();
             let mut units = Vec::new();
-            text_units_v3(&record, available, reading, &mut seen, &mut units);
+            anchoring.reset(available);
+            text_units_v3(
+                &record, available, reading, &mut seen, anchoring, &mut units,
+            );
             let (body, selected) = fill_v3(&units, available);
             let output = frame.finish(&body, units.len() - selected.len());
             ensure!(output.len() <= budget, "compact metadata exceeds budget");

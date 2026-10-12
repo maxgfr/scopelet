@@ -2,6 +2,7 @@
 //! artifact ID and no footer around the compact-v3 body, with the original
 //! bytes always recoverable from the store.
 use scopelet::{
+    commands::Profile,
     compress::{self, Version},
     model::{Dataset, Record},
     store::Store,
@@ -181,4 +182,161 @@ fn a_complete_table_carries_only_the_header() {
     assert_eq!(text.lines().count(), 2, "{text}");
     assert!(text.lines().nth(1).unwrap().starts_with("table "), "{text}");
     assert_eq!(original(dir.path(), &text), raw);
+}
+
+fn anchored(
+    dir: &std::path::Path,
+    raw: &str,
+    profile: Option<Profile>,
+    version: Version,
+    anchors: &[&str],
+) -> String {
+    let anchors: Vec<String> = anchors.iter().map(|s| s.to_string()).collect();
+    let output = compress::automatic_anchored(
+        "cli",
+        raw.as_bytes(),
+        Some(dir.to_path_buf()),
+        profile,
+        None,
+        version,
+        &anchors,
+    );
+    String::from_utf8(output.into_owned()).unwrap()
+}
+
+/// A line naming a term of the task is shown although nothing else ranks it:
+/// the view depends on the anchors, the artifact does not. Earlier compact
+/// versions ignore anchors.
+#[test]
+fn anchor_terms_rank_their_lines_into_the_view() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = distinct_lines(3000);
+    let at = raw.match_indices('\n').nth(1499).unwrap().0 + 1;
+    raw.insert_str(at, "bcde parse_header unit ready\n");
+    let plain = anchored(dir.path(), &raw, None, Version::V4, &[]);
+    assert!(!plain.contains("parse_header"), "{plain}");
+    let focused = anchored(dir.path(), &raw, None, Version::V4, &["parse_header"]);
+    assert!(
+        focused.contains("input:1501 bcde parse_header unit ready\n"),
+        "{focused}"
+    );
+    assert_eq!(short_id(&plain), short_id(&focused));
+    let v3 = anchored(dir.path(), &raw, None, Version::V3, &["parse_header"]);
+    assert!(!v3.contains("parse_header"), "{v3}");
+}
+
+/// A term on every line takes at most a third of the budget: diagnostics and
+/// the first and last lines keep their place.
+#[test]
+fn an_anchor_on_every_line_cannot_flood_the_view() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw: String = distinct_lines(3000)
+        .lines()
+        .map(|l| format!("tick {l}\n"))
+        .collect();
+    let at = raw.match_indices('\n').nth(2099).unwrap().0 + 1;
+    raw.insert_str(at, "error: replica 7 lost quorum\n");
+    let text = anchored(dir.path(), &raw, None, Version::V4, &["tick"]);
+    assert!(text.len() <= 4096, "{}", text.len());
+    // Shown lines may sit in range blocks: `input:a-b`, then one per line.
+    assert!(text.contains("error: replica 7 lost quorum\n"), "{text}");
+    assert!(text.contains("tick a unit ready\n"), "{text}");
+    assert!(text.contains("tick cjjj unit ready\n"), "{text}");
+    let ticks = text.lines().filter(|l| l.contains("tick")).count();
+    let plain = anchored(dir.path(), &raw, None, Version::V4, &[]);
+    let plain_ticks = plain.lines().filter(|l| l.contains("tick")).count();
+    // Anchored lines replace ordinary ones; they do not crowd out evidence.
+    assert!(ticks >= plain_ticks, "{ticks} < {plain_ticks}");
+}
+
+/// A file read ranks no line as a diagnostic, but anchors still apply.
+#[test]
+fn anchors_apply_to_file_reads() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut source = String::new();
+    for (i, line) in distinct_lines(900).lines().enumerate() {
+        let word = line.split(' ').next().unwrap();
+        source.push_str(&format!(
+            "fn {word}(x: u32) -> u32 {{\n    x.{word}()\n}}\n"
+        ));
+        if i == 450 {
+            source.push_str("fn resolve_prefix(text: &str) -> bool {\n    text.len() >= 8\n}\n");
+        }
+    }
+    let plain = anchored(
+        dir.path(),
+        &source,
+        Some(Profile::FileRead),
+        Version::V4,
+        &[],
+    );
+    assert!(!plain.contains("resolve_prefix"), "{plain}");
+    let focused = anchored(
+        dir.path(),
+        &source,
+        Some(Profile::FileRead),
+        Version::V4,
+        &["resolve_prefix"],
+    );
+    assert!(
+        focused.contains("fn resolve_prefix(text: &str) -> bool {"),
+        "{focused}"
+    );
+}
+
+fn cli(dir: &std::path::Path) -> assert_cmd::Command {
+    let mut command = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
+    command
+        .env("SCOPELET_COMPACT_VERSION", "4")
+        .env("SCOPELET_CONFIG_DIR", dir.join("config"))
+        .env("SCOPELET_CACHE_DIR", dir.join("cache"));
+    command
+}
+
+fn hook(dir: &std::path::Path, agent: &str, event: serde_json::Value) -> serde_json::Value {
+    let out = cli(dir)
+        .args(["hook", agent])
+        .write_stdin(event.to_string())
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    serde_json::from_slice(&out.stdout).unwrap()
+}
+
+/// Prompt terms reach the view through the private session state, and the
+/// command's own pattern through its arguments; neither is journaled.
+#[test]
+fn anchor_terms_come_from_the_prompt_and_the_command() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = distinct_lines(3000);
+    let at = raw.match_indices('\n').nth(1499).unwrap().0 + 1;
+    raw.insert_str(at, "bcde parse_header unit ready\n");
+    let tool = |command: &str| serde_json::json!({"hook_event_name":"PostToolUse","session_id":"a1","tool_name":"Bash","tool_input":{"command":command},"tool_response":{"stdout":raw,"stderr":"","interrupted":false,"isImage":false}});
+    let view = |result: serde_json::Value| -> String {
+        result["hookSpecificOutput"]["updatedToolOutput"]["stdout"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    // A different session sees no prompt anchors yet.
+    let before = view(hook(dir.path(), "claude", tool("npm run build")));
+    assert!(!before.contains("parse_header"), "{before}");
+    let prompt = serde_json::json!({"hook_event_name":"UserPromptSubmit","session_id":"a2","prompt":"Why is `parse_header` slow?"});
+    hook(dir.path(), "claude", prompt);
+    let mut event = tool("npm run build");
+    event["session_id"] = serde_json::json!("a2");
+    let after = view(hook(dir.path(), "claude", event));
+    assert!(after.contains("bcde parse_header unit ready"), "{after}");
+    // The command's search pattern anchors on its own.
+    let mut search = tool("rg -n parse_header");
+    search["session_id"] = serde_json::json!("a3");
+    let found = view(hook(dir.path(), "claude", search));
+    assert!(found.contains("bcde parse_header unit ready"), "{found}");
+    let journal = std::fs::read_dir(dir.path().join("cache/events"))
+        .unwrap()
+        .flatten()
+        .filter(|e| e.path().extension().is_some_and(|x| x == "jsonl"))
+        .map(|e| std::fs::read_to_string(e.path()).unwrap())
+        .collect::<String>();
+    assert!(!journal.contains("parse_header"), "{journal}");
 }
