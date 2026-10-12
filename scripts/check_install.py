@@ -74,9 +74,9 @@ def verify(skill, binary=None):
             '  v2_text: event.result.content[0].text, v2_system: context.system }));\n')
         plugin_result = json.loads(subprocess.check_output(['node', str(smoke)], env=env, cwd=root,
                                                            text=True, timeout=60))
-        assert '[scopelet compact-v' in plugin_result['output'] and len(plugin_result['output']) < 6000
+        assert '[scopelet v4 ' in plugin_result['output'] and len(plugin_result['output']) < 6000
         assert 'Scopelet auto' in plugin_result['system'][0]
-        assert '[scopelet compact-v' in plugin_result['v2_text'] and len(plugin_result['v2_text']) < 6000
+        assert '[scopelet v4 ' in plugin_result['v2_text'] and len(plugin_result['v2_text']) < 6000
         assert any('Scopelet auto' in item.get('text', '') for item in plugin_result['v2_system'])
         for path in files:
             value = json.loads(path.read_text())

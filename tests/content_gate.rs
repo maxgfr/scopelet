@@ -290,7 +290,7 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
         ));
     }
     let text = std::str::from_utf8(&output).map_err(|e| format!("{name}: {e}"))?;
-    if !text.starts_with("[scopelet compact-v") {
+    if !text.starts_with("[scopelet v4 ") && !text.starts_with("[scopelet compact-v") {
         return Err(format!("{name}: missing compact header"));
     }
     if fixture.facts_visible {
@@ -304,12 +304,19 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
             "{name}: oversized line not marked text_truncated:\n{text}"
         ));
     }
-    let artifact = text
+    // Compact-v4 shows 16 hex characters of the artifact; earlier versions
+    // the whole reference. Both resolve to the same stored artifact.
+    let reference = text
         .split_whitespace()
-        .find(|s| s.starts_with("artifact:"))
+        .nth(2)
+        .filter(|id| text.starts_with("[scopelet v4 ") && id.len() == 16)
+        .or_else(|| text.split_whitespace().find(|s| s.starts_with("artifact:")))
         .ok_or_else(|| format!("{name}: no artifact reference"))?;
     let store = Store::open(Some(cache.to_path_buf())).unwrap();
-    let data: Dataset = store.dataset(artifact).unwrap();
+    let artifact = store
+        .resolve(reference)
+        .map_err(|e| format!("{name}: {e:#}"))?;
+    let data: Dataset = store.dataset(&artifact).unwrap();
     if data.snapshots.len() != 1 {
         return Err(format!("{name}: expected one snapshot"));
     }
