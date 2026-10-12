@@ -291,6 +291,8 @@ struct Shape {
     budget: usize,
     small: usize,
     reading: bool,
+    /// The effective profile: the recognized command's in compact-v3 and later.
+    profile: Option<crate::commands::Profile>,
 }
 
 impl Shape {
@@ -299,6 +301,7 @@ impl Shape {
             budget,
             small: SMALL,
             reading: false,
+            profile: None,
         }
     }
     /// A recognized command's shape in compact-v3; `budget` overrides its
@@ -313,6 +316,7 @@ impl Shape {
             budget: budget.unwrap_or(profile.map_or(DEFAULT_BUDGET, |p| p.budget())),
             small: profile.map_or(SMALL, |p| p.small()),
             reading: profile == Some(crate::commands::Profile::FileRead),
+            profile,
         }
     }
 }
@@ -463,17 +467,29 @@ fn automatic_with<'a>(
         notes: vec![SUPPLIED.into()],
         ..Dataset::default()
     };
+    // A compact-v4 test view names its failures right below the header.
+    let failed = if version == Version::V4 && shape.profile == Some(crate::commands::Profile::Tests)
+    {
+        failure_line(text)
+    } else {
+        None
+    };
+    let failed_len = failed.as_ref().map_or(0, String::len);
     let mut anchoring = Anchoring::new(anchors);
     let (mut result, shown) = view(
         &data,
         PLACEHOLDER,
-        shape.budget,
+        shape.budget - failed_len,
         version,
         Some(text),
         max_lines,
         shape.reading,
         &mut anchoring,
     )?;
+    if let Some(line) = &failed {
+        let end = result.find('\n').unwrap() + 1;
+        result.insert_str(end, line);
+    }
     if shown == 0 || result.len() + 512 > bytes.len() || result.len() * 5 > bytes.len() * 4 {
         return unchanged(Reason::Savings);
     }
@@ -1679,6 +1695,203 @@ fn fill_v3(units: &[Unit<'_>], available: usize) -> (String, Vec<usize>) {
         body = extended;
     }
     (body, selected)
+}
+
+/// Failures listed on a test view's action line; the rest are counted.
+const FAILURES_LISTED: usize = 5;
+/// Longest entry of the action line, so one name cannot take the budget.
+const FAILURE_ENTRY: usize = 160;
+
+static CARGO_BLOCK: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^---- (.+) stdout ----$").unwrap());
+static CARGO_PANIC: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"^thread '([^']+)'(?: \(\d+\))? panicked at (\S+?):(\d+):\d+:?$").unwrap()
+});
+static PYTEST_SUMMARY: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^(?:FAILED|ERROR) (\S+)(?: - .*)?$").unwrap());
+static PYTEST_SECTION: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^_{3,} (.+?) _{3,}$").unwrap());
+static PYTEST_LOCATION: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^(\S+\.py):(\d+): ").unwrap());
+static JEST_TITLE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^\s*● (.+)$").unwrap());
+static VITEST_TITLE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^\s*FAIL\s+(\S+) > (.+)$").unwrap());
+static JS_LOCATION: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"(?:\(|at |❯ )([^()\s]+?):(\d+):\d+\)?\s*$").unwrap());
+static GO_FAIL: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^\s*--- FAIL: (\S+) \(").unwrap());
+static GO_RUN: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^=== RUN\s+(\S+)$").unwrap());
+static GO_LOCATION: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^\s+(\S+\.go):(\d+)(?::| \+0x)").unwrap());
+
+/// A recognized failure: its name and, when the output gives one, the
+/// `file:line` to open first.
+struct Failure {
+    name: String,
+    location: Option<String>,
+}
+
+/// Failures of cargo test (`---- name stdout ----` with its panic location),
+/// pytest (`FAILED`/`ERROR` summary lines with the deepest location of their
+/// section), jest and vitest (`●` or `FAIL file > name` titles with their
+/// first frame outside `node_modules`) and go test (`--- FAIL:`, or a test
+/// that panicked, with its log or frame location). Empty when the output
+/// matches none of them: nothing is guessed.
+fn failures(text: &str) -> Vec<Failure> {
+    let lines: Vec<&str> = text.lines().map(|l| l.trim_end_matches('\r')).collect();
+    let mut found: Vec<Failure> = Vec::new();
+    let mut add = |name: &str, location: Option<String>| {
+        if !found.iter().any(|f| f.name == name) {
+            found.push(Failure {
+                name: name.to_owned(),
+                location,
+            });
+        }
+    };
+    // cargo test
+    for (i, line) in lines.iter().enumerate() {
+        if let Some(block) = CARGO_BLOCK.captures(line) {
+            let name = &block[1];
+            let location = lines[i + 1..]
+                .iter()
+                .take_while(|l| !CARGO_BLOCK.is_match(l))
+                .find_map(|l| CARGO_PANIC.captures(l))
+                .filter(|p| &p[1] == name)
+                .map(|p| format!("{}:{}", &p[2], &p[3]));
+            add(name, location);
+        }
+    }
+    // pytest
+    let sections: Vec<(usize, &str)> = lines
+        .iter()
+        .enumerate()
+        .filter_map(|(i, l)| {
+            PYTEST_SECTION
+                .captures(l)
+                .map(|c| (i, c.get(1).unwrap().as_str()))
+        })
+        .collect();
+    for line in &lines {
+        let Some(summary) = PYTEST_SUMMARY.captures(line) else {
+            continue;
+        };
+        let id = &summary[1];
+        let test = id.rsplit("::").next().unwrap_or(id);
+        let location = sections
+            .iter()
+            .position(|(_, title)| {
+                *title == test
+                    || title.ends_with(&format!(".{test}"))
+                    || title.strip_prefix("ERROR collecting ") == Some(id)
+            })
+            .and_then(|k| {
+                let start = sections[k].0 + 1;
+                let end = sections.get(k + 1).map_or(lines.len(), |s| s.0);
+                lines[start..end]
+                    .iter()
+                    .take_while(|l| !l.starts_with("====="))
+                    .filter_map(|l| PYTEST_LOCATION.captures(l))
+                    .last()
+                    .map(|c| format!("{}:{}", &c[1], &c[2]))
+            });
+        add(id, location);
+    }
+    // jest and vitest
+    let js_location = |from: usize| {
+        lines[from..]
+            .iter()
+            .take_while(|l| !JEST_TITLE.is_match(l) && !VITEST_TITLE.is_match(l))
+            .filter(|l| !l.contains("node_modules"))
+            .find_map(|l| JS_LOCATION.captures(l))
+            .map(|c| format!("{}:{}", &c[1], &c[2]))
+    };
+    for (i, line) in lines.iter().enumerate() {
+        if let Some(title) = JEST_TITLE.captures(line) {
+            let name = title[1].trim();
+            if name != "Console" {
+                add(name, js_location(i + 1));
+            }
+        } else if let Some(title) = VITEST_TITLE.captures(line) {
+            add(
+                &format!("{} > {}", &title[1], title[2].trim()),
+                js_location(i + 1),
+            );
+        }
+    }
+    // go test
+    let go_location = |name: &str, at: usize| {
+        let run = lines[..at]
+            .iter()
+            .rposition(|l| GO_RUN.captures(l).is_some_and(|c| &c[1] == name))
+            .map_or(at, |r| r + 1);
+        let after = lines[at + 1..]
+            .iter()
+            .take_while(|l| !l.starts_with("=== ") && !l.trim_start().starts_with("--- "));
+        lines[run..at]
+            .iter()
+            .chain(after)
+            .find_map(|l| GO_LOCATION.captures(l))
+            .map(|c| format!("{}:{}", &c[1], &c[2]))
+    };
+    for (i, line) in lines.iter().enumerate() {
+        if let Some(fail) = GO_FAIL.captures(line) {
+            add(&fail[1], go_location(&fail[1], i));
+        } else if let Some(run) = GO_RUN.captures(line) {
+            // A test that panicked has no `--- FAIL` line: its frame locates it.
+            let name = &run[1];
+            let next = lines[i + 1..].iter().find(|l| {
+                l.starts_with("=== ") || l.starts_with("--- ") || l.starts_with("panic: ")
+            });
+            if next.is_some_and(|l| l.starts_with("panic: ")) {
+                let frame = format!(".{name}(");
+                let location = lines[i + 1..]
+                    .iter()
+                    .position(|l| l.contains(&frame))
+                    .and_then(|k| lines.get(i + 2 + k))
+                    .and_then(|l| GO_LOCATION.captures(l))
+                    .map(|c| format!("{}:{}", &c[1], &c[2]));
+                add(name, location);
+            }
+        }
+    }
+    found
+}
+
+/// The action line of a test view: `failed=N: name (file:line), ...`, at most
+/// `FAILURES_LISTED` entries then `+M`. Metadata computed from the output,
+/// never text claimed to occur in it; None when no failure is recognized.
+fn failure_line(text: &str) -> Option<String> {
+    let found = failures(text);
+    if found.is_empty() {
+        return None;
+    }
+    let entries: Vec<String> = found
+        .iter()
+        .take(FAILURES_LISTED)
+        .map(|f| {
+            let entry = match &f.location {
+                Some(location) => format!("{} ({location})", f.name),
+                None => f.name.clone(),
+            };
+            match entry.char_indices().nth(FAILURE_ENTRY) {
+                Some((cut, _)) => format!("{}…", &entry[..cut]),
+                None => entry,
+            }
+        })
+        .collect();
+    let more = found.len().saturating_sub(FAILURES_LISTED);
+    let more = if more > 0 {
+        format!(", +{more}")
+    } else {
+        String::new()
+    };
+    Some(format!(
+        "failed={}: {}{more}\n",
+        found.len(),
+        entries.join(", ")
+    ))
 }
 
 /// The metadata around a view's body. Compact-v1 to v3 open with a header

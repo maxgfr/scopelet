@@ -340,3 +340,109 @@ fn anchor_terms_come_from_the_prompt_and_the_command() {
         .collect::<String>();
     assert!(!journal.contains("parse_header"), "{journal}");
 }
+
+fn test_view(dir: &std::path::Path, raw: &str, version: Version) -> String {
+    let output = compress::automatic_profile(
+        raw.as_bytes(),
+        Some(dir.to_path_buf()),
+        Some(Profile::Tests),
+        None,
+        version,
+    )
+    .unwrap();
+    String::from_utf8(output.into_owned()).unwrap()
+}
+
+/// The line right below the header, when it is the action line.
+fn action_line(text: &str) -> Option<&str> {
+    text.lines().nth(1).filter(|l| l.starts_with("failed="))
+}
+
+fn passes(count: usize) -> String {
+    distinct_lines(count)
+        .lines()
+        .map(|l| format!("test {} ... ok\n", l.replace(' ', "_")))
+        .collect()
+}
+
+/// Each recognized runner's failures are named, with the location to open
+/// first, right below the header.
+#[test]
+fn failures_of_each_runner_are_named_below_the_header() {
+    let dir = tempfile::tempdir().unwrap();
+    let cargo = format!(
+        "running 600 tests\n{}failures:\n\n---- net::tests::parses_headers stdout ----\nthread 'net::tests::parses_headers' (4242) panicked at src/net.rs:88:5:\nassertion failed\n\n---- store::tests::evicts stdout ----\nthread 'store::tests::evicts' panicked at src/store.rs:12:9:\nleft != right\n\nfailures:\n    net::tests::parses_headers\n    store::tests::evicts\n\ntest result: FAILED. 598 passed; 2 failed\n",
+        passes(600)
+    );
+    let pytest = format!(
+        "{}=================================== FAILURES ===================================\n______________________________ test_login ______________________________\n\n    def test_login():\n>       assert login() == 1\n\napp/auth.py:40: in login\n    raise KeyError('user')\nE   KeyError: 'user'\n\napp/auth.py:41: KeyError\n=========================== short test summary info ============================\nFAILED tests/test_auth.py::test_login - KeyError: 'user'\n========= 1 failed, 600 passed in 3.2s =========\n",
+        passes(600)
+    );
+    let jest = format!(
+        "{}FAIL src/cart.test.ts\n  ● cart › totals › applies the discount\n\n    expect(received).toBe(expected)\n\n      at Object.<anonymous> (node_modules/expect/build/index.js:10:3)\n      at Object.<anonymous> (src/cart.test.ts:17:22)\n\nTests:       1 failed, 600 passed\n",
+        passes(600)
+    );
+    let go = format!(
+        "{}=== RUN   TestParse\n    parse_test.go:31: want 2, got 3\n--- FAIL: TestParse (0.00s)\nFAIL\nFAIL\texample.com/p\t0.1s\n",
+        passes(600)
+    );
+    for (raw, expected) in [
+        (
+            &cargo,
+            "failed=2: net::tests::parses_headers (src/net.rs:88), store::tests::evicts (src/store.rs:12)",
+        ),
+        (
+            &pytest,
+            "failed=1: tests/test_auth.py::test_login (app/auth.py:41)",
+        ),
+        (
+            &jest,
+            "failed=1: cart › totals › applies the discount (src/cart.test.ts:17)",
+        ),
+        (&go, "failed=1: TestParse (parse_test.go:31)"),
+    ] {
+        let text = test_view(dir.path(), raw, Version::V4);
+        assert_eq!(action_line(&text), Some(expected), "{text}");
+        assert!(text.len() <= 4096, "{}", text.len());
+        assert_eq!(original(dir.path(), &text), raw.as_bytes());
+    }
+}
+
+/// Five failures are named and the rest counted; output no runner format
+/// matches gets no line rather than a guess, and only v4 test views get one.
+#[test]
+fn failures_beyond_five_are_counted_and_unknown_formats_get_no_line() {
+    let dir = tempfile::tempdir().unwrap();
+    let many: String = (0..8)
+        .map(|i| {
+            format!(
+                "=== RUN   TestCase{i}\n    case_test.go:{}: boom\n--- FAIL: TestCase{i} (0.00s)\n",
+                10 + i
+            )
+        })
+        .collect();
+    let raw = format!("{}{many}FAIL\n", passes(600));
+    let text = test_view(dir.path(), &raw, Version::V4);
+    let line = action_line(&text).unwrap();
+    assert!(
+        line.starts_with("failed=8: TestCase0 (case_test.go:10), "),
+        "{line}"
+    );
+    assert!(line.ends_with("TestCase4 (case_test.go:14), +3"), "{line}");
+
+    let unknown = format!("{}error: something odd happened\n", passes(600));
+    let text = test_view(dir.path(), &unknown, Version::V4);
+    assert_eq!(action_line(&text), None, "{text}");
+
+    let v3 = test_view(dir.path(), &raw, Version::V3);
+    assert!(!v3.contains("failed=8"), "{v3}");
+    let search = compress::automatic_profile(
+        raw.as_bytes(),
+        Some(dir.path().into()),
+        Some(Profile::Search),
+        None,
+        Version::V4,
+    )
+    .unwrap();
+    assert!(!String::from_utf8_lossy(&search).contains("failed=8"));
+}
