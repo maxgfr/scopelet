@@ -470,17 +470,36 @@ fn grep_output(files: &[(&str, usize)]) -> String {
 }
 
 /// Consecutive matches of one file are shown under one `file=` header with
-/// their own `N:text`; a file shows at most five matches (first, last, then
-/// anchored, then earliest) and its first block counts the rest.
+/// their own `N:text`. A search that fits is shown whole; one that does not
+/// shows every file's first five matches (first, last, anchored, earliest)
+/// before any file's others, and a file's first block counts what it hides.
 #[test]
 fn search_results_are_grouped_by_file_with_five_matches_each() {
     let dir = tempfile::tempdir().unwrap();
-    let raw = grep_output(&[
-        ("src/alpha.rs", 12),
-        ("src/beta.rs", 2),
-        ("src/gamma.rs", 1),
-        ("src/delta.rs", 140),
-    ]);
+    let small = grep_output(&[("src/alpha.rs", 100), ("src/beta.rs", 40)]);
+    let text = anchored(dir.path(), &small, Some(Profile::Search), Version::V4, &[]);
+    assert!(first_line(&text).ends_with(" complete]\n"), "{text}");
+    assert!(
+        text.contains("input:1-100 file=src/alpha.rs\n 10:    let a = 1;\n"),
+        "{text}"
+    );
+    assert!(text.contains(" 703:    let jj = 1;\n"), "{text}");
+    assert!(
+        text.contains("input:101-140 file=src/beta.rs\n 10:    let baa = 1;\n"),
+        "{text}"
+    );
+    assert!(!text.contains("more="), "{text}");
+    assert_eq!(original(dir.path(), &text), small.as_bytes());
+
+    let names: Vec<String> = (0..30).map(|f| format!("src/m{}.rs", letters(f))).collect();
+    let files: Vec<(&str, usize)> = names.iter().map(|n| (n.as_str(), 40)).collect();
+    let raw = grep_output(&files);
+    let words: Vec<String> = distinct_lines(2000)
+        .lines()
+        .map(|l| l.split(' ').next().unwrap().to_owned())
+        .collect();
+    // Match k of file f declares words[40 f + k] on line 10 + 7k.
+    let line = |f: usize, k: usize| format!(" {}:    let {} = 1;\n", 10 + k * 7, words[40 * f + k]);
     let view = |anchors: &[&str]| {
         anchored(
             dir.path(),
@@ -491,39 +510,27 @@ fn search_results_are_grouped_by_file_with_five_matches_each() {
         )
     };
     let text = view(&[]);
-    assert!(
-        text.contains("input:1-4 file=src/alpha.rs more=7\n 10:    let a = 1;\n 17:    let b = 1;\n 24:    let c = 1;\n 31:    let d = 1;\n"),
-        "{text}"
-    );
-    assert!(
-        text.contains("input:12 src/alpha.rs:87:    let bb = 1;\n"),
-        "{text}"
-    );
-    assert!(!text.contains("let i = 1;"), "{text}");
-    assert!(
-        text.contains("input:13-14 file=src/beta.rs\n 10:    let bc = 1;\n 17:    let bd = 1;\n"),
-        "{text}"
-    );
-    assert!(
-        text.contains("input:15 src/gamma.rs:10:    let be = 1;\n"),
-        "{text}"
-    );
-    assert!(text.contains("file=src/delta.rs more=135\n"), "{text}");
+    assert!(text.len() <= 8192, "{}", text.len());
+    assert!(!first_line(&text).ends_with(" complete]\n"), "{text}");
+    for (f, name) in names.iter().enumerate() {
+        assert!(text.contains(&format!("file={name}")), "{name}: {text}");
+        for k in [0, 1, 2, 39] {
+            let shown = text.contains(&line(f, k))
+                || text.contains(&format!("{name}:{}", &line(f, k)[1..]));
+            assert!(shown, "{name} match {k}: {text}");
+        }
+    }
+    assert!(text.contains(" more="), "{text}");
+    let middle = format!("let {} = 1;", words[40 * 15 + 20]);
+    assert!(!text.contains(&middle), "{text}");
+    let focused = view(&[&middle]);
+    assert!(focused.contains(&middle), "{focused}");
+    assert_eq!(short_id(&focused), short_id(&text));
     assert_eq!(original(dir.path(), &text), raw.as_bytes());
 
-    // An anchored match takes a place among the five.
-    let focused = view(&["let i "]);
-    assert!(
-        focused.contains("input:9 src/alpha.rs:66:    let i = 1;\n"),
-        "{focused}"
-    );
-    assert!(focused.contains("file=src/alpha.rs more=7\n"), "{focused}");
-    assert_eq!(short_id(&focused), short_id(&text));
-
-    // Compact-v3 keeps its line labels and shows every match it can.
+    // Compact-v3 keeps its line labels.
     let v3 = anchored(dir.path(), &raw, Some(Profile::Search), Version::V3, &[]);
     assert!(!v3.contains("file="), "{v3}");
-    assert!(v3.contains("src/alpha.rs:66:    let i = 1;"), "{v3}");
 }
 
 /// Context lines (`path-N-text`) join their file's block; a context line
@@ -699,14 +706,14 @@ fn listing_folds_large_directories_and_keeps_small_ones() {
         raw.push_str(&format!("./src/lib/{}.rs\n", letters(i)));
     }
     raw.push_str("./src/components\n");
-    for i in 0..120 {
+    for i in 0..400 {
         raw.push_str(&format!("./src/components/Widget{}.tsx\n", letters(i)));
     }
     raw.push_str("./src/components/index.ts\n./src/components/types.ts\n");
     let text = anchored(dir.path(), &raw, Some(Profile::Search), Version::V4, &[]);
     assert!(text.len() < raw.len() / 3, "{text}");
     assert!(
-        text.contains("./src/components/ files=122 ext=tsx:120,ts:2\n"),
+        text.contains("./src/components/ files=402 ext=tsx:400,ts:2\n"),
         "{text}"
     );
     assert!(text.contains("./src/components/Widgeta.tsx\n"), "{text}");
@@ -726,10 +733,15 @@ fn listing_folds_large_directories_and_keeps_small_ones() {
         .unwrap()
         .parse()
         .unwrap();
-    assert_eq!(omitted, 120);
+    assert_eq!(omitted, 400);
     assert_eq!(original(dir.path(), &text), raw.as_bytes());
     let v3 = anchored(dir.path(), &raw, Some(Profile::Search), Version::V3, &[]);
     assert!(!v3.contains(" files="), "{v3}");
+
+    // A listing that fits the budget is not folded: no name is hidden.
+    let fits: String = raw.lines().take(150).map(|l| format!("{l}\n")).collect();
+    let text = anchored(dir.path(), &fits, Some(Profile::Search), Version::V4, &[]);
+    assert!(!text.contains(" files="), "{text}");
 }
 
 /// `ls -R` and `tree` listings fold the same way.
@@ -737,28 +749,28 @@ fn listing_folds_large_directories_and_keeps_small_ones() {
 fn listing_folds_ls_recursive_and_tree_output() {
     let dir = tempfile::tempdir().unwrap();
     let mut ls = String::from(".:\nREADME.md\nsrc\n\n./src:\n");
-    for i in 0..300 {
+    for i in 0..800 {
         ls.push_str(&format!("module_{}.py\n", letters(i)));
     }
     ls.push_str("\n./src/static:\napp.css\n");
     let text = anchored(dir.path(), &ls, Some(Profile::Search), Version::V4, &[]);
-    assert!(text.contains("./src/ files=300 ext=py:300\n"), "{text}");
+    assert!(text.contains("./src/ files=800 ext=py:800\n"), "{text}");
     assert!(text.contains("./src/static:"), "{text}");
     assert!(text.contains("app.css"), "{text}");
     assert_eq!(original(dir.path(), &text), ls.as_bytes());
 
     let mut tree = String::from(".\n├── Cargo.toml\n└── src\n    ├── main.rs\n    └── handlers\n");
-    for i in 0..150 {
+    for i in 0..500 {
         tree.push_str(&format!("        ├── handler_{}.rs\n", letters(i)));
     }
-    tree.push_str("        └── mod.rs\n\n3 directories, 154 files\n");
+    tree.push_str("        └── mod.rs\n\n3 directories, 504 files\n");
     let text = anchored(dir.path(), &tree, Some(Profile::Search), Version::V4, &[]);
     assert!(
-        text.contains("src/handlers/ files=151 ext=rs:151\n"),
+        text.contains("src/handlers/ files=501 ext=rs:501\n"),
         "{text}"
     );
     assert!(text.contains("└── mod.rs"), "{text}");
-    assert!(text.contains("3 directories, 154 files"), "{text}");
+    assert!(text.contains("3 directories, 504 files"), "{text}");
     assert_eq!(original(dir.path(), &text), tree.as_bytes());
 }
 
@@ -928,4 +940,206 @@ fn json_tables_name_constant_columns_once() {
     assert_eq!(table_rows(&table), rows);
     assert!(table.get("indices").is_none(), "{text}");
     assert_eq!(text.matches("eu-west-3").count(), 1, "{text}");
+}
+
+/// Found on a real `gh api` response: a view that cuts a line is not
+/// complete, whatever it omits.
+#[test]
+fn a_cut_line_makes_the_header_partial() {
+    let dir = tempfile::tempdir().unwrap();
+    let giant = format!("start\n{}\nend\n", "x".repeat(20000));
+    let text = compress_v4(dir.path(), giant.as_bytes(), 4096);
+    assert!(text.contains("text_truncated bytes=20000"), "{text}");
+    let header = first_line(&text);
+    assert!(!header.ends_with(" complete]\n"), "{header}");
+    assert!(header.contains(" abridged=1;"), "{header}");
+}
+
+/// Found on real `gh api` responses (165 to 265 KB on one line): their
+/// objects' short fields become a table, nested and long fields are named,
+/// and the rows that do not fit are counted.
+#[test]
+fn json_minified_api_responses_show_a_projected_table() {
+    let dir = tempfile::tempdir().unwrap();
+    let pulls: Vec<serde_json::Value> = (0..40)
+        .map(|i| {
+            serde_json::json!({
+                "number": 3500 + i,
+                "state": if i == 7 { "closed" } else { "open" },
+                "title": format!("printer: fix case {}", letters(i)),
+                "locked": false,
+                "body": "long description ".repeat(90),
+                "user": {"login": format!("dev-{}", letters(i)), "id": i},
+                "labels": [{"name": "bug"}],
+            })
+        })
+        .collect();
+    let mut pulls = pulls;
+    pulls[36]["title"] = serde_json::json!("error: release build failed");
+    let raw = serde_json::to_string(&pulls).unwrap();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    let table = json_after(&text, "table ");
+    // The row carrying a diagnostic comes first, wherever it is.
+    assert!(text.contains("error: release build failed"), "{text}");
+    assert_eq!(
+        table["columns"],
+        serde_json::json!(["number", "state", "title"])
+    );
+    assert_eq!(table["constant"], serde_json::json!({"locked": false}));
+    assert_eq!(
+        table["omitted_columns"],
+        serde_json::json!(["body", "labels", "user"])
+    );
+    let rows = table["rows"].as_array().unwrap();
+    assert_eq!(
+        rows[0],
+        serde_json::json!([3500, "open", "printer: fix case a"])
+    );
+    assert_eq!(rows[7][1], "closed");
+    let header = first_line(&text);
+    assert!(
+        header.contains(&format!(
+            " omitted={} abridged={};",
+            40 - rows.len(),
+            rows.len()
+        )) || (rows.len() == 40 && header.contains(" omitted=0 abridged=40;")),
+        "{header}"
+    );
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+
+    // The envelope of a search response keeps its scalars.
+    let search =
+        serde_json::json!({"total_count": 251, "incomplete_results": false, "items": pulls});
+    let raw = search.to_string();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    assert_eq!(
+        json_after(&text, "envelope "),
+        serde_json::json!({"total_count": 251, "incomplete_results": false})
+    );
+    assert!(
+        json_after(&text, "table=/items ")["rows"].is_array(),
+        "{text}"
+    );
+}
+
+/// Found on a real `go test -v`: a panicking test points at the crash site,
+/// not at the Go toolchain's `testing.go`.
+#[test]
+fn failures_of_a_go_panic_point_outside_the_toolchain() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw = format!(
+        "{}=== RUN   TestRotate\n--- FAIL: TestRotate (0.00s)\npanic: runtime error: invalid memory address or nil pointer dereference [recovered, repanicked]\n\ngoroutine 95 [running]:\ntesting.tRunner.func1.2({{0x1, 0x2}})\n\t/opt/homebrew/Cellar/go/1.27.2/libexec/src/testing/testing.go:2125 +0x1a0\npanic({{0x1, 0x2}})\n\t/opt/homebrew/Cellar/go/1.27.2/libexec/src/runtime/panic.go:859 +0x120\nexample.com/gmod.(*S).Get(...)\n\t/work/gmod/calc.go:7\nexample.com/gmod.TestRotate(0x5?)\n\t/work/gmod/calc_test.go:72 +0x8\nFAIL\texample.com/gmod\t0.007s\nFAIL\n",
+        passes(600)
+    );
+    let text = test_view(dir.path(), &raw, Version::V4);
+    assert_eq!(
+        action_line(&text),
+        Some("failed=1: TestRotate (/work/gmod/calc.go:7)"),
+        "{text}"
+    );
+}
+
+/// Found on a real `rg -n 'fn ' src`: the search's own pattern is on every
+/// line, so it singles nothing out and must not spend the anchored share
+/// that the prompt's term needs.
+#[test]
+fn anchor_terms_on_most_lines_are_ignored() {
+    let dir = tempfile::tempdir().unwrap();
+    let names: Vec<String> = (0..30).map(|f| format!("src/m{}.rs", letters(f))).collect();
+    let files: Vec<(&str, usize)> = names.iter().map(|n| (n.as_str(), 40)).collect();
+    let mut raw = grep_output(&files);
+    raw = raw.replacen(
+        "src/mbd.rs:206:",
+        "src/mbd.rs:206:    fn resolve_prefix() {} //",
+        1,
+    );
+    let plain = anchored(
+        dir.path(),
+        &raw,
+        Some(Profile::Search),
+        Version::V4,
+        &["let "],
+    );
+    assert!(!plain.contains("resolve_prefix"), "{plain}");
+    let focused = anchored(
+        dir.path(),
+        &raw,
+        Some(Profile::Search),
+        Version::V4,
+        &["let ", "resolve_prefix"],
+    );
+    assert!(focused.contains("resolve_prefix"), "{focused}");
+}
+
+/// Found on a real `pip install`: the line saying what was installed is the
+/// outcome even when warnings follow it.
+#[test]
+fn listing_free_install_views_keep_the_installed_summary() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut raw = String::new();
+    for i in 0..200 {
+        raw.push_str(&format!(
+            "Collecting pkg-{0}\n  Downloading pkg_{0}-1.0-py3-none-any.whl (64 kB)\n",
+            letters(i)
+        ));
+    }
+    raw.push_str("Installing collected packages: pkg-a, pkg-b\n");
+    raw.push_str("Successfully installed pkg-a-1.0 pkg-b-1.0\n");
+    raw.push_str(
+        "WARNING: You are using pip version 21.2.4; however, version 26.0.1 is available.\n",
+    );
+    raw.push_str(
+        "You should consider upgrading via the 'python3 -m pip install --upgrade pip' command.\n",
+    );
+    let output = compress::automatic_profile(
+        raw.as_bytes(),
+        Some(dir.path().into()),
+        Some(Profile::Install),
+        None,
+        Version::V4,
+    )
+    .unwrap();
+    let text = String::from_utf8(output.into_owned()).unwrap();
+    assert!(
+        text.contains("Successfully installed pkg-a-1.0 pkg-b-1.0"),
+        "{text}"
+    );
+    assert!(
+        text.contains("WARNING: You are using pip version"),
+        "{text}"
+    );
+    assert!(!text.contains("Downloading pkg_ca"), "{text}");
+}
+
+/// Found on real `gh api` responses: one link column is kept and the other
+/// links are named, so the rows that matter fit.
+#[test]
+fn json_projections_keep_one_link_column() {
+    let dir = tempfile::tempdir().unwrap();
+    let issues: Vec<serde_json::Value> = (0..30)
+        .map(|i| {
+            let base = format!("https://api.github.com/repos/acme/app/issues/{i}");
+            serde_json::json!({
+                "number": i,
+                "title": format!("issue {}", letters(i)),
+                "url": base,
+                "html_url": format!("https://github.com/acme/app/issues/{i}"),
+                "comments_url": format!("{base}/comments"),
+                "events_url": format!("{base}/events"),
+                "user": {"login": "dev", "bio": "x".repeat(1500)},
+            })
+        })
+        .collect();
+    let raw = serde_json::to_string(&issues).unwrap();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    let table = json_after(&text, "table ");
+    assert_eq!(
+        table["columns"],
+        serde_json::json!(["html_url", "number", "title"])
+    );
+    assert_eq!(
+        table["omitted_columns"],
+        serde_json::json!(["comments_url", "events_url", "url", "user"])
+    );
+    assert_eq!(table["rows"].as_array().unwrap().len(), 30, "{text}");
 }

@@ -131,6 +131,173 @@ pub(crate) fn row_size(record: &Record, columns: &[&str], limit: usize) -> Optio
     encoding::size(&Row(record, columns), limit)
 }
 
+/// The field of an object holding an array of two or more objects that
+/// takes more than 80% of the object's bytes.
+fn dominant(value: &Value) -> Option<(&String, &Vec<Value>)> {
+    let object = value.as_object()?;
+    let total = encoding::size(value, usize::MAX)?;
+    object.iter().find_map(|(key, v)| {
+        let items = v.as_array()?;
+        (items.len() >= 2
+            && items.iter().all(Value::is_object)
+            && encoding::size(v, usize::MAX)? * 5 > total * 4)
+            .then_some((key, items))
+    })
+}
+
+/// Longest string a projection shows in a column; longer text is a body,
+/// not a field to scan.
+const PROJECTED_STRING: usize = 120;
+
+/// A projected view: its text, the rows shown, the rows in all, and
+/// whether fields were left out of the rows shown.
+pub(crate) struct Projection {
+    pub text: String,
+    pub shown: usize,
+    pub total: usize,
+    pub abridged: bool,
+}
+
+/// Compact-v4 view of minified JSON too large to show whole: objects (a
+/// top-level array, or the dominant array of an object) as a table of the
+/// short scalar fields every one of them has, the rest named under
+/// `omitted_columns`, as many rows as fit. Values are exact; no field is
+/// invented.
+/// `important` marks the objects shown first (a diagnostic, an anchor); the
+/// others follow in order, and the table keeps source order.
+pub(crate) fn projection(
+    data: &Dataset,
+    limit: usize,
+    important: &dyn Fn(&Value) -> bool,
+) -> Option<Projection> {
+    let (envelope, pointer, items): (
+        Option<serde_json::Map<String, Value>>,
+        Option<String>,
+        Vec<&Value>,
+    ) = match data.records.as_slice() {
+        [record] => {
+            let value = record.value.as_ref()?;
+            let (key, items) = dominant(value)?;
+            let rest = value
+                .as_object()?
+                .iter()
+                .filter(|(k, v)| *k != key && !v.is_object() && !v.is_array())
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
+            (
+                Some(rest),
+                Some(key.replace('~', "~0").replace('/', "~1")),
+                items.iter().collect(),
+            )
+        }
+        records if records.len() >= 2 => (
+            None,
+            None,
+            records
+                .iter()
+                .map(|r| r.value.as_ref().filter(|v| v.is_object()))
+                .collect::<Option<Vec<_>>>()?,
+        ),
+        _ => return None,
+    };
+    let objects: Vec<&serde_json::Map<String, Value>> =
+        items.iter().map(|v| v.as_object()).collect::<Option<_>>()?;
+    let mut keys: Vec<&str> = objects[0].keys().map(String::as_str).collect();
+    keys.retain(|k| objects.iter().all(|o| o.contains_key(*k)));
+    let short = |v: &Value| match v {
+        Value::String(s) => s.len() <= PROJECTED_STRING,
+        Value::Array(_) | Value::Object(_) => false,
+        _ => true,
+    };
+    let (mut kept, mut omitted): (Vec<&str>, Vec<&str>) = keys
+        .iter()
+        .partition(|k| objects.iter().all(|o| short(&o[**k])));
+    // API responses repeat links to every related resource: one link column
+    // (`html_url`, else `url`, else the first) is kept, the others named.
+    let link = |k: &&str| {
+        objects.iter().all(|o| {
+            o[*k]
+                .as_str()
+                .is_some_and(|s| s.starts_with("https://") || s.starts_with("http://"))
+        })
+    };
+    let links: Vec<&str> = kept.iter().copied().filter(link).collect();
+    if links.len() > 1 {
+        let keep = ["html_url", "url"]
+            .into_iter()
+            .find(|k| links.contains(k))
+            .unwrap_or(links[0]);
+        kept.retain(|k| *k == keep || !links.contains(k));
+        omitted.extend(links.iter().filter(|k| **k != keep));
+        omitted.sort_unstable();
+    }
+    omitted.extend(
+        objects[0]
+            .keys()
+            .map(String::as_str)
+            .filter(|k| !keys.contains(k)),
+    );
+    let (columns, fixed): (Vec<&str>, Vec<&str>) = kept
+        .iter()
+        .partition(|k| objects.iter().any(|o| o[**k] != objects[0][**k]));
+    if columns.is_empty() {
+        return None;
+    }
+    #[derive(Serialize)]
+    struct Projected<'a> {
+        columns: &'a [&'a str],
+        #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+        constant: BTreeMap<&'a str, &'a Value>,
+        #[serde(skip_serializing_if = "<[_]>::is_empty")]
+        omitted_columns: &'a [&'a str],
+        rows: Vec<Vec<&'a Value>>,
+    }
+    let mut head = String::new();
+    if let Some(rest) = &envelope {
+        head = format!("envelope {}\n", serde_json::to_string(rest).ok()?);
+    }
+    let label = match &pointer {
+        Some(pointer) => format!("table=/{pointer} "),
+        None => "table ".into(),
+    };
+    let mut table = Projected {
+        columns: &columns,
+        constant: fixed.iter().map(|k| (*k, &objects[0][*k])).collect(),
+        omitted_columns: &omitted,
+        rows: Vec::new(),
+    };
+    let fixed_size = head.len() + label.len() + encoding::size(&table, usize::MAX)? + 1;
+    let mut size = fixed_size;
+    let order = (0..objects.len())
+        .filter(|&i| important(items[i]))
+        .chain((0..objects.len()).filter(|&i| !important(items[i])));
+    let mut chosen = Vec::new();
+    for i in order {
+        let row: Vec<&Value> = columns.iter().map(|k| &objects[i][*k]).collect();
+        let row_size = encoding::size(&row, usize::MAX)? + 1;
+        if size + row_size > limit {
+            continue;
+        }
+        size += row_size;
+        chosen.push(i);
+    }
+    if chosen.is_empty() {
+        return None;
+    }
+    chosen.sort_unstable();
+    table.rows = chosen
+        .iter()
+        .map(|&i| columns.iter().map(|k| &objects[i][*k]).collect())
+        .collect();
+    let text = format!("{head}{label}{}\n", serde_json::to_string(&table).ok()?);
+    (text.len() <= limit).then_some(Projection {
+        shown: table.rows.len(),
+        total: objects.len(),
+        abridged: !omitted.is_empty(),
+        text,
+    })
+}
+
 /// Compact-v4 view of an object whose array of same-keyed objects holds more
 /// than 80% of its bytes (`kubectl -o json`'s `items`): the rest of the
 /// object on an `envelope` line, then the array as `table=/POINTER` with
@@ -138,11 +305,7 @@ pub(crate) fn row_size(record: &Record, columns: &[&str], limit: usize) -> Optio
 /// partial table would hide what folding the source lines keeps visible.
 pub(crate) fn envelope(value: &Value, limit: usize) -> Option<String> {
     let object = value.as_object()?;
-    let total = encoding::size(value, usize::MAX)?;
-    let (key, items) = object.iter().find_map(|(key, v)| {
-        let items = v.as_array()?;
-        (items.len() >= 2 && encoding::size(v, usize::MAX)? * 5 > total * 4).then_some((key, items))
-    })?;
+    let (key, items) = dominant(value)?;
     let first = items[0].as_object()?;
     if !items
         .iter()

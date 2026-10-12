@@ -244,6 +244,22 @@ impl<'a> Anchoring<'a> {
             promoted: 0,
         }
     }
+    /// Keep only the terms that single lines out of `text`: one found on
+    /// more than half of its lines (a search's own pattern in its results)
+    /// would spend the anchored share on whatever comes first.
+    fn focus(&mut self, text: &str) {
+        if self.finders.is_empty() {
+            return;
+        }
+        let lines = clean::line_count(text);
+        self.finders.retain(|finder| {
+            let found = text
+                .split_inclusive('\n')
+                .filter(|line| finder.find(line.as_bytes()).is_some())
+                .count();
+            found * 2 <= lines
+        });
+    }
     /// A new selection over `available` bytes.
     fn reset(&mut self, available: usize) {
         self.left = available / ANCHOR_SHARE;
@@ -480,6 +496,7 @@ fn automatic_with<'a>(
     };
     let failed_len = failed.as_ref().map_or(0, String::len);
     let mut anchoring = Anchoring::new(anchors);
+    anchoring.focus(text);
     let (mut result, shown) = view(
         &data,
         PLACEHOLDER,
@@ -652,7 +669,7 @@ fn header(data: &Dataset, artifact: &str, version: Version) -> String {
             "[scopelet compact-v3 {artifact} scan_complete={}; recover: scopelet expand ID --find TEXT (or --manifest)]\n",
             data.scan_complete
         ),
-        Version::V4 => header_v4(short_id(artifact), 0, data.scan_complete),
+        Version::V4 => header_v4(short_id(artifact), 0, 0, data.scan_complete),
     }
 }
 
@@ -672,17 +689,25 @@ fn short_id(reference: &str) -> &str {
 /// whether the display is complete or how many units it omits, and
 /// `scan_complete=false` only when the source scan was incomplete. There is
 /// no footer.
-fn header_v4(id: &str, omitted: usize, scan_complete: bool) -> String {
+/// `abridged` counts units shown only in part (a line cut behind
+/// `text_truncated`, a record shown without some of its fields): a view with
+/// any is not complete either.
+fn header_v4(id: &str, omitted: usize, abridged: usize, scan_complete: bool) -> String {
     let scan = if scan_complete {
         ""
     } else {
         " scan_complete=false"
     };
-    if omitted == 0 {
+    let abridged = if abridged > 0 {
+        format!(" abridged={abridged}")
+    } else {
+        String::new()
+    };
+    if omitted == 0 && abridged.is_empty() {
         format!("{V4_PREFIX}{id}{scan} complete]\n")
     } else {
         format!(
-            "{V4_PREFIX}{id}{scan} omitted={omitted}; gaps are not absence; expand ID --find TEXT]\n"
+            "{V4_PREFIX}{id}{scan} omitted={omitted}{abridged}; gaps are not absence; expand ID --find TEXT]\n"
         )
     }
 }
@@ -1049,10 +1074,11 @@ fn text_units_v3<'a>(
         .map(clean::line_view)
         .collect();
     let n = views.len();
-    let capped = if kind.search {
-        search_capped(&views, anchoring)
+    // A search shows each file's first matches before any file's others.
+    let (later, first_matches) = if kind.search {
+        search_ranks(&views, anchoring)
     } else {
-        Bits::new(n)
+        (Bits::new(n), Bits::new(n))
     };
     // Identical text is classified once: `first[i]` is the earliest line with
     // this exact view, and it carries the vocabulary matches and, later, the
@@ -1412,12 +1438,15 @@ fn text_units_v3<'a>(
                 Cow::Borrowed(""),
                 priority,
             );
-        } else if collapsed.get(i)
-            || (count == 1 && capped.get(i))
-            || (kind.install && unit.priority == 0)
-        {
+        } else if kind.install && INSTALL_SUMMARY.is_match(unit.line.as_deref().unwrap_or("")) {
+            // What was installed is the outcome, whatever its position.
+            unit.priority = unit.priority.max(3);
+        } else if collapsed.get(i) || (kind.install && unit.priority == 0) {
             unit.priority = CAPPED;
         } else if priority != TRIVIAL {
+            if count == 1 && first_matches.get(i) && !later.get(i) {
+                unit.priority = unit.priority.max(1);
+            }
             anchoring.promote(&mut unit);
         }
         if let Some(&weight) = weights.get(i) {
@@ -1508,6 +1537,12 @@ impl Kind {
         }
     }
 }
+
+/// The closing summary of a package install: what it installed or found
+/// up to date (npm, pnpm, yarn, bun, pip, uv, bundler, Homebrew).
+static INSTALL_SUMMARY: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"(?i-u:^\s*(added|removed|changed|up to date|audited) [0-9]+ packages?|^\s*Successfully installed |^\s*(Installed|Uninstalled|Resolved|Prepared|Audited) [0-9]+ packages? in |^\s*Bundle complete|^\s*Done in [0-9.]+m?s|^\s*Packages: [+-][0-9]+|^\s*Already up[- ]to[- ]date|^==> Summary|^\s*Requirement already satisfied)").unwrap()
+});
 
 /// Entries above which a listed directory is folded to a summary.
 const LISTING_DIRECTORY: usize = 8;
@@ -1733,11 +1768,12 @@ fn listing_view(record: &Record, available: usize) -> Option<(String, usize, usi
     (shown > 0).then(|| (body, shown, n - shown))
 }
 
-/// Matches of one file a compact-v4 search shows: its first and last, then
-/// those containing an anchor, then the earliest.
+/// Matches of one file a compact-v4 search shows before other files' later
+/// ones: its first and last, then those containing an anchor, then the
+/// earliest.
 const SEARCH_MATCHES: usize = 5;
-/// Priority of a unit never selected: a match beyond its file's share, or
-/// context around such matches only.
+/// Priority of a unit never selected: a line hidden behind a summary (a
+/// lockfile's diff) or an install's ordinary progress.
 const CAPPED: u8 = 9;
 
 static SEARCH_MATCH: LazyLock<regex::Regex> =
@@ -1770,10 +1806,12 @@ fn search_totals(data: &Dataset) -> HashMap<String, usize> {
     totals
 }
 
-/// Lines of a search never shown: a file's matches beyond its
-/// `SEARCH_MATCHES`, and context lines whose run of the same file (contiguous
-/// lines) holds only such matches.
-fn search_capped(views: &[Cow<'_, str>], anchoring: &Anchoring<'_>) -> Bits {
+/// The lines of a search shown first, and the others: each file's first and
+/// last match, its anchored matches and then its earliest, up to
+/// `SEARCH_MATCHES`, with the context lines of their runs (contiguous lines
+/// of the same file). The other matches, and context whose run holds only
+/// such matches, are shown only with budget to spare. Returns (later, first).
+fn search_ranks(views: &[Cow<'_, str>], anchoring: &Anchoring<'_>) -> (Bits, Bits) {
     let n = views.len();
     let lines: Vec<Option<(&str, bool)>> = views.iter().map(|v| search_line(v)).collect();
     let mut capped = Bits::new(n);
@@ -1802,6 +1840,7 @@ fn search_capped(views: &[Cow<'_, str>], anchoring: &Anchoring<'_>) -> Bits {
     }
     // Runs of contiguous lines naming the same file: context is kept with
     // any shown match of its run.
+    let mut first = Bits::new(n);
     let mut start = 0;
     while start < n {
         let Some((path, _)) = lines[start] else {
@@ -1816,10 +1855,14 @@ fn search_capped(views: &[Cow<'_, str>], anchoring: &Anchoring<'_>) -> Bits {
         let shown = (start..end).any(|i| lines[i].is_some_and(|(_, m)| m) && !capped.get(i));
         if matched && !shown {
             capped.fill(start..end);
+        } else if matched {
+            for i in (start..end).filter(|&i| !capped.get(i)) {
+                first.set(i);
+            }
         }
         start = end;
     }
-    capped
+    (capped, first)
 }
 
 /// The role of a line inside a unified diff.
@@ -2295,7 +2338,7 @@ static GO_FAIL: LazyLock<regex::Regex> =
 static GO_RUN: LazyLock<regex::Regex> =
     LazyLock::new(|| regex::Regex::new(r"^=== RUN\s+(\S+)$").unwrap());
 static GO_LOCATION: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"^\s+(\S+\.go):(\d+)(?::| \+0x)").unwrap());
+    LazyLock::new(|| regex::Regex::new(r"^\s+(\S+\.go):(\d+)(?::| \+0x|\s*$)").unwrap());
 
 /// A recognized failure: its name and, when the output gives one, the
 /// `file:line` to open first.
@@ -2392,6 +2435,9 @@ fn failures(text: &str) -> Vec<Failure> {
         }
     }
     // go test
+    // Where a Go test failed: its log line (`file_test.go:N:`) or, after a
+    // panic, the deepest frame outside the Go toolchain (the crash site).
+    let toolchain = |l: &&str| l.contains("/src/runtime/") || l.contains("/src/testing/");
     let go_location = |name: &str, at: usize| {
         let run = lines[..at]
             .iter()
@@ -2403,6 +2449,7 @@ fn failures(text: &str) -> Vec<Failure> {
         lines[run..at]
             .iter()
             .chain(after)
+            .filter(|l| !toolchain(l))
             .find_map(|l| GO_LOCATION.captures(l))
             .map(|c| format!("{}:{}", &c[1], &c[2]))
     };
@@ -2410,20 +2457,13 @@ fn failures(text: &str) -> Vec<Failure> {
         if let Some(fail) = GO_FAIL.captures(line) {
             add(&fail[1], go_location(&fail[1], i));
         } else if let Some(run) = GO_RUN.captures(line) {
-            // A test that panicked has no `--- FAIL` line: its frame locates it.
+            // A test that panicked may have no `--- FAIL` line.
             let name = &run[1];
             let next = lines[i + 1..].iter().find(|l| {
                 l.starts_with("=== ") || l.starts_with("--- ") || l.starts_with("panic: ")
             });
             if next.is_some_and(|l| l.starts_with("panic: ")) {
-                let frame = format!(".{name}(");
-                let location = lines[i + 1..]
-                    .iter()
-                    .position(|l| l.contains(&frame))
-                    .and_then(|k| lines.get(i + 2 + k))
-                    .and_then(|l| GO_LOCATION.captures(l))
-                    .map(|c| format!("{}:{}", &c[1], &c[2]));
-                add(name, location);
+                add(name, go_location(name, i));
             }
         }
     }
@@ -2492,7 +2532,7 @@ impl Frame {
     /// versions keep their fixed reserve so their bytes stay identical.
     fn reserve(&self, units: usize) -> usize {
         match self.version {
-            Version::V4 => header_v4(PLACEHOLDER_ID, units, self.scan_complete).len(),
+            Version::V4 => header_v4(PLACEHOLDER_ID, units, units, self.scan_complete).len(),
             Version::V3 => self.head.len() + footer(units).len(),
             Version::V1 | Version::V2 => self.head.len() + 160,
         }
@@ -2500,22 +2540,32 @@ impl Frame {
     /// Metadata of a complete table.
     fn complete_reserve(&self) -> usize {
         match self.version {
-            Version::V4 => header_v4(PLACEHOLDER_ID, 0, self.scan_complete).len(),
+            Version::V4 => header_v4(PLACEHOLDER_ID, 0, 0, self.scan_complete).len(),
             _ => self.head.len() + TABLE_TAIL.len(),
         }
     }
     fn complete(&self, table: &str) -> String {
         match self.version {
-            Version::V4 => header_v4(PLACEHOLDER_ID, 0, self.scan_complete) + table,
+            Version::V4 => header_v4(PLACEHOLDER_ID, 0, 0, self.scan_complete) + table,
             _ => format!("{}{table}{TABLE_TAIL}", self.head),
         }
     }
     fn finish(&self, body: &str, omitted: usize) -> String {
+        self.finish_abridged(body, omitted, 0)
+    }
+    /// `finish` for a body of which `abridged` units are shown in part;
+    /// earlier versions do not count them.
+    fn finish_abridged(&self, body: &str, omitted: usize, abridged: usize) -> String {
         match self.version {
-            Version::V4 => header_v4(PLACEHOLDER_ID, omitted, self.scan_complete) + body,
+            Version::V4 => header_v4(PLACEHOLDER_ID, omitted, abridged, self.scan_complete) + body,
             _ => format!("{}{body}{}", self.head, footer(omitted)),
         }
     }
+}
+
+/// Selected units shown in part: lines cut behind `text_truncated`.
+fn cut(units: &[Unit<'_>], selected: &[usize]) -> usize {
+    selected.iter().filter(|&&i| units[i].truncated > 0).count()
 }
 
 /// The footer of a complete table before compact-v4.
@@ -2583,15 +2633,44 @@ fn view(
     // Matches per file of a compact-v4 search, for its `more=N` counts.
     let totals = kind.search.then(|| search_totals(data));
     let totals = totals.as_ref();
-    // A path listing folds its large directories instead.
+    // A path listing too long to show whole folds its large directories.
     if kind.search
         && let [record] = data.records.as_slice()
         && record.value.is_none()
+        && record.text.len() > available
         && let Some((body, shown, omitted)) = listing_view(record, available)
     {
         let output = frame.finish(&body, omitted);
         ensure!(output.len() <= budget, "compact metadata exceeds budget");
         return Ok((output, shown));
+    }
+    // Minified JSON too large to show whole (an API response on one line):
+    // its objects' short fields as a table, rather than one cut line.
+    // Only where whole records cannot be selected: one is a quarter of the
+    // budget or more. Rows with a diagnostic or an anchor come first.
+    let important = |value: &serde_json::Value| {
+        signal_value(value, &|s| diagnostic(&STRONG, s)).is_some()
+            || anchoring.matches(&value.to_string())
+    };
+    if v4
+        && let Some(text) = original
+        && clean::line_count(text) < data.records.len().max(2)
+        && data.records.iter().any(|r| {
+            r.value
+                .as_ref()
+                .is_some_and(|v| encoding::size(v, available / 4).is_none())
+        })
+        && let Some(projection) = compact_table::projection(data, available, &important)
+    {
+        let omitted = projection.total - projection.shown;
+        let abridged = if projection.abridged {
+            projection.shown
+        } else {
+            0
+        };
+        let output = frame.finish_abridged(&projection.text, omitted, abridged);
+        ensure!(output.len() <= budget, "compact metadata exceeds budget");
+        return Ok((output, projection.shown));
     }
     anchoring.reset(available);
     let mut units = units(data, available, version, kind, anchoring);
@@ -2652,7 +2731,8 @@ fn view(
             anchoring.reset(available);
             text_units_v3(&record, available, kind, &mut seen, anchoring, &mut units);
             let (body, selected) = fill_v3(&units, available, totals);
-            let output = frame.finish(&body, units.len() - selected.len());
+            let output =
+                frame.finish_abridged(&body, units.len() - selected.len(), cut(&units, &selected));
             ensure!(output.len() <= budget, "compact metadata exceeds budget");
             return Ok((output, selected.len()));
         }
@@ -2665,7 +2745,7 @@ fn view(
         }
         (body, selected)
     };
-    let output = frame.finish(&body, units.len() - selected.len());
+    let output = frame.finish_abridged(&body, units.len() - selected.len(), cut(&units, &selected));
     ensure!(output.len() <= budget, "compact metadata exceeds budget");
     Ok((output, selected.len()))
 }
