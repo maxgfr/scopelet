@@ -938,3 +938,98 @@ fn stats_count_compressions_pass_throughs_and_later_expansions() {
         (big.len() - view.len()) as u64
     );
 }
+
+fn session_state(dir: &std::path::Path, session: &str, agent: Option<&str>) -> Option<Value> {
+    let key = scopelet::session::key(session, agent);
+    fs::read(dir.join("config/sessions").join(key))
+        .ok()
+        .map(|bytes| serde_json::from_slice(&bytes).unwrap())
+}
+
+/// Each context keeps a private JSON state: the main conversation under its
+/// session, a subagent under its session and agent. A marker written by an
+/// earlier version (the bare mode) still counts as announced.
+#[test]
+fn session_state_is_kept_per_context_and_reads_the_old_marker() {
+    let dir = tempfile::tempdir().unwrap();
+    let start = json!({"hook_event_name":"SessionStart","session_id":"s1","source":"startup"});
+    assert_ne!(hook(dir.path(), "claude", start), json!({}));
+    let state = session_state(dir.path(), "s1", None).unwrap();
+    assert_eq!(state["mode"], "default");
+    assert_eq!(state["seen"], json!([]));
+    assert!(session_state(dir.path(), "s1", Some("agent-7")).is_none());
+    let prompt =
+        json!({"hook_event_name":"UserPromptSubmit","session_id":"s1","agent_id":"agent-7"});
+    assert_ne!(hook(dir.path(), "claude", prompt.clone()), json!({}));
+    assert_eq!(
+        session_state(dir.path(), "s1", Some("agent-7")).unwrap()["mode"],
+        "default"
+    );
+    assert_eq!(hook(dir.path(), "claude", prompt), json!({}));
+
+    let old = dir
+        .path()
+        .join("config/sessions")
+        .join(scopelet::session::key("old", None));
+    fs::write(&old, b"\"default\"").unwrap();
+    let prompt = json!({"hook_event_name":"UserPromptSubmit","session_id":"old"});
+    assert_eq!(hook(dir.path(), "claude", prompt), json!({}));
+}
+
+/// A compaction or a clear empties what the context was shown; a resume
+/// keeps it. A clear also drops the anchors of earlier prompts.
+#[test]
+fn session_start_after_compact_or_clear_forgets_shown_outputs() {
+    let dir = tempfile::tempdir().unwrap();
+    let folder = dir.path().join("config/sessions");
+    fs::create_dir_all(&folder).unwrap();
+    for (source, kept) in [("resume", true), ("compact", false), ("clear", false)] {
+        let key = scopelet::session::key("s2", None);
+        let seeded =
+            json!({"mode":"default","seen":["0123456789abcdef"],"anchors":["parse_header"]});
+        fs::write(folder.join(&key), seeded.to_string()).unwrap();
+        let start = json!({"hook_event_name":"SessionStart","session_id":"s2","source":source});
+        assert_ne!(hook(dir.path(), "claude", start), json!({}));
+        let state = session_state(dir.path(), "s2", None).unwrap();
+        assert_eq!(
+            state["seen"] == json!(["0123456789abcdef"]),
+            kept,
+            "{source}"
+        );
+        assert_eq!(
+            state["anchors"] == json!(["parse_header"]),
+            source != "clear",
+            "{source}"
+        );
+    }
+}
+
+/// Codex hands its context key to the wrapped run, which accepts only hex.
+#[test]
+fn codex_passes_the_context_key_to_the_wrapped_run() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","session_id":"codex-1","tool_input":{"command":"cargo test"}});
+    let key = scopelet::session::key("codex-1", None);
+    let rewritten = |event: Value| -> String {
+        hook(dir.path(), "codex", event)["hookSpecificOutput"]["updatedInput"]["command"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    let command = rewritten(event.clone());
+    assert!(
+        command.contains(&format!(" --session {} ", &key[..16])),
+        "{command}"
+    );
+    event.as_object_mut().unwrap().remove("session_id");
+    let command = rewritten(event);
+    assert!(!command.contains("--session"), "{command}");
+    cli(dir.path())
+        .args(["run", "--auto", "--session", &key[..16], "--", "true"])
+        .assert()
+        .success();
+    cli(dir.path())
+        .args(["run", "--auto", "--session", "not-hex", "--", "true"])
+        .assert()
+        .failure();
+}

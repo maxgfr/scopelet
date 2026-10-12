@@ -107,6 +107,7 @@ const ScopeletPlugin = {
       const command = event.input?.command;
       const compressed = await hook({
         hook_event_name: "ToolOutput",
+        session_id: typeof event.sessionID === "string" ? event.sessionID : undefined,
         tool_name: "Bash",
         tool_input: { command: typeof command === "string" ? command : "" },
         tool_response: { output },
@@ -140,6 +141,7 @@ const ScopeletPlugin = {
         const command = input?.args?.command;
         const result = await hook({
           hook_event_name: "ToolOutput",
+          session_id: typeof input?.sessionID === "string" ? input.sessionID : undefined,
           tool_name: "Bash",
           tool_input: { command: typeof command === "string" ? command : "" },
           tool_response: { output: output.output },

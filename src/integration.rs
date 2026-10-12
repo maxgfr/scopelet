@@ -25,7 +25,7 @@ const HOSTS: [Agent; 3] = [Agent::Claude, Agent::Codex, Agent::Opencode];
 /// is how install and uninstall recognise the file as ours.
 const PLUGIN_MARKER: &str = "ScopeletPlugin";
 const PLUGIN_TEMPLATE: &str = include_str!("opencode_plugin.js");
-#[derive(Clone, Copy, Default, clap::ValueEnum, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, clap::ValueEnum, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Preference {
     #[default]
@@ -34,7 +34,7 @@ pub enum Preference {
     Off,
 }
 
-fn root() -> Result<PathBuf> {
+pub(crate) fn root() -> Result<PathBuf> {
     if let Some(path) = std::env::var_os("SCOPELET_CONFIG_DIR") {
         return Ok(path.into());
     }
@@ -59,7 +59,7 @@ fn private_dir(path: &Path) -> Result<()> {
     builder.create(path)?;
     Ok(())
 }
-fn write_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
+pub(crate) fn write_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
     ensure!(
         !fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink()),
         "refusing to replace symlink"
@@ -456,17 +456,38 @@ pub fn clean_sessions(older_days: u64) -> Result<usize> {
     Ok(removed)
 }
 
+/// The private state key of the context an event belongs to: its session,
+/// and its subagent when the host names one.
+fn context_key(event: &Value) -> Option<String> {
+    let session = event["session_id"].as_str().filter(|s| !s.is_empty())?;
+    Some(crate::session::key(session, event["agent_id"].as_str()))
+}
+
+/// Guidance at a session start or a mode change. A compaction or a clear
+/// starts the context over: what it was shown is no longer in it.
 fn context(event: &Value, mode: Preference) -> Result<Value> {
     let name = event["hook_event_name"].as_str().unwrap_or("");
-    let Some(session) = event["session_id"].as_str() else {
+    let Some(key) = context_key(event) else {
         return Ok(json!({}));
     };
-    let state = root()?.join("sessions").join(digest(session.as_bytes()));
-    let current = serde_json::to_vec(&mode)?;
-    if name != "SessionStart" && fs::read(&state).ok().as_deref() == Some(&current) {
+    let mut state = crate::session::load(&key);
+    let before = state.clone();
+    let start = name == "SessionStart";
+    if start && matches!(event["source"].as_str(), Some("compact" | "clear")) {
+        state.seen.clear();
+    }
+    if start && event["source"] == "clear" {
+        state.anchors.clear();
+    }
+    let announce = start || state.mode != Some(mode);
+    state.mode = Some(mode);
+    // A start rewrites the file so cleanup sees the context as recent.
+    if start || state != before {
+        crate::session::save(&key, &state)?;
+    }
+    if !announce {
         return Ok(json!({}));
     }
-    write_atomic(&state, &current)?;
     Ok(json!({"hookSpecificOutput":{"hookEventName":name,"additionalContext":guidance(mode)}}))
 }
 fn guidance(mode: Preference) -> String {
@@ -580,8 +601,12 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             return Ok(json!({}));
         }
         let binary = std::env::current_exe()?;
+        // The context key lets the wrapped run read this context's anchors.
+        let session = context_key(event).map_or(String::new(), |key| {
+            format!("--session {} ", crate::session::short(&key))
+        });
         let command = format!(
-            "{} run --auto --timeout 3600 {} -- {}",
+            "{} run --auto --timeout 3600 {session}{} -- {}",
             quote(&binary.to_string_lossy()),
             match compress::effective_profile(Some(profile), version) {
                 // Each profile has its own budget, in v3 only.

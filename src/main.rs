@@ -131,6 +131,10 @@ enum Cmd {
         /// as a file rather than as an outcome.
         #[arg(long, value_enum, requires = "auto")]
         profile: Option<scopelet::commands::Profile>,
+        /// With --auto: the hook context this run belongs to (16 or more hex
+        /// characters of its key), whose prompt anchors shape the view.
+        #[arg(long, requires = "auto")]
+        session: Option<String>,
         #[arg(long, default_value_t = 120)]
         timeout: u64,
         #[arg(long, value_enum, default_value = "text")]
@@ -368,9 +372,18 @@ fn execute(cli: Cli) -> Result<i32> {
         timeout,
         max_bytes,
         profile,
+        session,
         ..
     } = &cli.command
     {
+        ensure!(
+            session
+                .as_ref()
+                .is_none_or(|key| key.len() >= scopelet::session::PREFIX
+                    && key.len() <= 64
+                    && key.bytes().all(|b| b.is_ascii_hexdigit())),
+            "--session must be 16 to 64 hex characters"
+        );
         ensure!(
             max_bytes.is_none_or(|b| (1024..=1024 * 1024).contains(&b)),
             "max_bytes must be 1024..1048576"
@@ -573,6 +586,7 @@ fn execute(cli: Cli) -> Result<i32> {
         Cmd::Run {
             auto: _,
             profile: _,
+            session: _,
             output,
             mode,
             max_bytes,
