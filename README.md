@@ -339,7 +339,7 @@ Then:
 | `[scopelet v4 ID omitted=N abridged=M; …]` | N units left out, M shown in part; `expand ID --find TEXT` recovers them |
 | `[scopelet v4 ID repeat: identical to output already shown …]` | this conversation already saw these exact bytes |
 | `failed=2: name (file:line), …` | below a test view's header: the failures to open first |
-| `totals runs=17 passed=362 failed=0 ignored=3` | below it, for cargo over several test binaries: every `test result:` summed |
+| `totals runs=17 passed=362 failed=0 ignored=3 (every test result line, …)` | below it, for cargo over several test binaries: every `test result:` summed |
 | `input:42 text` | line 42, shown as displayed |
 | `input:10-14 repeat=5 text` | lines 10 to 14 are all this line |
 | `input:4 similar=480 last=492 text` | 480 lines share this shape, first at 4, last at 492 |
