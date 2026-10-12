@@ -803,3 +803,129 @@ fn listing_free_install_views_keep_only_what_decides_the_outcome() {
     );
     assert_eq!(original(dir.path(), &text), raw.as_bytes());
 }
+
+/// The JSON after a `NAME ` prefix on a view line.
+fn json_after(text: &str, prefix: &str) -> serde_json::Value {
+    let line = text
+        .lines()
+        .find_map(|l| l.strip_prefix(prefix))
+        .unwrap_or_else(|| panic!("no {prefix:?} line in {text}"));
+    serde_json::from_str(line).unwrap()
+}
+
+/// Rebuild every row of a v4 table: its columns, then its constants.
+fn table_rows(table: &serde_json::Value) -> Vec<serde_json::Value> {
+    let columns = table["columns"].as_array().unwrap();
+    table["rows"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|row| {
+            let mut object: serde_json::Map<String, serde_json::Value> = columns
+                .iter()
+                .zip(row.as_array().unwrap())
+                .map(|(k, v)| (k.as_str().unwrap().to_owned(), v.clone()))
+                .collect();
+            if let Some(constant) = table["constant"].as_object() {
+                object.extend(constant.clone());
+            }
+            serde_json::Value::Object(object)
+        })
+        .collect()
+}
+
+/// An object whose array of same-keyed objects dominates it is shown as its
+/// other fields, then that array as a table whose constant columns appear
+/// once; every value survives exactly, nulls and long decimals included.
+#[test]
+fn json_envelope_with_a_dominant_array_becomes_a_table() {
+    let dir = tempfile::tempdir().unwrap();
+    let items: Vec<serde_json::Value> = (0..30)
+        .map(|i| {
+            serde_json::json!({
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "name": format!("api-{}", letters(i)),
+                "phase": if i == 17 { "CrashLoopBackOff" } else { "Running" },
+                "restarts": i % 4,
+                "quota": null,
+            })
+        })
+        .collect();
+    let exact: serde_json::Value = serde_json::from_str("900719925474099312345.10").unwrap();
+    let document = serde_json::json!({
+        "apiVersion": "v1",
+        "kind": "List",
+        "items": items,
+        "metadata": {"resourceVersion": exact},
+    });
+    let raw = serde_json::to_string_pretty(&document).unwrap();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    assert!(first_line(&text).ends_with(" complete]\n"), "{text}");
+    let envelope = json_after(&text, "envelope ");
+    assert_eq!(
+        envelope,
+        serde_json::json!({"apiVersion": "v1", "kind": "List", "metadata": {"resourceVersion": exact}})
+    );
+    assert!(text.contains("900719925474099312345.10"), "{text}");
+    let table = json_after(&text, "table=/items ");
+    assert_eq!(
+        table["constant"],
+        serde_json::json!({"apiVersion": "v1", "kind": "Pod", "quota": null})
+    );
+    assert_eq!(table_rows(&table), items);
+    assert!(text.contains("CrashLoopBackOff"), "{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+
+    let v3 = String::from_utf8(
+        compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 4096, Version::V3)
+            .unwrap()
+            .into_owned(),
+    )
+    .unwrap();
+    assert!(!v3.contains("table=/items"), "{v3}");
+}
+
+/// No field is invented: items with different keys are not a table, and an
+/// array too large to show whole keeps the line view.
+#[test]
+fn json_items_that_differ_or_overflow_keep_the_line_view() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut items: Vec<serde_json::Value> = (0..30)
+        .map(|i| serde_json::json!({"name": format!("job-{}", letters(i)), "state": "done"}))
+        .collect();
+    items[9] = serde_json::json!({"name": "job-j", "state": "failed", "error": "OOMKilled"});
+    let raw =
+        serde_json::to_string_pretty(&serde_json::json!({"items": items, "count": 30})).unwrap();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    assert!(!text.contains("table="), "{text}");
+    assert!(text.contains("OOMKilled"), "{text}");
+
+    let big: Vec<serde_json::Value> = (0..400)
+        .map(|i| serde_json::json!({"name": format!("job-{}", letters(i)), "detail": letters(i * 7919)}))
+        .collect();
+    let raw = serde_json::to_string_pretty(&serde_json::json!({"items": big})).unwrap();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    assert!(!text.contains("table="), "{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
+/// A top-level array keeps its table and names its constant columns once.
+#[test]
+fn json_tables_name_constant_columns_once() {
+    let dir = tempfile::tempdir().unwrap();
+    let rows: Vec<serde_json::Value> = (0..80)
+        .map(|i| serde_json::json!({"id": i, "region": "eu-west-3", "status": "ok", "owner": "platform-team"}))
+        .collect();
+    let raw = rows
+        .iter()
+        .map(|r| r.to_string())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    let table = json_after(&text, "table ");
+    assert_eq!(table["columns"], serde_json::json!(["id"]));
+    assert_eq!(table_rows(&table), rows);
+    assert!(table.get("indices").is_none(), "{text}");
+    assert_eq!(text.matches("eu-west-3").count(), 1, "{text}");
+}

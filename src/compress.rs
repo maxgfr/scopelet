@@ -2557,16 +2557,28 @@ fn view(
     let frame = Frame::new(data, artifact, version);
     let available = budget.saturating_sub(frame.reserve(count));
     let uniform = compact_table::uniform(data);
+    // Compact-v4 tables name constant columns once; a complete one needs no
+    // indices, its rows being every record in order.
+    let v4 = version == Version::V4;
     if uniform {
         let indices: Vec<_> = (0..data.records.len()).collect();
-        if let Some(table) = compact_table::encode(
+        if let Some(table) = compact_table::encode_with(
             data,
             &indices,
-            version.tables(),
+            version.tables() && !v4,
+            v4,
             budget.saturating_sub(frame.complete_reserve()),
         ) {
             return Ok((frame.complete(&table), indices.len()));
         }
+    }
+    if v4
+        && let [record] = data.records.as_slice()
+        && let Some(value) = &record.value
+        && let Some(table) =
+            compact_table::envelope(value, budget.saturating_sub(frame.complete_reserve()))
+    {
+        return Ok((frame.complete(&table), 1));
     }
     // Matches per file of a compact-v4 search, for its `more=N` counts.
     let totals = kind.search.then(|| search_totals(data));
@@ -2586,13 +2598,14 @@ fn view(
     if uniform && version.tables() {
         // Exact row costs include positional provenance. Fixed schema/envelope costs
         // are counted by the same serializer as the final table.
-        if let Some(empty) = compact_table::encode(data, &[], true, available) {
+        let (columns, _) = compact_table::columns(data, v4);
+        if let Some(empty) = compact_table::encode_with(data, &[], true, v4, available) {
             let varying_sources = data
                 .records
                 .iter()
                 .any(|r| r.source != data.records[0].source);
             for (i, unit) in units.iter_mut().enumerate() {
-                unit.size = compact_table::row_size(unit.record, available)
+                unit.size = compact_table::row_size(unit.record, &columns, available)
                     .unwrap_or(available + 1)
                     + digits(i)
                     + 2
@@ -2604,7 +2617,7 @@ fn view(
             }
             let indices = select(&units, available.saturating_sub(empty.len()));
             if !indices.is_empty()
-                && let Some(table) = compact_table::encode(data, &indices, true, available)
+                && let Some(table) = compact_table::encode_with(data, &indices, true, v4, available)
             {
                 let output = frame.finish(&table, units.len() - indices.len());
                 return Ok((output, indices.len()));
