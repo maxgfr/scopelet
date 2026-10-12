@@ -699,6 +699,9 @@ struct Unit<'a> {
     truncated: usize,
     size: usize,
     priority: u8,
+    /// Order inside its tier when nonzero: higher first (a compact-v4 diff's
+    /// files by change density). Zero keeps head and tail alternation.
+    weight: u16,
 }
 
 /// The label in front of a unit. Compact-v3 labels are written when the unit
@@ -733,6 +736,7 @@ impl<'a> Unit<'a> {
             truncated: 0,
             size,
             priority,
+            weight: 0,
         }
     }
     /// Compact-v3 text unit; a line too large for the budget is cut on a
@@ -754,6 +758,7 @@ impl<'a> Unit<'a> {
             label,
             truncated: 0,
             priority,
+            weight: 0,
         };
         let cap = limit.min(TRUNCATED_PREFIX);
         let bytes = if unit.size > limit {
@@ -917,6 +922,7 @@ fn units<'a>(
                 truncated: 0,
                 size: encoding::size(value, limit).unwrap_or(limit + 1) + record.source.len() + 3,
                 priority,
+                weight: 0,
             };
             anchoring.promote(&mut unit);
             units.push(unit);
@@ -1100,6 +1106,30 @@ fn text_units_v3<'a>(
             }
         }
     }
+    // Every line of a lockfile or generated file's diff but its header is
+    // hidden behind that header's summary; each stays a unit of its own, so
+    // the view counts it as omitted.
+    let sections = match (&roles, kind.diff_files) {
+        (Some(roles), true) => diff_sections(&views, roles),
+        _ => Vec::new(),
+    };
+    let mut collapsed = Bits::new(n);
+    // Density orders the files of a plain `git diff` only: in `git log -p`
+    // a commit's message must not queue behind its changes.
+    let files_only = roles.as_ref().is_some_and(|roles| {
+        sections.len() >= 2 && roles.iter().filter(|&&r| r == Diff::File).count() == sections.len()
+    });
+    let mut weights = vec![0u16; if files_only { n } else { 0 }];
+    for section in &sections {
+        if section.generated {
+            collapsed.fill(section.header + 1..section.end);
+        } else if files_only {
+            weights[section.header..section.end].fill(section.density());
+        }
+    }
+    for i in (0..n).filter(|&i| collapsed.get(i)) {
+        trivial.clear(i);
+    }
     // Context is the window around a diagnostic; head and tail lines only
     // count for priority.
     let mut context = Bits::new(n);
@@ -1161,7 +1191,10 @@ fn text_units_v3<'a>(
         // identical template, so a repetition skips building one. On a log of
         // repeated lines that is every line after the first.
         let origin = first[i] as usize;
-        let slot = if slot_of_first[origin] != NONE {
+        let slot = if collapsed.get(i) {
+            // Shown nowhere: never the representative of other lines.
+            groups.len() as u32
+        } else if slot_of_first[origin] != NONE {
             slot_of_first[origin]
         } else if matches!(role(i), Diff::File | Diff::Change | Diff::Message) {
             // Headers, changes and commit messages are evidence: they never
@@ -1360,14 +1393,34 @@ fn text_units_v3<'a>(
             line
         };
         let mut unit = Unit::text_v3(record, label, view, raw, priority, limit);
-        if count == 1 && capped.get(i) {
+        if let Some(section) = sections.iter().find(|s| s.generated && s.header == i) {
+            unit = Unit::text(
+                record,
+                format!(
+                    "{}:{}-{} file={} changed=+{}/-{} omitted",
+                    record.source,
+                    base + i,
+                    base + section.end - 1,
+                    section.path,
+                    section.added,
+                    section.removed
+                ),
+                Cow::Borrowed(""),
+                priority,
+            );
+        } else if collapsed.get(i) || (count == 1 && capped.get(i)) {
             unit.priority = CAPPED;
         } else if priority != TRIVIAL {
             anchoring.promote(&mut unit);
         }
+        if let Some(&weight) = weights.get(i) {
+            unit.weight = weight;
+        }
         let priority = unit.priority;
         units.push(unit);
-        if role(i) == Diff::File {
+        if collapsed.get(i) {
+            // Nothing glues to a hidden line.
+        } else if role(i) == Diff::File {
             // A file header ends the previous hunk: nothing glues across it.
         } else if role(i) == Diff::Meta {
             line_priority[i] = TRIVIAL;
@@ -1429,6 +1482,9 @@ fn text_units_v3<'a>(
 struct Kind {
     file_read: bool,
     search: bool,
+    /// Compact-v4 diffs: lockfiles and generated files collapse to one
+    /// counted line and real files rank by change density.
+    diff_files: bool,
 }
 
 impl Kind {
@@ -1437,6 +1493,7 @@ impl Kind {
         Self {
             file_read: profile == Some(Profile::FileRead),
             search: version == Version::V4 && profile == Some(Profile::Search),
+            diff_files: version == Version::V4,
         }
     }
 }
@@ -1642,6 +1699,89 @@ fn diff_roles(views: &[Cow<'_, str>]) -> Option<Vec<Diff>> {
     Some(roles)
 }
 
+/// Lockfiles and generated or minified files: their diff is churn, not
+/// evidence about the change.
+fn generated_file(path: &str) -> bool {
+    let name = path.rsplit('/').next().unwrap_or(path);
+    matches!(
+        name,
+        "Cargo.lock"
+            | "package-lock.json"
+            | "yarn.lock"
+            | "pnpm-lock.yaml"
+            | "poetry.lock"
+            | "uv.lock"
+            | "go.sum"
+            | "Gemfile.lock"
+            | "composer.lock"
+    ) || [".min.js", ".min.css", ".map"]
+        .iter()
+        .any(|suffix| name.ends_with(suffix))
+}
+
+/// One file of a `diff --git` listing: its header line, the line after its
+/// last, its path and its changed lines.
+struct DiffSection {
+    header: usize,
+    end: usize,
+    path: String,
+    added: usize,
+    removed: usize,
+    generated: bool,
+}
+
+impl DiffSection {
+    /// Changed lines per thousand lines of the section, at least 1.
+    fn density(&self) -> u16 {
+        let lines = (self.end - self.header).max(1);
+        ((self.added + self.removed) * 1000 / lines).clamp(1, 1000) as u16
+    }
+}
+
+/// The `diff --git` sections of a record classified by `diff_roles`. A
+/// section ends at the next file header or commit.
+fn diff_sections(views: &[Cow<'_, str>], roles: &[Diff]) -> Vec<DiffSection> {
+    let mut sections: Vec<DiffSection> = Vec::new();
+    for (i, view) in views.iter().enumerate() {
+        if roles[i] == Diff::File {
+            if let Some(last) = sections.last_mut()
+                && last.end == usize::MAX
+            {
+                last.end = i;
+            }
+            if let Some(rest) = view.strip_prefix("diff --git ") {
+                let path = rest
+                    .rsplit_once(" b/")
+                    .map_or(rest, |(_, path)| path)
+                    .to_owned();
+                sections.push(DiffSection {
+                    header: i,
+                    end: usize::MAX,
+                    generated: generated_file(&path),
+                    path,
+                    added: 0,
+                    removed: 0,
+                });
+            }
+        } else if roles[i] == Diff::Change
+            && let Some(last) = sections.last_mut()
+            && last.end == usize::MAX
+        {
+            if view.starts_with('+') {
+                last.added += 1;
+            } else {
+                last.removed += 1;
+            }
+        }
+    }
+    if let Some(last) = sections.last_mut()
+        && last.end == usize::MAX
+    {
+        last.end = views.len();
+    }
+    sections
+}
+
 /// At most three visible characters: a closing brace, a blank line, a gutter.
 fn is_trivial(line: &str) -> bool {
     line.chars().filter(|c| !c.is_whitespace()).take(4).count() <= 3
@@ -1670,9 +1810,18 @@ impl Tiers {
         let mut order = Vec::with_capacity(units.len());
         let mut tiers = Vec::with_capacity(5);
         for priority in [4, 3, 2, 1, 0] {
-            let tier: Vec<usize> = (0..units.len())
+            let mut tier: Vec<usize> = (0..units.len())
                 .filter(|&i| units[i].priority == priority)
                 .collect();
+            if tier.iter().any(|&i| units[i].weight > 0) {
+                // Weighted units fill in weight order (stable: source order
+                // within a weight), unweighted ones after them.
+                tier.sort_by_key(|&i| std::cmp::Reverse(units[i].weight));
+                order.extend(&tier);
+                let total = tier.iter().map(|&i| units[i].size).sum();
+                tiers.push((priority, order.len(), total));
+                continue;
+            }
             let (mut head, mut tail) = (0, tier.len());
             while head < tail {
                 order.push(tier[head]);

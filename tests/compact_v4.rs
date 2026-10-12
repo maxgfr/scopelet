@@ -552,3 +552,131 @@ fn search_context_lines_stay_with_their_matches() {
     );
     assert_eq!(original(dir.path(), &text), raw.as_bytes());
 }
+
+/// One file of a unified diff: header, one hunk, and its body lines.
+fn diff_file(path: &str, body: &[String]) -> String {
+    let mut out = format!(
+        "diff --git a/{path} b/{path}\nindex 1a2b3c4..5d6e7f8 100644\n--- a/{path}\n+++ b/{path}\n@@ -1,{0} +1,{0} @@\n",
+        body.len()
+    );
+    for line in body {
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+
+/// A lockfile or minified file's diff becomes one counted line: its changes
+/// lose their protection and the budget goes to the real files.
+#[test]
+fn lockfile_and_generated_diffs_become_one_counted_line() {
+    let dir = tempfile::tempdir().unwrap();
+    let words: Vec<String> = distinct_lines(400)
+        .lines()
+        .map(|l| l.split(' ').next().unwrap().to_owned())
+        .collect();
+    let lock: Vec<String> = (0..150)
+        .flat_map(|i| {
+            [
+                format!("-version = \"0.{i}.0\" # {}", words[i]),
+                format!("+version = \"0.{i}.1\" # {}", words[i + 200]),
+            ]
+        })
+        .collect();
+    let raw = [
+        diff_file(
+            "src/auth.rs",
+            &[
+                "     fn is_expired(&self, now: u64) -> bool {".into(),
+                "-        self.expires_at > now".into(),
+                "+        self.expires_at >= now".into(),
+                "     }".into(),
+            ],
+        ),
+        diff_file("Cargo.lock", &lock),
+        diff_file(
+            "web/dist/app.min.js",
+            &["-var a=1;".repeat(40), "+var a=2;".repeat(40)],
+        ),
+        diff_file(
+            "src/billing.rs",
+            &[
+                "     let gross = self.total();".into(),
+                "-        gross".into(),
+                "+        gross - self.discount".into(),
+            ],
+        ),
+    ]
+    .concat();
+    let text = anchored(dir.path(), &raw, Some(Profile::Git), Version::V4, &[]);
+    assert!(
+        text.contains("input:10-314 file=Cargo.lock changed=+150/-150 omitted\n"),
+        "{text}"
+    );
+    assert!(
+        text.contains("input:315-321 file=web/dist/app.min.js changed=+1/-1 omitted\n"),
+        "{text}"
+    );
+    assert!(!text.contains("version = \"0."), "{text}");
+    assert!(!text.contains("var a="), "{text}");
+    assert!(text.contains("+        self.expires_at >= now"), "{text}");
+    assert!(text.contains("+        gross - self.discount"), "{text}");
+    assert!(text.starts_with("[scopelet v4 "), "{text}");
+    assert!(
+        text.contains(" omitted="),
+        "the hidden lines are counted: {text}"
+    );
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+
+    let v3 = anchored(dir.path(), &raw, Some(Profile::Git), Version::V3, &[]);
+    assert!(!v3.contains("changed=+"), "{v3}");
+}
+
+/// When the real files do not all fit, the densest changes come first: a
+/// file of nothing but changes between two files whose changes sit among
+/// context is no longer the one left out.
+#[test]
+fn lockfile_free_diffs_spend_the_budget_on_dense_files_first() {
+    let dir = tempfile::tempdir().unwrap();
+    let words: Vec<String> = distinct_lines(5000)
+        .lines()
+        .map(|l| l.split(' ').next().unwrap().to_owned())
+        .collect();
+    let sparse = |offset: usize| -> Vec<String> {
+        (0..60)
+            .flat_map(|i| {
+                [
+                    format!("     let {} = {i};", words[offset + 3 * i]),
+                    format!("     keep_{}();", words[offset + 3 * i + 1]),
+                    format!("     note_{}();", words[offset + 3 * i + 2]),
+                    format!("+    sparse_{}();", words[offset + i]),
+                ]
+            })
+            .collect()
+    };
+    let dense: Vec<String> = (0..100)
+        .flat_map(|i| {
+            [
+                format!("-    call_{}();", words[3000 + i]),
+                format!("+    call_{}();", words[4000 + i]),
+            ]
+        })
+        .collect();
+    let raw = [
+        diff_file("src/a.rs", &sparse(0)),
+        diff_file("src/dense.rs", &dense),
+        diff_file("src/c.rs", &sparse(1000)),
+    ]
+    .concat();
+    let dense_shown = |text: &str| {
+        (0..100)
+            .filter(|i| text.contains(&format!("+    call_{}();", words[4000 + i])))
+            .count()
+    };
+    let text = anchored(dir.path(), &raw, Some(Profile::Git), Version::V4, &[]);
+    assert_eq!(dense_shown(&text), 100, "{text}");
+    assert!(text.contains("diff --git a/src/a.rs"), "{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+    let v3 = anchored(dir.path(), &raw, Some(Profile::Git), Version::V3, &[]);
+    assert!(dense_shown(&v3) < 100, "{v3}");
+}
