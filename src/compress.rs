@@ -483,7 +483,7 @@ fn automatic_with<'a>(
         version,
         Some(text),
         max_lines,
-        shape.reading,
+        Kind::of(shape.profile, version),
         &mut anchoring,
     )?;
     if let Some(line) = &failed {
@@ -613,7 +613,7 @@ pub fn compact_version(
         version,
         None,
         MAX_LINES,
-        false,
+        Kind::default(),
         &mut Anchoring::new(&[]),
     )?;
     let id = store.put_json(data)?;
@@ -882,7 +882,7 @@ fn units<'a>(
     data: &'a Dataset,
     limit: usize,
     version: Version,
-    reading: bool,
+    kind: Kind,
     anchoring: &mut Anchoring<'_>,
 ) -> Vec<Unit<'a>> {
     let mut units = Vec::new();
@@ -923,7 +923,7 @@ fn units<'a>(
             continue;
         }
         if version.profiled() {
-            text_units_v3(record, limit, reading, &mut seen, anchoring, &mut units);
+            text_units_v3(record, limit, kind, &mut seen, anchoring, &mut units);
             continue;
         }
         let lines: Vec<_> = record.text.split_inclusive('\n').collect();
@@ -1011,15 +1011,18 @@ impl Bits {
 /// Line indices are `u32` (a capture is at most 32 MiB) and flags are bits,
 /// so the working set stays near the units themselves on a large input.
 ///
-/// `reading`: a file read ranks no line as a diagnostic; anchors still apply.
+/// `kind.file_read`: a file read ranks no line as a diagnostic; anchors still
+/// apply. `kind.search`: a file's matches beyond `SEARCH_MATCHES` are never
+/// shown (see `search_capped`).
 fn text_units_v3<'a>(
     record: &'a Record,
     limit: usize,
-    reading: bool,
+    kind: Kind,
     seen: &mut Seen,
     anchoring: &mut Anchoring<'_>,
     units: &mut Vec<Unit<'a>>,
 ) {
+    let reading = kind.file_read;
     const NONE: u32 = u32::MAX;
     struct Group {
         first: u32,
@@ -1036,6 +1039,11 @@ fn text_units_v3<'a>(
         .map(clean::line_view)
         .collect();
     let n = views.len();
+    let capped = if kind.search {
+        search_capped(&views, anchoring)
+    } else {
+        Bits::new(n)
+    };
     // Identical text is classified once: `first[i]` is the earliest line with
     // this exact view, and it carries the vocabulary matches and, later, the
     // group for every repetition. A log of the same line five hundred times
@@ -1352,7 +1360,9 @@ fn text_units_v3<'a>(
             line
         };
         let mut unit = Unit::text_v3(record, label, view, raw, priority, limit);
-        if priority != TRIVIAL {
+        if count == 1 && capped.get(i) {
+            unit.priority = CAPPED;
+        } else if priority != TRIVIAL {
             anchoring.promote(&mut unit);
         }
         let priority = unit.priority;
@@ -1411,6 +1421,113 @@ fn text_units_v3<'a>(
         }
         carried(&mut carry, priority, line);
     }
+}
+
+/// How an output is read beyond its version: as a file (no diagnostic
+/// ranking) or, in compact-v4, as search results grouped by file.
+#[derive(Clone, Copy, Default)]
+struct Kind {
+    file_read: bool,
+    search: bool,
+}
+
+impl Kind {
+    fn of(profile: Option<crate::commands::Profile>, version: Version) -> Self {
+        use crate::commands::Profile;
+        Self {
+            file_read: profile == Some(Profile::FileRead),
+            search: version == Version::V4 && profile == Some(Profile::Search),
+        }
+    }
+}
+
+/// Matches of one file a compact-v4 search shows: its first and last, then
+/// those containing an anchor, then the earliest.
+const SEARCH_MATCHES: usize = 5;
+/// Priority of a unit never selected: a match beyond its file's share, or
+/// context around such matches only.
+const CAPPED: u8 = 9;
+
+static SEARCH_MATCH: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^([^\s:][^:]*?):([0-9]+):").unwrap());
+static SEARCH_CONTEXT: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^(\S.*?)-([0-9]+)-").unwrap());
+
+/// The path of a `path:N:text` match or a `path-N-text` context line of
+/// `grep -n`/`rg -n` output, and whether it is a match. A context line's path
+/// is a guess until a neighbouring match names the same one.
+fn search_line(view: &str) -> Option<(&str, bool)> {
+    if let Some(c) = SEARCH_MATCH.captures(view) {
+        return Some((c.get(1)?.as_str(), true));
+    }
+    SEARCH_CONTEXT
+        .captures(view)
+        .map(|c| (c.get(1).unwrap().as_str(), false))
+}
+
+/// Match lines per file of every text record.
+fn search_totals(data: &Dataset) -> HashMap<String, usize> {
+    let mut totals: HashMap<String, usize> = HashMap::default();
+    for record in data.records.iter().filter(|r| r.value.is_none()) {
+        for line in record.text.split_inclusive('\n') {
+            if let Some((path, true)) = search_line(&clean::line_view(line)) {
+                *totals.entry(path.to_owned()).or_default() += 1;
+            }
+        }
+    }
+    totals
+}
+
+/// Lines of a search never shown: a file's matches beyond its
+/// `SEARCH_MATCHES`, and context lines whose run of the same file (contiguous
+/// lines) holds only such matches.
+fn search_capped(views: &[Cow<'_, str>], anchoring: &Anchoring<'_>) -> Bits {
+    let n = views.len();
+    let lines: Vec<Option<(&str, bool)>> = views.iter().map(|v| search_line(v)).collect();
+    let mut capped = Bits::new(n);
+    let mut by_path: HashMap<&str, Vec<usize>> = HashMap::default();
+    for (i, line) in lines.iter().enumerate() {
+        if let Some((path, true)) = line {
+            by_path.entry(path).or_default().push(i);
+        }
+    }
+    for matches in by_path.values().filter(|m| m.len() > SEARCH_MATCHES) {
+        let mut keep = vec![matches[0], matches[matches.len() - 1]];
+        let anchored = matches.iter().filter(|&&i| anchoring.matches(&views[i]));
+        for &i in anchored.chain(matches.iter()) {
+            if keep.len() == SEARCH_MATCHES {
+                break;
+            }
+            if !keep.contains(&i) {
+                keep.push(i);
+            }
+        }
+        for &i in matches {
+            if !keep.contains(&i) {
+                capped.set(i);
+            }
+        }
+    }
+    // Runs of contiguous lines naming the same file: context is kept with
+    // any shown match of its run.
+    let mut start = 0;
+    while start < n {
+        let Some((path, _)) = lines[start] else {
+            start += 1;
+            continue;
+        };
+        let mut end = start + 1;
+        while end < n && lines[end].is_some_and(|(p, _)| p == path) {
+            end += 1;
+        }
+        let matched = (start..end).any(|i| lines[i].is_some_and(|(_, m)| m));
+        let shown = (start..end).any(|i| lines[i].is_some_and(|(_, m)| m) && !capped.get(i));
+        if matched && !shown {
+            capped.fill(start..end);
+        }
+        start = end;
+    }
+    capped
 }
 
 /// The role of a line inside a unified diff.
@@ -1621,12 +1738,78 @@ fn consecutive(a: &Unit<'_>, b: &Unit<'_>) -> bool {
 }
 
 /// Compact-v3 rendering: three or more consecutive plain lines become one
-/// `source:a-b` block whose lines are indented by a single space.
-fn render_v3(units: &[Unit<'_>], selected: &[usize], output: &mut String) {
+/// `source:a-b` block whose lines are indented by a single space. In a
+/// compact-v4 search (`totals`), two or more consecutive plain lines of one
+/// file become `source:a-b file=PATH` and each line is shown without its
+/// `PATH:` or `PATH-` prefix; the file's first block counts the matches not
+/// shown (`more=N`).
+fn render_v3(
+    units: &[Unit<'_>],
+    selected: &[usize],
+    totals: Option<&HashMap<String, usize>>,
+    output: &mut String,
+) {
+    use std::fmt::Write;
+    fn file_of<'u>(unit: &'u Unit<'_>) -> Option<(&'u str, bool)> {
+        unit.block()?;
+        search_line(unit.line.as_deref()?)
+    }
+    let mut shown: HashMap<&str, usize> = HashMap::default();
+    if totals.is_some() {
+        for &k in selected {
+            if let Some((path, true)) = file_of(&units[k]) {
+                *shown.entry(path).or_default() += 1;
+            }
+        }
+    }
+    let mut counted: HashSet<&str> = HashSet::default();
     let mut i = 0;
     while i < selected.len() {
+        if let Some(totals) = totals
+            && let Some((path, _)) = file_of(&units[selected[i]])
+        {
+            let mut j = i;
+            while j + 1 < selected.len()
+                && consecutive(&units[selected[j]], &units[selected[j + 1]])
+                && file_of(&units[selected[j + 1]]).is_some_and(|(p, _)| p == path)
+            {
+                j += 1;
+            }
+            if j > i {
+                let (first, last) = (&units[selected[i]], &units[selected[j]]);
+                let _ = write!(
+                    output,
+                    "{}:{}-{} file={path}",
+                    first.record.source,
+                    first.block().unwrap(),
+                    last.block().unwrap()
+                );
+                let more = totals.get(path).map_or(0, |t| {
+                    t.saturating_sub(shown.get(path).copied().unwrap_or(0))
+                });
+                if more > 0 && counted.insert(path) {
+                    let _ = write!(output, " more={more}");
+                }
+                output.push('\n');
+                for &k in &selected[i..=j] {
+                    output.push(' ');
+                    output.push_str(&units[k].line.as_deref().unwrap()[path.len() + 1..]);
+                    output.push('\n');
+                }
+                i = j + 1;
+                continue;
+            }
+        }
+        // In a search, a range block never runs from one file into another.
+        let same_file = |a: usize, b: usize| {
+            totals.is_none()
+                || file_of(&units[a]).map(|(p, _)| p) == file_of(&units[b]).map(|(p, _)| p)
+        };
         let mut j = i;
-        while j + 1 < selected.len() && consecutive(&units[selected[j]], &units[selected[j + 1]]) {
+        while j + 1 < selected.len()
+            && consecutive(&units[selected[j]], &units[selected[j + 1]])
+            && same_file(selected[j], selected[j + 1])
+        {
             j += 1;
         }
         if j + 1 - i >= BLOCK_MIN_LINES {
@@ -1670,11 +1853,15 @@ fn select(units: &[Unit<'_>], available: usize) -> Vec<usize> {
 }
 
 /// Compact-v3 selection and rendering, spending what range blocks save.
-fn fill_v3(units: &[Unit<'_>], available: usize) -> (String, Vec<usize>) {
+fn fill_v3(
+    units: &[Unit<'_>],
+    available: usize,
+    totals: Option<&HashMap<String, usize>>,
+) -> (String, Vec<usize>) {
     let plan = Tiers::new(units);
     let mut selected = select_v3(units, &plan, available, available);
     let mut body = String::new();
-    render_v3(units, &selected, &mut body);
+    render_v3(units, &selected, totals, &mut body);
     // Range blocks cost less than the per-line labels selection counted.
     // Spend that slack on more evidence, re-measuring the rendered bytes
     // each time and keeping only a pass that still fits the budget.
@@ -1686,7 +1873,7 @@ fn fill_v3(units: &[Unit<'_>], available: usize) -> (String, Vec<usize>) {
         }
         let more = select_v3(units, &plan, available + extra + slack, available);
         let mut extended = String::new();
-        render_v3(units, &more, &mut extended);
+        render_v3(units, &more, totals, &mut extended);
         if more.len() <= selected.len() || extended.len() > available {
             break;
         }
@@ -1961,7 +2148,7 @@ fn view(
     version: Version,
     original: Option<&str>,
     max_units: usize,
-    reading: bool,
+    kind: Kind,
     anchoring: &mut Anchoring<'_>,
 ) -> Result<(String, usize)> {
     ensure!(
@@ -1997,8 +2184,11 @@ fn view(
             return Ok((frame.complete(&table), indices.len()));
         }
     }
+    // Matches per file of a compact-v4 search, for its `more=N` counts.
+    let totals = kind.search.then(|| search_totals(data));
+    let totals = totals.as_ref();
     anchoring.reset(available);
-    let mut units = units(data, available, version, reading, anchoring);
+    let mut units = units(data, available, version, kind, anchoring);
     if uniform && version.tables() {
         // Exact row costs include positional provenance. Fixed schema/envelope costs
         // are counted by the same serializer as the final table.
@@ -2028,10 +2218,10 @@ fn view(
         }
         // No table row fits: recompute ordinary-record costs before falling back.
         anchoring.reset(available);
-        units = self::units(data, available, version, reading, anchoring);
+        units = self::units(data, available, version, kind, anchoring);
     }
     let (body, selected) = if version.profiled() {
-        let (body, selected) = fill_v3(&units, available);
+        let (body, selected) = fill_v3(&units, available, totals);
         if selected.is_empty()
             && let Some(text) = original
             && data.records.iter().any(|r| r.value.is_some())
@@ -2053,10 +2243,8 @@ fn view(
             let mut seen = Seen::default();
             let mut units = Vec::new();
             anchoring.reset(available);
-            text_units_v3(
-                &record, available, reading, &mut seen, anchoring, &mut units,
-            );
-            let (body, selected) = fill_v3(&units, available);
+            text_units_v3(&record, available, kind, &mut seen, anchoring, &mut units);
+            let (body, selected) = fill_v3(&units, available, totals);
             let output = frame.finish(&body, units.len() - selected.len());
             ensure!(output.len() <= budget, "compact metadata exceeds budget");
             return Ok((output, selected.len()));
