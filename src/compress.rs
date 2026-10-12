@@ -1052,7 +1052,9 @@ impl Bits {
 ///
 /// `kind.file_read`: a file read ranks no line as a diagnostic; anchors still
 /// apply. `kind.search`: a file's matches beyond `SEARCH_MATCHES` are never
-/// shown (see `search_capped`).
+/// shown (see `search_capped`). `kind.similar_on_overflow`: a text that fits
+/// `limit` with its labels folds identical lines only, since the numbers that
+/// tell similar lines apart (counts, ids, statuses) are often the evidence.
 fn text_units_v3<'a>(
     record: &'a Record,
     limit: usize,
@@ -1078,6 +1080,9 @@ fn text_units_v3<'a>(
         .map(clean::line_view)
         .collect();
     let n = views.len();
+    // A one-byte indent per line and a few labels: a text this size is shown
+    // whole once identical lines fold, so nothing similar needs to.
+    let exact_only = kind.similar_on_overflow && record.text.len() + 2 * n + 64 <= limit;
     // A search shows each file's first matches before any file's others.
     let (later, first_matches) = if kind.search {
         search_ranks(&views, anchoring)
@@ -1230,10 +1235,10 @@ fn text_units_v3<'a>(
             groups.len() as u32
         } else if slot_of_first[origin] != NONE {
             slot_of_first[origin]
-        } else if matches!(role(i), Diff::File | Diff::Change | Diff::Message) {
+        } else if exact_only || matches!(role(i), Diff::File | Diff::Change | Diff::Message) {
             // Headers, changes and commit messages are evidence: they never
             // fold by template, only with the very same text (a file every
-            // commit touches).
+            // commit touches). Nor does any line of a text that fits.
             slot_of_first[i] = groups.len() as u32;
             groups.len() as u32
         } else if strong.get(i) || weak.get(i) {
@@ -1528,6 +1533,9 @@ struct Kind {
     /// A package install: only diagnostics, their context and the first and
     /// last lines are shown, never ordinary progress.
     install: bool,
+    /// Compact-v4: lines that differ only by their numbers fold together only
+    /// when the text does not fit; one that fits folds identical lines only.
+    similar_on_overflow: bool,
 }
 
 impl Kind {
@@ -1538,6 +1546,7 @@ impl Kind {
             search: version == Version::V4 && profile == Some(Profile::Search),
             diff_files: version == Version::V4,
             install: version == Version::V4 && profile == Some(Profile::Install),
+            similar_on_overflow: version == Version::V4,
         }
     }
 }

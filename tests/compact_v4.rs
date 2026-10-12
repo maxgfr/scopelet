@@ -120,6 +120,36 @@ fn the_body_matches_compact_v3_line_for_line() {
     );
 }
 
+/// Lines that differ only by their numbers are the evidence when the text
+/// fits: only identical lines fold. A text too large still folds them.
+#[test]
+fn similar_lines_fold_only_when_the_text_does_not_fit() {
+    let dir = tempfile::tempdir().unwrap();
+    let run = |failures: usize| {
+        format!(
+            "{}case runs 96 failures {failures}\n",
+            "Terminated: 15\n".repeat(90)
+        )
+    };
+    let raw = format!("{}{}", run(5), run(3));
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    assert!(text.contains("case runs 96 failures 5\n"), "{text}");
+    assert!(text.contains("case runs 96 failures 3\n"), "{text}");
+    assert!(!text.contains("similar="), "{text}");
+    assert!(text.contains(" repeat=180 "), "{text}");
+    assert_eq!(
+        first_line(&text),
+        format!("[scopelet v4 {} complete]\n", short_id(&text))
+    );
+
+    let raw: String = (0..3000)
+        .map(|i| format!("case runs {i} failures 0\n"))
+        .collect();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    assert!(text.contains(" similar=3000 "), "{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
+
 #[test]
 fn an_incomplete_scan_says_so_in_the_header_only_when_false() {
     let dir = tempfile::tempdir().unwrap();

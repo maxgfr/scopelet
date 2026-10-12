@@ -388,7 +388,10 @@ decimal numbers and measurements with a unit (`12.4s`, `42ms`, `1.2KiB`,
 contain a digit, and whitespace runs. Only lines without a diagnostic fold by
 template: diagnostics fold by their text with timestamps masked, so a flood of
 one error differing only by its time folds while counters and identifiers in
-an error stay visible. When at least 90% of a
+an error stay visible. From compact-v4, a record whose text fits the budget
+with one indent byte per line and a few labels folds identical lines only:
+the numbers that tell similar lines apart are often the evidence, and showing
+them costs no more than the budget already allows. When at least 90% of a
 record's lines (20 or more) sit in folded groups, its remaining singletons are
 promoted ahead of context, because the rare line among noise is usually the
 evidence being looked for. All of these markers are metadata, never bytes
