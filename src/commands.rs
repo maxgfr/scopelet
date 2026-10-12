@@ -14,6 +14,8 @@ pub enum Profile {
     FileRead,
     /// Service and container logs.
     Logs,
+    /// Package installs: errors, warnings and the closing summary.
+    Install,
 }
 
 impl Profile {
@@ -25,6 +27,7 @@ impl Profile {
             Self::Git => "git",
             Self::FileRead => "file-read",
             Self::Logs => "logs",
+            Self::Install => "install",
         }
     }
     /// Compact-v3 byte target for this output.
@@ -33,6 +36,7 @@ impl Profile {
             Self::Tests => 4 * 1024,
             Self::Search | Self::Git | Self::Logs => 8 * 1024,
             Self::FileRead => 16 * 1024,
+            Self::Install => 2 * 1024,
         }
     }
     /// Outputs up to this size stay byte-exact: a source file of ordinary
@@ -119,7 +123,16 @@ pub fn profile(args: &[String]) -> Option<Profile> {
         return None;
     }
     let tests = Some(Profile::Tests);
+    let install = Some(Profile::Install);
     match name {
+        "pip" | "pip3" if second == "install" => install,
+        "bundle" if second == "install" => install,
+        "brew" if matches!(second, "install" | "upgrade") => install,
+        "uv" if second == "sync"
+            || (second == "pip" && args.get(2).is_some_and(|a| a == "install")) =>
+        {
+            install
+        }
         "cargo" => match second {
             "test" | "check" | "clippy" | "build" | "nextest" | "doc" => tests,
             "fmt" if has("--check") => tests,
@@ -128,6 +141,10 @@ pub fn profile(args: &[String]) -> Option<Profile> {
         "python" | "python3" => {
             if has("-i") {
                 None
+            } else if second == "-m" && args.get(2).is_some_and(|a| a == "pip") {
+                args.get(3)
+                    .is_some_and(|a| a == "install")
+                    .then_some(Profile::Install)
             } else if second == "-m" {
                 matches!(
                     args.get(2).map(String::as_str),
@@ -150,6 +167,9 @@ pub fn profile(args: &[String]) -> Option<Profile> {
             if name == "yarn" && known_tool(&args[1..]) {
                 return tests;
             }
+            if matches!(second, "install" | "i" | "ci" | "add") {
+                return install;
+            }
             let script = if second == "run" {
                 args.get(2).map(String::as_str).unwrap_or("")
             } else {
@@ -164,6 +184,7 @@ pub fn profile(args: &[String]) -> Option<Profile> {
         "npx" | "bunx" => known_tool(&args[1..]).then_some(Profile::Tests),
         "uv" if second == "run" => known_tool(&args[2..]).then_some(Profile::Tests),
         "bun" if second == "test" => tests,
+        "bun" if matches!(second, "install" | "i" | "add") => install,
         "make" if matches!(second, "test" | "check" | "build" | "lint") => tests,
         "go" if matches!(second, "test" | "build" | "vet") => tests,
         "gradle" | "gradlew" | "mvn" | "mvnw" | "dotnet"
@@ -228,11 +249,15 @@ pub fn profile(args: &[String]) -> Option<Profile> {
                     .any(|o| a == o || a.starts_with(&format!("{o}=")))
                     || (command == "grep" && a.starts_with("-O"))
             };
-            (matches!(
-                command,
-                "diff" | "log" | "show" | "status" | "blame" | "grep"
-            ) && !rest.iter().any(unsafe_option))
-            .then_some(Profile::Git)
+            if rest.iter().any(unsafe_option) {
+                return None;
+            }
+            match command {
+                "diff" | "log" | "show" | "status" | "blame" | "grep" => Some(Profile::Git),
+                // A listing of tracked paths, folded by directory like `find`.
+                "ls-files" => Some(Profile::Search),
+                _ => None,
+            }
         }
         "docker" | "kubectl" if second == "logs" && !follows(args) => Some(Profile::Logs),
         "jq" if args.len() >= 3 => Some(Profile::Logs),
