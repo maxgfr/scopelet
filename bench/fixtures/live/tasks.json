@@ -1,0 +1,18 @@
+{
+  "fix_test": {
+    "prompt": "Run the tests with `python3 -m unittest -v test_inventory`, fix the bug in inventory.py (do not edit the tests), then run the tests again. Reply with one sentence.",
+    "check": {"type": "tests_pass", "command": ["python3", "-m", "unittest", "test_inventory"], "unchanged": ["test_inventory.py"]}
+  },
+  "find_receipt": {
+    "prompt": "logs/app.log is a service log. Find the receipt id issued for order 7139 using shell commands. Reply with the receipt id only.",
+    "check": {"type": "answer_contains", "expected": "RCPT-7139-QX"}
+  },
+  "count_failures": {
+    "prompt": "events.jsonl holds one JSON event per line. How many events have suite \"billing\" and status \"failed\"? Compute it with shell commands. Reply with the number only.",
+    "check": {"type": "answer_number", "expected": 41}
+  },
+  "review_diff": {
+    "prompt": "Review the last commit with `git show HEAD`. Which source file and line changed program behavior? Reply as path:line only.",
+    "check": {"type": "answer_contains", "expected": "src/auth.py"}
+  }
+}

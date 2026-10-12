@@ -89,3 +89,44 @@ Timings are descriptive: other activity on the machine was not controlled, and
 only the medians are quoted. `tests/content_gate.rs` reads
 `bench/results/content.json`, so a publish that changes a fixture fails the
 build until the Rust mirror is updated too.
+
+## Live sessions: does a session cost fewer tokens?
+
+`live.py` is the only benchmark that calls a model, and it refuses to run
+without `--live`: each session is a real, billed `claude -p` run. It answers
+the question the byte probes cannot: with the same task, does a session with
+Scopelet read fewer tokens or make fewer calls, and does it still get the task
+right?
+
+Four synthetic tasks live in `fixtures/live/`: fix an off-by-one in a Python
+module whose 302-test suite prints a long report, find one receipt id in a
+20,000-line log, count failed events of one suite in a 5,000-line JSONL file,
+and name the source line that changed behavior in a commit that also rewrites
+a large `package-lock.json`. Each task is checked on the result, not on the
+wording: the tests must pass with the test file untouched, the answer must
+contain the receipt id, the exact count or the source path.
+
+Each arm runs every task in a fresh copy of its repository with its own
+temporary `CLAUDE_CONFIG_DIR` and Scopelet config and cache. `off` installs
+nothing; any other arm installs its binary with `scopelet install --agent
+claude` and pins its compact version. Repetitions are paired: every round runs
+every arm on every task, and the arm order rotates between rounds. `HOME` is
+kept, because Claude Code's OAuth credentials live in the login keychain;
+`--isolate-home` also replaces it when an API key is configured instead.
+
+```sh
+cargo build --release --locked
+python3 bench/live.py --live --runs 3 --arm off \
+  --arm v3=/path/to/scopelet-0.7.2@3 --arm v4=target/release/scopelet@4
+```
+
+Each session records input, cache-creation, cache-read and output tokens,
+turns, tool calls by name and cost from the stream-json result; a figure the
+host did not report is `null`, never zero. A session that fails, times out or
+answers wrong stays in the denominator. The report goes to
+`bench/results/live-<UTC time>.json` with every record and per-task and
+overall medians. `publish.py` replaces `bench/results/` on a release, live
+reports included: a report describes the binaries it names, recorded by hash.
+`test_live.py` checks the parsing, the checks, the fixtures and the `--live`
+guard from recorded transcripts, without calling a model.
+
