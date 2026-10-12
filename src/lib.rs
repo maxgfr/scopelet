@@ -15,6 +15,7 @@ pub mod query;
 pub mod recovery;
 pub mod render;
 mod search;
+pub mod session;
 pub mod shell;
 pub mod sources;
 pub mod store;
