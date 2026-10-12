@@ -98,11 +98,50 @@ fn known_tool(args: &[String]) -> bool {
     let second = args.get(1).map(String::as_str).unwrap_or("");
     match args.first().map(|a| name(a)) {
         Some("jest" | "tsc" | "eslint" | "pytest" | "mypy" | "ruff") => true,
+        // `uv run python -m pytest`: the module, as for a bare `python`.
+        Some("python" | "python3") => {
+            second == "-m"
+                && matches!(
+                    args.get(2).map(String::as_str),
+                    Some("pytest" | "unittest" | "mypy")
+                )
+        }
         Some("vitest") => second == "run",
         Some("prettier") => args.iter().any(|a| a == "--check"),
         Some("playwright") => second == "test",
         _ => false,
     }
+}
+
+/// The command `uv run` runs: its arguments after uv's own options
+/// (`--no-project`, `--with PKG`, `--python 3.12`, ...).
+fn uv_run_tool(args: &[String]) -> &[String] {
+    const VALUED: &[&str] = &[
+        "--with",
+        "--with-editable",
+        "--with-requirements",
+        "--python",
+        "-p",
+        "--project",
+        "--directory",
+        "--extra",
+        "--group",
+        "--package",
+        "--env-file",
+        "--index",
+        "--default-index",
+    ];
+    let mut i = 0;
+    while let Some(arg) = args.get(i) {
+        if arg == "--" {
+            return &args[i + 1..];
+        }
+        if !arg.starts_with('-') {
+            break;
+        }
+        i += if VALUED.contains(&arg.as_str()) { 2 } else { 1 };
+    }
+    &args[i.min(args.len())..]
 }
 
 /// `-f`/`-F` (alone or in a cluster such as `-fn5`) or `--follow`: the
@@ -182,7 +221,7 @@ pub fn profile(args: &[String]) -> Option<Profile> {
             known_tool(&args[2..]).then_some(Profile::Tests)
         }
         "npx" | "bunx" => known_tool(&args[1..]).then_some(Profile::Tests),
-        "uv" if second == "run" => known_tool(&args[2..]).then_some(Profile::Tests),
+        "uv" if second == "run" => known_tool(uv_run_tool(&args[2..])).then_some(Profile::Tests),
         "bun" if second == "test" => tests,
         "bun" if matches!(second, "install" | "i" | "add") => install,
         "make" if matches!(second, "test" | "check" | "build" | "lint") => tests,
