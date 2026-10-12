@@ -70,11 +70,14 @@ fn timeout_allows_term_handler_then_returns_124() {
     let marker = dir.path().join("term-received");
     // A shell installs its trap within milliseconds. An interpreter could
     // still be starting when the timeout fires on a loaded machine, and die
-    // from the signal before its handler existed.
+    // from the signal before its handler existed. The builtin `wait` returns
+    // as soon as the trapped signal arrives; a `sleep` loop could start a new
+    // `sleep` the group signal missed, and the shell would wait for it past
+    // the grace period.
     let mut command = Command::new("sh");
     command.args([
         "-c",
-        "trap 'printf term > \"$0\"; exit 0' TERM; while :; do sleep 1; done",
+        "trap 'printf term > \"$0\"; exit 0' TERM; sleep 30 & wait",
         marker.to_str().unwrap(),
     ]);
     let start = Instant::now();
