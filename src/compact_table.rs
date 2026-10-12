@@ -155,7 +155,9 @@ pub(crate) struct Projection {
     pub text: String,
     pub shown: usize,
     pub total: usize,
-    pub abridged: bool,
+    /// Units shown in part: every row shown when columns were left out,
+    /// and the envelope when its nested fields were.
+    pub abridged: usize,
 }
 
 /// Compact-v4 view of minified JSON too large to show whole: objects (a
@@ -178,10 +180,10 @@ pub(crate) fn projection(
         [record] => {
             let value = record.value.as_ref()?;
             let (key, items) = dominant(value)?;
-            let rest = value
+            let rest: serde_json::Map<String, Value> = value
                 .as_object()?
                 .iter()
-                .filter(|(k, v)| *k != key && !v.is_object() && !v.is_array())
+                .filter(|(k, _)| *k != key)
                 .map(|(k, v)| (k.clone(), v.clone()))
                 .collect();
             (
@@ -202,7 +204,13 @@ pub(crate) fn projection(
     };
     let objects: Vec<&serde_json::Map<String, Value>> =
         items.iter().map(|v| v.as_object()).collect::<Option<_>>()?;
-    let mut keys: Vec<&str> = objects[0].keys().map(String::as_str).collect();
+    // Every field of any object: one that some objects lack is named, never
+    // shown as a gap or a null.
+    let every: std::collections::BTreeSet<&str> = objects
+        .iter()
+        .flat_map(|o| o.keys().map(String::as_str))
+        .collect();
+    let mut keys: Vec<&str> = every.iter().copied().collect();
     keys.retain(|k| objects.iter().all(|o| o.contains_key(*k)));
     let short = |v: &Value| match v {
         Value::String(s) => s.len() <= PROJECTED_STRING,
@@ -231,12 +239,8 @@ pub(crate) fn projection(
         omitted.extend(links.iter().filter(|k| **k != keep));
         omitted.sort_unstable();
     }
-    omitted.extend(
-        objects[0]
-            .keys()
-            .map(String::as_str)
-            .filter(|k| !keys.contains(k)),
-    );
+    omitted.extend(every.iter().copied().filter(|k| !keys.contains(k)));
+    omitted.sort_unstable();
     let (columns, fixed): (Vec<&str>, Vec<&str>) = kept
         .iter()
         .partition(|k| objects.iter().any(|o| o[**k] != objects[0][**k]));
@@ -252,9 +256,27 @@ pub(crate) fn projection(
         omitted_columns: &'a [&'a str],
         rows: Vec<Vec<&'a Value>>,
     }
+    // The envelope keeps its scalars; its nested fields are named.
     let mut head = String::new();
+    let mut envelope_cut = false;
     if let Some(rest) = &envelope {
-        head = format!("envelope {}\n", serde_json::to_string(rest).ok()?);
+        let (scalars, nested): (
+            serde_json::Map<String, Value>,
+            serde_json::Map<String, Value>,
+        ) = rest
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .partition(|(_, v)| !v.is_object() && !v.is_array());
+        head = format!("envelope {}", serde_json::to_string(&scalars).ok()?);
+        if !nested.is_empty() {
+            envelope_cut = true;
+            let names: Vec<&String> = nested.keys().collect();
+            head.push_str(&format!(
+                " omitted_fields={}",
+                serde_json::to_string(&names).ok()?
+            ));
+        }
+        head.push('\n');
     }
     let label = match &pointer {
         Some(pointer) => format!("table=/{pointer} "),
@@ -293,7 +315,7 @@ pub(crate) fn projection(
     (text.len() <= limit).then_some(Projection {
         shown: table.rows.len(),
         total: objects.len(),
-        abridged: !omitted.is_empty(),
+        abridged: if omitted.is_empty() { 0 } else { chosen.len() } + usize::from(envelope_cut),
         text,
     })
 }

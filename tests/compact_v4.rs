@@ -1164,3 +1164,73 @@ fn a_template_fold_makes_the_header_partial() {
     assert!(!first_line(&text).ends_with(" complete]\n"), "{text}");
     assert!(first_line(&text).contains(" abridged="), "{text}");
 }
+
+/// Audit finding: a field that only some objects carry, and an envelope's
+/// nested field, are named rather than silently left out, and the header is
+/// not complete.
+#[test]
+fn json_projections_name_every_field_they_leave_out() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut rows: Vec<serde_json::Value> = (0..40)
+        .map(|i| serde_json::json!({"id": i, "name": format!("n{}", letters(i)), "blob": "z".repeat(1200)}))
+        .collect();
+    rows[0] = serde_json::json!({"id": 0, "name": "alpha", "blob": "z".repeat(1200)});
+    rows[1]["secret_payload"] = serde_json::json!("X".repeat(1500));
+    let raw = serde_json::to_string(&rows).unwrap();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    let table = json_after(&text, "table ");
+    let omitted = table["omitted_columns"].as_array().unwrap();
+    assert!(
+        omitted.contains(&serde_json::json!("secret_payload")),
+        "{text}"
+    );
+    assert!(omitted.contains(&serde_json::json!("blob")), "{text}");
+    assert!(!first_line(&text).ends_with(" complete]\n"), "{text}");
+
+    let search = serde_json::json!({"total_count": 40, "meta": {"page": 1}, "items": rows});
+    let raw = search.to_string();
+    let text = compress_v4(dir.path(), raw.as_bytes(), 4096);
+    let envelope = text.lines().find(|l| l.starts_with("envelope ")).unwrap();
+    assert!(
+        envelope.ends_with(r#" omitted_fields=["meta"]"#),
+        "{envelope}"
+    );
+    assert!(envelope.contains(r#""total_count":40"#), "{envelope}");
+}
+
+/// Audit finding: a failure line too long for a small budget is left out
+/// instead of making the view fail back to the raw output.
+#[test]
+fn failures_never_starve_a_small_budget() {
+    let dir = tempfile::tempdir().unwrap();
+    let long = |k: usize| {
+        format!(
+            "tests::{}_{}",
+            "very_long_module_name_é".repeat(5),
+            letters(k)
+        )
+    };
+    let mut raw = format!("running 600 tests\n{}failures:\n\n", passes(600));
+    for k in 0..6 {
+        raw.push_str(&format!(
+            "---- {0} stdout ----\nthread '{0}' panicked at src/lib.rs:{1}:5:\nboom\n\n",
+            long(k),
+            10 + k
+        ));
+    }
+    raw.push_str("test result: FAILED. 594 passed; 6 failed\n");
+    let output = compress::automatic_profile(
+        raw.as_bytes(),
+        Some(dir.path().into()),
+        Some(Profile::Tests),
+        Some(1024),
+        Version::V4,
+    )
+    .unwrap();
+    assert!(output.len() <= 1024, "{} bytes", output.len());
+    assert!(output.starts_with(b"[scopelet v4 "));
+    let text = String::from_utf8(output.into_owned()).unwrap();
+    assert_eq!(action_line(&text), None, "{text}");
+    // At the profile's own budget the line fits and is shown.
+    assert!(action_line(&test_view(dir.path(), &raw, Version::V4)).is_some());
+}
