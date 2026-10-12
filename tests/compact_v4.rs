@@ -446,3 +446,109 @@ fn failures_beyond_five_are_counted_and_unknown_formats_get_no_line() {
     .unwrap();
     assert!(!String::from_utf8_lossy(&search).contains("failed=8"));
 }
+
+/// `grep -n` output: `path:N:text` lines, each with a distinct word so no
+/// template folds them, preceded by a distinct padding listing.
+fn grep_output(files: &[(&str, usize)]) -> String {
+    let words: Vec<String> = distinct_lines(2000)
+        .lines()
+        .map(|l| l.split(' ').next().unwrap().to_owned())
+        .collect();
+    let mut out = String::new();
+    let mut w = 0;
+    for (path, count) in files {
+        for k in 0..*count {
+            out.push_str(&format!(
+                "{path}:{}:    let {} = 1;\n",
+                10 + k * 7,
+                words[w]
+            ));
+            w += 1;
+        }
+    }
+    out
+}
+
+/// Consecutive matches of one file are shown under one `file=` header with
+/// their own `N:text`; a file shows at most five matches (first, last, then
+/// anchored, then earliest) and its first block counts the rest.
+#[test]
+fn search_results_are_grouped_by_file_with_five_matches_each() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw = grep_output(&[
+        ("src/alpha.rs", 12),
+        ("src/beta.rs", 2),
+        ("src/gamma.rs", 1),
+        ("src/delta.rs", 140),
+    ]);
+    let view = |anchors: &[&str]| {
+        anchored(
+            dir.path(),
+            &raw,
+            Some(Profile::Search),
+            Version::V4,
+            anchors,
+        )
+    };
+    let text = view(&[]);
+    assert!(
+        text.contains("input:1-4 file=src/alpha.rs more=7\n 10:    let a = 1;\n 17:    let b = 1;\n 24:    let c = 1;\n 31:    let d = 1;\n"),
+        "{text}"
+    );
+    assert!(
+        text.contains("input:12 src/alpha.rs:87:    let bb = 1;\n"),
+        "{text}"
+    );
+    assert!(!text.contains("let i = 1;"), "{text}");
+    assert!(
+        text.contains("input:13-14 file=src/beta.rs\n 10:    let bc = 1;\n 17:    let bd = 1;\n"),
+        "{text}"
+    );
+    assert!(
+        text.contains("input:15 src/gamma.rs:10:    let be = 1;\n"),
+        "{text}"
+    );
+    assert!(text.contains("file=src/delta.rs more=135\n"), "{text}");
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+
+    // An anchored match takes a place among the five.
+    let focused = view(&["let i "]);
+    assert!(
+        focused.contains("input:9 src/alpha.rs:66:    let i = 1;\n"),
+        "{focused}"
+    );
+    assert!(focused.contains("file=src/alpha.rs more=7\n"), "{focused}");
+    assert_eq!(short_id(&focused), short_id(&text));
+
+    // Compact-v3 keeps its line labels and shows every match it can.
+    let v3 = anchored(dir.path(), &raw, Some(Profile::Search), Version::V3, &[]);
+    assert!(!v3.contains("file="), "{v3}");
+    assert!(v3.contains("src/alpha.rs:66:    let i = 1;"), "{v3}");
+}
+
+/// Context lines (`path-N-text`) join their file's block; a context line
+/// whose run holds no shown match is not shown either.
+#[test]
+fn search_context_lines_stay_with_their_matches() {
+    let dir = tempfile::tempdir().unwrap();
+    let words: Vec<String> = distinct_lines(3000)
+        .lines()
+        .map(|l| l.split(' ').next().unwrap().to_owned())
+        .collect();
+    let mut raw = String::new();
+    for f in 0..200 {
+        let path = format!("src/{}.rs", words[f]);
+        raw.push_str(&format!(
+            "{path}-9-    // {} before\n{path}:10:    call_{}();\n{path}-11-    // {} after\n--\n",
+            words[1000 + f],
+            words[2000 + f],
+            words[1500 + f]
+        ));
+    }
+    let text = anchored(dir.path(), &raw, Some(Profile::Search), Version::V4, &[]);
+    assert!(
+        text.contains("input:1-3 file=src/a.rs\n 9-    // baaa before\n 10:    call_caaa();\n 11-    // bfaa after\n"),
+        "{text}"
+    );
+    assert_eq!(original(dir.path(), &text), raw.as_bytes());
+}
