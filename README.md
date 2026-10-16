@@ -14,6 +14,7 @@
 <p align="center">
   <a href="#see-it">See it</a> ·
   <a href="#why-you-want-this">Why</a> ·
+  <a href="#how-it-works">How</a> ·
   <a href="#install">Install</a> ·
   <a href="#the-numbers">Numbers</a> ·
   <a href="#nothing-is-lost">Recovery</a> ·
@@ -123,6 +124,29 @@ need to.
 What it is not: it does not call another model to summarize, it does not
 intercept API traffic, it does not rewrite your conversation history, and it
 does not touch small outputs at all.
+
+## How it works
+
+```mermaid
+flowchart TD
+    A["A command prints its output<br/>Claude Code and OpenCode hooks, Codex through run --auto"] --> B{"Small?<br/>up to 2 KiB, 16 KiB for a file read"}
+    B -->|yes| M["The model reads it unchanged"]
+    B -->|no| C["Profile from the command<br/>tests, search, git, logs, file read, install"]
+    C --> D["Bounded view, within the profile's budget<br/>terminal noise removed, repeats counted,<br/>diagnostics and their locations first"]
+    D --> E{"Saves at least 20%<br/>and 512 bytes?"}
+    E -->|no| M
+    E -->|yes| F[("Local store<br/>exact original bytes and artifact,<br/>named by content hash")]
+    E -->|yes| V["What the model reads<br/>[scopelet v5 ID omitted=N; gaps are not absence]<br/>then the lines that matter"]
+    V --> G["The model works on the view"]
+    G -.->|"expand ID --find TEXT"| F
+    F -.->|"the exact lines, never a summary"| G
+```
+
+Nothing leaves the machine and no other model is called. The view is the only
+thing that changes: the original is kept byte for byte, every gap is counted
+in the header, and the session guidance tells the agent how to read any of it
+back. In Claude Code, an output the conversation has already seen becomes a
+one-line reference to it.
 
 ## Install
 
