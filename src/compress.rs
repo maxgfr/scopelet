@@ -81,6 +81,14 @@ static WEAK: LazyLock<regex::Regex> = LazyLock::new(|| {
 static FRAME: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r#"^(?-u:\s+)at .*\(.*:[0-9]+:[0-9]+\)|^(?-u:\s+)File ".*", line [0-9]+|^(?-u:\s+)at [\w$.<>/-]+\([^()]*\)(?-u:\s*)$|\.go:[0-9]+ \+0x[0-9a-f]+|^(?-u:\s*)--> \S+:[0-9]+:[0-9]+"#).unwrap()
 });
+/// Definition lines of source code and Markdown headings: what a large file
+/// read keeps as its outline in compact-v5 (`outline`). Keywords and
+/// indentation are ASCII, like the other vocabularies.
+static OUTLINE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"^(?-u:\s*)(?:pub[\s(]|export\s|(?:async\s+)?(?:def|fn|function)[\s*(]|(?:class|struct|enum|trait|interface|type)\s|impl[\s<]|func[\s(]|@[A-Za-z_])|^#{1,6}\s").unwrap()
+});
+/// A file read larger than this shows its outline first (compact-v5).
+const OUTLINE_MIN_BYTES: usize = 16 * 1024;
 /// A file extension at the end of a token: `.rs`, `.py`, `.java`.
 static EXTENSION: LazyLock<regex::Regex> =
     LazyLock::new(|| regex::Regex::new(r"\.[A-Za-z][A-Za-z0-9]{0,4}$").unwrap());
@@ -157,11 +165,12 @@ impl Version {
     }
 }
 
-/// How compact-v5 writes what compact-v4 selects. Each part can be turned off
-/// alone, so a probe can measure what it saves (`SCOPELET_V5_GRAMMAR`, a
+/// What compact-v5 changes from compact-v4. Each part can be turned off alone,
+/// so a probe can measure what it saves (`SCOPELET_V5_GRAMMAR`, a
 /// comma-separated list of the parts to keep; all of them when unset).
-/// Selection never depends on it: a v5 view shows exactly the units the v4
-/// view of the same input shows.
+/// `labels`, `header` and `tables` only write v4's selection in fewer bytes:
+/// with only them, a v5 view shows exactly the units the v4 view of the same
+/// input shows. `artifacts` and `outline` change the selection.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct Grammar {
     /// `labels`: a view of one `input` text drops `input:` from its labels.
@@ -171,6 +180,12 @@ struct Grammar {
     header: bool,
     /// `tables`: a table of scalar cells as a header and CSV rows.
     tables: bool,
+    /// `artifacts`: a listing shows each build or dependency directory
+    /// (`node_modules`, `target`, ...) as one counted line, whatever its size.
+    artifacts: bool,
+    /// `outline`: a large file read ranks its definition lines above the
+    /// head and tail padding.
+    outline: bool,
 }
 
 static V5_GRAMMAR: LazyLock<Grammar> = LazyLock::new(|| {
@@ -184,6 +199,8 @@ static V5_GRAMMAR: LazyLock<Grammar> = LazyLock::new(|| {
         labels: has("labels"),
         header: has("header"),
         tables: has("tables"),
+        artifacts: has("artifacts"),
+        outline: has("outline"),
     }
 });
 
@@ -332,8 +349,8 @@ impl<'a> Anchoring<'a> {
         };
         if found {
             // Only a unit ranked below a diagnostic's tier was lifted by
-            // the anchor alone.
-            unit.anchored = unit.priority < 2;
+            // the anchor alone; an outline line stays no outcome.
+            unit.anchored |= unit.priority < 2;
             unit.priority = 3;
             self.left -= unit.size;
             self.promoted += 1;
@@ -863,7 +880,8 @@ struct Unit<'a> {
     /// Order inside its tier when nonzero: higher first (a compact-v4 diff's
     /// files by change density). Zero keeps head and tail alternation.
     weight: u16,
-    /// Ranked up by a relevance anchor: relevant, not a diagnostic.
+    /// Ranked up by a relevance anchor or as a large file's outline (compact-v5):
+    /// relevant, not a diagnostic.
     anchored: bool,
 }
 
@@ -1212,6 +1230,8 @@ impl Bits {
 /// shown (see `search_capped`). `kind.similar_on_overflow`: a text that fits
 /// `limit` with its labels folds identical lines only, since the numbers that
 /// tell similar lines apart (counts, ids, statuses) are often the evidence.
+/// `kind.outline`: a file read over `OUTLINE_MIN_BYTES` ranks its definition
+/// lines with a failure's detail, and they fold with identical text only.
 fn text_units_v3<'a>(
     record: &'a Record,
     limit: usize,
@@ -1270,12 +1290,17 @@ fn text_units_v3<'a>(
             .collect()
     };
     let (mut strong, mut weak) = (Bits::new(n), Bits::new(n));
+    let outlined = reading && kind.outline && record.text.len() > OUTLINE_MIN_BYTES;
+    let mut outline = Bits::new(if outlined { n } else { 0 });
     // Trivial lines (`}`, a blank line, a `|` gutter) carry no evidence of
     // their own: they stay where they are, between the lines they separate.
     let mut trivial = Bits::new(n);
     for i in 0..n {
         let origin = first[i] as usize;
         if origin == i {
+            if outlined && OUTLINE.is_match(&views[i]) {
+                outline.set(i);
+            }
             if !reading && diagnostic(&STRONG, &views[i]) {
                 strong.set(i);
             } else if !reading && diagnostic(&WEAK, &views[i]) {
@@ -1284,6 +1309,9 @@ fn text_units_v3<'a>(
                 trivial.set(i);
             }
         } else {
+            if outlined && outline.get(origin) {
+                outline.set(i);
+            }
             if strong.get(origin) {
                 strong.set(i);
             }
@@ -1405,6 +1433,7 @@ fn text_units_v3<'a>(
             slot_of_first[origin]
         } else if exact_only
             || results.get(i)
+            || (outlined && outline.get(i))
             || matches!(role(i), Diff::File | Diff::Change | Diff::Message)
         {
             // Headers, changes and commit messages are evidence: they never
@@ -1559,6 +1588,9 @@ fn text_units_v3<'a>(
             if count == 1 { 2 } else { 1 }
         } else if role(i) == Diff::Meta {
             0
+        } else if outlined && outline.get(i) {
+            // A large file's structure outranks its head and tail padding.
+            2
         } else if glued.get(i) {
             trivial_units.push((units.len(), first_line, last));
             TRIVIAL
@@ -1605,6 +1637,9 @@ fn text_units_v3<'a>(
             line
         };
         let mut unit = Unit::text_v3(record, label, view, raw, priority, limit);
+        // An outline line is structure, not an outcome: it does not cap the
+        // ordinary lines around it.
+        unit.anchored = outlined && outline.get(i);
         if let Some(section) = sections.iter().find(|s| s.generated && s.header == i) {
             unit = Unit::text(
                 record,
@@ -1689,6 +1724,8 @@ fn text_units_v3<'a>(
                 (Some(p), None) | (None, Some(p)) => p,
                 (None, None) => 0,
             };
+            // Nor does a blank line or brace beside an outline line.
+            units[unit].anchored |= outlined;
         }
         carried(&mut carry, priority, line);
     }
@@ -1715,6 +1752,10 @@ struct Kind {
     /// Compact-v5: a view whose every record is the one `input` text writes
     /// its labels without `input:`.
     bare: bool,
+    /// Compact-v5 listings: artifact directories fold to one counted line.
+    artifacts: bool,
+    /// Compact-v5 file reads: definition lines rank above padding.
+    outline: bool,
 }
 
 impl Kind {
@@ -1728,6 +1769,8 @@ impl Kind {
             similar_on_overflow: version >= Version::V4,
             tests: version >= Version::V4 && profile == Some(Profile::Tests),
             bare: Grammar::of(version).labels,
+            artifacts: Grammar::of(version).artifacts && profile == Some(Profile::Search),
+            outline: Grammar::of(version).outline,
         }
     }
 }
@@ -1857,22 +1900,88 @@ fn extension(name: &str) -> &str {
 /// listing or no directory folds.
 /// `bare` (compact-v5) writes the same lines without `source:`; where the
 /// budget cuts them is measured with it.
-fn listing_view(record: &Record, available: usize, bare: bool) -> Option<(String, usize, usize)> {
+/// `fold`: large directories are summarized (the text does not fit).
+/// `artifacts` (compact-v5): every entry under an artifact directory, and the
+/// lines naming that directory, become one `DIR/ files=N artifacts omitted`
+/// line where its first one was, whether or not the text fits.
+fn listing_view(
+    record: &Record,
+    available: usize,
+    bare: bool,
+    fold: bool,
+    artifacts: bool,
+) -> Option<(String, usize, usize)> {
     use std::fmt::Write;
+    if !fold
+        && !(artifacts
+            && ARTIFACT_DIRECTORIES
+                .iter()
+                .chain([&ARTIFACT_SUFFIX])
+                .any(|d| record.text.contains(d)))
+    {
+        return None;
+    }
     let views: Vec<Cow<'_, str>> = record
         .text
         .split_inclusive('\n')
         .map(clean::line_view)
         .collect();
     let lines = parse_listing(&views)?;
+    let mut hidden = Bits::new(lines.len());
+    // Artifact directories: their summary line, by the index it replaces.
+    let mut standalone: HashMap<usize, String> = HashMap::default();
+    if artifacts {
+        // Per directory: its files, and every line it covers.
+        let mut roots: HashMap<String, (usize, Vec<usize>)> = HashMap::default();
+        for (i, line) in lines.iter().enumerate() {
+            let (root, file) = match &line.directory {
+                Some(directory) => match artifact_root(directory) {
+                    Some(root) => (root.to_owned(), true),
+                    None if artifact_directory(line.name.trim_end_matches('/')) => (
+                        format!("{directory}{}/", line.name.trim_end_matches('/')),
+                        false,
+                    ),
+                    None => continue,
+                },
+                // An `ls -R` header names the directory its entries follow.
+                None => match views[i].trim_end_matches(['\n', '\r']).strip_suffix(':') {
+                    Some(header) => {
+                        match artifact_root(&format!("{}/", header.trim_end_matches('/'))) {
+                            Some(root) => (root.to_owned(), false),
+                            None => continue,
+                        }
+                    }
+                    None => continue,
+                },
+            };
+            let (files, covered) = roots.entry(root).or_default();
+            *files += usize::from(file);
+            covered.push(i);
+        }
+        for (root, (files, covered)) in roots {
+            // A directory listed without its contents has nothing to fold.
+            if files == 0 {
+                continue;
+            }
+            for &i in &covered {
+                hidden.set(i);
+            }
+            standalone.insert(
+                covered[0],
+                format!("{root} files={files} artifacts omitted\n"),
+            );
+        }
+    }
     let mut entries: HashMap<&str, Vec<usize>> = HashMap::default();
     for (i, line) in lines.iter().enumerate() {
-        if let Some(directory) = &line.directory {
+        if let Some(directory) = &line.directory
+            && fold
+            && !hidden.get(i)
+        {
             entries.entry(directory.as_str()).or_default().push(i);
         }
     }
     let mut summary: HashMap<usize, String> = HashMap::default();
-    let mut hidden = Bits::new(lines.len());
     for (directory, members) in &entries {
         if members.len() <= LISTING_DIRECTORY {
             continue;
@@ -1900,7 +2009,7 @@ fn listing_view(record: &Record, available: usize, bare: bool) -> Option<(String
             hidden.set(i);
         }
     }
-    if summary.is_empty() {
+    if summary.is_empty() && standalone.is_empty() {
         return None;
     }
     // Shown lines in order, cut where the budget ends: a summary always
@@ -1913,6 +2022,13 @@ fn listing_view(record: &Record, available: usize, bare: bool) -> Option<(String
     let n = lines.len();
     while i < n {
         if hidden.get(i) {
+            if let Some(line) = standalone.get(&i) {
+                if measured + line.len() > available {
+                    break;
+                }
+                measured += line.len();
+                body.push_str(line);
+            }
             i += 1;
             continue;
         }
@@ -1969,7 +2085,43 @@ fn listing_view(record: &Record, available: usize, bare: bool) -> Option<(String
         shown += j + 1 - i;
         i = j + 1;
     }
-    (shown > 0).then(|| (body, shown, n - shown))
+    (!body.is_empty()).then(|| (body, shown, n - shown))
+}
+
+/// Build output, dependencies and caches a compact-v5 listing folds.
+const ARTIFACT_DIRECTORIES: &[&str] = &[
+    "node_modules",
+    "target",
+    "__pycache__",
+    ".git",
+    "dist",
+    "build",
+    ".venv",
+    "venv",
+    ".next",
+    "coverage",
+    ".pytest_cache",
+    ".mypy_cache",
+];
+/// Python's package metadata directories, `NAME.egg-info`.
+const ARTIFACT_SUFFIX: &str = ".egg-info";
+
+fn artifact_directory(name: &str) -> bool {
+    ARTIFACT_DIRECTORIES.contains(&name)
+        || name.len() > ARTIFACT_SUFFIX.len() && name.ends_with(ARTIFACT_SUFFIX)
+}
+
+/// The artifact directory `directory` (ending in `/`) lies in: its path up to
+/// and including the first artifact component.
+fn artifact_root(directory: &str) -> Option<&str> {
+    let mut end = 0;
+    for component in directory.split_inclusive('/') {
+        end += component.len();
+        if artifact_directory(component.trim_end_matches('/')) {
+            return Some(&directory[..end]);
+        }
+    }
+    None
 }
 
 /// Matches of one file a compact-v4 search shows before other files' later
@@ -2918,12 +3070,15 @@ fn view(
     // Matches per file of a compact-v4 search, for its `more=N` counts.
     let totals = kind.search.then(|| search_totals(data));
     let totals = totals.as_ref();
-    // A path listing too long to show whole folds its large directories.
+    // A path listing too long to show whole folds its large directories;
+    // in compact-v5 any listing folds its artifact directories.
     if kind.search
         && let [record] = data.records.as_slice()
         && record.value.is_none()
-        && record.text.len() > available
-        && let Some((body, shown, omitted)) = listing_view(record, available, bare)
+        && let fold = record.text.len() > available
+        && (fold || kind.artifacts)
+        && let Some((body, shown, omitted)) =
+            listing_view(record, available, bare, fold, kind.artifacts)
     {
         let output = frame.finish(&body, omitted);
         ensure!(output.len() <= budget, "compact metadata exceeds budget");

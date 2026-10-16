@@ -2,9 +2,10 @@
 """Token probe: what each compact grammar costs in real Claude tokens.
 
 For every content fixture (`content.py`: the synthetic cases and the real
-outputs of `fixtures/`) and a cargo run over twelve test binaries, this compresses the output as the hooks would
+outputs of `fixtures/`), a cargo run over twelve test binaries, a listing with
+`node_modules` and a large source file, this compresses the output as the hooks would
 (`scopelet compress --profile`) in compact-v4, in compact-v5 and in v5 with
-each part of its grammar alone (`SCOPELET_V5_GRAMMAR`), then counts the raw
+each of its parts alone (`SCOPELET_V5_GRAMMAR`), then counts the raw
 output and every view with `POST /v1/messages/count_tokens`, the exact and
 free count of the model's own tokenizer. A count is net: the tokens of one
 user message holding the text, less the frame around it, measured as a
@@ -32,8 +33,8 @@ import content
 
 HERE = Path(__file__).resolve().parent
 MODELS = ['claude-opus-5-5', 'claude-haiku-5-5']
-# The parts of the v5 grammar `SCOPELET_V5_GRAMMAR` can keep alone.
-PARTS = ['labels', 'header', 'tables']
+# The parts of v5 `SCOPELET_V5_GRAMMAR` can keep alone.
+PARTS = ['labels', 'header', 'tables', 'artifacts', 'outline']
 ENDPOINT = 'https://api.anthropic.com/v1/messages/count_tokens'
 # The smallest message the API accepts: its count less one is the frame.
 BASELINE = '.'
@@ -53,12 +54,40 @@ def workspace_run():
     return ''.join(parts).encode(), ['totals runs=12 passed=359 failed=1 ignored=0']
 
 
+def word(i):
+    return ''.join(chr(ord('a') + int(c)) for c in str(i))
+
+
+def artifact_listing():
+    """`find .` in a project with dependencies and caches: what `artifacts` folds."""
+    lines = ['.', './src', './node_modules']
+    for i in range(120):
+        lines.append(f'./src/module_{word(i)}.py')
+        if i % 2 == 0:
+            lines += [f'./node_modules/pkg-{word(i)}/index.js', f'./node_modules/pkg-{word(i)}/package.json']
+    lines += [f'./src/__pycache__/module_{word(i)}.cpython-312.pyc' for i in range(40)]
+    return ('\n'.join(lines) + '\n').encode(), ['./src/module_a.py', './src/module_bbj.py']
+
+
+def large_source():
+    """A 48 KiB Python module read whole: what `outline` reorders."""
+    parts = ['"""Request handlers."""\n\n\nclass Router:\n    pass\n\n\n']
+    for i in range(90):
+        parts.append(f'def handler_{word(i)}(request, context):\n')
+        parts += [f'    value_{k} = request.get("{word(i * 7 + k)}") or context.default_{k}\n' for k in range(9)]
+        parts.append('    return value_0\n\n\n')
+    return ''.join(parts).encode(), ['class Router:', 'def handler_a(request, context):']
+
+
 def cases():
-    """The content fixtures, and the workspace run with its profile."""
-    return {**content.fixtures(), 'cargo_workspace': workspace_run()}
+    """The content fixtures, the workspace run, a listing with artifacts and a
+    large source file, with their profiles."""
+    return {**content.fixtures(), 'cargo_workspace': workspace_run(),
+            'listing_artifacts': artifact_listing(), 'large_source': large_source()}
 
 
-PROFILES = {'cargo_workspace': ['--profile', 'tests']}
+PROFILES = {'cargo_workspace': ['--profile', 'tests'], 'listing_artifacts': ['--profile', 'search'],
+            'large_source': ['--profile', 'file-read']}
 
 
 def arms():

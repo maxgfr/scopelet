@@ -218,8 +218,12 @@ any folded, omitted or abridged line in full.
 
 ## Compact-v5 (opt-in)
 
-`--compact-version 5` or `SCOPELET_COMPACT_VERSION=5` shows exactly what v4
-shows, in about 6% fewer tokens. The header has a 12-character ID and no
+`--compact-version 5` or `SCOPELET_COMPACT_VERSION=5` writes v4's selection in
+about 6% fewer tokens, with two changes to what is shown: a listing folds
+build, dependency and cache directories (`node_modules`, `target`,
+`__pycache__`, `.git`, `dist`, `build`, `.venv`...) even when it fits, and a
+file read over 16 KiB shows its definition lines (`fn`, `def`, `class`,
+headings...) before head and tail padding. The header has a 12-character ID and no
 recovery hint (`[scopelet v5 ID omitted=N abridged=M; gaps are not absence]`);
 recover with `expand ID --find TEXT` as in v4. A view of one input labels lines
 by number alone:
@@ -229,6 +233,7 @@ by number alone:
 4 similar=480 last=492 text              as in v4, without input:
 40-44                                    range block; indented lines follow
 40-44 file=src/a.rs more=7               search block of one file
+./node_modules/ files=402 artifacts omitted   every entry under it left out
 table id,status rows=31/1000 indices=0-28,643,999
 constant region=eu-west                  the same in every row
 643,failed                               one CSV row per record shown

@@ -65,8 +65,28 @@ fn fixture(name: &str) -> Vec<u8> {
     .unwrap()
 }
 
-/// Every benchmark fixture: the v5 view is the v4 view rewritten, unit for
-/// unit, and it recovers the same original.
+/// `scopelet compress` in compact-v5 with only the grammar parts `parts`
+/// (`SCOPELET_V5_GRAMMAR`), which is read once per process.
+fn compress_parts(dir: &std::path::Path, raw: &[u8], profile: Option<&str>, parts: &str) -> String {
+    let out = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
+        .env("SCOPELET_V5_GRAMMAR", parts)
+        .env("SCOPELET_EVENTS", "0")
+        .args(["--cache-dir", dir.to_str().unwrap()])
+        .args(["--compact-version", "5", "compress"])
+        .args(profile.map(|p| ["--profile", p]).into_iter().flatten())
+        .write_stdin(raw.to_vec())
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "{out:?}");
+    String::from_utf8(out.stdout).unwrap()
+}
+
+/// The parts that only rewrite v4's selection.
+const REWRITE: &str = "labels,header,tables";
+
+/// Every benchmark fixture: with only the parts that rewrite, the v5 view is
+/// the v4 view rewritten, unit for unit, and it recovers the same original.
+/// `artifacts` and `outline` change the selection and are cut here.
 #[test]
 fn a_v5_view_shows_exactly_what_the_v4_view_shows() {
     let dir = tempfile::tempdir().unwrap();
@@ -85,7 +105,7 @@ fn a_v5_view_shows_exactly_what_the_v4_view_shows() {
             .as_str()
             .map(|p| Profile::from_str(p, false).unwrap());
         let v4 = compress(dir.path(), &raw, profile, Version::V4);
-        let v5 = compress(dir.path(), &raw, profile, Version::V5);
+        let v5 = compress_parts(dir.path(), &raw, spec["profile"].as_str(), REWRITE);
         assert_eq!(v5, as_v5(&v4), "{name}");
         if v5.starts_with("[scopelet v5 ") {
             assert_eq!(original(dir.path(), &v5), raw, "{name}");
@@ -411,4 +431,198 @@ fn grammar_parts_can_be_measured_alone() {
     assert!(headers.lines().next().unwrap().ends_with("not absence]"));
     assert_eq!(run(""), run("none"));
     assert!(run("").contains("\ninput:"));
+}
+
+fn word(i: usize) -> String {
+    i.to_string()
+        .bytes()
+        .map(|b| (b'a' + (b - b'0')) as char)
+        .collect()
+}
+
+/// A listing folds each artifact directory to one counted line where its
+/// first entry was, even when the listing fits; the entries count as
+/// omitted and the original stays recoverable.
+#[test]
+fn artifact_directories_fold_to_one_counted_line() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut find = String::from(".\n./src\n./node_modules\n");
+    for i in 0..60 {
+        find.push_str(&format!("./src/mod_{}.py\n", word(i)));
+        if i % 3 == 0 {
+            find.push_str(&format!("./node_modules/pkg-{}/index.js\n", word(i)));
+            find.push_str(&format!("./node_modules/pkg-{}/package.json\n", word(i)));
+        }
+    }
+    for i in 0..5 {
+        find.push_str(&format!(
+            "./src/__pycache__/mod_{}.cpython-312.pyc\n",
+            word(i)
+        ));
+    }
+    let v5 = compress(
+        dir.path(),
+        find.as_bytes(),
+        Some(Profile::Search),
+        Version::V5,
+    );
+    assert!(
+        v5.contains("\n./node_modules/ files=40 artifacts omitted\n4 ./src/mod_a.py\n"),
+        "{v5}"
+    );
+    assert!(
+        v5.contains("\n./src/__pycache__/ files=5 artifacts omitted\n"),
+        "{v5}"
+    );
+    assert!(!v5.contains("pkg-") && !v5.contains(".pyc"), "{v5}");
+    // 40 + 5 entries and the line naming node_modules itself.
+    assert!(v5.lines().next().unwrap().contains(" omitted=46;"), "{v5}");
+    for line in find.lines().filter(|l| l.starts_with("./src/mod_")) {
+        assert!(v5.contains(&format!(" {line}\n")), "{line}: {v5}");
+    }
+    assert_eq!(original(dir.path(), &v5), find.as_bytes());
+    // The parts that only rewrite leave the listing as v4 shows it.
+    let v4 = compress(
+        dir.path(),
+        find.as_bytes(),
+        Some(Profile::Search),
+        Version::V4,
+    );
+    assert_eq!(
+        compress_parts(dir.path(), find.as_bytes(), Some("search"), REWRITE),
+        as_v5(&v4)
+    );
+
+    // `tree` and `ls -R` name the same directories.
+    let mut tree = String::from(".\n");
+    tree.push_str("├── target\n│   └── debug\n");
+    for i in 0..40 {
+        tree.push_str(&format!("│       ├── dep_{}.rlib\n", word(i)));
+    }
+    tree.push_str("└── src\n");
+    for i in 0..40 {
+        tree.push_str(&format!("    ├── module_{}.rs\n", word(i)));
+    }
+    let v5 = compress(
+        dir.path(),
+        tree.as_bytes(),
+        Some(Profile::Search),
+        Version::V5,
+    );
+    assert!(
+        v5.contains("\ntarget/ files=41 artifacts omitted\n"),
+        "{v5}"
+    );
+    assert!(!v5.contains("dep_") && v5.contains("module_ba.rs"), "{v5}");
+
+    let mut ls = String::from(".:\nREADME.md\nbuild\nsrc\n\n./build:\n");
+    for i in 0..150 {
+        ls.push_str(&format!("bundle_{}.js\n", word(i)));
+    }
+    ls.push_str("\n./src:\n");
+    for i in 0..150 {
+        ls.push_str(&format!("page_{}.ts\n", word(i)));
+    }
+    let v5 = compress(
+        dir.path(),
+        ls.as_bytes(),
+        Some(Profile::Search),
+        Version::V5,
+    );
+    assert!(
+        v5.contains("\n./build/ files=150 artifacts omitted\n"),
+        "{v5}"
+    );
+    assert!(!v5.contains("bundle_") && v5.contains("README.md"), "{v5}");
+}
+
+/// A listing without an artifact directory is shown as v4 shows it.
+#[test]
+fn a_listing_without_artifacts_is_unchanged() {
+    let dir = tempfile::tempdir().unwrap();
+    let listing: String = (0..300)
+        .map(|i| format!("./src/area_{}/file_{}.rs\n", word(i / 30), word(i)))
+        .collect();
+    for raw in [listing.clone(), listing[..3000].to_owned()] {
+        let v4 = compress(
+            dir.path(),
+            raw.as_bytes(),
+            Some(Profile::Search),
+            Version::V4,
+        );
+        let v5 = compress(
+            dir.path(),
+            raw.as_bytes(),
+            Some(Profile::Search),
+            Version::V5,
+        );
+        assert_eq!(v5, as_v5(&v4));
+    }
+}
+
+/// A large file read keeps every definition line, and the lines naming a
+/// term of the task, where v4 fills its budget from the head and tail.
+#[test]
+fn a_large_file_read_keeps_its_outline() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut source =
+        String::from("\"\"\"Request handlers.\"\"\"\n\n\nclass Router:\n    pass\n\n\n");
+    for i in 0..80 {
+        if i % 10 == 0 {
+            source.push_str("@register\n");
+        }
+        source.push_str(&format!("def handler_{}(request, context):\n", word(i)));
+        for k in 0..9 {
+            source.push_str(&if i == 31 {
+                format!(
+                    "    {} = settle_ledger(request.{})\n",
+                    word(k),
+                    word(k + 50)
+                )
+            } else {
+                format!(
+                    "    value_{k} = request.get(\"{}\") or context.default_{k}\n",
+                    word(i * 7 + k)
+                )
+            });
+        }
+        source.push_str("    return value_0\n\n\n");
+    }
+    assert!(source.len() > 40 * 1024, "{}", source.len());
+    let signatures: Vec<&str> = source
+        .lines()
+        .filter(|l| l.starts_with("def ") || l.starts_with("class ") || l.starts_with('@'))
+        .collect();
+    let anchors = vec!["settle_ledger".to_owned()];
+    let view = |version| {
+        let output = compress::automatic_anchored(
+            "cli",
+            source.as_bytes(),
+            Some(dir.path().to_path_buf()),
+            Some(Profile::FileRead),
+            None,
+            version,
+            &anchors,
+        );
+        String::from_utf8(output.into_owned()).unwrap()
+    };
+    let v5 = view(Version::V5);
+    for signature in &signatures {
+        assert!(v5.contains(signature), "{signature}: {v5}");
+    }
+    // The anchored function's body, every line of it.
+    let body: Vec<&str> = source
+        .lines()
+        .filter(|l| l.contains("settle_ledger"))
+        .collect();
+    assert_eq!(body.len(), 9);
+    for line in body {
+        assert!(v5.contains(line), "{line}: {v5}");
+    }
+    assert_eq!(original(dir.path(), &v5), source.as_bytes());
+    // The rule is what shows them: v4 leaves signatures out.
+    let v4 = view(Version::V4);
+    assert!(signatures.iter().any(|s| !v4.contains(s)), "{v4}");
+    // The budget is spent as in v4, not capped as if beside a failure.
+    assert!(v5.len() * 10 >= v4.len() * 8, "{} {}", v5.len(), v4.len());
 }

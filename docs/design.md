@@ -586,14 +586,17 @@ visible. No missing field becomes null and decimals stay exact.
 `--compact-version 5` and `SCOPELET_COMPACT_VERSION=5` select compact-v5, which
 is opt-in: it costs 6.2% fewer view tokens than v4 on the benchmark fixtures,
 but a paired live campaign did not show a lower median session input, the
-condition set for making it the default (`bench/README.md`). It is
-compact-v4's selection written in fewer bytes: a v5 view shows exactly the units
-the v4 view of the same input shows, in the same order, with the same omitted
-and abridged counts and the same artifact. Every budget, reserve and refill pass
-is measured on the v4 form, so the bytes v5 saves are tokens saved, not room for
-more evidence. Each part below can be turned off alone with
-`SCOPELET_V5_GRAMMAR` (a comma-separated list of the parts to keep: `labels`,
-`header`, `tables`), which is how `bench/tokens.py` measures it. The cargo
+condition set for making it the default (`bench/README.md`). Its grammar
+parts write compact-v4's selection in fewer bytes; two selection rules,
+`artifacts` and `outline`, change what is selected and are described last.
+With only the grammar parts (`SCOPELET_V5_GRAMMAR=labels,header,tables`), a v5
+view shows exactly the units the v4 view of the same input shows, in the same
+order, with the same omitted and abridged counts and the same artifact. Every
+budget, reserve and refill pass is measured on the v4 form, so the bytes the
+grammar saves are tokens saved, not room for more evidence. Each part below
+can be turned off alone with `SCOPELET_V5_GRAMMAR` (a comma-separated list of
+the parts to keep: `labels`, `header`, `tables`, `artifacts`, `outline`; all
+of them when unset), which is how `bench/tokens.py` measures it. The cargo
 `totals` line keeps its explanation: dropping it saved 14 of 926 tokens on a
 twelve-binary run, and without it live sessions trusted their own partial sum
 of the results shown.
@@ -629,3 +632,24 @@ minified JSON writes `table COLUMNS rows=N/TOTAL`, its `constant` and
 `omitted_columns` lines and its rows the same way; an envelope table becomes
 `table=/POINTER COLUMNS rows=N`. Which rows a table shows is decided on its JSON
 form, which the CSV form never exceeds.
+
+**Artifact directories** (`artifacts`, search profile only). In a path listing
+(`find`, `ls -R`, `tree`, `git ls-files`), every entry under a build,
+dependency or cache directory (`node_modules`, `target`, `__pycache__`, `.git`,
+`dist`, `build`, `.venv`, `venv`, `.next`, `coverage`, `.pytest_cache`,
+`.mypy_cache`, `*.egg-info`), the entry naming that directory and its `ls -R`
+header become one unlabeled line, `DIR/ files=N artifacts omitted`, where the
+first of them was; `N` counts the entries under it, and every line it replaces
+counts as omitted. The rule applies whenever such an entry is listed, even in a
+listing that fits its budget, which v4 shows whole; a directory listed without
+any entry under it is left alone. Other directories fold as in v4 only when
+the listing does not fit. `expand` recovers every entry.
+
+**Outline** (`outline`, file reads). A file read over 16 KiB ranks its
+definition lines (`fn`, `def`, `async def`, `class`, `struct`, `enum`,
+`trait`, `impl`, `interface`, `type`, `func`, `function`, lines starting with
+`pub` or `export`, `@decorators`, and Markdown headings at the start of a line)
+at tier 2, ahead of the head and tail padding, and they fold with identical
+text only. They are structure, not outcomes: like anchored lines, they do not
+cap ordinary lines at a quarter of the budget, nor do the blank lines glued to
+them. Lines naming a prompt or command term stay at tier 3.
