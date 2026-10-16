@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Token probe: what each compact grammar costs in real Claude tokens.
+"""Token probe: what a compact view costs in real Claude tokens.
 
 For every content fixture (`content.py`: the synthetic cases and the real
 outputs of `fixtures/`), a cargo run over twelve test binaries, a listing with
-`node_modules` and a large source file, this compresses the output as the hooks would
-(`scopelet compress --profile`) in compact-v4, in compact-v5 and in v5 with
-each of its parts alone (`SCOPELET_V5_GRAMMAR`), then counts the raw
+`node_modules` and a large source file, this compresses the output as the
+hooks would (`scopelet compress --profile`) with the binary under test
+(`single`) and, with `--baseline BINARY`, with a reference binary in its
+default format (`baseline`, such as the 0.11.1 release), then counts the raw
 output and every view with `POST /v1/messages/count_tokens`, the exact and
 free count of the model's own tokenizer. A count is net: the tokens of one
 user message holding the text, less the frame around it, measured as a
 message holding `.` (one token; the API refuses an empty message). A count
-that fails is null, never zero, and the report keeps the
-error; sums cover the fixtures every compared grammar counted.
+that fails is null, never zero, and the report keeps the error; sums cover
+the fixtures every compared view counted.
 
 Calls happen only with `--live`; the key is read from `ANTHROPIC_API_KEY`
 and never written or printed. No model generates anything.
@@ -33,8 +34,6 @@ import content
 
 HERE = Path(__file__).resolve().parent
 MODELS = ['claude-opus-5-5', 'claude-haiku-5-5']
-# The parts of v5 `SCOPELET_V5_GRAMMAR` can keep alone.
-PARTS = ['labels', 'header', 'tables', 'artifacts', 'outline']
 ENDPOINT = 'https://api.anthropic.com/v1/messages/count_tokens'
 # The smallest message the API accepts: its count less one is the frame.
 BASELINE = '.'
@@ -58,19 +57,19 @@ def word(i):
     return ''.join(chr(ord('a') + int(c)) for c in str(i))
 
 
-def artifact_listing():
-    """`find .` in a project with dependencies and caches: what `artifacts` folds."""
+def listing():
+    """`find .` in a project with dependencies and caches."""
     lines = ['.', './src', './node_modules']
-    for i in range(120):
+    for i in range(400):
         lines.append(f'./src/module_{word(i)}.py')
         if i % 2 == 0:
             lines += [f'./node_modules/pkg-{word(i)}/index.js', f'./node_modules/pkg-{word(i)}/package.json']
     lines += [f'./src/__pycache__/module_{word(i)}.cpython-312.pyc' for i in range(40)]
-    return ('\n'.join(lines) + '\n').encode(), ['./src/module_a.py', './src/module_bbj.py']
+    return ('\n'.join(lines) + '\n').encode(), ['./src/module_a.py', './node_modules/pkg-a/index.js']
 
 
 def large_source():
-    """A 48 KiB Python module read whole: what `outline` reorders."""
+    """A 48 KiB Python module read whole."""
     parts = ['"""Request handlers."""\n\n\nclass Router:\n    pass\n\n\n']
     for i in range(90):
         parts.append(f'def handler_{word(i)}(request, context):\n')
@@ -80,30 +79,30 @@ def large_source():
 
 
 def cases():
-    """The content fixtures, the workspace run, a listing with artifacts and a
-    large source file, with their profiles."""
+    """The content fixtures, the workspace run, a listing and a large source
+    file, with their profiles."""
     return {**content.fixtures(), 'cargo_workspace': workspace_run(),
-            'listing_artifacts': artifact_listing(), 'large_source': large_source()}
+            'listing': listing(), 'large_source': large_source()}
 
 
-PROFILES = {'cargo_workspace': ['--profile', 'tests'], 'listing_artifacts': ['--profile', 'search'],
+PROFILES = {'cargo_workspace': ['--profile', 'tests'], 'listing': ['--profile', 'search'],
             'large_source': ['--profile', 'file-read']}
 
 
-def arms():
-    """(name, compact version, SCOPELET_V5_GRAMMAR or None for all parts)."""
-    return [('v4', '4', None), ('v5', '5', None)] + [(f'v5_{part}', '5', part) for part in PARTS]
+def arms(binary, baseline=None):
+    """(name, binary) of every compared view: the reference binary's when
+    given, then the tested binary's."""
+    return [*([('baseline', Path(baseline))] if baseline else []), ('single', Path(binary))]
 
 
-def view(binary, cache, raw, name, version, grammar):
-    env = {**os.environ, 'SCOPELET_EVENTS': '0'}
-    env.pop('SCOPELET_V5_GRAMMAR', None)
-    if grammar is not None:
-        env['SCOPELET_V5_GRAMMAR'] = grammar
-    result = subprocess.run([str(binary), '--cache-dir', str(cache), '--compact-version', version, 'compress',
+def view(binary, cache, raw, name):
+    """The view `binary` makes of `raw`, in its default format."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith('SCOPELET_')}
+    env['SCOPELET_EVENTS'] = '0'
+    result = subprocess.run([str(binary), '--cache-dir', str(cache), 'compress',
                              *PROFILES.get(name, content.profile_args(name))], input=raw, capture_output=True, env=env, timeout=60)
     if result.returncode != 0:
-        raise RuntimeError(f'{name} v{version}: exit {result.returncode}: {result.stderr.decode(errors="replace")}')
+        raise RuntimeError(f'{name} {binary}: exit {result.returncode}: {result.stderr.decode(errors="replace")}')
     return result.stdout
 
 
@@ -142,29 +141,35 @@ def counted(counter, model, text, memo):
     return memo[key]
 
 
+def compared(fixtures, complete, model, name, reference, totals):
+    """What `name` saves against `reference` over the `complete` fixtures."""
+    worse = sorted(n for n, f in fixtures.items()
+                   if f in complete and f['tokens'][model][name] > f['tokens'][model][reference])
+    return {'saved_tokens': totals[reference] - totals[name],
+            'saved_percent': round(100 * (totals[reference] - totals[name]) / totals[reference], 2),
+            'fixtures_worse': worse}
+
+
 def summarize(fixtures, model, names):
-    """Totals over the fixtures every grammar counted, and v4 to each arm."""
+    """Totals over the fixtures every view counted; the tested view against
+    the raw output and, when measured, against the baseline view."""
     complete = [f for f in fixtures.values() if all(f['tokens'][model].get(n) is not None for n in ['raw', *names])]
     totals = {n: sum(f['tokens'][model][n] for f in complete) for n in ['raw', *names]}
-    summary = {'fixtures_counted': len(complete), 'fixtures_missing': len(fixtures) - len(complete),
-               'tokens': totals, 'vs_v4': {}}
-    for name in names:
-        if name == 'v4' or not totals['v4']:
-            continue
-        worse = sorted(n for n, f in fixtures.items() if f in complete and f['tokens'][model][name] > f['tokens'][model]['v4'])
-        summary['vs_v4'][name] = {'saved_tokens': totals['v4'] - totals[name],
-                                  'saved_percent': round(100 * (totals['v4'] - totals[name]) / totals['v4'], 2),
-                                  'fixtures_worse': worse}
+    summary = {'fixtures_counted': len(complete), 'fixtures_missing': len(fixtures) - len(complete), 'tokens': totals}
+    for reference in ('raw', 'baseline'):
+        if reference in totals and totals[reference] and 'single' in totals:
+            summary[f'single_vs_{reference}'] = compared(fixtures, complete, model, 'single', reference, totals)
     return summary
 
 
-def measure(binary, counter, models, out):
+def measure(binary, counter, models, out, baseline=None):
     """Write `out` (refusing an existing file) and return the report."""
     if out.exists():
         raise FileExistsError(f'{out} exists; completed evidence is never overwritten')
-    names = [name for name, _, _ in arms()]
+    compared_arms = arms(binary, baseline)
+    names = [name for name, _ in compared_arms]
     report = {'kind': 'exact token counts from POST /v1/messages/count_tokens, net of the message frame',
-              'binary_sha256': hashlib.sha256(Path(binary).read_bytes()).hexdigest(),
+              'binary_sha256': {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in compared_arms},
               'models': models, 'arms': names, 'fixtures': {}}
     memo = {}
     baselines = {}
@@ -177,8 +182,9 @@ def measure(binary, counter, models, out):
     with tempfile.TemporaryDirectory(prefix='scopelet-tokens-') as cache:
         for name, (raw, facts) in cases().items():
             views = {'raw': raw}
-            for arm, version, grammar in arms():
-                views[arm] = view(binary, cache, raw, name, version, grammar)
+            for arm, path in compared_arms:
+                # Each binary its own cache: one cache never holds the other's artifacts.
+                views[arm] = view(path, Path(cache) / arm, raw, name)
             entry = {'bytes': {k: len(v) for k, v in views.items()},
                      'facts_visible': {arm: all(f.encode() in views[arm] or content.source_form(f).encode() in views[arm]
                                                 for f in facts) for arm in names},
@@ -210,7 +216,9 @@ def measure(binary, counter, models, out):
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--live', action='store_true', help='required: call the token counting API')
-    p.add_argument('--scopelet', type=Path, default=HERE.parent / 'target/release/scopelet')
+    p.add_argument('--scopelet', type=Path, default=HERE.parent / 'target/release/scopelet',
+                   help='binary under test: the `single` view')
+    p.add_argument('--baseline', type=Path, help='reference binary (such as the 0.11.1 release): the `baseline` view')
     p.add_argument('--model', action='append', help=f'repeatable; default {" and ".join(MODELS)}')
     p.add_argument('--out', type=Path, default=HERE / 'results' / 'tokens.json')
     args = p.parse_args(argv)
@@ -223,7 +231,8 @@ def main(argv=None):
         return 2
     if args.out.exists():
         p.error(f'{args.out} exists; completed evidence is never overwritten')
-    report = measure(args.scopelet.resolve(), ApiCounter(key), args.model or MODELS, args.out)
+    report = measure(args.scopelet.resolve(), ApiCounter(key), args.model or MODELS, args.out,
+                     args.baseline.resolve() if args.baseline else None)
     print(json.dumps(report['summary'], indent=2))
     return 0
 

@@ -73,7 +73,7 @@ def many_lines(count):
 
 def measure(binary, args, stdin, cache):
     command=[str(binary),'--cache-dir',str(cache),*args]
-    env=os.environ.copy();env.pop('SCOPELET_COMPACT_VERSION',None)
+    env=os.environ.copy()
     timer=['/usr/bin/time','-l'] if platform.system()=='Darwin' else ['/usr/bin/time','-v']
     start=time.perf_counter()
     with open(stdin or os.devnull,'rb') as source:

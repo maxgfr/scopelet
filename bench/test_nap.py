@@ -109,25 +109,30 @@ class ActionTests(unittest.TestCase):
     def test_coarse_nap_ignores_pattern_and_range(self):
         call = lambda pattern: {'action': {'kind': 'tool', 'tool': 'Grep', 'program': None, 'paths': ['a.log'],
                                            'pattern': pattern, 'range': None}}
-        results = {'raw': [call('ERROR'), call('ERROR|WARN'), call('ERROR')], 'v4': [call('Caused')] * 3,
-                   'v5g': [call('ERROR')] * 3, 'v5': [{'action': {'kind': 'final', 'correct': True}}] * 3}
+        results = {'raw': [call('ERROR'), call('ERROR|WARN'), call('ERROR')], 'baseline': [call('Caused')] * 3,
+                   'single': [{'action': {'kind': 'final', 'correct': True}}] * 3}
         _, strict = nap.score(results)
         _, coarse = nap.score(results, coarse=True)
-        self.assertEqual((strict['v4'], coarse['v4']), (0, 1))
+        self.assertEqual((strict['baseline'], coarse['baseline']), (0, 1))
         self.assertEqual((strict['raw'], coarse['raw']), (2 / 3, 1))
-        self.assertEqual(coarse['v5'], 0)
+        self.assertEqual(coarse['single'], 0)
 
     def test_nap_is_the_share_of_draws_equal_to_the_modal_raw_action(self):
         a, b = {'kind': 'final', 'correct': True}, {'kind': 'final', 'correct': False}
         results = {'raw': [{'action': a}, {'action': a}, {'action': b}],
-                   'v4': [{'action': a}, {'action': b}, {'action': None, 'error': 'HTTP 500'}],
-                   'v5g': [{'action': b}] * 3, 'v5': [{'action': None}] * 3}
+                   'baseline': [{'action': a}, {'action': b}, {'action': None, 'error': 'HTTP 500'}],
+                   'single': [{'action': b}] * 3, 'other': [{'action': None}] * 3}
         modal, scores = nap.score(results)
         self.assertEqual(json.loads(modal), a)
         self.assertAlmostEqual(scores['raw'], 2 / 3)
-        self.assertEqual(scores['v4'], 0.5)  # the failed draw is unknown, not a miss
-        self.assertEqual(scores['v5g'], 0)
-        self.assertIsNone(scores['v5'])
+        self.assertEqual(scores['baseline'], 0.5)  # the failed draw is unknown, not a miss
+        self.assertEqual(scores['single'], 0)
+        self.assertIsNone(scores['other'])
+
+    def test_conditions_are_raw_then_the_baseline_if_given_then_the_tested_binary(self):
+        self.assertEqual([n for n, _ in nap.conditions('/b/new')], ['raw', 'single'])
+        self.assertEqual(nap.conditions('/b/new', '/b/old'),
+                         [('raw', None), ('baseline', Path('/b/old')), ('single', Path('/b/new'))])
 
 
 def fake_client(seen):
@@ -154,19 +159,21 @@ class RunTests(unittest.TestCase):
     def test_a_run_scores_each_compressed_step_and_never_overwrites(self):
         with tempfile.TemporaryDirectory() as temp:
             self.write(temp, '0-build_warnings-off.jsonl.gz', transcript(build_output()))
-            self.write(temp, '0-build_warnings-v4.jsonl.gz', transcript(build_output()))
+            self.write(temp, '0-build_warnings-single.jsonl.gz', transcript(build_output()))
             seen = []
             out = Path(temp) / 'nap'
-            report = nap.run(BINARY, temp, fake_client(seen), out, draws=2, workers=1)
+            # The tested binary stands in for the baseline: the views agree.
+            report = nap.run(BINARY, temp, fake_client(seen), out, draws=2, workers=1, baseline=BINARY)
+            self.assertEqual([c['name'] for c in report['conditions']], ['raw', 'baseline', 'single'])
             # The large build output is a step; the 2-line grep result is not.
             self.assertEqual(len(report['steps']), 1)
             step = report['steps'][0]
-            self.assertLess(step['view_bytes']['v4'], step['view_bytes']['raw'])
-            self.assertLess(step['view_bytes']['v5'], step['view_bytes']['v4'])
-            self.assertEqual(len(seen), 4 * 2)
+            self.assertLess(step['view_bytes']['single'], step['view_bytes']['raw'])
+            self.assertEqual(step['view_bytes']['baseline'], step['view_bytes']['single'])
+            self.assertEqual(len(seen), 3 * 2)
             # The error line survives every view, so every condition answers alike.
             self.assertEqual(step['raw_action'], {'kind': 'final', 'correct': True})
-            self.assertEqual(report['summary']['conditions']['v5']['mean_nap'], 1.0)
+            self.assertEqual(report['summary']['conditions']['single']['mean_nap'], 1.0)
             self.assertEqual(report['summary']['conditions']['raw']['errors'], 0)
             self.assertTrue((out / 'report.json').exists())
             with self.assertRaises(FileExistsError):

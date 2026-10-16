@@ -7,7 +7,7 @@ call another model to compress data.
 `Source -> Dataset -> operations -> immutable artifact -> bounded View` is the
 single pipeline. The Rust library exposes the same types used by the CLI.
 Request version is 1. Saved artifacts are schema 1 (records stored) or, for
-compact-v3 and v4 automatic compression and for a recovery whose only record is a
+automatic compression and for a recovery whose only record is a
 whole stored text original (a blob paged or searched whose view is all of it,
 such as a single long line), schema 2 (records named by their original blob).
 Unknown request fields fail.
@@ -114,7 +114,7 @@ Token savings are a session-level experimental outcome. Byte reductions alone,
 identical repeated blocks, or a smaller final answer cannot prove a cheaper
 session. Compare equivalent tasks and preserve failed runs in the denominator.
 
-## Automatic integration and compact-v1
+## Automatic integration
 
 Automatic hooks are an optional local installation, independent of skill
 activation. They use the same immutable store and do not alter API requests or
@@ -143,8 +143,8 @@ then goes through Codex's normal approval and sandbox policy (only a
 command more than it had.
 
 The version-1 JSON request/artifact/view contracts remain unchanged. `--output
-compact` is a separate textual presentation (compact-v3 by default, v1 and v2
-on request), not a JSON schema migration. Every compact view links the full dataset artifact; its
+compact` is a separate textual presentation (see [Compact format](#compact-format)),
+not a JSON schema migration. Every compact view links the full dataset artifact; its
 manifest maps source labels to immutable blobs. A unit is a complete JSON record
 or consecutive identical text lines represented by an exact line plus a repeat
 count. Source line labels remain absolute; ordered gaps and omitted-unit counts
@@ -157,27 +157,25 @@ differ. Every key must exist in every row; missing fields never become null.
 Values retain JSON types and exact decimal numbers. If the full representation
 cannot fit, the engine selects whole records rather than clipping fields.
 Text presentation preserves first/final lines, then selects diagnostic lines
-before context and ordinary lines. In v1 and v2, automatic compression passes
-through when no whole evidence unit fits; compact-v3 instead cuts a single
-oversized line on a character boundary and marks it (see below). Up to
-compact-v3, no version substitutes a recovery-only envelope: every view
-carries source bytes. Compact-v4 amends this in one case only: an output
-identical to one the same conversation context was already shown becomes a
-one-line repeat reference that recovers it (see Compact-v4). Every other view
-still carries source bytes.
+before context and ordinary lines; a single oversized line is cut on a
+character boundary and marked (see below). Only one view substitutes a
+recovery-only envelope: an output identical to one the same conversation
+context was already shown becomes a one-line repeat reference that recovers it
+(see Repeat references). Every other view carries source bytes.
 All originals remain available. Automatic detection of malformed JSONL falls
 back to text selection and never asserts an exact aggregate.
 
 Automatic inputs up to 2048 bytes remain unchanged (16 KiB for a recognized
-file read in compact-v3). Larger inputs have a 4096 byte target per stream (in
-compact-v3, the recognized command's profile target) and need both 512 bytes and 20% savings including all
-metadata before replacement. Non-UTF-8 input, existing Scopelet output and host
-persisted-output previews remain unchanged; compact-v3 recognizes those markers
-only at the start of a line, where they are written, so a source file quoting
-`[scopelet ` is compressed like any other text. Inputs over 100000 lines (250000
-in compact-v3, whose lighter units keep the peak resident size under 128 MB at
-that count with a full 32 MiB stream) bypass automatic compression to bound
-selection memory; explicit compact queries reject more than 100000 units. Byte thresholds are not tokenizer or session savings.
+file read). Larger inputs have a 4096 byte target per stream (the recognized
+command's profile target when there is one) and need both 512 bytes and 20%
+savings including all metadata before replacement. Non-UTF-8 input, existing
+Scopelet output and host persisted-output previews remain unchanged; those
+markers are recognized only at the start of a line, where they are written, so
+a source file quoting `[scopelet ` is compressed like any other text. Inputs
+over 250000 lines (where the light units keep the peak resident size under
+128 MB with a full 32 MiB stream) bypass automatic compression to bound
+selection memory; explicit compact queries reject more than 100000 units. Byte
+thresholds are not tokenizer or session savings.
 The original capture limit remains 32 MiB per stream. Capture incompleteness is
 reported outside the compressed view; a hook only retains bytes supplied by its
 host and cannot recover an earlier truncation.
@@ -185,7 +183,7 @@ host and cannot recover an earlier truncation.
 Automatic runs and Claude hooks avoid opening the store when both streams fit
 the small-output threshold. Codex also bypasses the wrapper for a plain `cat` or
 `nl` of a regular file whose metadata reports at most the file-read threshold
-(16 KiB in compact-v3, 2048 bytes before). Relative paths require
+(16 KiB). Relative paths require
 a known absolute working directory. Metadata only chooses whether to compress:
 the native command still reads the current file and enforces host permissions.
 A file growing after the check stays correct, though that read may miss savings.
@@ -235,7 +233,7 @@ string through `/bin/sh -c`, so short-circuiting, pipes and the exit status
 are the shell's. Interactive/background tool calls pass through when the host
 exposes those flags.
 
-## Execution and compact-v2
+## Execution, journal and recovery
 
 The query and saved-dataset schemas remain version 1. The execution planner
 recognizes JSONL filter chains ending in count/group and repository queries
@@ -251,15 +249,16 @@ small/binary inputs and persisted previews perform no store writes; each
 decision appends one line under 512 bytes to the local event journal,
 `<cache>/events/YYYY-MM.jsonl` (time, host, profile, byte counts, a typed reason
 `small`, `non_utf8`, `too_many_lines`, `already_compressed`, `savings`,
-`persisted`, `compressed`, `repeat` or `error`, compact version, 12-character
-prefixes of the artifact and original, `anchored` when relevance anchors
+`persisted`, `compressed`, `repeat` or `error`, 12-character prefixes of the
+artifact and original, `anchored` when relevance anchors
 ranked lines up, and `program`, the bare name of the program that printed the
 output: the first recognized command's, else the first command's, `other` when
 it is not a plain name of at most 32 characters; `expand` adds one line with
 the reference prefix and how it read the evidence: `find`, `range`, `page`,
 `manifest` or `raw`). No content, argument, path or anchor term is recorded,
 nothing is transmitted, writing is best effort, and `SCOPELET_EVENTS=0`
-disables it. `stats --days N` summarizes compressions, bytes saved,
+disables it. Journals written before 1.0 also carry the compact version of each
+decision; they still parse. `stats --days N` summarizes compressions, bytes saved,
 pass-through reasons, the share of compressions whose artifact or original was
 expanded later, expansions by kind, repeats and the bytes they saved, anchored
 views, compressions by program with the ten programs most often compressed
@@ -268,31 +267,11 @@ without a profile (`unprofiled_programs`), and, per profile, the same figures wi
 expanded. Stats report; nothing is tuned automatically. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact JSON
-serialization. Compact-v1 and v2 store schema-1 artifacts, byte for byte as
-before; compact-v3 stores a schema-2 artifact that names the original blob, so
-an accepted view caches the original once plus well under a kilobyte. A storage/compression failure returns native captured bytes.
-Explicit queries still report storage errors. Compact-v2 became the CLI and hook default after a bounded live rollout
-comparison, compact-v3 replaced it as the default, and compact-v4 replaced v3
-(see below); v2 and v3 remain selectable and byte-identical. Legacy
-library helpers `automatic` and `compact` retain v1 behavior.
-
-`--compact-version 2` selects compact-v2; `SCOPELET_COMPACT_VERSION=2` selects it
-for automatic hooks too. An explicit CLI version takes precedence. Only `1`, `2`,
-`3` and `4` are accepted. Version 2 retains complete tables when they fit, otherwise
-selects whole rows with `indices` (zero-based dataset positions), `total_records`
-and positional `record_sources` when source labels differ. Columns require
-identical keys across every row, including missing/null distinctions. Selected
-cells and exact decimal representations remain intact; a partial table is not an
-aggregate and never establishes absence. Heterogeneous records use ordinary
-whole-record selection. The complete-table path is lossless in both versions.
-
-V2 selection prioritizes boundary units, the first occurrence of distinct
-signal text, additional signals, context and ordinary units. Diagnostics in
-JSON are matched in string values, not field names. In v2, distinctness uses
-exact text, without normalizing numbers or paths; v3 folds repetitions and
-templates as described in its own section. Selection remains a heuristic:
-omissions stay explicit, the output stays within the byte budget, and originals
-remain recoverable. The output is restored to source order after selection.
+serialization. Automatic compression stores a schema-2 artifact that names
+the original blob, so an accepted view caches the original once plus well
+under a kilobyte; an explicit compact query stores its whole result as a
+schema-1 artifact. A storage/compression failure returns native captured bytes.
+Explicit queries still report storage errors.
 
 `expand ID --find TEXT [--find TEXT] [--regex] [--ignore-case] [--context N]
 [--source LABEL]` searches immutable original blobs, including evidence no
@@ -333,9 +312,7 @@ test or build, `node --test`, and `jest`, `vitest run`, `tsc`, `eslint`,
 `uv run` (after uv's own options, and `python -m pytest|unittest|mypy` too));
 package installs (`npm`/`pnpm`/`yarn`/`bun` `install|i|ci|add`, `pip install`,
 `python -m pip install`, `uv sync`, `uv pip install`, `brew install|upgrade`,
-`bundle install`; these, `git ls-files` and `uv run` with uv options or a
-`python -m` tool are recognized from compact-v4 on and stay native before
-it); searches and listings (`rg`, `grep`, `find` without
+`bundle install`); searches and listings (`rg`, `grep`, `find` without
 `-delete`/`-exec`/`-ok`/`-fprint`, `ls -R`, `tree` without `-o`, `git
 ls-files`); Git `diff`, `log` (with
 `-p`), `show`, `status`, `blame` and `grep` with no option before the
@@ -345,11 +322,9 @@ none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
 logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
 `nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
 `rtk` are recognized by the program they run, not by a substring.
-Each recognized command has a profile that sets its compact-v3 byte target:
-4 KiB for tests, 8 KiB for searches, Git and logs, 16 KiB for file reads, and in
-compact-v4 2 KiB for installs (earlier versions treat an install as the
-unrecognized command it was). A
-file read also stays exact up to 16 KiB, and it is not ranked by diagnostic
+Each recognized command has a profile that sets its byte target: 4 KiB for
+tests, 8 KiB for searches, Git and logs, 16 KiB for file reads and 2 KiB for
+installs. A file read also stays exact up to 16 KiB, and it is not ranked by diagnostic
 words (a string saying `error` in source code is not an outcome). Hooks take
 the profile from the parsed command (Codex passes `run --auto --profile`;
 Claude Code and OpenCode classify the command after the fact). Classifying
@@ -359,54 +334,68 @@ quotes, drops redirections and leading assignments, and takes the first
 recognized command, where `cat` of several files or with `-n`/`-b`/`-s`/`-v`
 and `nl` with its numbering options also read files (`sed -n 1,80p a; sed -n
 1,80p b`, `cat a b`, `nl -ba f | sed -n 40,90p`). Codex's grammar and what it
-wraps are unchanged. Earlier compact
-versions keep the 4 KiB target and 2 KiB threshold. The shell grammar and
-permission envelope remain in force. Watch/debug/interactive forms and unrecognized syntax stay
+wraps are unchanged. The shell grammar and permission envelope remain in
+force. Watch/debug/interactive forms and unrecognized syntax stay
 native. Every eligible command executes once; stdout/stderr and process status
 remain independent of presentation.
 
-## Compact-v3
+## Compact format
 
-`--compact-version 3` and `SCOPELET_COMPACT_VERSION=3` select compact-v3;
-`1` and `2` remain selectable and their output stays byte-identical to the
-releases that introduced them (`tests/performance_contracts.rs` pins both
-against 0.3.2, and v3 against 0.7.2). Compact-v4 is the default (see below). The query and saved-dataset schemas remain
-version 1, and the complete-table and partial-table paths are shared with v2.
+Hooks, `run --auto`, `compress` and `--output compact` write one format. The
+query and saved-dataset schemas remain version 1.
 
-The v3 header carries the artifact reference once; `ID` in its recovery hint
-refers to that reference. The footer reserve is the exact width of the widest
-footer the view can emit instead of a fixed margin, so the budget is spent on
-evidence.
+**Header.** One line and no footer: `[scopelet v5 ID complete]`, or
+`[scopelet v5 ID omitted=N abridged=M; gaps are not absence]`, with
+` scan_complete=false` after the ID only when the scan was incomplete. `ID` is
+the first 12 hex characters of the artifact hash; `expand` resolves it like any
+unique prefix and fails, naming the count, when two cached items share it.
+`omitted` counts units left out; `abridged` counts units shown in part: a line
+cut behind `text_truncated`, a `similar=N` group (its members differ from the
+line shown; an exact `repeat=N` hides nothing), or a record shown without some
+of its fields. A view is `complete` only when both are zero. The recovery
+syntax is not repeated in every view: the session guidance (`SessionStart`,
+again after a compaction, `SubagentStart`, OpenCode's system prompt) carries
+it. Budgets reserve the widest header the view can emit, at its real size. A
+line starting with `[scopelet ` still marks an output as already compressed,
+whatever version wrote it.
 
-V3 text units are built from a display copy of each source line: terminal
-control sequences (CSI, OSC and two-byte escapes) are removed and only the last
-carriage-return segment of a rewritten line is kept. The copy never changes
-the number of lines, so `input:N` labels stay absolute and `expand --find`
+**Labels.** A view whose every record is the one `input` text labels units by
+line alone: `12 text`, `4-6 repeat=3 text`, `4 similar=480 last=492 text`,
+`1-3` above a range block's indented lines, `1-9 file=src/a.rs more=2` for a
+search block and `9-95 file=Cargo.lock changed=+43/-3 omitted` for a collapsed
+diff. A label still starts every line that is not indented, so a line's own
+text never reads as a label. Multi-source views (repository queries, `run
+--output compact`) keep `source:` labels. Selection measures each unit as it is
+written, so the view is rendered once per refill pass.
+
+**Display copies.** Text units are built from a display copy of each source
+line: terminal control sequences (CSI, OSC and two-byte escapes) are removed
+and only the last carriage-return segment of a rewritten line is kept. The copy
+never changes the number of lines, so labels stay absolute and `expand --find`
 still searches the original bytes. A single line larger than the budget is cut
 on a character boundary behind `text_truncated bytes=N`, where N is the
-original line length without its terminator, so a giant line no longer forces
-the whole stream through unchanged. JSON records are still never split; when
-no whole record of an automatically compressed JSON document fits (one large
-object), v3 selects its source lines instead, with absolute `input:N` labels
-into the same original, rather than passing the document through.
+original line length without its terminator, so a giant line does not force
+the whole stream through unchanged. JSON records are never split; when no
+whole record of an automatically compressed JSON document fits (one large
+object), its source lines are selected instead, with absolute labels into the
+same original, rather than passing the document through.
 
-Repetitions fold wherever they occur. `input:a-b repeat=N` (N = b−a+1) is a
-contiguous run of one text; `input:a repeat=N last=b` (N < b−a+1) is the same
-text at N dispersed lines, shown at its first occurrence; `input:a similar=N
-last=b` groups N lines that share a template after masking digit runs,
-decimal numbers and measurements with a unit (`12.4s`, `42ms`, `1.2KiB`,
-`37%`), UUIDs, `0x` addresses, hex runs of seven or more characters that
-contain a digit, and whitespace runs. Only lines without a diagnostic fold by
-template: diagnostics fold by their text with timestamps masked, so a flood of
-one error differing only by its time folds while counters and identifiers in
-an error stay visible. From compact-v4, a record whose text fits the budget
-with one indent byte per line and a few labels folds identical lines only:
-the numbers that tell similar lines apart are often the evidence, and showing
-them costs no more than the budget already allows. When at least 90% of a
-record's lines (20 or more) sit in folded groups, its remaining singletons are
-promoted ahead of context, because the rare line among noise is usually the
-evidence being looked for. All of these markers are metadata, never bytes
-claimed to occur in the source.
+**Folding.** Repetitions fold wherever they occur. `a-b repeat=N` (N = b−a+1)
+is a contiguous run of one text; `a repeat=N last=b` (N < b−a+1) is the same
+text at N dispersed lines, shown at its first occurrence; `a similar=N last=b`
+groups N lines that share a template after masking digit runs, decimal
+numbers and measurements with a unit (`12.4s`, `42ms`, `1.2KiB`, `37%`), UUIDs,
+`0x` addresses, hex runs of seven or more characters that contain a digit, and
+whitespace runs. Only lines without a diagnostic fold by template: diagnostics
+fold by their text with timestamps masked, so a flood of one error differing
+only by its time folds while counters and identifiers in an error stay
+visible. A record whose text fits the budget with one indent byte per line and
+a few labels folds identical lines only: the numbers that tell similar lines
+apart are often the evidence, and showing them costs no more than the budget
+already allows. When at least 90% of a record's lines (20 or more) sit in
+folded groups, its remaining singletons are promoted ahead of context, because
+the rare line among noise is usually the evidence being looked for. All of
+these markers are metadata, never bytes claimed to occur in the source.
 
 A trivial line has at most three visible characters and no diagnostic (`}`,
 a blank line, a `|` gutter, an `rg` `--` separator). When the nearest
@@ -420,23 +409,10 @@ nothing to hold together and folds by exact text like any other line; it is
 never promoted as the rare line of a mostly folded record. Glue reaches three
 lines, the context Git shows around a change.
 
-A record containing a unified diff (`diff --git`, or `---` then `+++` then
-`@@`) is read by role. Lines inside it are never diagnostics: code that
-mentions `error` is a change. File headers (`diff --git`, the `---`/`+++`
-pair of a plain diff, and `git log -p`'s `commit <hash>`) never fold by
-template, only with identical text, and rank as context does (tier 2).
-Changed lines and commit messages fold only with identical text; a distinct
-one ranks in tier 2, one repeated across files or commits in tier 1. Context
-lines are glued like trivial lines. A hunk header glues to the first change
-below it however much context lies between (Git's default three lines put it
-four lines away) and ranks with that change, so a hunk is shown with the
-change it locates; a file header ends what can glue and metadata lines
-(`index`, modes, renames, `Author:`, `Date:`) are transparent to it.
-
-V3 ranks units in five tiers: the first and last line of a record; the first
-occurrence of each strong diagnostic template (`error`, `failed`, `panic`,
-`exception`, `traceback`, `fatal`, `npm ERR!`, `FAILED`, Go's `--- FAIL`, `✗`,
-`✖`, error and exception type names such as `TypeError` or
+**Ranking.** Units rank in five tiers: the first and last line of a record; the
+first occurrence of each strong diagnostic template (`error`, `failed`,
+`panic`, `exception`, `traceback`, `fatal`, `npm ERR!`, `FAILED`, Go's
+`--- FAIL`, `✗`, `✖`, error and exception type names such as `TypeError` or
 `NullPointerException`, test summaries and the like); repeated strong
 diagnostics, the first occurrence of each weak template (`warning`, `warn`,
 `deprecated`) and singleton lines of a mostly folded record; context (three
@@ -445,58 +421,69 @@ Python, Java and Go, rustc's `-->` locations, the head three and tail five
 lines); then ordinary lines. A vocabulary word inside a name does not count:
 a match within a whitespace-delimited token that contains `/` or `::`, or
 ends with a file extension, is a path or an identifier (`src/error.rs`,
-`Error::new`, `failure.py`), not an outcome. Each tier is filled alternately from the head and the tail so the final
-summary survives a flood of early diagnostics. When the view carries
-diagnostics and cannot show every ordinary line anyway, ordinary lines stop at
-a quarter of the available budget, so the view ends where the evidence does;
-an ordinary listing without diagnostics still fills the budget. Small
-repetitions inside a diagnostic's context stay in source order; massive
-repetition (eight lines or more) folds wherever it is. Vocabulary words match
-without regard to case on ASCII word boundaries, but anchored markers (`FAIL`,
-`FAILED`, `FATAL`, pytest's `E` prefix) and type names must keep their
-capitals, so an ordinary line beginning with `e ` is not a diagnostic.
-Diagnostics in JSON string values rank by the same vocabulary and veto. The output is restored to source order.
+`Error::new`, `failure.py`), not an outcome. Each tier is filled alternately
+from the head and the tail so the final summary survives a flood of early
+diagnostics. When the view carries diagnostics and cannot show every ordinary
+line anyway, ordinary lines stop at a quarter of the available budget, so the
+view ends where the evidence does; an ordinary listing without diagnostics
+still fills the budget. Small repetitions inside a diagnostic's context stay
+in source order; massive repetition (eight lines or more) folds wherever it
+is. Vocabulary words match without regard to case on ASCII word boundaries,
+but anchored markers (`FAIL`, `FAILED`, `FATAL`, pytest's `E` prefix) and type
+names must keep their capitals, so an ordinary line beginning with `e ` is not
+a diagnostic. Diagnostics in JSON string values rank by the same vocabulary
+and veto. The output is restored to source order.
+
+A stack frame or location that is not folded ranks with the diagnostic it
+locates, among the first diagnostics, when the nearest nontrivial line above
+it, within three lines, is the first diagnostic of its template: rustc's `--> file:line:col` under its `error[...]` line, a trace's
+first frame under its exception. Ranked with context, the error's location
+was lost among the locations of a flood of warnings, each with its own
+`-->`: a build of 2,000 warnings and one error kept the error and dropped
+where it was. The rule does not chain, so a Java or Python trace lifts one
+frame and the others stay context.
 
 Three or more selected consecutive plain lines are shown as one range block:
-`input:a-b` on its own line, then each line prefixed by a single space, so
-line a+k is the k-th indented line. The label bytes this saves are spent on
-further evidence when it fits. A block header carries no `repeat=`, which
+`a-b` on its own line, then each line prefixed by a single space, so line a+k
+is the k-th indented line. The label bytes this saves are spent on further
+evidence when it fits. A block header carries no `repeat=`, which
 distinguishes it from a contiguous run.
 
-## Compact-v4
-
-Compact-v4 is the CLI and hook default; `--compact-version 4` and
-`SCOPELET_COMPACT_VERSION=4` select it explicitly. It keeps compact-v3's body
-(display copies, folding, tiers, range blocks) and its schema-2 artifacts, and
-changes what frames and shapes it.
-
-**Envelope.** One header line and no footer: `[scopelet v4 ID complete]`, or
-`[scopelet v4 ID omitted=N abridged=M; gaps are not absence; expand ID --find
-TEXT]`, with ` scan_complete=false` after the ID only when the scan was
-incomplete. `ID` is the first 16 hex characters of the artifact hash; `expand`
-resolves it like any unique prefix and fails, naming the count, when two cached
-items share it. `omitted` counts units left out; `abridged` counts units shown
-in part: a line cut behind `text_truncated`, a `similar=N` group (its members
-differ from the line shown; an exact `repeat=N` hides nothing), or a record
-shown without some of its fields. A view is `complete` only when both are zero.
-The header reserve is the widest header the view can emit. A line starting with
-`[scopelet ` still marks an output as already compressed.
+**Diffs.** A record containing a unified diff (`diff --git`, or `---` then
+`+++` then `@@`) is read by role. Lines inside it are never diagnostics: code
+that mentions `error` is a change. File headers (`diff --git`, the `---`/`+++`
+pair of a plain diff, and `git log -p`'s `commit <hash>`) never fold by
+template, only with identical text, and rank as context does. Changed lines
+and commit messages fold only with identical text; a distinct one ranks with
+context, one repeated across files or commits below it. Context lines are glued
+like trivial lines. A hunk header glues to the first change below it however
+much context lies between (Git's default three lines put it four lines away)
+and ranks with that change, so a hunk is shown with the change it locates; a
+file header ends what can glue and metadata lines (`index`, modes, renames,
+`Author:`, `Date:`) are transparent to it. A `diff --git` file that is a
+lockfile (`Cargo.lock`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`,
+`poetry.lock`, `uv.lock`, `go.sum`, `Gemfile.lock`, `composer.lock`) or a
+minified or map file (`*.min.js`, `*.min.css`, `*.map`) becomes one line,
+`a-b file=PATH changed=+A/-D omitted`; its lines lose change protection and
+count as omitted. In a diff of several files with no commit headers, each tier
+fills in order of the files' change density (changed lines per line of their
+section), densest first; `git log -p` keeps head and tail alternation.
 
 **Repeat references (Claude Code).** Each conversation context (the session,
 and each subagent separately, by `agent_id`) keeps a private state under
 `<config>/sessions/`: the mode it was told, 16-character hash prefixes of at
 most 512 outputs it was shown (oldest forgotten first), and its prompt anchors.
 A Bash stream or Grep content over 2048 bytes (even a file read) whose hash is
-in that state is replaced by `[scopelet v4 ID repeat: identical to output
-already shown in this conversation (N lines); expand ID]`; its original and
-artifact are stored as a view's would be (the same bytes give the same
-artifact), so it is recoverable even when the first occurrence passed through
-raw. Every other output is remembered once shown, as a view or raw; a host
-persisted preview is neither replaced nor remembered. A `SessionStart` with
-source `compact` or `clear` forgets what was shown (a clear also drops the
-anchors). Only exact identity counts: two runs that differ in a timing or a
-thread id are two outputs. Codex and OpenCode, which signal no compaction, get
-no repeat references. A repeat is journaled with the bytes it saved. An earlier
+in that state is replaced by `[scopelet v5 ID repeat: identical to output
+already shown in this conversation (N lines)]`; its original and artifact are
+stored as a view's would be (the same bytes give the same artifact), so it is
+recoverable even when the first occurrence passed through raw. Every other
+output is remembered once shown, as a view or raw; a host persisted preview is
+neither replaced nor remembered. A `SessionStart` with source `compact` or
+`clear` forgets what was shown (a clear also drops the anchors). Only exact
+identity counts: two runs that differ in a timing or a thread id are two
+outputs. Codex and OpenCode, which signal no compaction, get no repeat
+references. A repeat is journaled with the bytes it saved. An earlier
 bare-mode marker is read as that mode.
 
 **Relevance anchors.** On `UserPromptSubmit`, the prompt's quoted text, paths
@@ -504,19 +491,19 @@ and file names, snake_case and CamelCase identifiers and error codes (3 to 64
 bytes, at most 32, newest kept) are stored in the context's private state,
 never in the journal. Bare numbers (lines, counts, years) and tool call ids
 (`toolu_...`) match lines by accident and are never terms, even ones an earlier
-version stored; a prompt the host generates (`<task-notification>`) adds none. A tool call adds the terms
-its command names: the literal pattern of `rg`, `grep` or `git grep` (a regular
-expression with operators names nothing; `|` branches split), and the filter
-of `cargo test NAME`, `pytest -k`, `jest -t` or `go test -run`; a subagent also
-gets its session's prompt terms. Codex passes its context key to the wrapped
-run (`run --auto --session KEY`); OpenCode passes its session ID (it has no
-prompt hook, so only command terms apply there). A term found on more than
-half of an output's lines singles nothing out and is ignored for that output.
-A unit containing a remaining term ranks with first diagnostics (tier 3) while
-anchored units fit a third of the budget. A unit lifted by an anchor alone is
-relevant, not a diagnostic: it never caps ordinary lines at a quarter of the
-budget, as a real diagnostic does. File reads take anchors too. The view
-depends on the anchors; the artifact does not.
+version stored; a prompt the host generates (`<task-notification>`) adds none.
+A tool call adds the terms its command names: the literal pattern of `rg`,
+`grep` or `git grep` (a regular expression with operators names nothing; `|`
+branches split), and the filter of `cargo test NAME`, `pytest -k`, `jest -t`
+or `go test -run`; a subagent also gets its session's prompt terms. Codex
+passes its context key to the wrapped run (`run --auto --session KEY`);
+OpenCode passes its session ID (it has no prompt hook, so only command terms
+apply there). A term found on more than half of an output's lines singles
+nothing out and is ignored for that output. A unit containing a remaining term
+ranks with first diagnostics while anchored units fit a third of the budget. A
+unit lifted by an anchor alone is relevant, not a diagnostic: it never caps
+ordinary lines at a quarter of the budget, as a real diagnostic does. File
+reads take anchors too. The view depends on the anchors; the artifact does not.
 
 **Tests.** A view of the tests profile whose output contains recognized
 failures gets a metadata line below the header: `failed=N: name (file:line),
@@ -530,130 +517,80 @@ over two or more test binaries also gets `totals runs=N passed=P failed=F
 ignored=I (every test result line, omitted ones included)`, summed from every
 `test result:` line, since a view rarely has room for all of them and summing
 the ones shown gives a wrong count. The `test result:` lines themselves rank
-with first diagnostics (tier 3) and never fold by template, so the results in
-view add up to the totals whenever they fit: when they did not, live sessions
-trusted their own partial sum over the line. Both
-lines are computed from the output and never claimed to occur in it; together
-they take at most a quarter of the budget, and one that does not fit is left
-out.
+with first diagnostics and never fold by template, so the results in view add
+up to the totals whenever they fit: when they did not, live sessions trusted
+their own partial sum over the line, and the 14 tokens of the parenthesis
+are worth keeping. Both lines are computed from the output and never claimed
+to occur in it; together they take at most a quarter of the budget, and one
+that does not fit is left out.
 
 **Search results.** In the search profile, two or more consecutive selected
 lines of one file in `path:N:text` / `path-N-text` form (`grep -n`, `rg -n`,
-with context) are shown as `input:a-b file=PATH` then each line without its
-`PATH:` or `PATH-` prefix, line a+k being the k-th. The path is metadata, the
-rest of each line source bytes. Each file's first and last match, its anchored
-matches and then its earliest, up to five, rank before any file's other
-matches, which fill only leftover budget; a file's first block counts its
-matches not shown as `more=N`. A range block never runs from one file into the
-next.
+with context) are shown as `a-b file=PATH` then each line without its `PATH:`
+or `PATH-` prefix, line a+k being the k-th. The path is metadata, the rest of
+each line source bytes. Each file's first and last match, its anchored matches
+and then its earliest, up to five, rank before any file's other matches, which
+fill only leftover budget; a file's first block counts its matches not shown
+as `more=N`. A range block never runs from one file into the next.
 
 **Listings.** A `find`, `git ls-files`, `ls -R` or `tree` listing too long to
 show whole summarizes each directory of more than eight entries as `DIR/
 files=N ext=E:n,...` (four extensions, then `+K`) before its first entry, and
 shows only its first and last entries; smaller directories stay whole. A
-listing that fits is not folded.
-
-**Diffs.** A `diff --git` file that is a lockfile (`Cargo.lock`,
-`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `poetry.lock`, `uv.lock`,
-`go.sum`, `Gemfile.lock`, `composer.lock`) or a minified or map file
-(`*.min.js`, `*.min.css`, `*.map`) becomes one line, `input:a-b file=PATH
-changed=+A/-D omitted`; its lines lose change protection and count as omitted.
-In a diff of several files with no commit headers, each tier fills in order of
-the files' change density (changed lines per line of their section), densest
-first; `git log -p` keeps head and tail alternation.
+listing that fits is not folded, whatever directories it names.
 
 **Installs.** The install profile (2 KiB) shows diagnostics, their context, the
 first and last lines and any closing summary (`added N packages`,
 `Successfully installed`, `Resolved N packages in`, `Bundle complete`, `Done
 in`...), never ordinary progress.
 
-**JSON.** Tables name the columns identical in every record once under
-`constant`, and a complete table omits its redundant `indices`. An object whose
-array of same-keyed objects holds more than 80% of its bytes (`kubectl -o
-json`'s `items`) is shown, when every row fits, as `envelope {...}` (its other
-fields) and `table=/POINTER {...}`. Minified JSON whose records are too large
-to select whole (a quarter of the budget or more, such as `gh api` responses)
-is shown as a table of the short scalar fields every object has, one link
-column kept (`html_url`, else `url`), every other field of any object named
-under `omitted_columns` (an envelope keeps its scalars and names its nested
-fields as `omitted_fields`), and as many rows as fit, rows carrying a diagnostic or an
-anchor first; the rows shown count as abridged and the others as omitted.
-Pretty-printed JSON keeps the line view, whose folding keeps rare values
-visible. No missing field becomes null and decimals stay exact.
-
-## Compact-v5
-
-`--compact-version 5` and `SCOPELET_COMPACT_VERSION=5` select compact-v5, which
-is opt-in: it costs 6.1% fewer view tokens than v4 on the 0.10.0 fixtures
-(11.8% with a listing and a large source added), but two paired live
-campaigns did not show a session-level saving: neither a lower median input
-nor, over twelve tasks, a cost per successful task whose 95% interval lies
-below v4's, the condition set for making it the default (`bench/README.md`).
-In Claude Code a session's cost follows its turns, and every compressed view
-sometimes costs one more command. Its grammar
-parts write compact-v4's selection in fewer bytes; two selection rules,
-`artifacts` and `outline`, change what is selected and are described last.
-With only the grammar parts (`SCOPELET_V5_GRAMMAR=labels,header,tables`), a v5
-view shows exactly the units the v4 view of the same input shows, in the same
-order, with the same omitted and abridged counts and the same artifact. Every
-budget, reserve and refill pass is measured on the v4 form, so the bytes the
-grammar saves are tokens saved, not room for more evidence. Each part below
-can be turned off alone with `SCOPELET_V5_GRAMMAR` (a comma-separated list of
-the parts to keep: `labels`, `header`, `tables`, `artifacts`, `outline`; all
-of them when unset), which is how `bench/tokens.py` measures it. The cargo
-`totals` line keeps its explanation: dropping it saved 14 of 926 tokens on a
-twelve-binary run, and without it live sessions trusted their own partial sum
-of the results shown.
-
-**Header** (`header`). `[scopelet v5 ID complete]`, or `[scopelet v5 ID
-omitted=N abridged=M; gaps are not absence]`, with ` scan_complete=false` as in
-v4. `ID` is the first 12 hex characters of the artifact hash, resolved like any
-unique prefix; an ambiguous one fails, naming the count. The recovery syntax
-is not repeated in every view: the session guidance (`SessionStart`, again after
-a compaction, `SubagentStart`, OpenCode's system prompt) carries it. A repeat
-reference reads `[scopelet v5 ID repeat: identical to output already shown in
-this conversation (N lines)]`.
-
-**Labels** (`labels`). A view whose every record is the one `input` text labels
-units by line alone: `12 text`, `4-6 repeat=3 text`, `4 similar=480 last=492
-text`, `1-3` above a range block's indented lines, `1-9 file=src/a.rs more=2`
-for a search block and `9-95 file=Cargo.lock changed=+43/-3 omitted` for a
-collapsed diff. A label still starts every line that is not indented, so a
-line's own text never reads as a label. Multi-source views (repository
-queries) keep `source:` labels.
-
-**Tables** (`tables`). A table whose cells and constants are all scalars, and
-whose records' sources are `input` or follow from their index
+**Tables.** Uniform JSON objects first get a complete table; if it cannot fit,
+whole rows are selected by the ranking above. Columns require identical keys
+across every row, including missing/null distinctions: no missing field
+becomes null and decimals stay exact. Columns identical in every record are
+named once under `constant`. A table whose cells and constants are all
+scalars, and whose records' sources are `input` or follow from their index
 (`input#record=I`), is written `table COLUMNS rows=N` (complete) or `table
-COLUMNS rows=N/TOTAL indices=RANGES` (partial; `a-b` for three or more
-consecutive indices), then `constant KEY=VALUE,...` and one CSV row per record.
-Numbers, booleans and null are written as JSON writes them, so digits are exact;
-a string is bare unless it is empty, edged by whitespace, holds `,`, `"`, `=`,
-`\` or a control character, starts with `[` or `{`, or spells a number, a
-boolean or null, in which case it is a JSON string. A table with a nested cell,
-or with other record sources, keeps the v4 JSON form. A projection of large
-minified JSON writes `table COLUMNS rows=N/TOTAL`, its `constant` and
-`omitted_columns` lines and its rows the same way; an envelope table becomes
-`table=/POINTER COLUMNS rows=N`. Which rows a table shows is decided on its JSON
-form, which the CSV form never exceeds.
+COLUMNS rows=N/TOTAL indices=RANGES` (partial; zero-based positions, `a-b` for
+three or more consecutive indices), then `constant KEY=VALUE,...` and one CSV
+row per record. Numbers, booleans and null are written as JSON writes them, so
+digits are exact; a string is bare unless it is empty, edged by whitespace,
+holds `,`, `"`, `=`, `\` or a control character, starts with `[` or `{`, or
+spells a number, a boolean or null, in which case it is a JSON string. A table
+with a nested cell, or with other record sources, is a JSON line, `table
+{"columns":[...],"constant":{...},"indices":[...],"record_sources":[...],
+"rows":[...],"total_records":N}`, the indices and total only when partial and
+the sources only when labels differ. Which rows a table shows is decided on
+its JSON form, which the CSV form never exceeds. A partial table is not an
+aggregate and never establishes absence.
 
-**Artifact directories** (`artifacts`, search profile only). In a path listing
-(`find`, `ls -R`, `tree`, `git ls-files`), every entry under a build,
-dependency or cache directory (`node_modules`, `target`, `__pycache__`, `.git`,
-`dist`, `build`, `.venv`, `venv`, `.next`, `coverage`, `.pytest_cache`,
-`.mypy_cache`, `*.egg-info`), the entry naming that directory and its `ls -R`
-header become one unlabeled line, `DIR/ files=N artifacts omitted`, where the
-first of them was; `N` counts the entries under it, and every line it replaces
-counts as omitted. The rule applies whenever such an entry is listed, even in a
-listing that fits its budget, which v4 shows whole; a directory listed without
-any entry under it is left alone. Other directories fold as in v4 only when
-the listing does not fit. `expand` recovers every entry.
+An object whose array of same-keyed objects holds more than 80% of its bytes
+(`kubectl -o json`'s `items`) is shown, when every row fits, as `envelope
+{...}` (its other fields) and `table=/POINTER COLUMNS rows=N` with its rows.
+Minified JSON whose records are too large to select whole (a quarter of the
+budget or more, such as `gh api` responses) is shown as a table of the short
+scalar fields every object has, one link column kept (`html_url`, else `url`),
+every other field of any object named under `omitted_columns` (an envelope
+keeps its scalars and names its nested fields as `omitted_fields`), and as
+many rows as fit, rows carrying a diagnostic or an anchor first; the rows shown
+count as abridged and the others as omitted. Pretty-printed JSON keeps the line
+view, whose folding keeps rare values visible.
 
-**Outline** (`outline`, file reads). A file read over 16 KiB ranks its
-definition lines (`fn`, `def`, `async def`, `class`, `struct`, `enum`,
-`trait`, `impl`, `interface`, `type`, `func`, `function`, lines starting with
-`pub` or `export`, `@decorators`, and Markdown headings at the start of a line)
-at tier 2, ahead of the head and tail padding, and they fold with identical
-text only. They are structure, not outcomes: like anchored lines, they do not
-cap ordinary lines at a quarter of the budget, nor do the blank lines glued to
-them. Lines naming a prompt or command term stay at tier 3.
+### History
+
+Before 1.0, `--compact-version` and `SCOPELET_COMPACT_VERSION` selected among
+five formats. Compact-v1 framed a view with an artifact header and a footer;
+v2 added partial JSON tables and distinct-diagnostic selection, and became the
+default after a bounded live rollout; v3 introduced display copies, folding,
+tiers, range blocks, command profiles and schema-2 artifacts; v4 the one-line
+header with a 16-character ID, repeat references, relevance anchors, test
+action lines and the search, listing, diff, install and JSON shapes above; v5
+the 12-character header without recovery syntax, bare labels and CSV tables,
+6.1% fewer view tokens than v4 at the same selection, plus two opt-in rules
+(`artifacts`, folding build and dependency directories in every listing, and
+`outline`, ranking a large file's definitions first) that a paired live
+campaign found either costing calls or bringing nothing. 1.0 keeps v4's
+selection written with v5's grammar, and the `-->` rule above. Views written
+by any earlier version stay recognized as already compressed, and their
+artifacts, schema 1 or 2, with 16- or 12-character IDs, stay readable by
+`expand` and as query sources.

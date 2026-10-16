@@ -8,10 +8,11 @@ trained model is needed, only the transcripts `live.py --transcripts` keeps.
 For every transcript of the `off` arm (raw outputs), each Bash or Grep result
 is put through the real hook (`scopelet hook claude` on a simulated
 `PostToolUse`, after the task prompt as `UserPromptSubmit`, so the command's
-profile and the prompt's anchors apply) under each condition: raw, compact-v4,
-compact-v5 with its grammar only (`SCOPELET_V5_GRAMMAR=labels,header,tables`)
-and compact-v5 whole. A step counts when at least one condition changed the
-output, which only happens above its profile's exact-size threshold.
+profile and the prompt's anchors apply) under each condition: `raw`, the
+view of a reference binary (`baseline`, such as the 0.11.1 release) when one
+is given, and the view of the binary under test (`single`). A step counts
+when at least one condition changed the output, which only happens above its
+profile's exact-size threshold.
 
 The conversation up to that output is rebuilt (task prompt, assistant turns
 without their thinking blocks, earlier results as recorded) and sent to
@@ -56,8 +57,13 @@ HERE = Path(__file__).resolve().parent
 ENDPOINT = 'https://api.anthropic.com/v1/messages'
 MODEL = 'claude-haiku-5-5'
 DRAWS = 3
-# (name, compact version or None for the raw output, SCOPELET_V5_GRAMMAR or None)
-CONDITIONS = [('raw', None, None), ('v4', '4', None), ('v5g', '5', 'labels,header,tables'), ('v5', '5', None)]
+
+
+def conditions(binary, baseline=None):
+    """(name, binary or None for the raw output): raw, the reference
+    binary's view when given, and the tested binary's."""
+    return [('raw', None), *([('baseline', Path(baseline))] if baseline else []), ('single', Path(binary))]
+
 SYSTEM = ('You are a coding agent working in a repository. Use the tools to complete the user\'s task, '
           'one step at a time. When the task is done, reply with the final answer only.')
 TOOLS = [
@@ -164,14 +170,12 @@ def composed(tool, response):
     return '\n'.join(x for x in (response['stdout'].rstrip('\n'), (response.get('stderr') or '').rstrip('\n')) if x)
 
 
-def hook_view(binary, step, version, parts, prompt, run=subprocess.run):
-    """The tool_result text a session of this condition would have shown."""
+def hook_view(binary, step, prompt, run=subprocess.run):
+    """The tool_result text a session with `binary`'s hooks would have shown."""
     with tempfile.TemporaryDirectory(prefix='scopelet-nap-') as temp:
         env = {k: v for k, v in os.environ.items() if not k.startswith('SCOPELET_')}
         env.update(SCOPELET_CONFIG_DIR=str(Path(temp) / 'config'), SCOPELET_CACHE_DIR=str(Path(temp) / 'cache'),
-                   SCOPELET_COMPACT_VERSION=version, SCOPELET_EVENTS='0')
-        if parts is not None:
-            env['SCOPELET_V5_GRAMMAR'] = parts
+                   SCOPELET_EVENTS='0')
         session = str(uuid.uuid4())
         hook = lambda event: run([str(binary), 'hook', 'claude'], input=json.dumps(event), capture_output=True,
                                  text=True, env=env, timeout=60)
@@ -187,15 +191,15 @@ def hook_view(binary, step, version, parts, prompt, run=subprocess.run):
         return composed(step['tool'], {**step['response'], **updated})
 
 
-def views(binary, step, raw_text, prompt):
+def views(arms, step, raw_text, prompt):
     """Each condition's tool_result text; raw is the recorded one."""
     original = composed(step['tool'], step['response'])
     result = {}
-    for name, version, parts in CONDITIONS:
-        if version is None:
+    for name, binary in arms:
+        if binary is None:
             result[name] = raw_text
             continue
-        view = hook_view(binary, step, version, parts, prompt)
+        view = hook_view(binary, step, prompt)
         if view is None or original is None:
             result[name] = raw_text
         elif original in raw_text:
@@ -352,7 +356,7 @@ def draw(client, conversation, check, cwd=None):
 
 def measure_step(client, messages, step, texts, check, draws, cwd=None):
     """Every draw of every condition; raw's first draw writes the cache."""
-    conversations = {name: replay(messages, step, texts[name]) for name, _, _ in CONDITIONS}
+    conversations = {name: replay(messages, step, text) for name, text in texts.items()}
     results = {name: [] for name in conversations}
     results['raw'].append(draw(client, conversations['raw'], check, cwd))
     for i in range(draws):
@@ -370,8 +374,7 @@ def score(results, coarse=False):
     return modal, {name: (nap(draws, modal, coarse) if modal is not None else None) for name, draws in results.items()}
 
 
-def summarize(steps):
-    names = [name for name, _, _ in CONDITIONS]
+def summarize(steps, names):
     scored = [s for s in steps if all(s['nap'][n] is not None for n in names)]
     mean = lambda values: sum(values) / len(values) if values else None
     summary = {'steps': len(steps), 'steps_scored': len(scored), 'conditions': {}}
@@ -393,13 +396,17 @@ def summarize(steps):
     return summary
 
 
-def run(binary, transcripts, client, out, arm='off', draws=DRAWS, workers=4):
+def run(binary, transcripts, client, out, arm='off', draws=DRAWS, workers=4, baseline=None):
     """Replay every step of the `arm` transcripts; write `out/report.json`."""
     out.mkdir(parents=True)  # never an existing directory
     tasks = live.load_tasks()
+    arms = conditions(binary, baseline)
+    names = [name for name, _ in arms]
     report = {'kind': 'next-action preservation; tokens from the API usage, not estimates', 'model': getattr(client, 'model', None),
-              'draws': draws, 'conditions': [{'name': n, 'version': v, 'parts': p} for n, v, p in CONDITIONS],
-              'binary_sha256': hashlib.sha256(Path(binary).read_bytes()).hexdigest(), 'steps': [], 'skipped': []}
+              'draws': draws,
+              'conditions': [{'name': n, 'binary_sha256': hashlib.sha256(b.read_bytes()).hexdigest() if b else None}
+                             for n, b in arms],
+              'steps': [], 'skipped': []}
     jobs = []
     for path in sorted(Path(transcripts).glob(f'*-{arm}.jsonl.gz')):
         round_, task, _ = parse_name(path)
@@ -428,8 +435,8 @@ def run(binary, transcripts, client, out, arm='off', draws=DRAWS, workers=4):
                 report['skipped'].append({'transcript': path.name, 'step': index, 'tool': step['tool'],
                                           'reason': 'shown text is not the tool response'})
                 continue
-            texts = views(binary, step, raw_text, prompt)
-            if all(texts[n] == raw_text for n, _, _ in CONDITIONS):
+            texts = views(arms, step, raw_text, prompt)
+            if all(texts[n] == raw_text for n in names):
                 continue
             jobs.append((path.name, round_, task, index, messages, step, texts, check, cwd))
 
@@ -448,10 +455,10 @@ def run(binary, transcripts, client, out, arm='off', draws=DRAWS, workers=4):
         for row in pool.map(one, jobs):
             report['steps'].append(row)
             print(f"{row['transcript']} step {row['step']} {row['tool']}: " +
-                  ' '.join(f'{n}={row["nap"][n]}' for n, _, _ in CONDITIONS), flush=True)
-            report['summary'] = summarize(report['steps'])
+                  ' '.join(f'{n}={row["nap"][n]}' for n in names), flush=True)
+            report['summary'] = summarize(report['steps'], names)
             (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
-    report['summary'] = summarize(report['steps'])
+    report['summary'] = summarize(report['steps'], names)
     (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     return report
 
@@ -460,7 +467,9 @@ def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--live', action='store_true', help='required: run real, billed model calls')
     p.add_argument('--transcripts', type=Path, required=True, help='directory written by live.py --transcripts')
-    p.add_argument('--scopelet', type=Path, default=HERE.parent / 'target/release/scopelet')
+    p.add_argument('--scopelet', type=Path, default=HERE.parent / 'target/release/scopelet',
+                   help='binary under test: the `single` condition')
+    p.add_argument('--baseline', type=Path, help='reference binary (such as the 0.11.1 release): the `baseline` condition')
     p.add_argument('--arm', default='off', help='transcripts of this arm (raw outputs); default off')
     p.add_argument('--model', default=MODEL)
     p.add_argument('--draws', type=int, default=DRAWS)
@@ -477,7 +486,7 @@ def main(argv=None):
     if args.out.exists():
         p.error(f'{args.out} exists; completed evidence is never overwritten')
     report = run(args.scopelet.resolve(), args.transcripts, ApiClient(key, args.model), args.out, args.arm,
-                 args.draws, args.workers)
+                 args.draws, args.workers, args.baseline.resolve() if args.baseline else None)
     print(json.dumps(report['summary'], indent=2))
     return 0
 

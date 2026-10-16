@@ -3,15 +3,16 @@
 
 Each task is a synthetic repository and a prompt. Every arm runs the same
 task in a fresh copy of it, with its own temporary `CLAUDE_CONFIG_DIR` and
-Scopelet config and cache: `off` installs nothing, any other arm installs
-its binary's hooks with `scopelet install --agent claude` and pins its
-compact version (and, with `:parts`, its compact-v5 parts). Repetitions are
-paired: each round runs every arm on every task, in an order that rotates
-between rounds.
+Scopelet config and cache: `off` installs nothing, any other arm
+(`NAME=BINARY`) installs its binary's hooks with `scopelet install --agent
+claude`, in that binary's default format. Repetitions are paired: each round
+runs every arm on every task, in an order that rotates between rounds.
 
 Each run records the session's input, cache creation, cache read and output
 tokens, turns, tool calls, cost and the model actually served from `claude -p
---output-format stream-json`, plus a correctness check. Missing usage is
+--output-format stream-json`, the number of Scopelet views the model was
+actually shown (`views_shown`, counted in that stream), plus a correctness
+check. Missing usage is
 recorded as null, never zero. A run that fails or times out stays in the
 denominator. The summary judges arms by billed cost per successful task:
 every run's cost over the successes, failures included, and, against a
@@ -225,20 +226,31 @@ def build_json_api(root):
     (root / 'api/issues.json').write_text(json.dumps(json_api_issues(), separators=(',', ':')))
 
 
-def build_build_warnings(root):
-    """A build that prints 2,000 warnings and one error, and fails."""
+def warnings_build(root, count, error_at):
+    """A rustc-like build that prints `count` warnings, each with its `-->`
+    location, and one error after warning `error_at`, and fails."""
     (root / 'build.py').write_text(
         'import sys\n\n'
         'def word(i):\n    return "".join(chr(97 + int(c)) for c in str(i))\n\n'
-        'for i in range(2000):\n'
+        f'for i in range({count}):\n'
         '    print(f"warning: unused variable `x_{word(i)}`", file=sys.stderr)\n'
         '    module = "src/ledger/settled.rs" if i % 97 == 0 else f"src/mod_{word(i % 40)}.rs"\n'
         '    print(f"  --> {module}:{i % 300 + 1}:9", file=sys.stderr)\n'
-        '    if i == 1311:\n'
+        f'    if i == {error_at}:\n'
         '        print("error[E0308]: mismatched types", file=sys.stderr)\n'
         '        print("  --> src/ledger/settle.rs:88:17", file=sys.stderr)\n'
-        'print("error: could not compile `ledger` (lib) due to 1 previous error; 2000 warnings emitted", file=sys.stderr)\n'
+        f'print("error: could not compile `ledger` (lib) due to 1 previous error; {count} warnings emitted", file=sys.stderr)\n'
         'sys.exit(1)\n')
+
+
+def build_build_warnings(root):
+    """A build that prints 2,000 warnings and one error, and fails."""
+    warnings_build(root, 2000, 1311)
+
+
+def build_build_warnings_medium(root):
+    """The same build with 300 warnings: about 18 KB, shown inline as a view."""
+    warnings_build(root, 300, 211)
 
 
 def build_pytest_many(root):
@@ -263,6 +275,84 @@ def build_pytest_many(root):
         "if __name__ == '__main__':\n    unittest.main()\n")
 
 
+def build_test_report_medium(root):
+    """150 verbose unittest cases, one failing at the first weight tier of
+    `shipping_cost`: about 11 KB of test report."""
+    (root / 'shipping.py').write_text(
+        '"""Shipping cost by parcel weight."""\n\n\n'
+        'def shipping_cost(grams):\n'
+        '    """5.00 up to 500 g, 8.00 up to 2000 g, else 12.00."""\n'
+        '    if grams < 500:\n'
+        '        return 5.00\n'
+        '    if grams <= 2000:\n'
+        '        return 8.00\n'
+        '    return 12.00\n')
+    (root / 'test_shipping.py').write_text(
+        'import unittest\n\nimport shipping\n\n\n'
+        'class ShippingTests(unittest.TestCase):\n    pass\n\n\n'
+        'for _grams in range(0, 3000, 20):\n'
+        '    def _case(self, grams=_grams):\n'
+        '        expected = 5.00 if grams <= 500 else 8.00 if grams <= 2000 else 12.00\n'
+        '        self.assertEqual(shipping.shipping_cost(grams), expected)\n'
+        '    setattr(ShippingTests, f"test_grams_{_grams:04}", _case)\n\n\n'
+        "if __name__ == '__main__':\n    unittest.main()\n")
+
+
+# grep_context: the one charge_card call whose total subtracts a refund, and
+# the charge_card_legacy lookalike that does too, as (module, function).
+GREP_FILES, GREP_FUNCTIONS = 10, 20
+GREP_ANSWER, GREP_DECOY = (6, 13), (3, 7)
+
+
+def build_grep_context(root):
+    """200 `charge_card` calls in 10 modules, each two lines below the total
+    it charges: only `grep -C2` context shows which total holds a refund."""
+    (root / 'src').mkdir()
+    for f in range(GREP_FILES):
+        lines = []
+        for k in range(GREP_FUNCTIONS):
+            refund = (f, k) in (GREP_ANSWER, GREP_DECOY)
+            lines += [f'def pay_{word(f * GREP_FUNCTIONS + k)}(o):',
+                      '    t = o.s - o.refund' if refund else f'    t = o.s + o.tax_{word(k)}',
+                      f'    charge_card{"_legacy" if (f, k) == GREP_DECOY else ""}(o, t)', '']
+        (root / 'src' / f'm_{word(f)}.py').write_text('\n'.join(lines))
+
+
+def build_diff_medium(root):
+    """An uncommitted change of about 15 KB: docstrings reworded in 20
+    modules, an equivalent comparison rewritten in window.py, and one
+    behavior change in quota.py."""
+    vcs = git_in(root)
+    vcs('init', '-q')
+    (root / 'src').mkdir()
+
+    def module(i, revised):
+        parts = [f'"""Helpers for area {word(i)}."""\n\n\n']
+        for k in range(6):
+            doc = (f'Return the {word(k)} adjustment for area {word(i)}, rounded to cents.' if revised and k % 2 == 0
+                   else f'Compute the {word(k)} adjustment of area {word(i)}.')
+            parts.append(f'def adjust_{word(i)}_{word(k)}(value):\n    """{doc}"""\n'
+                         f'    return round(value * {1 + (i + k) / 100:.2f}, 2)\n\n\n')
+        return ''.join(parts)
+
+    def quota(revised):
+        return ('def within_quota(used, limit):\n    """Whether usage stays under its limit."""\n'
+                f'    return used {"<=" if revised else "<"} limit\n')
+
+    def window(revised):
+        return ('def in_window(x, limit):\n    """Whether x falls before the window closes."""\n'
+                f'    if {"limit > x" if revised else "x < limit"}:\n        return True\n    return False\n')
+
+    def write(revised):
+        for i in range(20):
+            (root / 'src' / f'area_{word(i)}.py').write_text(module(i, revised))
+        (root / 'src/quota.py').write_text(quota(revised))
+        (root / 'src/window.py').write_text(window(revised))
+    write(False)
+    vcs('add', '-A'); vcs('commit', '-q', '-m', 'initial')
+    write(True)
+
+
 BUILDERS = {
     'search_symbol': build_search_symbol,
     'git_log_find': build_git_log_find,
@@ -272,6 +362,10 @@ BUILDERS = {
     'json_api': build_json_api,
     'build_warnings': build_build_warnings,
     'pytest_many': build_pytest_many,
+    'build_warnings_medium': build_build_warnings_medium,
+    'test_report_medium': build_test_report_medium,
+    'grep_context': build_grep_context,
+    'diff_medium': build_diff_medium,
 }
 
 
@@ -321,13 +415,25 @@ def build(task, root):
 
 # --- one session ------------------------------------------------------------
 
+# A Scopelet view or repeat reference at a line start, in any format: the
+# single format's `[scopelet v5 `, and `v4` or `compact-vN` from earlier ones.
+VIEW = re.compile(r'(?m)^\[scopelet (?:v\d+|compact-v\d+) ')
+
+
+def views_in(content):
+    """Scopelet views in a tool_result's content, as the model reads it."""
+    if isinstance(content, list):
+        content = ''.join(b.get('text', '') for b in content if isinstance(b, dict))
+    return len(VIEW.findall(content)) if isinstance(content, str) else 0
+
+
 def parse_stream(text):
-    """Usage, turns, cost, answer, tool calls and served models of a
-    stream-json transcript.
+    """Usage, turns, cost, answer, tool calls, views shown and served models
+    of a stream-json transcript.
 
     Missing figures stay None: an unknown usage is never zero.
     """
-    tool_calls, tools, result, models = 0, {}, None, set()
+    tool_calls, tools, result, models, views = 0, {}, None, set(), 0
     for line in text.splitlines():
         try:
             event = json.loads(line)
@@ -344,6 +450,11 @@ def parse_stream(text):
                     tool_calls += 1
                     name = str(block.get('name'))
                     tools[name] = tools.get(name, 0) + 1
+        elif event.get('type') == 'user':
+            content = (event.get('message') or {}).get('content')
+            for block in content if isinstance(content, list) else []:
+                if isinstance(block, dict) and block.get('type') == 'tool_result':
+                    views += views_in(block.get('content'))
         elif event.get('type') == 'result':
             result = event
     usage = (result or {}).get('usage') or {}
@@ -359,6 +470,8 @@ def parse_stream(text):
         'cost_usd': (result or {}).get('total_cost_usd'),
         'tool_calls': tool_calls if result is not None else None,
         'tools': tools,
+        # What the stream shows, even when it ends without a result.
+        'views_shown': views,
         'models_served': sorted(models) or None,
         'answer': (result or {}).get('result'),
         'session_error': (result or {}).get('is_error') if result is not None else True,
@@ -375,7 +488,9 @@ def check(spec, answer, workdir, task=None):
     """
     kind = spec['type']
     if kind == 'answer_contains':
-        return bool(answer) and spec['expected'] in answer
+        # `forbidden`: near misses the answer must not name.
+        return (bool(answer) and spec['expected'] in answer
+                and not any(wrong in answer for wrong in spec.get('forbidden', [])))
     if kind == 'answer_number':
         return bool(answer) and str(spec['expected']) in re.findall(r'\d+', answer)
     if kind == 'tests_pass':
@@ -402,10 +517,7 @@ def install(arm, scratch):
     (scratch / 'claude').mkdir()
     if arm['binary']:
         env.update(SCOPELET_CONFIG_DIR=str(scratch / 'scopelet'), SCOPELET_CACHE_DIR=str(scratch / 'cache'),
-                   SCOPELET_COMPACT_VERSION=arm['version'], CODEX_HOME=str(scratch / 'codex'),
-                   OPENCODE_CONFIG_DIR=str(scratch / 'opencode'))
-        if arm.get('parts') is not None:
-            env['SCOPELET_V5_GRAMMAR'] = arm['parts']
+                   CODEX_HOME=str(scratch / 'codex'), OPENCODE_CONFIG_DIR=str(scratch / 'opencode'))
         subprocess.run([str(arm['binary']), 'install', '--agent', 'claude'], env=env, check=True,
                        capture_output=True, timeout=60)
     return env
@@ -580,28 +692,23 @@ def summarize(records, arms, tasks, baseline=None, draws=DRAWS):
 
 
 def parse_arm(text):
-    """`off`, or `NAME=BINARY@VERSION[:PARTS]`; PARTS is passed as
-    `SCOPELET_V5_GRAMMAR` (comma-separated compact-v5 parts to keep)."""
+    """`off`, or `NAME=BINARY`: that binary's hooks in its default format."""
     if text == 'off':
-        return {'name': 'off', 'binary': None, 'version': None, 'parts': None}
-    name, _, rest = text.partition('=')
-    binary, _, version = rest.rpartition('@')
-    version, colon, parts = version.partition(':')
-    if not name or not binary or version not in ('1', '2', '3', '4', '5'):
-        raise argparse.ArgumentTypeError('expected off or NAME=BINARY@VERSION[:PARTS]')
-    if colon and not re.fullmatch(r'[a-z]*(,[a-z]+)*', parts):
-        raise argparse.ArgumentTypeError('PARTS is a comma-separated list such as labels,header,tables')
-    return {'name': name, 'binary': Path(binary).resolve(), 'version': version, 'parts': parts if colon else None}
+        return {'name': 'off', 'binary': None}
+    name, _, binary = text.partition('=')
+    if not re.fullmatch(r'[A-Za-z0-9_.]+', name) or not binary or '@' in binary:
+        raise argparse.ArgumentTypeError('expected off or NAME=BINARY')
+    return {'name': name, 'binary': Path(binary).resolve()}
 
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('--live', action='store_true', help='required: run real, billed model sessions')
-    p.add_argument('--arm', action='append', type=parse_arm, help='off, or NAME=BINARY@VERSION[:PARTS]; repeatable')
+    p.add_argument('--arm', action='append', type=parse_arm, help='off, or NAME=BINARY; repeatable')
     p.add_argument('--task', action='append', help='task name from fixtures/live/tasks.json; default all')
     p.add_argument('--runs', type=int, default=3, help='paired rounds')
     p.add_argument('--model', default='haiku')
-    p.add_argument('--baseline', default='v4', help='arm the others are paired against (default v4)')
+    p.add_argument('--baseline', default='v4old', help='arm the others are paired against (default v4old)')
     p.add_argument('--transcripts', type=Path, help='directory for each session\'s gzipped stream-json')
     p.add_argument('--timeout', type=int, default=900, help='seconds per session')
     p.add_argument('--isolate-home', action='store_true',
@@ -625,7 +732,7 @@ def main(argv=None):
     report = {'kind': 'live Claude Code sessions; tokens and cost from the session result, not estimates',
               'model': args.model, 'runs': args.runs, 'tasks': selected, 'baseline': args.baseline,
               'claude_version': subprocess.run(['claude', '--version'], capture_output=True, text=True).stdout.strip(),
-              'arms': [{'name': a['name'], 'version': a['version'], 'parts': a['parts'],
+              'arms': [{'name': a['name'],
                         'binary_sha256': hashlib.sha256(a['binary'].read_bytes()).hexdigest() if a['binary'] else None}
                        for a in arms],
               'records': []}
@@ -639,7 +746,8 @@ def main(argv=None):
                 record['round'] = round_
                 report['records'].append(record)
                 print(f"round {round_} {task} {arm['name']}: correct={record['correct']} cost={record['cost_usd']} "
-                      f"input_total={record['input_total']} turns={record['turns']} tools={record['tool_calls']}",
+                      f"input_total={record['input_total']} turns={record['turns']} tools={record['tool_calls']} "
+                      f"views={record['views_shown']}",
                       flush=True)
                 report['summary'] = summarize(report['records'], names, selected, args.baseline, draws=0)
                 out.write_text(json.dumps(report, indent=2) + '\n')

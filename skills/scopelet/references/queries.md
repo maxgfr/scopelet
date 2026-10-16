@@ -133,11 +133,11 @@ capture is capped at 32 MiB per stream and truncation is explicitly reported.
 ## Compact output and shortcut operations
 
 `query` and `run` accept `--output compact`; their default JSON interface is
-unchanged. Compact output (v4 by default, `--compact-version` 1, 2, 3 or 5 on
-request) groups provenance behind an artifact reference and labels source
-lines, repetitions and omitted units. A unit is a whole JSON record
-or a run of identical text lines. `complete` (v4) and `display_complete`
-(earlier versions) concern these units, not unobserved source data. Open the artifact manifest for original blob IDs.
+unchanged. Compact output (see [Compact format](#compact-format)) groups
+provenance behind an artifact reference and labels source lines, repetitions
+and omitted units. A unit is a whole JSON record or a run of identical text
+lines. `complete` concerns these units, not unobserved source data. Open the
+artifact manifest for original blob IDs.
 
 ```sh
 scopelet query --file events.jsonl --format jsonl --filter /status --equals '"failed"' --group /suite
@@ -187,109 +187,71 @@ This reads historical evidence after a local file changes. A new `query` on an
 artifact still checks freshness. Search conflicts with `--raw`, `--manifest`,
 `--start` and `--end`; use range expansion for a known line interval.
 
-## Compact-v4 (default)
+## Compact format
 
 ```sh
 scopelet compress < build.log
 scopelet compress --profile tests < test.log
 ```
 
-Version 4 is the CLI/hook default. It has one header line and no footer; `ID`
-is 16 hex characters of the artifact, resolved like any prefix:
+Every view has one header line and no footer; `ID` is 12 hex characters of the
+artifact, resolved like any prefix. The header carries no recovery syntax:
+`expand ID --find TEXT` reads any folded, omitted or abridged line in full. A
+view of one input labels its lines by number alone; a query's view keeps each
+record's source (`src/a.rs:12 text`). Markers are metadata, never source text:
 
 ```
-[scopelet v4 ID complete]                                          everything shown, or folded into exact repeats
-[scopelet v4 ID omitted=N abridged=M; gaps are not absence; ...]   N units left out, M shown in part (cut line,
-                                                                   similar= group, record without some fields)
-[scopelet v4 ID repeat: identical to output already shown ...]     this conversation already saw these bytes
-failed=2: name (file:line), name (file:line)                      tests: failures to open first (metadata)
-totals runs=17 passed=362 failed=0 ignored=3 (every test ...)    cargo over several binaries: every result summed
-input:40-44 file=src/a.rs more=7                                   search: one file's lines without their path
- 12:text                                                           prefix; 7 of its matches not shown
-input:9-95 file=Cargo.lock changed=+43/-3 omitted                  a lockfile or generated file's diff, counted
-src/components/ files=402 ext=tsx:400,ts:2                         a large listed directory (first and last entries follow)
-envelope {...}  /  table=/items {...}                              a JSON object's other fields, then its dominant array
-"constant":{...}  "omitted_columns":[...]                          columns equal in every row; fields left out of rows
+[scopelet v5 ID complete]                              everything shown, or folded into exact repeats
+[scopelet v5 ID omitted=N abridged=M; gaps are not absence]
+                                                       N units left out, M shown in part (cut line,
+                                                       similar= group, record without some fields)
+[scopelet v5 ID repeat: identical to output already shown in this conversation (N lines)]
+failed=2: name (file:line), name (file:line)           tests: failures to open first (metadata)
+totals runs=17 passed=362 failed=0 ignored=3 (...)     cargo over several binaries: every result summed
+2 repeat=1000 last=2000 error: retry failed            same text at 1000 lines, first shown
+100-599 repeat=500 unchanged                           contiguous run (N = b-a+1)
+1 similar=1000 last=1000 progress 0000: ...            1000 lines sharing a template (digits, long hex, spacing masked)
+7 text_truncated bytes=12000 éééé…                     a line larger than the budget, cut on a character boundary
+40-44                                                  range block: the next 5 lines, each prefixed by one space,
+ line 40 verbatim                                      are lines 40..44 in order (no repeat= on the header)
+40-44 file=src/a.rs more=7                             search: one file's lines without their path
+ 12:text                                               prefix; 7 of its matches not shown
+9-95 file=Cargo.lock changed=+43/-3 omitted            a lockfile or generated file's diff, counted
+src/components/ files=402 ext=tsx:400,ts:2             a large listed directory (first and last entries follow)
+table id,status rows=31/1000 indices=0-28,643,999      a partial table: zero-based record indices
+constant region=eu-west                                the same in every row
+643,failed                                             one CSV row per record shown
+envelope {...}                                         a JSON object's other fields, then its dominant
+table=/items name,phase rows=30                        array as a table (`omitted_fields` names nested ones)
+omitted_columns body,user                              fields left out of the rows shown
 ```
-
-Lines that name a term of the prompt or of the command (a search pattern, a
-test filter) rank ahead of ordinary ones. Use `expand ID --find TEXT` to read
-any folded, omitted or abridged line in full.
-
-## Compact-v5 (opt-in)
-
-`--compact-version 5` or `SCOPELET_COMPACT_VERSION=5` writes v4's selection in
-about 6% fewer tokens, with two changes to what is shown: a listing folds
-build, dependency and cache directories (`node_modules`, `target`,
-`__pycache__`, `.git`, `dist`, `build`, `.venv`...) even when it fits, and a
-file read over 16 KiB shows its definition lines (`fn`, `def`, `class`,
-headings...) before head and tail padding. The header has a 12-character ID and no
-recovery hint (`[scopelet v5 ID omitted=N abridged=M; gaps are not absence]`);
-recover with `expand ID --find TEXT` as in v4. A view of one input labels lines
-by number alone:
-
-```
-42 text                                  line 42 (v4: input:42 text)
-4 similar=480 last=492 text              as in v4, without input:
-40-44                                    range block; indented lines follow
-40-44 file=src/a.rs more=7               search block of one file
-./node_modules/ files=402 artifacts omitted   every entry under it left out
-table id,status rows=31/1000 indices=0-28,643,999
-constant region=eu-west                  the same in every row
-643,failed                               one CSV row per record shown
-```
-
-A table cell is bare unless it would read as something else: a quoted cell is
-a JSON string (`"12"`, `"a,b"`, `" edge"`, `""`), a bare one a number, boolean
-or null as written, else text. Tables with nested values keep v4's JSON form.
-`totals` keeps its explanation.
-
-## Compact-v3
-
-```sh
-scopelet compress --compact-version 3 < build.log
-```
-
-Version 3's header names the artifact once and its
-recovery hint `scopelet expand ID --find TEXT` refers to that reference. It
-shares the JSON table forms of version 2 below; version 4 keeps its body.
-Versions 1 and 2 remain selectable with `--compact-version 1|2`.
 
 Text lines are shown as a cleaned display copy (terminal colours and
 carriage-return rewrites removed); labels stay absolute source lines and
-`expand` returns the original bytes. Markers are metadata, never source text:
+`expand` returns the original bytes. Diagnostics never fold by template, only
+with identical text; other lines that differ only by their numbers fold only
+when the text does not fit. Selection keeps the first and last lines, then the
+first occurrence of each diagnostic template with the stack frame or
+`--> file:line:col` right below it, then repeats, warnings and context,
+filling from both ends so the final summary survives; next to diagnostics,
+ordinary lines that cannot all fit stop at a quarter of the budget. Lines that
+name a term of the prompt or of the command (a search pattern, a test filter)
+rank ahead of ordinary ones.
 
-```
-input:2 repeat=1000 last=2000 error: retry failed   same text at 1000 lines, first shown
-input:100-599 repeat=500 unchanged                  contiguous run (N = b-a+1)
-input:1 similar=1000 last=1000 progress 0000: ...   1000 lines sharing a template (digits, long hex, spacing masked)
-input:7 text_truncated bytes=12000 éééé…            a line larger than the budget, cut on a character boundary
-input:40-44                                         range block: the next 5 lines, each prefixed by one space,
- line 40 verbatim                                   are lines 40..44 in order (no repeat= on the header)
-```
+A table cell is bare unless it would read as something else: a quoted cell is
+a JSON string (`"12"`, `"a,b"`, `" edge"`, `""`), a bare one a number, boolean
+or null as written, else text. A table with nested values keeps its JSON form,
+`table {"columns":[...],"constant":{...},"indices":[...],"rows":[...],...}`,
+where `record_sources` maps rows to source labels and `total_records` counts
+the dataset. Complete cells, exact numbers and missing/null semantics survive.
+`indices`, `rows=N/TOTAL` and `omitted=` describe coverage, not a computed
+aggregate: a partial table cannot establish an exhaustive count.
 
-Diagnostics never fold by template, only with identical text. Selection keeps
-the first and last lines, then the first occurrence of each diagnostic
-template, then repeats, warnings and context, filling from both ends so the
-final summary survives; next to diagnostics, ordinary lines that cannot all
-fit stop at a quarter of the budget. Use
-`expand ID --find TEXT` to read any folded or omitted line in full.
+Before 1.0, five formats coexisted; 1.0 keeps this one. Views and artifacts
+written by earlier versions stay readable: `expand` resolves their
+16-character IDs and full references alike.
 
-## Compact-v2
-
-```sh
-scopelet compress --compact-version 2 < build.log
-scopelet query --file events.jsonl --format jsonl --output compact --compact-version 2
-```
-
-Version 2 keeps full JSON columns when selecting partial tables. `indices` are
-zero-based positions in the original dataset; `record_sources` maps selected
-rows to source labels. `total_records` and `omitted_units` describe coverage,
-not a computed aggregate. Complete cells, exact numbers and missing/null
-semantics survive. A partial table cannot establish an exhaustive count.
-V2 prioritizes distinct diagnostics before repetitions, and links directly to
-saved-source search. Version 1 remains selectable with `--compact-version 1`.
 The query schema is version 1. Artifacts are schema 1, except schema 2 for
-compact-v3 and v4 automatic compression and for a recovery that shows a whole text
-original as its only record, which names the original blob instead of copying
-it; `expand` and queries read both.
+automatic compression and for a recovery that shows a whole text original as
+its only record, which names the original blob instead of copying it;
+`expand` and queries read both.

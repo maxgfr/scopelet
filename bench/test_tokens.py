@@ -50,26 +50,36 @@ class TokensTests(unittest.TestCase):
 
     def test_summary_compares_only_fully_counted_fixtures(self):
         fixtures = {
-            'a': {'tokens': {'m': {'raw': 100, 'v4': 40, 'v5': 30}}},
-            'b': {'tokens': {'m': {'raw': 100, 'v4': 10, 'v5': 12}}},
-            'c': {'tokens': {'m': {'raw': 100, 'v4': None, 'v5': 5}}},
+            'a': {'tokens': {'m': {'raw': 100, 'baseline': 40, 'single': 30}}},
+            'b': {'tokens': {'m': {'raw': 100, 'baseline': 10, 'single': 12}}},
+            'c': {'tokens': {'m': {'raw': 100, 'baseline': None, 'single': 5}}},
         }
-        summary = tokens.summarize(fixtures, 'm', ['v4', 'v5'])
+        summary = tokens.summarize(fixtures, 'm', ['baseline', 'single'])
         self.assertEqual(summary['fixtures_counted'], 2)
         self.assertEqual(summary['fixtures_missing'], 1)
-        self.assertEqual(summary['tokens'], {'raw': 200, 'v4': 50, 'v5': 42})
-        self.assertEqual(summary['vs_v4']['v5'], {'saved_tokens': 8, 'saved_percent': 16.0, 'fixtures_worse': ['b']})
+        self.assertEqual(summary['tokens'], {'raw': 200, 'baseline': 50, 'single': 42})
+        self.assertEqual(summary['single_vs_baseline'], {'saved_tokens': 8, 'saved_percent': 16.0, 'fixtures_worse': ['b']})
+        self.assertEqual(summary['single_vs_raw']['saved_tokens'], 158)
+        # Without a baseline, only the raw output is compared.
+        alone = tokens.summarize({'a': {'tokens': {'m': {'raw': 100, 'single': 30}}}}, 'm', ['single'])
+        self.assertEqual(set(alone), {'fixtures_counted', 'fixtures_missing', 'tokens', 'single_vs_raw'})
 
     @unittest.skipUnless(BINARY.exists(), 'needs target/release/scopelet')
     def test_measure_counts_every_arm_and_never_overwrites(self):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp) / 'tokens.json'
-            report = tokens.measure(BINARY, bytes_counter, ['m'], out)
+            # The tested binary stands in for the baseline: both views agree.
+            report = tokens.measure(BINARY, bytes_counter, ['m'], out, baseline=BINARY)
             self.assertTrue(out.exists())
+            self.assertEqual(report['arms'], ['baseline', 'single'])
+            self.assertIn('listing', report['fixtures'])
             for name, fixture in report['fixtures'].items():
-                self.assertEqual(set(fixture['tokens']['m']), {'raw', *(a for a, _, _ in tokens.arms())}, name)
+                self.assertEqual(set(fixture['tokens']['m']), {'raw', 'baseline', 'single'}, name)
+                self.assertEqual(fixture['bytes']['baseline'], fixture['bytes']['single'], name)
                 self.assertTrue(all(fixture['facts_visible'].values()) or name in tokens.content.RECOVERY_ONLY, name)
-            self.assertGreater(report['summary']['m']['vs_v4']['v5']['saved_tokens'], 0)
+            summary = report['summary']['m']
+            self.assertGreater(summary['single_vs_raw']['saved_tokens'], 0)
+            self.assertEqual(summary['single_vs_baseline']['saved_tokens'], 0)
             # Net of the frame: the stand-in's frame is 7 tokens, `.` one more.
             self.assertEqual(report['frame_tokens'], {'m': 7})
             small = report['fixtures']['small']

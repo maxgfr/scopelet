@@ -47,6 +47,23 @@ class ParseTests(unittest.TestCase):
         partial = STREAM.replace('"cache_read_input_tokens": 20000, ', '')
         self.assertIsNone(live.parse_stream(partial)['input_total'])
 
+    def test_views_shown_are_counted_in_the_tool_results_the_model_read(self):
+        self.assertEqual(live.parse_stream(STREAM)['views_shown'], 0)
+        result = lambda content: json.dumps({'type': 'user', 'message': {'content': [
+            {'type': 'tool_result', 'tool_use_id': 't', 'content': content}]}})
+        stream = '\n'.join([
+            result('[scopelet v5 0123456789ab omitted=3; gaps are not absence]\n1-4\n x\n'),
+            # Both streams of one Bash result, each a view.
+            result([{'type': 'text', 'text': '[scopelet v4 0123456789abcdef complete]\nx\n'},
+                    {'type': 'text', 'text': '[scopelet v5 0123456789ab repeat: identical (400 lines)]\n'}]),
+            # Not views: a quoted marker, a capture note, the raw output.
+            result('let header = "[scopelet v5 {id}";\n[scopelet capture_complete=false exit_code=1]\n'),
+            # The hook's raw response is not what the model read.
+            json.dumps({'type': 'user', 'message': {'content': 'prompt'}, 'tool_use_result': {
+                'stdout': '[scopelet v5 0123456789ab complete]\n'}}),
+        ])
+        self.assertEqual(live.parse_stream(stream)['views_shown'], 3)
+
 
 def run(arm, task, round_, correct=True, cost=0.01, input_total=100, turns=3):
     return {'arm': arm, 'task': task, 'round': round_, 'correct': correct, 'cost_usd': cost,
@@ -132,6 +149,9 @@ class CheckTests(unittest.TestCase):
         self.assertFalse(live.check({'type': 'answer_contains', 'expected': 'src/auth.py'}, None, Path('.')))
         self.assertTrue(live.check({'type': 'answer_number', 'expected': 37}, 'There are 37.', Path('.')))
         self.assertFalse(live.check({'type': 'answer_number', 'expected': 37}, '370', Path('.')))
+        near = {'type': 'answer_contains', 'expected': 'src/a.rs:8', 'forbidden': ['src/b.rs']}
+        self.assertTrue(live.check(near, 'src/a.rs:8', Path('.')))
+        self.assertFalse(live.check(near, 'src/a.rs:8 or src/b.rs:8', Path('.')))
 
     def test_the_fixed_test_must_pass_with_its_tests_untouched(self):
         spec = live.load_tasks()['fix_test']['check']
@@ -266,6 +286,69 @@ class NewTaskTests(unittest.TestCase):
         self.fixed('pytest_many', 'rates.py', '    if units <= 1000:\n        return 0.10\n    if units <= 5000:',
                    '    if units < 1000:\n        return 0.10\n    if units < 5000:', 'test_rates.py')
 
+    def output(self, root, command):
+        """What the command a task imposes prints, both streams."""
+        run = subprocess.run(command, cwd=root, capture_output=True, text=True)
+        return run, run.stdout + run.stderr
+
+    def assert_view_sized(self, text):
+        # Above every exact-size threshold, below the size Claude Code saves
+        # to a file: the model is shown a view inline.
+        self.assertGreater(len(text.encode()), 2 * 1024)
+        self.assertLess(len(text.encode()), 30 * 1024)
+
+    def test_build_warnings_medium(self):
+        temp, root = built('build_warnings_medium')
+        with temp:
+            build, text = self.output(root, ['python3', 'build.py'])
+            self.assertEqual(build.returncode, 1)
+            self.assert_view_sized(text)
+            lines = text.splitlines()
+            self.assertEqual(sum(l.startswith('warning:') for l in lines), 300)
+            errors = [i for i, l in enumerate(lines) if l.startswith('error[')]
+            self.assertEqual(len(errors), 1)
+            self.assertEqual(lines[errors[0] + 1], '  --> src/ledger/settle.rs:88:17')
+            self.assertTrue(any('src/ledger/settled.rs' in l for l in lines))
+        self.answer('build_warnings_medium', 'src/ledger/settle.rs:88', 'src/ledger/settled.rs:88')
+        self.answer('build_warnings_medium', 'src/ledger/settle.rs:88', 'src/mod_bc.rs:88')
+
+    def test_test_report_medium(self):
+        temp, root = built('test_report_medium')
+        with temp:
+            tests, text = self.output(root, ['python3', '-m', 'unittest', '-v', 'test_shipping'])
+            self.assert_view_sized(text)
+            self.assertIn('Ran 150 tests', text)
+            self.assertIn('FAILED (failures=1)', text)
+            self.assertIn('FAIL: test_grams_0500', text)
+        self.fixed('test_report_medium', 'shipping.py', 'if grams < 500:', 'if grams <= 500:', 'test_shipping.py')
+
+    def test_grep_context(self):
+        temp, root = built('grep_context')
+        with temp:
+            _, text = self.output(root, ['grep', '-rn', '-C2', 'charge_card', 'src'])
+            self.assert_view_sized(text)
+            matches = [l for l in text.splitlines() if re.match(r'src/m_\w+\.py:\d+:', l)]
+            self.assertEqual(len(matches), 200)
+            lines = (root / 'src/m_g.py').read_text().splitlines()
+            self.assertEqual(lines[54], '    charge_card(o, t)')
+            self.assertEqual(lines[53], '    t = o.s - o.refund')
+            decoy = (root / 'src/m_d.py').read_text().splitlines()
+            self.assertEqual((decoy[29], decoy[30]), ('    t = o.s - o.refund', '    charge_card_legacy(o, t)'))
+            self.assertEqual(sum('refund' in p.read_text() for p in (root / 'src').glob('*.py')), 2)
+        self.answer('grep_context', 'src/m_g.py:55', 'src/m_d.py:31')
+        self.answer('grep_context', 'src/m_g.py:55', 'src/m_g.py:54')
+
+    def test_diff_medium(self):
+        temp, root = built('diff_medium')
+        with temp:
+            _, text = self.output(root, ['git', 'diff'])
+            self.assert_view_sized(text)
+            self.assertIn('+    return used <= limit', text)
+            self.assertIn('+    if limit > x:', text)
+            changed = re.findall(r'^diff --git a/(\S+)', text, re.M)
+            self.assertEqual(len(changed), 22)
+        self.answer('diff_medium', 'src/quota.py:3', 'src/window.py:3')
+
 
 class FixtureTests(unittest.TestCase):
     def test_generated_repositories_hold_exactly_the_answer(self):
@@ -282,9 +365,9 @@ class FixtureTests(unittest.TestCase):
             self.assertIn('src/auth.py', show)
             self.assertIn('package-lock.json', show)
 
-    def test_twelve_tasks_each_with_a_builder(self):
+    def test_sixteen_tasks_each_with_a_builder(self):
         tasks = live.load_tasks()
-        self.assertEqual(len(tasks), 12)
+        self.assertEqual(len(tasks), 16)
         with tempfile.TemporaryDirectory() as temp:
             for task in tasks:
                 live.build(task, Path(temp) / task)
@@ -307,17 +390,16 @@ class SessionTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 live.session(live.parse_arm('off'), 'find_receipt', spec, 'haiku', 60, False, path)
 
-    def test_an_arm_with_parts_sets_the_v5_grammar(self):
+    def test_an_arm_installs_its_binary_with_no_inherited_scopelet_setting(self):
         calls = []
-        with tempfile.TemporaryDirectory() as temp, \
-                patch.object(live.subprocess, 'run', side_effect=lambda args, **kw: calls.append(kw['env'])):
-            env = live.install(live.parse_arm('g=/bin/echo@5:labels,header'), Path(temp))
-            self.assertEqual(env['SCOPELET_V5_GRAMMAR'], 'labels,header')
-            self.assertEqual(env['SCOPELET_COMPACT_VERSION'], '5')
-            self.assertEqual(calls[0]['SCOPELET_V5_GRAMMAR'], 'labels,header')
-        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'SCOPELET_V5_GRAMMAR': 'labels'}), \
-                patch.object(live.subprocess, 'run'):
-            self.assertNotIn('SCOPELET_V5_GRAMMAR', live.install(live.parse_arm('v5=/bin/echo@5'), Path(temp)))
+        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'SCOPELET_EVENTS': '0'}), \
+                patch.object(live.subprocess, 'run', side_effect=lambda args, **kw: calls.append((args, kw['env']))):
+            env = live.install(live.parse_arm('single=/bin/echo'), Path(temp))
+            self.assertEqual(calls[0][0], ['/bin/echo', 'install', '--agent', 'claude'])
+            self.assertEqual({k for k in env if k.startswith('SCOPELET_')}, {'SCOPELET_CONFIG_DIR', 'SCOPELET_CACHE_DIR'})
+        with tempfile.TemporaryDirectory() as temp, patch.object(live.subprocess, 'run', side_effect=AssertionError):
+            env = live.install(live.parse_arm('off'), Path(temp))
+            self.assertFalse(any(k.startswith('SCOPELET_') for k in env))
 
 
 class LiveGuardTests(unittest.TestCase):
@@ -325,14 +407,12 @@ class LiveGuardTests(unittest.TestCase):
         with patch.object(live.subprocess, 'run', side_effect=AssertionError('called')):
             self.assertEqual(live.main(['--arm', 'off']), 2)
 
-    def test_arms_parse_with_a_version_and_parts(self):
-        self.assertEqual(live.parse_arm('off')['binary'], None)
-        arm = live.parse_arm('v4=/tmp/scopelet@4')
-        self.assertEqual((arm['name'], arm['version'], arm['parts']), ('v4', '4', None))
-        arm = live.parse_arm('v5g=/tmp/scopelet@5:labels,header,tables')
-        self.assertEqual((arm['name'], arm['version'], arm['parts']), ('v5g', '5', 'labels,header,tables'))
-        self.assertEqual(live.parse_arm('none=/tmp/scopelet@5:')['parts'], '')
-        for bad in ('v4=/tmp/scopelet', 'v5=/tmp/scopelet@5:Labels', 'v5=/tmp/scopelet@6'):
+    def test_arms_are_off_or_a_name_and_a_binary(self):
+        self.assertEqual(live.parse_arm('off'), {'name': 'off', 'binary': None})
+        self.assertEqual(live.parse_arm('v4old=/tmp/scopelet-0.11.1'),
+                         {'name': 'v4old', 'binary': Path('/tmp/scopelet-0.11.1').resolve()})
+        # Versions and grammar parts are gone: a binary shows its own format.
+        for bad in ('v4=/tmp/scopelet@4', 'v5g=/tmp/scopelet@5:labels', 'single=', '=/tmp/scopelet', 'a b=/x'):
             with self.assertRaises(Exception):
                 live.parse_arm(bad)
 

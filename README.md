@@ -31,7 +31,7 @@ Your test suite prints 481 results. One of them matters.
 <table>
 <tr>
 <th width="50%">Without Scopelet · 17,549 bytes</th>
-<th width="50%">With Scopelet · 593 bytes</th>
+<th width="50%">With Scopelet · 542 bytes</th>
 </tr>
 <tr>
 <td valign="top">
@@ -65,14 +65,14 @@ Time:        84.113 s
 <td valign="top">
 
 ```
-[scopelet v4 47487d02d1c057f5 omitted=0 abridged=1;
- gaps are not absence; expand ID --find TEXT]
-input:1-3
+[scopelet v5 47487d02d1c0 omitted=0 abridged=1;
+ gaps are not absence]
+1-3
  > app@1.4.2 test
  > jest --runInBand
 
-input:4 similar=480 last=492 PASS  src/modules/module0.test.js
-input:244-252
+4 similar=480 last=492 PASS  src/modules/module0.test.js
+244-252
  FAIL  src/auth/session.test.js
    ● session › refreshes an expiring token
 
@@ -82,7 +82,7 @@ input:244-252
      Received: 1735689599
 
        at Object.<anonymous> (src/auth/session.test.js:42:31)
-input:493-496
+493-496
 
  Test Suites: 1 failed, 480 passed, 481 total
  Tests:       1 failed, 1327 passed, 1328 total
@@ -101,8 +101,9 @@ group stands for lines that differ (here, by their numbers). A view with
 nothing left out says `complete` instead.
 
 This happens automatically, on the machine, with no second model call, no API
-key and no proxy. The original 17,549 bytes are still on disk, and the header
-tells the agent how to get any of them back.
+key and no proxy. The original 17,549 bytes are still on disk under the ID in
+the header, and the session guidance tells the agent how to get any of them
+back.
 
 ## Why you want this
 
@@ -115,8 +116,9 @@ forget what it was doing.
 Scopelet sits on the hook your agent already has. When a command prints
 something large, it replaces the output with a bounded view before the model
 sees it, keeps the exact original bytes in a local content-addressed store,
-and puts the recovery command in the first line. The agent can always ask for
-the rest. It usually does not need to.
+and names them in the first line; the recovery command comes once, with the
+session guidance. The agent can always ask for the rest. It usually does not
+need to.
 
 What it is not: it does not call another model to summarize, it does not
 intercept API traffic, it does not rewrite your conversation history, and it
@@ -196,14 +198,14 @@ it, so the second column says what survived.
 
 | What the command printed | What the agent reads instead | Printed | Read | Removed |
 | --- | --- | ---: | ---: | ---: |
-| 480 passing tests, one failure | The failing test with its expected value, received value and stack frame; the 480 passes as one line marked `similar=480` | 17,549 | 593 | **96.6%** |
-| A retry loop hiding one fatal error | `error: retry failed` once, marked `repeat=1000`, then the single fatal line with its line number | 28,039 | 197 | **99.3%** |
-| 1000 progress lines, then two diagnostics | Both diagnostics word for word; the progress as one line marked `similar=1000` | 136,063 | 349 | **99.7%** |
-| The same log with CRLF endings | The same view; the original `\r\n` bytes stay intact on disk | 137,031 | 305 | **99.8%** |
-| A receipt buried in the middle of a log | The receipt line at `input:501`, amount and currency exact | 136,193 | 467 | **99.7%** |
-| A 1000-row JSON array | A table with the first rows, the one row whose status is `failed`, and the last row; the two columns identical in every row named once, the 21-digit integer exact, every other row counted | 171,834 | 3,979 | **97.7%** |
-| A 1000-row JSONL stream | The same table, each row tagged with its position in the stream | 171,832 | 4,025 | **97.7%** |
-| One 12 KB line with no newline | Its first 1.2 KB behind a `text_truncated bytes=12000` marker | 12,000 | 1,121 | **90.7%** |
+| 480 passing tests, one failure | The failing test with its expected value, received value and stack frame; the 480 passes as one line marked `similar=480` | 17,549 | 542 | **96.9%** |
+| A retry loop hiding one fatal error | `error: retry failed` once, marked `repeat=1000`, then the single fatal line with its line number | 28,039 | 163 | **99.4%** |
+| 1000 progress lines, then two diagnostics | Both diagnostics word for word; the progress as one line marked `similar=1000` | 136,063 | 304 | **99.8%** |
+| The same log with CRLF endings | The same view; the original `\r\n` bytes stay intact on disk | 137,031 | 266 | **99.8%** |
+| A receipt buried in the middle of a log | The receipt line at line 501, amount and currency exact | 136,193 | 428 | **99.7%** |
+| A 1000-row JSON array | A table of CSV rows: the first ones, the one whose status is `failed`, and the last; the two columns identical in every row named once, the 21-digit integer exact, every other row counted | 171,834 | 3,209 | **98.1%** |
+| A 1000-row JSONL stream | The same table; `indices=` names each row's position in the stream | 171,832 | 3,694 | **97.9%** |
+| One 12 KB line with no newline | Its first 1.1 KB behind a `text_truncated bytes=12000` marker | 12,000 | 1,094 | **90.9%** |
 | A 32-byte command output | The 32 bytes exactly as printed | 32 | 32 | untouched |
 
 Small outputs are the last row on purpose. Under 2 KiB nothing happens at all,
@@ -337,44 +339,37 @@ expanded and how, flagging a profile whose views are expanded too often
 (`SCOPELET_EVENTS=0` turns it off). It names a program by its bare name only,
 never its arguments.
 
-Inside a view, `compact-v4` (the default) reads each line the way a terminal
-would, dropping colour codes and keeping only the final state of a progress bar.
-Then:
+Inside a view, Scopelet reads each line the way a terminal would, dropping
+colour codes and keeping only the final state of a progress bar. Then:
 
 | Notation | Meaning |
 | --- | --- |
-| `[scopelet v4 ID complete]` | the whole output is shown or folded into exact repeats |
-| `[scopelet v4 ID omitted=N abridged=M; …]` | N units left out, M shown in part; `expand ID --find TEXT` recovers them |
-| `[scopelet v4 ID repeat: identical to output already shown …]` | this conversation already saw these exact bytes |
+| `[scopelet v5 ID complete]` | the whole output is shown or folded into exact repeats |
+| `[scopelet v5 ID omitted=N abridged=M; gaps are not absence]` | N units left out, M shown in part; `expand ID --find TEXT` recovers them |
+| `[scopelet v5 ID repeat: identical to output already shown …]` | this conversation already saw these exact bytes |
 | `failed=2: name (file:line), …` | below a test view's header: the failures to open first |
 | `totals runs=17 passed=362 failed=0 ignored=3 (every test result line, …)` | below it, for cargo over several test binaries: every `test result:` summed |
-| `input:42 text` | line 42, shown as displayed |
-| `input:10-14 repeat=5 text` | lines 10 to 14 are all this line |
-| `input:4 similar=480 last=492 text` | 480 lines share this shape, first at 4, last at 492 |
-| `input:7 text_truncated bytes=12000 prefix…` | one line too big for the budget, cut on a character boundary |
-| `input:40-44` then indented lines | lines 40 to 44 verbatim, one space of indent each |
-| `input:40-44 file=src/a.rs more=7` then ` 12:text` | search results of one file, its path written once; 7 of its matches not shown |
-| `input:9-95 file=Cargo.lock changed=+43/-3 omitted` | a lockfile's or generated file's diff, counted |
+| `42 text` | line 42, shown as displayed |
+| `10-14 repeat=5 text` | lines 10 to 14 are all this line |
+| `4 similar=480 last=492 text` | 480 lines share this shape, first at 4, last at 492 |
+| `7 text_truncated bytes=12000 prefix…` | one line too big for the budget, cut on a character boundary |
+| `40-44` then indented lines | lines 40 to 44 verbatim, one space of indent each |
+| `40-44 file=src/a.rs more=7` then ` 12:text` | search results of one file, its path written once; 7 of its matches not shown |
+| `9-95 file=Cargo.lock changed=+43/-3 omitted` | a lockfile's or generated file's diff, counted |
 | `src/components/ files=402 ext=tsx:400,ts:2` | a large directory of a listing, with its first and last entries |
-| `./node_modules/ files=402 artifacts omitted` | v5 only: a build, dependency or cache directory of a listing, every entry left out |
-| `envelope {…}` then `table=/items {…}` | a JSON object's other fields, then its dominant array as a table |
-| `"constant":{…}`, `"omitted_columns":[…]` | columns equal in every row, named once; fields left out of the rows |
+| `table id,status rows=31/1000 indices=0-28,643,999` then CSV rows | a table of the rows shown, their positions, and how many there are |
+| `constant region=eu-west`, `omitted_columns body,user` | columns equal in every row, named once; fields left out of the rows |
+| `envelope {…}` then `table=/items …` | a JSON object's other fields, then its dominant array as a table |
 
-Line numbers are always absolute positions in the original. Markers are
-metadata: they are never bytes claimed to appear in your output. Selection
-keeps the first and last line, then the first occurrence of each distinct
-diagnostic, then repeats, warnings and the lines around a failure, filling
-from both ends so a final summary survives a flood of errors.
-`--compact-version 1|2|3` still produce the earlier formats byte for byte.
-`--compact-version 5` (or `SCOPELET_COMPACT_VERSION=5`) is opt-in: v4's
-selection with a 12-character ID, labels without `input:` (`42 text`) and
-tables as CSV rows, 6.1% fewer view tokens on the benchmark fixtures, plus two
-selection rules: a listing folds build and dependency directories
-(`./node_modules/ files=402 artifacts omitted`) and a file read over 16 KiB
-shows its definition lines first. Over twelve live tasks (144 haiku and 48
-sonnet sessions, all correct), no v5 arm cost significantly less per
-successful task than v4, so v4 stays the default
-([bench/README.md](bench/README.md)).
+`ID` is 12 hex characters of the artifact, and a query's view keeps each
+record's source in front of its line numbers (`src/a.rs:12 text`). Line
+numbers are always absolute positions in the original. Markers are metadata:
+they are never bytes claimed to appear in your output. Selection keeps the
+first and last line, then the first occurrence of each distinct diagnostic
+with the stack frame or `--> file:line:col` right below it, then repeats,
+warnings and the lines around a failure, filling from both ends so a final
+summary survives a flood of errors. Scopelet writes one format since 1.0; the
+views and artifacts of earlier versions stay readable by `expand`.
 [Contracts and limits](docs/design.md).
 
 ## Response style

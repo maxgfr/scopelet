@@ -75,8 +75,8 @@ deleted separately. Remove automatic hooks first with `scopelet uninstall --agen
 The binary and local cache can be removed separately. Scopelet configures no
 proxy and sends nothing anywhere: it keeps a local journal, never transmitted,
 of its compression decisions in `<cache>/events/YYYY-MM.jsonl` (time, host,
-profile, the program's bare name, byte counts, reason, version and short hash
-prefixes; no content, argument or path). `scopelet stats [--days N]`
+profile, the program's bare name, byte counts, reason and short hash prefixes;
+no content, argument or path). `scopelet stats [--days N]`
 summarizes it: compressions, bytes saved, why outputs passed through, which
 programs had no profile and how often a compressed view was expanded
 afterwards. `SCOPELET_EVENTS=0` turns the journal off; `clean` does
@@ -140,8 +140,8 @@ Claude Code uses `PostToolUse.updatedToolOutput` (matcher `Bash|Grep`) for Bash
 results with known stdout/stderr fields and for the `content` text of a Grep in
 `content` mode, compressed as search results. Other fields survive unchanged;
 Grep's `files_with_matches` and `count` modes, Read, failure events without a
-replaceable output, images and unknown envelopes pass through. In compact-v4 an
-output identical to one the same conversation was already shown becomes a
+replaceable output, images and unknown envelopes pass through. An output
+identical to one the same conversation was already shown becomes a
 one-line repeat reference (recoverable like any view) until a compaction or a
 clear; each subagent keeps its own memory. Prompt terms and the command's
 search pattern or test filter rank matching lines into the view; they stay in
@@ -169,15 +169,14 @@ needed. Other policy hooks
 must remain enabled. Interactive commands should always use native tools.
 
 Small automatic outputs do not open the cache. Codex leaves a plain `cat` of a
-known regular file up to 16 KiB native in compact-v3 and later (2 KiB in v1
-and v2); missing paths, unknown working directories
+known regular file up to 16 KiB native; missing paths, unknown working directories
 and larger files retain the normal command path. The host still reads the file
 and enforces its permissions, so a subsequent file change is not hidden.
 
 Compression leaves outputs up to 2 KiB intact (16 KiB for a recognized file
 read). Larger outputs are replaced only if the complete replacement saves at
 least 20% and 512 bytes, with a 4 KiB target per stream, or the recognized
-command's target in compact-v3 and later. Repetitions have counts; selected lines stay exact; omissions and
+command's target. Repetitions have counts; selected lines stay exact; omissions and
 immutable recovery references are explicit. A host-truncated input cannot be
 restored to bytes the compressor never received. Existing persisted-output
 previews and Scopelet output pass through. Capture is bounded at 32 MiB per
@@ -203,19 +202,12 @@ then invoke the updated launcher with `install --agent all` and `doctor` again.
 Restart active sessions and review changed Codex hooks. Update any project-local
 copies too; they can shadow the global skill.
 
-## Compact version and additional commands
+## Compact format and recognized commands
 
-Compact-v4 is the default. Set `SCOPELET_COMPACT_VERSION=1`, `2` or `3` in the
-agent process environment to restore an earlier presentation for installed
-hooks, `5` to try v5 (fewer tokens, folded artifact directories, outlines of large files); unset it or set
-`4` to use v4. Direct CLI calls can override it with
-`--compact-version 1|2|3|4|5`. V2 added partial JSON tables and broader
-diagnostic coverage; v3 a leaner envelope and command profiles; v4 a one-line
-header with a 16-character ID, repeat references, relevance anchors, failure
-lines for tests, file-grouped search results, folded listings, collapsed
-lockfile diffs, an install profile and JSON envelope tables; see
-[queries.md](queries.md) for exact recovery semantics.
-The JSON query interface and old saved artifacts remain compatible.
+Hooks, `run --auto` and `compress` write one compact format; see
+[queries.md](queries.md) for its notation and exact recovery semantics. The
+formats of earlier versions were retired in 1.0: their views and saved
+artifacts stay readable by `expand`, and the JSON query interface is unchanged.
 
 Hooks recognize builds, tests and checks (`cargo test|check|clippy|build|nextest|doc`,
 `cargo fmt --check`, `pytest`, `python -m pytest|unittest|mypy`, Python scripts,
@@ -236,9 +228,9 @@ none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
 logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
 `nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
 `rtk` are recognized by the program they run, not by a substring.
-In compact-v3 each kind has its own byte target: 4 KiB for tests, 8 KiB for
-searches, Git and logs, 16 KiB for file reads (and in v4 2 KiB for installs), which also stay exact up to
-16 KiB so an ordinary source file is read whole. Unsupported syntax still runs
+Each kind has its own byte target: 4 KiB for tests, 8 KiB for searches, Git
+and logs, 16 KiB for file reads, which also stay exact up to 16 KiB so an
+ordinary source file is read whole, and 2 KiB for installs. Unsupported syntax still runs
 natively. Recognition
 permits wrapping; it does not guarantee compression. Outputs are replaced only
 when the complete view clears the existing savings gate. Rejected compression

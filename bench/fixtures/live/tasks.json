@@ -46,5 +46,21 @@
   "pytest_many": {
     "prompt": "Run the tests with `python3 -m unittest -v test_rates`, fix the bug in rates.py (do not edit the tests), then run the tests again. Reply with one sentence.",
     "check": {"type": "tests_pass", "command": ["python3", "-m", "unittest", "test_rates"], "unchanged": ["test_rates.py"]}
+  },
+  "build_warnings_medium": {
+    "prompt": "Run `python3 build.py` exactly as written, without a pipe or redirection. The build fails with exactly one error among many warnings. Where is that error? Reply as path:line only.",
+    "check": {"type": "answer_contains", "expected": "src/ledger/settle.rs:88", "forbidden": ["settled.rs", "src/mod_"]}
+  },
+  "test_report_medium": {
+    "prompt": "Run the tests with `python3 -m unittest -v test_shipping` exactly as written, without a pipe or redirection, fix the bug in shipping.py (do not edit the tests), then run the tests again. Reply with one sentence.",
+    "check": {"type": "tests_pass", "command": ["python3", "-m", "unittest", "test_shipping"], "unchanged": ["test_shipping.py"]}
+  },
+  "grep_context": {
+    "prompt": "Run `grep -rn -C2 charge_card src` exactly as written, without a pipe or redirection. Exactly one call to charge_card (not charge_card_legacy) charges a total computed with a refund. Reply with that call as path:line only.",
+    "check": {"type": "answer_contains", "expected": "src/m_g.py:55", "forbidden": ["m_d.py"]}
+  },
+  "diff_medium": {
+    "prompt": "Run `git diff` exactly as written, without a pipe or redirection. One change alters program behavior; the others are cosmetic. Which file and line? Reply as path:line only.",
+    "check": {"type": "answer_contains", "expected": "src/quota.py", "forbidden": ["src/window.py"]}
   }
 }

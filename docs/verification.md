@@ -11,7 +11,8 @@ Ubuntu 24.04 and macOS 14 for every pull request and pre-release push:
 - `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and the
   Rust integration tests: queries, exact byte recovery, freshness, malformed
   input, path and span validation, budgets, cache cleanup, capture throughput,
-  process behaviour, the compact-v3 presentation and the content gate.
+  process behaviour, the compact format (`tests/compact.rs`), including the
+  error location kept among a flood of warnings, and the content gate.
 - `scopelet bench`, the deterministic offline correctness and byte-size check
   built into the binary.
 - `scripts/check_skill.py --pack`: the skill bundle is standalone, its version
@@ -49,7 +50,7 @@ report, so the fixtures cannot drift from the numbers without failing the build.
 The Claude Code adapter skips outputs the host has already persisted to disk:
 Claude supplies `persistedOutputPath` and `persistedOutputSize` before rendering
 its own preview, and recompressing that stdout made the host truncate the
-compact view and hide its omission footer. Failure events keep native output.
+compact view and hide its final lines. Failure events keep native output.
 The replacement shape follows the
 [Claude Code hook contract](https://code.claude.com/docs/en/hooks#posttooluse-decision-control).
 Codex and OpenCode adapters have equivalent contract tests under
