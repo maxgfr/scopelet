@@ -21,7 +21,11 @@ cannot be set, so each condition is drawn several times. An action is
 decomposed into its tool, program, paths, pattern and line range, or a final
 answer judged by the task's own check. A condition's NAP at a step is the
 share of its draws equal to the most frequent raw action; raw's own share is
-the noise floor. Input tokens are the API's exact usage. A failed call is
+the noise floor. A coarse NAP ignores the pattern and line range, which vary
+between draws even on raw output. Paths are taken relative to the session's
+directory. A step whose shown text is not the tool response the hook would
+receive (a Grep the host cut) is skipped and listed. Input tokens are the
+API's exact usage. A failed call is
 null with its error, never zero, and stays in the report.
 
 Calls happen only with `--live`; the key is read from `ANTHROPIC_API_KEY`
@@ -214,7 +218,18 @@ def words(command):
         return command.split()
 
 
-def bash_action(command):
+def relative(path, cwd):
+    """A path as seen from the session's directory: absolute paths under it
+    and `./` prefixes name the same file as the bare relative path."""
+    path = path.rstrip('/')
+    if cwd:
+        for root in {cwd.rstrip('/'), '/private' + cwd.rstrip('/')}:
+            if path.startswith(root + '/'):
+                path = path[len(root) + 1:]
+    return path.removeprefix('./') or '.'
+
+
+def bash_action(command, cwd=None):
     """Program, paths, pattern and line range of a shell command."""
     segments = [s for s in re.split(r'\s*(?:\|\||&&|;|\|)\s*', command) if s.strip()]
     program, pattern, span = None, None, None
@@ -238,23 +253,24 @@ def bash_action(command):
         if name in ('head', 'tail') and span is None:
             m = re.search(r'-n\s*\+?(\d+)|-(\d+)\b', segment)
             span = f'{name}:{m.group(1) or m.group(2)}' if m else name
-    paths = sorted({t.rstrip('/') for s in segments for t in words(s)[1:]
+    paths = sorted({relative(t, cwd) for s in segments for t in words(s)[1:]
                     if not t.startswith('-') and not t.startswith('http') and t != pattern and PATH.search(t)})
     return program, paths, pattern, span
 
 
-def action(content, check=None):
+def action(content, check=None, cwd=None):
     """A comparable form of the assistant's next step: its first tool call,
-    or its final answer judged by `check` (None when that cannot be judged)."""
+    or its final answer judged by `check` (None when that cannot be judged).
+    Paths are relative to the session's directory `cwd`."""
     for block in content:
         if block.get('type') != 'tool_use':
             continue
         tool, data = block.get('name'), block.get('input') or {}
         if tool == 'Bash':
-            program, paths, pattern, span = bash_action(str(data.get('command', '')))
+            program, paths, pattern, span = bash_action(str(data.get('command', '')), cwd)
         else:
             program = None
-            paths = sorted(str(data[k]).removeprefix('./') for k in ('file_path', 'path') if data.get(k))
+            paths = sorted(relative(str(data[k]), cwd) for k in ('file_path', 'path') if data.get(k))
             pattern = data.get('pattern')
             span = f'{data.get("offset")}+{data.get("limit")}' if data.get('offset') or data.get('limit') else None
         return {'kind': 'tool', 'tool': tool, 'program': program, 'paths': paths, 'pattern': pattern, 'range': span}
@@ -262,14 +278,20 @@ def action(content, check=None):
     return {'kind': 'final', 'correct': check(text) if check else None}
 
 
-def key(act):
-    return json.dumps(act, sort_keys=True) if act is not None else None
+def key(act, coarse=False):
+    """An action's identity. `coarse` ignores the search pattern and line
+    range, which vary from draw to draw even on the raw output."""
+    if act is None:
+        return None
+    if coarse:
+        act = {k: v for k, v in act.items() if k not in ('pattern', 'range')}
+    return json.dumps(act, sort_keys=True)
 
 
-def nap(draws, reference):
+def nap(draws, reference, coarse=False):
     """Share of the successful draws equal to `reference`, or None."""
     known = [d['action'] for d in draws if d.get('action') is not None]
-    return sum(key(a) == reference for a in known) / len(known) if known else None
+    return sum(key(a, coarse) == reference for a in known) / len(known) if known else None
 
 
 # --- the API ------------------------------------------------------------------
@@ -313,7 +335,7 @@ def replay(messages, step, text):
 USAGE = ('input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'output_tokens')
 
 
-def draw(client, conversation, check):
+def draw(client, conversation, check, cwd=None):
     try:
         response = client(conversation)
     except Exception as error:  # noqa: BLE001 - a failure is reported, not fatal
@@ -325,27 +347,27 @@ def draw(client, conversation, check):
               'stop_reason': response.get('stop_reason')}
     if response.get('stop_reason') in ('refusal', 'max_tokens'):
         return {**record, 'action': None, 'error': f'stop_reason {response.get("stop_reason")}'}
-    return {**record, 'action': action(response.get('content') or [], check), 'error': None}
+    return {**record, 'action': action(response.get('content') or [], check, cwd), 'error': None}
 
 
-def measure_step(client, messages, step, texts, check, draws):
+def measure_step(client, messages, step, texts, check, draws, cwd=None):
     """Every draw of every condition; raw's first draw writes the cache."""
     conversations = {name: replay(messages, step, texts[name]) for name, _, _ in CONDITIONS}
     results = {name: [] for name in conversations}
-    results['raw'].append(draw(client, conversations['raw'], check))
+    results['raw'].append(draw(client, conversations['raw'], check, cwd))
     for i in range(draws):
         for name in conversations:
             if name == 'raw' and i == 0:
                 continue
-            results[name].append(draw(client, conversations[name], check))
+            results[name].append(draw(client, conversations[name], check, cwd))
     return results
 
 
-def score(results):
+def score(results, coarse=False):
     """NAP per condition against raw's most frequent action, and raw's own."""
-    actions = [key(d['action']) for d in results['raw'] if d.get('action') is not None]
+    actions = [key(d['action'], coarse) for d in results['raw'] if d.get('action') is not None]
     modal = Counter(actions).most_common(1)[0][0] if actions else None
-    return modal, {name: (nap(draws, modal) if modal is not None else None) for name, draws in results.items()}
+    return modal, {name: (nap(draws, modal, coarse) if modal is not None else None) for name, draws in results.items()}
 
 
 def summarize(steps):
@@ -358,6 +380,7 @@ def summarize(steps):
         totals = [d['input_total'] for d in draws if d['input_total'] is not None]
         summary['conditions'][name] = {
             'mean_nap': mean([s['nap'][name] for s in scored]),
+            'mean_nap_coarse': mean([s['nap_coarse'][name] for s in scored if s['nap_coarse'][name] is not None]),
             'view_bytes': sum(s['view_bytes'][name] for s in scored),
             'mean_input_total': mean(totals), 'draws': len(draws),
             'errors': sum(d['error'] is not None for d in draws),
@@ -365,7 +388,8 @@ def summarize(steps):
     summary['by_task'] = {}
     for task in sorted({s['task'] for s in scored}):
         rows = [s for s in scored if s['task'] == task]
-        summary['by_task'][task] = {'steps': len(rows), **{n: mean([s['nap'][n] for s in rows]) for n in names}}
+        summary['by_task'][task] = {'steps': len(rows), **{n: mean([s['nap'][n] for s in rows]) for n in names},
+                                    'coarse': {n: mean([s['nap_coarse'][n] for s in rows]) for n in names}}
     return summary
 
 
@@ -387,22 +411,38 @@ def run(binary, transcripts, client, out, arm='off', draws=DRAWS, workers=4):
         check = None if spec['type'] == 'tests_pass' else (lambda text, spec=spec: live.check(spec, text, Path('.')))
         with gzip.open(path, 'rt', encoding='utf-8') as f:
             events = [json.loads(line) for line in f if line.strip().startswith('{')]
+        cwd = next((e.get('cwd') for e in events if e.get('type') == 'system' and e.get('cwd')), None)
         messages, steps = rebuild(events, prompt)
         for index, step in enumerate(steps):
             raw_text = messages[step['message']]['content'][step['block']]['content']
+            original = composed(step['tool'], step['response'])
+            if step['response'].get('persistedOutputPath') or step['response'].get('persistedOutputSize'):
+                # The host saved it and showed a preview; the hook passes
+                # such a result through, so every arm shows the same preview.
+                report['skipped'].append({'transcript': path.name, 'step': index, 'tool': step['tool'],
+                                          'reason': 'persisted by the host: every arm shows its preview'})
+                continue
+            if original is None or original not in raw_text:
+                # The host showed something else than the response the hook
+                # receives (a Grep cut to its head limit): not comparable.
+                report['skipped'].append({'transcript': path.name, 'step': index, 'tool': step['tool'],
+                                          'reason': 'shown text is not the tool response'})
+                continue
             texts = views(binary, step, raw_text, prompt)
             if all(texts[n] == raw_text for n, _, _ in CONDITIONS):
                 continue
-            jobs.append((path.name, round_, task, index, messages, step, texts, check))
+            jobs.append((path.name, round_, task, index, messages, step, texts, check, cwd))
 
     def one(job):
-        name, round_, task, index, messages, step, texts, check = job
-        results = measure_step(client, messages, step, texts, check, draws)
+        name, round_, task, index, messages, step, texts, check, cwd = job
+        results = measure_step(client, messages, step, texts, check, draws, cwd)
         modal, scores = score(results)
+        _, coarse = score(results, coarse=True)
         command = step['input'].get('command') if step['tool'] == 'Bash' else step['input'].get('pattern')
         return {'transcript': name, 'round': round_, 'task': task, 'step': index, 'tool': step['tool'],
                 'command': command, 'view_bytes': {n: len(t.encode()) for n, t in texts.items()},
-                'raw_action': json.loads(modal) if modal else None, 'nap': scores, 'draws': results}
+                'raw_action': json.loads(modal) if modal else None, 'nap': scores, 'nap_coarse': coarse,
+                'draws': results}
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for row in pool.map(one, jobs):

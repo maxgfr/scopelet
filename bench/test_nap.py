@@ -98,6 +98,25 @@ class ActionTests(unittest.TestCase):
         self.assertEqual(nap.action([{'type': 'text', 'text': 'src/ledger/settle.rs'}], check), {'kind': 'final', 'correct': True})
         self.assertEqual(nap.action([{'type': 'text', 'text': 'Done.'}]), {'kind': 'final', 'correct': None})
 
+    def test_paths_are_relative_to_the_session_directory(self):
+        cwd = '/var/folders/x/T/repo'
+        grep = lambda path: [{'type': 'tool_use', 'name': 'Grep', 'input': {'pattern': 'x', 'path': path}}]
+        same = {nap.key(nap.action(grep(p), cwd=cwd)) for p in
+                (f'{cwd}/logs/a.log', f'/private{cwd}/logs/a.log', './logs/a.log', 'logs/a.log')}
+        self.assertEqual(len(same), 1)
+        self.assertEqual(nap.bash_action(f'grep -n x {cwd}/logs/a.log', cwd)[1], ['logs/a.log'])
+
+    def test_coarse_nap_ignores_pattern_and_range(self):
+        call = lambda pattern: {'action': {'kind': 'tool', 'tool': 'Grep', 'program': None, 'paths': ['a.log'],
+                                           'pattern': pattern, 'range': None}}
+        results = {'raw': [call('ERROR'), call('ERROR|WARN'), call('ERROR')], 'v4': [call('Caused')] * 3,
+                   'v5g': [call('ERROR')] * 3, 'v5': [{'action': {'kind': 'final', 'correct': True}}] * 3}
+        _, strict = nap.score(results)
+        _, coarse = nap.score(results, coarse=True)
+        self.assertEqual((strict['v4'], coarse['v4']), (0, 1))
+        self.assertEqual((strict['raw'], coarse['raw']), (2 / 3, 1))
+        self.assertEqual(coarse['v5'], 0)
+
     def test_nap_is_the_share_of_draws_equal_to_the_modal_raw_action(self):
         a, b = {'kind': 'final', 'correct': True}, {'kind': 'final', 'correct': False}
         results = {'raw': [{'action': a}, {'action': a}, {'action': b}],
@@ -152,6 +171,26 @@ class RunTests(unittest.TestCase):
             self.assertTrue((out / 'report.json').exists())
             with self.assertRaises(FileExistsError):
                 nap.run(BINARY, temp, fake_client([]), out)
+
+    def test_a_result_the_host_cut_is_skipped_not_compared(self):
+        events = transcript(build_output())
+        # Claude Code showed a head of the output, the response holds it all.
+        events[4]['message']['content'][0]['content'] = build_output()[:1500]
+        with tempfile.TemporaryDirectory() as temp:
+            self.write(temp, '0-build_warnings-off.jsonl.gz', events)
+            report = nap.run(BINARY, temp, fake_client([]), Path(temp) / 'nap', draws=1, workers=1)
+            self.assertEqual(report['steps'], [])
+            self.assertEqual(report['skipped'][0]['reason'], 'shown text is not the tool response')
+
+    def test_a_result_the_host_persisted_is_skipped(self):
+        events = transcript(build_output())
+        events[4]['message']['content'][0]['content'] = '<persisted-output>\nPreview (first 2KB):\n...'
+        events[4]['tool_use_result'].update(persistedOutputPath='/x/tool-results/a.txt', persistedOutputSize=40000)
+        with tempfile.TemporaryDirectory() as temp:
+            self.write(temp, '0-build_warnings-off.jsonl.gz', events)
+            report = nap.run(BINARY, temp, fake_client([]), Path(temp) / 'nap', draws=1, workers=1)
+            self.assertEqual(report['steps'], [])
+            self.assertTrue(report['skipped'][0]['reason'].startswith('persisted by the host'))
 
     def test_failed_calls_are_null_with_their_error(self):
         events = transcript(build_output().replace('mismatched types', 'mismatched types boom'))
