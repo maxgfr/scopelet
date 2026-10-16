@@ -1,5 +1,8 @@
+import gzip
 import json
+import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -9,13 +12,14 @@ import live
 
 STREAM = '\n'.join(json.dumps(e) for e in [
     {'type': 'system', 'subtype': 'init'},
-    {'type': 'assistant', 'message': {'content': [{'type': 'text', 'text': 'Looking.'},
-                                                  {'type': 'tool_use', 'name': 'Bash', 'input': {}}]}},
+    {'type': 'assistant', 'message': {'model': 'claude-haiku-5-5', 'content': [{'type': 'text', 'text': 'Looking.'},
+                                                                              {'type': 'tool_use', 'name': 'Bash', 'input': {}}]}},
     {'type': 'user', 'message': {'content': [{'type': 'tool_result', 'content': 'x'}]}},
     {'type': 'assistant', 'message': {'content': [{'type': 'tool_use', 'name': 'Read', 'input': {}}]}},
     {'type': 'result', 'subtype': 'success', 'is_error': False, 'num_turns': 3, 'total_cost_usd': 0.0123,
      'result': 'RCPT-7139-QX', 'usage': {'input_tokens': 12, 'cache_creation_input_tokens': 3000,
-                                         'cache_read_input_tokens': 20000, 'output_tokens': 150}},
+                                         'cache_read_input_tokens': 20000, 'output_tokens': 150},
+     'modelUsage': {'claude-haiku-5-5': {'inputTokens': 12}, 'claude-haiku-5-5-mini': {'inputTokens': 1}}},
 ])
 
 
@@ -30,13 +34,23 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(record['answer'], 'RCPT-7139-QX')
         self.assertFalse(record['session_error'])
 
+    def test_served_models_come_from_messages_and_model_usage(self):
+        self.assertEqual(live.parse_stream(STREAM)['models_served'], ['claude-haiku-5-5', 'claude-haiku-5-5-mini'])
+        bare = STREAM.replace('"model": "claude-haiku-5-5", ', '').replace('"modelUsage"', '"other"')
+        self.assertIsNone(live.parse_stream(bare)['models_served'])
+
     def test_missing_usage_is_unknown_never_zero(self):
         record = live.parse_stream('not json\n')
-        for key in ('input_tokens', 'input_total', 'output_tokens', 'turns', 'tool_calls'):
+        for key in ('input_tokens', 'input_total', 'output_tokens', 'turns', 'tool_calls', 'models_served'):
             self.assertIsNone(record[key], key)
         self.assertTrue(record['session_error'])
         partial = STREAM.replace('"cache_read_input_tokens": 20000, ', '')
         self.assertIsNone(live.parse_stream(partial)['input_total'])
+
+
+def run(arm, task, round_, correct=True, cost=0.01, input_total=100, turns=3):
+    return {'arm': arm, 'task': task, 'round': round_, 'correct': correct, 'cost_usd': cost,
+            'input_total': input_total, 'turns': turns}
 
 
 class SummaryTests(unittest.TestCase):
@@ -60,6 +74,57 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(summary['find_receipt']['v4']['median_tool_calls'], 2)
         self.assertEqual(summary['find_receipt']['v4']['median_cost_usd'], 0.0123)
 
+    def test_cost_per_success_counts_failed_runs_and_skips_unknown_costs(self):
+        rows = [run('a', 't', 0, cost=0.02), run('a', 't', 1, correct=False, cost=0.04),
+                run('a', 't', 2, cost=None)]
+        cps, unknown = live.cost_per_success(rows)
+        self.assertAlmostEqual(cps, 0.06)
+        self.assertEqual(unknown, 1)
+        self.assertEqual(live.cost_per_success([run('a', 't', 0, correct=False)]), (None, 0))
+        cell = live.summarize(rows, ['a'], ['t'])['all']['a']
+        self.assertAlmostEqual(cell['cost_per_success'], 0.06)
+        self.assertEqual(cell['cost_unknown'], 1)
+        self.assertAlmostEqual(cell['total_cost_usd'], 0.06)
+
+    def test_arms_are_paired_by_task_and_round(self):
+        records = [run('v4', 't1', 0, cost=0.10, input_total=1000, turns=4),
+                   run('v5', 't1', 0, cost=0.08, input_total=900, turns=4),
+                   run('v4', 't2', 0, cost=0.10, input_total=None),
+                   run('v5', 't2', 0, cost=0.06, input_total=700, turns=2),
+                   # Unpaired: the baseline never ran t2 in round 1.
+                   run('v5', 't2', 1, cost=5.0)]
+        paired = live.summarize(records, ['v4', 'v5'], ['t1', 't2'], baseline='v4')['paired']['v5']
+        self.assertEqual(paired['pairs'], 2)
+        self.assertAlmostEqual(paired['mean_delta']['cost_usd']['value'], -0.03)
+        self.assertEqual(paired['mean_delta']['input_total']['value'], -100)
+        self.assertEqual(paired['mean_delta']['input_total']['pairs_unknown'], 1)
+        self.assertAlmostEqual(paired['cost_per_success_delta']['value'], (0.14 - 0.20) / 2)
+        self.assertEqual(paired['correct'], {'v5': 2, 'v4': 2})
+        self.assertNotIn('paired', live.summarize(records, ['v4', 'v5'], ['t1'], baseline='v3'))
+
+    def test_the_bootstrap_resamples_tasks_with_a_fixed_seed(self):
+        # Every task gains 1: the interval is that point.
+        same = live.bootstrap([[1], [1], [1]], lambda s: sum(g[0] for g in s) / len(s))
+        self.assertEqual(same['ci95'], [1, 1])
+        # Two tasks, 1 and 3: resampled means are 1, 2 or 3, with 1/4, 1/2, 1/4.
+        two = live.bootstrap([[1], [3]], lambda s: sum(g[0] for g in s) / len(s))
+        self.assertEqual(two['ci95'], [1, 3])
+        self.assertEqual(two, live.bootstrap([[1], [3]], lambda s: sum(g[0] for g in s) / len(s)))
+        undefined = live.bootstrap([[1], [None]], lambda s: None if any(g[0] is None for g in s) else 1, draws=1000)
+        self.assertGreater(undefined['undefined_draws'], 600)
+        self.assertEqual(undefined['ci95'], [1, 1])
+
+    def test_paired_intervals_cover_cost_per_success(self):
+        records = []
+        for t in range(6):
+            for r in range(3):
+                records += [run('v4', f't{t}', r, cost=0.10), run('v5', f't{t}', r, cost=0.10 - 0.01 * (t + 1))]
+        paired = live.paired(records, 'v5', 'v4', [f't{t}' for t in range(6)], draws=2000)
+        low, high = paired['cost_per_success_delta']['ci95']
+        self.assertLess(high, 0)
+        self.assertLessEqual(low, paired['cost_per_success_delta']['value'])
+        self.assertEqual(paired['mean_delta']['turns']['ci95'], [0, 0])
+
 
 class CheckTests(unittest.TestCase):
     def test_answers_are_checked_literally_and_as_numbers(self):
@@ -73,12 +138,130 @@ class CheckTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             repo = Path(temp) / 'repo'
             live.build('fix_test', repo)
-            self.assertFalse(live.check(spec, '', repo))
+            self.assertFalse(live.check(spec, '', repo, 'fix_test'))
             source = (repo / 'inventory.py').read_text()
             (repo / 'inventory.py').write_text(source.replace('quantity < threshold', 'quantity <= threshold'))
-            self.assertTrue(live.check(spec, '', repo))
+            self.assertTrue(live.check(spec, '', repo, 'fix_test'))
             (repo / 'test_inventory.py').write_text('')
-            self.assertFalse(live.check(spec, '', repo))
+            self.assertFalse(live.check(spec, '', repo, 'fix_test'))
+
+
+def built(task):
+    temp = tempfile.TemporaryDirectory()
+    root = Path(temp.name) / task
+    live.build(task, root)
+    return temp, root
+
+
+class NewTaskTests(unittest.TestCase):
+    """Each generated task has one right answer, which its check accepts and
+    a near miss does not."""
+
+    def answer(self, task, right, wrong):
+        spec = live.load_tasks()[task]['check']
+        self.assertTrue(live.check(spec, right, Path('.')), right)
+        self.assertFalse(live.check(spec, wrong, Path('.')), wrong)
+
+    def fixed(self, task, path, old, new, tests):
+        spec = live.load_tasks()[task]['check']
+        temp, root = built(task)
+        with temp:
+            self.assertFalse(live.check(spec, '', root, task))
+            source = (root / path).read_text()
+            self.assertEqual(source.count(old), 1)
+            (root / path).write_text(source.replace(old, new))
+            self.assertTrue(live.check(spec, '', root, task))
+            (root / tests).write_text((root / tests).read_text() + '\n# edited\n')
+            self.assertFalse(live.check(spec, '', root, task))
+
+    def test_every_task_builds_deterministically(self):
+        for task in live.load_tasks():
+            first, a = built(task)
+            second, b = built(task)
+            with first, second:
+                files = lambda root: {str(p.relative_to(root)): p.read_bytes() for p in sorted(root.rglob('*'))
+                                      if p.is_file() and '.git' not in p.parts}
+                self.assertEqual(files(a), files(b), task)
+
+    def test_search_symbol(self):
+        temp, root = built('search_symbol')
+        with temp:
+            self.assertEqual(len(list(root.rglob('*.py'))), 300)
+            found = subprocess.run(['rg', '-n', r'^def reconcile_ledger\(', '.'], cwd=root, capture_output=True, text=True).stdout
+            self.assertEqual(found.splitlines(), ['./src/pkg_g/mod_bih.py:15:def reconcile_ledger(batch, tag):'])
+        self.answer('search_symbol', './src/pkg_g/mod_bih.py:15', 'src/pkg_a/mod_ec.py:9')
+
+    def test_git_log_find(self):
+        temp, root = built('git_log_find')
+        with temp:
+            introduced = subprocess.run(['git', 'log', '--format=%s', '-S', 'price + discount'], cwd=root,
+                                        capture_output=True, text=True).stdout
+            self.assertEqual(introduced.splitlines(), ['Tidy pricing helpers'])
+            subjects = subprocess.run(['git', 'log', '--format=%s'], cwd=root, capture_output=True, text=True).stdout.splitlines()
+            self.assertEqual(len(subjects), len(set(subjects)))
+        self.answer('git_log_find', 'Tidy pricing helpers', 'Tune rates for region bh')
+
+    def test_listing_artifacts(self):
+        temp, root = built('listing_artifacts')
+        with temp:
+            artifacts = {'node_modules', '.venv', 'build', 'target', '__pycache__'}
+            every = [p for p in root.rglob('*.py')]
+            own = [p for p in every if not artifacts & set(p.relative_to(root).parts)]
+            self.assertEqual(len(own), live.load_tasks()['listing_artifacts']['check']['expected'])
+            self.assertGreater(len(every), 2 * len(own))
+        self.answer('listing_artifacts', '52', str(len(every)))
+
+    def test_large_file_fix(self):
+        temp, root = built('large_file_fix')
+        with temp:
+            self.assertGreater((root / 'billing.py').stat().st_size, 40 * 1024)
+        self.fixed('large_file_fix', 'billing.py', 'max(fee, amount * 0.25)', 'min(fee, amount * 0.25)', 'test_billing.py')
+
+    def test_stack_trace(self):
+        temp, root = built('stack_trace')
+        with temp:
+            log = (root / 'logs/service.log').read_text().splitlines()
+            causes = [i for i, line in enumerate(log) if line.startswith('Caused by:')]
+            self.assertIn('LedgerService.java:214', log[causes[-1] + 1])
+            self.assertEqual(sum('LedgerService.java:214' in line for line in log), 1)
+            self.assertGreater(sum('NullPointerException' in line for line in log), 2)
+        self.answer('stack_trace', 'LedgerService.java:214', 'LedgerService.java:301')
+
+    def test_json_api(self):
+        temp, root = built('json_api')
+        with temp:
+            text = (root / 'api/issues.json').read_text()
+            self.assertEqual(text.count('\n'), 0)
+            issues = json.loads(text)
+            self.assertEqual(len(issues), 200)
+            names = lambda i: [l['name'] for l in i['labels']]
+            exact = sum(i['state'] == 'open' and 'regression' in names(i) for i in issues)
+            loose = sum(i['state'] == 'open' and 'regression' in json.dumps(i) for i in issues)
+            self.assertEqual(exact, live.load_tasks()['json_api']['check']['expected'])
+            self.assertNotEqual(exact, loose)
+        self.answer('json_api', str(exact), str(loose))
+
+    def test_build_warnings(self):
+        temp, root = built('build_warnings')
+        with temp:
+            build = subprocess.run(['python3', 'build.py'], cwd=root, capture_output=True, text=True)
+            self.assertEqual(build.returncode, 1)
+            lines = build.stderr.splitlines()
+            self.assertEqual(sum(l.startswith('warning:') for l in lines), 2000)
+            errors = [i for i, l in enumerate(lines) if l.startswith('error[')]
+            self.assertEqual(len(errors), 1)
+            self.assertIn('src/ledger/settle.rs', lines[errors[0] + 1])
+            self.assertEqual(sum('src/ledger/settle.rs' in l for l in lines), 1)
+        self.answer('build_warnings', 'src/ledger/settle.rs', 'src/ledger/settled.rs')
+
+    def test_pytest_many(self):
+        temp, root = built('pytest_many')
+        with temp:
+            tests = subprocess.run(['python3', '-m', 'unittest', 'test_rates'], cwd=root, capture_output=True, text=True)
+            self.assertIn('Ran 600 tests', tests.stderr)
+            self.assertIn('FAILED (failures=2)', tests.stderr)
+        self.fixed('pytest_many', 'rates.py', '    if units <= 1000:\n        return 0.10\n    if units <= 5000:',
+                   '    if units < 1000:\n        return 0.10\n    if units < 5000:', 'test_rates.py')
 
 
 class FixtureTests(unittest.TestCase):
@@ -96,18 +279,59 @@ class FixtureTests(unittest.TestCase):
             self.assertIn('src/auth.py', show)
             self.assertIn('package-lock.json', show)
 
+    def test_twelve_tasks_each_with_a_builder(self):
+        tasks = live.load_tasks()
+        self.assertEqual(len(tasks), 12)
+        with tempfile.TemporaryDirectory() as temp:
+            for task in tasks:
+                live.build(task, Path(temp) / task)
+
+
+class SessionTests(unittest.TestCase):
+    def test_a_session_keeps_its_raw_transcript_and_never_overwrites_it(self):
+        def fake(args, **kwargs):
+            if args[0] == 'claude':
+                return subprocess.CompletedProcess(args, 0, STREAM, '')
+            return subprocess.run(args, **kwargs)
+        spec = live.load_tasks()['find_receipt']
+        with tempfile.TemporaryDirectory() as temp, patch.object(live.subprocess, 'run', side_effect=fake):
+            path = live.transcript_path(Path(temp), 0, 'find_receipt', 'off')
+            record = live.session(live.parse_arm('off'), 'find_receipt', spec, 'haiku', 60, False, path)
+            self.assertTrue(record['correct'])
+            self.assertEqual(path.name, '0-find_receipt-off.jsonl.gz')
+            with gzip.open(path, 'rt') as f:
+                self.assertEqual(f.read(), STREAM)
+            with self.assertRaises(FileExistsError):
+                live.session(live.parse_arm('off'), 'find_receipt', spec, 'haiku', 60, False, path)
+
+    def test_an_arm_with_parts_sets_the_v5_grammar(self):
+        calls = []
+        with tempfile.TemporaryDirectory() as temp, \
+                patch.object(live.subprocess, 'run', side_effect=lambda args, **kw: calls.append(kw['env'])):
+            env = live.install(live.parse_arm('g=/bin/echo@5:labels,header'), Path(temp))
+            self.assertEqual(env['SCOPELET_V5_GRAMMAR'], 'labels,header')
+            self.assertEqual(env['SCOPELET_COMPACT_VERSION'], '5')
+            self.assertEqual(calls[0]['SCOPELET_V5_GRAMMAR'], 'labels,header')
+        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'SCOPELET_V5_GRAMMAR': 'labels'}), \
+                patch.object(live.subprocess, 'run'):
+            self.assertNotIn('SCOPELET_V5_GRAMMAR', live.install(live.parse_arm('v5=/bin/echo@5'), Path(temp)))
+
 
 class LiveGuardTests(unittest.TestCase):
     def test_nothing_runs_without_live(self):
         with patch.object(live.subprocess, 'run', side_effect=AssertionError('called')):
             self.assertEqual(live.main(['--arm', 'off']), 2)
 
-    def test_arms_parse_with_a_version(self):
+    def test_arms_parse_with_a_version_and_parts(self):
         self.assertEqual(live.parse_arm('off')['binary'], None)
         arm = live.parse_arm('v4=/tmp/scopelet@4')
-        self.assertEqual((arm['name'], arm['version']), ('v4', '4'))
-        with self.assertRaises(Exception):
-            live.parse_arm('v4=/tmp/scopelet')
+        self.assertEqual((arm['name'], arm['version'], arm['parts']), ('v4', '4', None))
+        arm = live.parse_arm('v5g=/tmp/scopelet@5:labels,header,tables')
+        self.assertEqual((arm['name'], arm['version'], arm['parts']), ('v5g', '5', 'labels,header,tables'))
+        self.assertEqual(live.parse_arm('none=/tmp/scopelet@5:')['parts'], '')
+        for bad in ('v4=/tmp/scopelet', 'v5=/tmp/scopelet@5:Labels', 'v5=/tmp/scopelet@6'):
+            with self.assertRaises(Exception):
+                live.parse_arm(bad)
 
 
 if __name__ == '__main__':

@@ -14,5 +14,37 @@
   "review_diff": {
     "prompt": "Review the last commit with `git show HEAD`. Which source file and line changed program behavior? Reply as path:line only.",
     "check": {"type": "answer_contains", "expected": "src/auth.py"}
+  },
+  "search_symbol": {
+    "prompt": "Use `rg -n reconcile_ledger` to find where the function reconcile_ledger is defined (its def line, not a call). Reply as path:line only.",
+    "check": {"type": "answer_contains", "expected": "src/pkg_g/mod_bih.py:15"}
+  },
+  "git_log_find": {
+    "prompt": "apply_discount in pricing.py adds the discount instead of subtracting it. Use `git log -p` to find the commit that introduced this bug. Reply with that commit's subject line only.",
+    "check": {"type": "answer_contains", "expected": "Tidy pricing helpers"}
+  },
+  "listing_artifacts": {
+    "prompt": "List this project's files with `find .`, then count its own Python source files (*.py), leaving out dependency, build and cache directories (node_modules, .venv, build, target, __pycache__). Reply with the number only.",
+    "check": {"type": "answer_number", "expected": 52}
+  },
+  "large_file_fix": {
+    "prompt": "billing.py is a large module and compute_late_fee in it is wrong. Run `python3 -m unittest test_billing`, fix compute_late_fee in billing.py (do not edit the tests), then run the tests again. Reply with one sentence.",
+    "check": {"type": "tests_pass", "command": ["python3", "-m", "unittest", "test_billing"], "unchanged": ["test_billing.py"]}
+  },
+  "stack_trace": {
+    "prompt": "logs/service.log records a failed settlement. Find the root cause of that error: the deepest \"Caused by\" exception and the file and line where it was thrown. Reply as File.java:line only.",
+    "check": {"type": "answer_contains", "expected": "LedgerService.java:214"}
+  },
+  "json_api": {
+    "prompt": "api/issues.json is a minified GitHub-style API response. How many issues have state \"open\" and carry the label named exactly \"regression\"? Compute it with shell commands. Reply with the number only.",
+    "check": {"type": "answer_number", "expected": 26}
+  },
+  "build_warnings": {
+    "prompt": "Run `python3 build.py`. The build fails with exactly one error among many warnings. Which source file has the error? Reply with the path only.",
+    "check": {"type": "answer_contains", "expected": "src/ledger/settle.rs"}
+  },
+  "pytest_many": {
+    "prompt": "Run the tests with `python3 -m unittest -v test_rates`, fix the bug in rates.py (do not edit the tests), then run the tests again. Reply with one sentence.",
+    "check": {"type": "tests_pass", "command": ["python3", "-m", "unittest", "test_rates"], "unchanged": ["test_rates.py"]}
   }
 }

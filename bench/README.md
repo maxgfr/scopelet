@@ -124,13 +124,29 @@ the question the byte probes cannot: with the same task, does a session with
 Scopelet read fewer tokens or make fewer calls, and does it still get the task
 right?
 
-Four synthetic tasks live in `fixtures/live/`: fix an off-by-one in a Python
-module whose 302-test suite prints a long report, find one receipt id in a
-20,000-line log, count failed events of one suite in a 5,000-line JSONL file,
-and name the source line that changed behavior in a commit that also rewrites
-a large `package-lock.json`. Each task is checked on the result, not on the
-wording: the tests must pass with the test file untouched, the answer must
-contain the receipt id, the exact count or the source path.
+Twelve synthetic tasks live in `fixtures/live/tasks.json`, one per output
+profile, each built deterministically by `live.py`:
+
+| Task | What the session faces |
+|---|---|
+| `fix_test` | an off-by-one in a Python module whose 302-test suite prints a long report |
+| `find_receipt` | one receipt id in a 20,000-line log |
+| `count_failures` | failed events of one suite in a 5,000-line JSONL file |
+| `review_diff` | the behavior change in a commit that also rewrites a large `package-lock.json` |
+| `search_symbol` | the definition of a function called 1,800 times across 300 files (`rg`) |
+| `git_log_find` | the commit, under a misleading subject, that flipped a sign (`git log -p`, 30 commits) |
+| `listing_artifacts` | the project's own `.py` files in a tree full of `node_modules`, `.venv`, `build`, `target`, `__pycache__` |
+| `large_file_fix` | a bug in one function of a 43 KB module, with tests that must pass |
+| `stack_trace` | the deepest `Caused by` of a nested Java failure in a log with handled exceptions |
+| `json_api` | open issues with one exact label in 200 minified GitHub-style objects |
+| `build_warnings` | the one file with an error among 2,000 compiler warnings |
+| `pytest_many` | two failing boundary cases among 600 tests (`unittest -v`; pytest is not assumed) |
+
+Each task is checked on the result, not on the wording: tests must pass with
+the test file identical to a fresh build (run with a private bytecode cache),
+an answer must contain the exact id, path, `path:line`, subject or count.
+`test_live.py` checks that each task has one right answer, which its check
+accepts and a near miss does not.
 
 Each arm runs every task in a fresh copy of its repository with its own
 temporary `CLAUDE_CONFIG_DIR` and Scopelet config and cache. `off` installs
@@ -146,12 +162,29 @@ python3 bench/live.py --live --runs 3 --arm off \
   --arm v3=/path/to/scopelet-0.7.2@3 --arm v4=target/release/scopelet@4
 ```
 
+An arm is `off` or `NAME=BINARY@VERSION[:PARTS]`; `PARTS` is passed as
+`SCOPELET_V5_GRAMMAR`, so one campaign can compare v5 with its grammar alone
+(`@5:labels,header,tables`) and v5 whole (`@5`).
+
 Each session records input, cache-creation, cache-read and output tokens,
-turns, tool calls by name and cost from the stream-json result; a figure the
-host did not report is `null`, never zero. A session that fails, times out or
-answers wrong stays in the denominator. The report goes to
-`bench/results/live-<UTC time>.json` with every record and per-task and
-overall medians. `publish.py` replaces `bench/results/` on a release, live
+turns, tool calls by name, cost and the models actually served (from
+`modelUsage` and each message) from the stream-json result; a figure the
+host did not report is `null`, never zero. `--transcripts DIR` keeps each
+session's raw stream-json, gzipped as `ROUND-TASK-ARM.jsonl.gz`, which
+`nap.py` replays. A session that fails, times out or answers wrong stays in
+the denominator. The report goes to `bench/results/live-<UTC time>.json` with
+every record, per-task and overall medians and:
+
+- `cost_per_success`: the billed cost of every run, failures included, over
+  its successes (runs of unknown cost are left out of both and counted);
+- `paired`, against `--baseline` (v4 by default): per (task, round) pair, the
+  deltas of cost, total input and turns; their means; the delta of cost per
+  success; each with a 95% interval from 10,000 bootstrap draws over tasks
+  (a task's pairs stay together; fixed seed, standard library only).
+
+Cost per success, not tokens, is the measure: in Claude Code the prompt
+cache is most of the bill and tool outputs a few percent, so a turn more
+costs more than a smaller view saves. `publish.py` replaces `bench/results/` on a release, live
 reports included: a report describes the binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
