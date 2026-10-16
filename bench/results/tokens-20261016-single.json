@@ -1,0 +1,669 @@
+{
+  "kind": "exact token counts from POST /v1/messages/count_tokens, net of the message frame",
+  "binary_sha256": {
+    "baseline": "c4432301dec7ad05d517777166f40b6c1f241e3f85b50646a62903fc1d3d0ce0",
+    "single": "ba3eb754e66081fbdf02aa55df395a2586bf55dc22b9bb55f57d05407440b6fa"
+  },
+  "models": [
+    "claude-opus-5-5",
+    "claude-haiku-5-5"
+  ],
+  "arms": [
+    "baseline",
+    "single"
+  ],
+  "fixtures": {
+    "small": {
+      "bytes": {
+        "raw": 32,
+        "baseline": 32,
+        "single": 32
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 8,
+          "baseline": 8,
+          "single": 8
+        },
+        "claude-haiku-5-5": {
+          "raw": 8,
+          "baseline": 8,
+          "single": 8
+        }
+      }
+    },
+    "diagnostics": {
+      "bytes": {
+        "raw": 136063,
+        "baseline": 349,
+        "single": 304
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 56024,
+          "baseline": 155,
+          "single": 137
+        },
+        "claude-haiku-5-5": {
+          "raw": 56024,
+          "baseline": 155,
+          "single": 137
+        }
+      }
+    },
+    "repeated_errors": {
+      "bytes": {
+        "raw": 28039,
+        "baseline": 197,
+        "single": 163
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 9014,
+          "baseline": 95,
+          "single": 81
+        },
+        "claude-haiku-5-5": {
+          "raw": 9014,
+          "baseline": 95,
+          "single": 81
+        }
+      }
+    },
+    "json": {
+      "bytes": {
+        "raw": 171834,
+        "baseline": 3979,
+        "single": 3209
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 59989,
+          "baseline": 1410,
+          "single": 1088
+        },
+        "claude-haiku-5-5": {
+          "raw": 59989,
+          "baseline": 1410,
+          "single": 1088
+        }
+      }
+    },
+    "jsonl": {
+      "bytes": {
+        "raw": 171832,
+        "baseline": 4025,
+        "single": 3694
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 60986,
+          "baseline": 1429,
+          "single": 1247
+        },
+        "claude-haiku-5-5": {
+          "raw": 60986,
+          "baseline": 1429,
+          "single": 1247
+        }
+      }
+    },
+    "hidden_receipt": {
+      "bytes": {
+        "raw": 136193,
+        "baseline": 467,
+        "single": 428
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 56056,
+          "baseline": 182,
+          "single": 166
+        },
+        "claude-haiku-5-5": {
+          "raw": 56056,
+          "baseline": 182,
+          "single": 166
+        }
+      }
+    },
+    "giant_unicode_line": {
+      "bytes": {
+        "raw": 12000,
+        "baseline": 1121,
+        "single": 1094
+      },
+      "facts_visible": {
+        "baseline": false,
+        "single": false
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 3001,
+          "baseline": 314,
+          "single": 302
+        },
+        "claude-haiku-5-5": {
+          "raw": 3001,
+          "baseline": 314,
+          "single": 302
+        }
+      }
+    },
+    "crlf": {
+      "bytes": {
+        "raw": 137031,
+        "baseline": 305,
+        "single": 266
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 56009,
+          "baseline": 135,
+          "single": 119
+        },
+        "claude-haiku-5-5": {
+          "raw": 56009,
+          "baseline": 135,
+          "single": 119
+        }
+      }
+    },
+    "cargo_test": {
+      "bytes": {
+        "raw": 9481,
+        "baseline": 2759,
+        "single": 2654
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 4251,
+          "baseline": 1303,
+          "single": 1263
+        },
+        "claude-haiku-5-5": {
+          "raw": 4251,
+          "baseline": 1303,
+          "single": 1263
+        }
+      }
+    },
+    "tsc": {
+      "bytes": {
+        "raw": 14716,
+        "baseline": 4045,
+        "single": 4080
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 6929,
+          "baseline": 1913,
+          "single": 1933
+        },
+        "claude-haiku-5-5": {
+          "raw": 6929,
+          "baseline": 1913,
+          "single": 1933
+        }
+      }
+    },
+    "pytest_traceback": {
+      "bytes": {
+        "raw": 27092,
+        "baseline": 3547,
+        "single": 3454
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 10169,
+          "baseline": 1446,
+          "single": 1409
+        },
+        "claude-haiku-5-5": {
+          "raw": 10169,
+          "baseline": 1446,
+          "single": 1409
+        }
+      }
+    },
+    "go_test": {
+      "bytes": {
+        "raw": 7242,
+        "baseline": 1480,
+        "single": 1423
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 4269,
+          "baseline": 780,
+          "single": 758
+        },
+        "claude-haiku-5-5": {
+          "raw": 4269,
+          "baseline": 780,
+          "single": 758
+        }
+      }
+    },
+    "java_npe": {
+      "bytes": {
+        "raw": 34113,
+        "baseline": 1554,
+        "single": 1509
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 16103,
+          "baseline": 712,
+          "single": 693
+        },
+        "claude-haiku-5-5": {
+          "raw": 16103,
+          "baseline": 712,
+          "single": 693
+        }
+      }
+    },
+    "jest": {
+      "bytes": {
+        "raw": 14580,
+        "baseline": 902,
+        "single": 851
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 7758,
+          "baseline": 418,
+          "single": 397
+        },
+        "claude-haiku-5-5": {
+          "raw": 7758,
+          "baseline": 418,
+          "single": 397
+        }
+      }
+    },
+    "eslint": {
+      "bytes": {
+        "raw": 13977,
+        "baseline": 920,
+        "single": 839
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 5899,
+          "baseline": 418,
+          "single": 387
+        },
+        "claude-haiku-5-5": {
+          "raw": 5899,
+          "baseline": 418,
+          "single": 387
+        }
+      }
+    },
+    "git_diff": {
+      "bytes": {
+        "raw": 12022,
+        "baseline": 4248,
+        "single": 3849
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 7213,
+          "baseline": 2248,
+          "single": 2111
+        },
+        "claude-haiku-5-5": {
+          "raw": 7213,
+          "baseline": 2248,
+          "single": 2111
+        }
+      }
+    },
+    "git_log_p": {
+      "bytes": {
+        "raw": 21353,
+        "baseline": 6923,
+        "single": 7083
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 12685,
+          "baseline": 3672,
+          "single": 3937
+        },
+        "claude-haiku-5-5": {
+          "raw": 12685,
+          "baseline": 3672,
+          "single": 3937
+        }
+      }
+    },
+    "kubectl_json": {
+      "bytes": {
+        "raw": 60370,
+        "baseline": 3846,
+        "single": 3465
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 17730,
+          "baseline": 1445,
+          "single": 1312
+        },
+        "claude-haiku-5-5": {
+          "raw": 17730,
+          "baseline": 1445,
+          "single": 1312
+        }
+      }
+    },
+    "gh_api": {
+      "bytes": {
+        "raw": 9033,
+        "baseline": 1121,
+        "single": 1094
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 4726,
+          "baseline": 527,
+          "single": 517
+        },
+        "claude-haiku-5-5": {
+          "raw": 4726,
+          "baseline": 527,
+          "single": 517
+        }
+      }
+    },
+    "service_log": {
+      "bytes": {
+        "raw": 106651,
+        "baseline": 852,
+        "single": 783
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 67214,
+          "baseline": 477,
+          "single": 448
+        },
+        "claude-haiku-5-5": {
+          "raw": 67214,
+          "baseline": 477,
+          "single": 448
+        }
+      }
+    },
+    "rg_context": {
+      "bytes": {
+        "raw": 19902,
+        "baseline": 1266,
+        "single": 1131
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 10063,
+          "baseline": 625,
+          "single": 575
+        },
+        "claude-haiku-5-5": {
+          "raw": 10063,
+          "baseline": 625,
+          "single": 575
+        }
+      }
+    },
+    "rust_small": {
+      "bytes": {
+        "raw": 3569,
+        "baseline": 3569,
+        "single": 3569
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 1239,
+          "baseline": 1239,
+          "single": 1239
+        },
+        "claude-haiku-5-5": {
+          "raw": 1239,
+          "baseline": 1239,
+          "single": 1239
+        }
+      }
+    },
+    "rust_large": {
+      "bytes": {
+        "raw": 21207,
+        "baseline": 16361,
+        "single": 16378
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 8466,
+          "baseline": 6682,
+          "single": 6688
+        },
+        "claude-haiku-5-5": {
+          "raw": 8466,
+          "baseline": 6682,
+          "single": 6688
+        }
+      }
+    },
+    "cargo_workspace": {
+      "bytes": {
+        "raw": 10874,
+        "baseline": 1834,
+        "single": 1699
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 5787,
+          "baseline": 926,
+          "single": 878
+        },
+        "claude-haiku-5-5": {
+          "raw": 5787,
+          "baseline": 926,
+          "single": 878
+        }
+      }
+    },
+    "listing": {
+      "bytes": {
+        "raw": 23153,
+        "baseline": 8144,
+        "single": 8147
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 11984,
+          "baseline": 4178,
+          "single": 4401
+        },
+        "claude-haiku-5-5": {
+          "raw": 11984,
+          "baseline": 4178,
+          "single": 4401
+        }
+      }
+    },
+    "large_source": {
+      "bytes": {
+        "raw": 48591,
+        "baseline": 16380,
+        "single": 16107
+      },
+      "facts_visible": {
+        "baseline": true,
+        "single": true
+      },
+      "tokens": {
+        "claude-opus-5-5": {
+          "raw": 18131,
+          "baseline": 6437,
+          "single": 6377
+        },
+        "claude-haiku-5-5": {
+          "raw": 18131,
+          "baseline": 6437,
+          "single": 6377
+        }
+      }
+    }
+  },
+  "frame_tokens": {
+    "claude-opus-5-5": 8,
+    "claude-haiku-5-5": 8
+  },
+  "summary": {
+    "claude-opus-5-5": {
+      "fixtures_counted": 26,
+      "fixtures_missing": 0,
+      "tokens": {
+        "raw": 521703,
+        "baseline": 39174,
+        "single": 38471
+      },
+      "single_vs_raw": {
+        "saved_tokens": 483232,
+        "saved_percent": 92.63,
+        "fixtures_worse": []
+      },
+      "single_vs_baseline": {
+        "saved_tokens": 703,
+        "saved_percent": 1.79,
+        "fixtures_worse": [
+          "git_log_p",
+          "listing",
+          "rust_large",
+          "tsc"
+        ]
+      }
+    },
+    "claude-haiku-5-5": {
+      "fixtures_counted": 26,
+      "fixtures_missing": 0,
+      "tokens": {
+        "raw": 521703,
+        "baseline": 39174,
+        "single": 38471
+      },
+      "single_vs_raw": {
+        "saved_tokens": 483232,
+        "saved_percent": 92.63,
+        "fixtures_worse": []
+      },
+      "single_vs_baseline": {
+        "saved_tokens": 703,
+        "saved_percent": 1.79,
+        "fixtures_worse": [
+          "git_log_p",
+          "listing",
+          "rust_large",
+          "tsc"
+        ]
+      }
+    }
+  }
+}
