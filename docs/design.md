@@ -252,14 +252,18 @@ decision appends one line under 512 bytes to the local event journal,
 `<cache>/events/YYYY-MM.jsonl` (time, host, profile, byte counts, a typed reason
 `small`, `non_utf8`, `too_many_lines`, `already_compressed`, `savings`,
 `persisted`, `compressed`, `repeat` or `error`, compact version, 12-character
-prefixes of the artifact and original, and `anchored` when relevance anchors
-ranked lines up; `expand` adds one line with the reference prefix and how it
-read the evidence: `find`, `range`, `page`, `manifest` or `raw`). No content,
-command, path or anchor term is recorded, nothing is transmitted, writing is
-best effort, and `SCOPELET_EVENTS=0` disables it. `stats --days N` summarizes
-compressions, bytes saved, pass-through reasons, the share of compressions
-whose artifact or original was expanded later, expansions by kind, repeats and
-the bytes they saved, anchored views and, per profile, the same figures with
+prefixes of the artifact and original, `anchored` when relevance anchors
+ranked lines up, and `program`, the bare name of the program that printed the
+output: the first recognized command's, else the first command's, `other` when
+it is not a plain name of at most 32 characters; `expand` adds one line with
+the reference prefix and how it read the evidence: `find`, `range`, `page`,
+`manifest` or `raw`). No content, argument, path or anchor term is recorded,
+nothing is transmitted, writing is best effort, and `SCOPELET_EVENTS=0`
+disables it. `stats --days N` summarizes compressions, bytes saved,
+pass-through reasons, the share of compressions whose artifact or original was
+expanded later, expansions by kind, repeats and the bytes they saved, anchored
+views, compressions by program with the ten programs most often compressed
+without a profile (`unprofiled_programs`), and, per profile, the same figures with
 `budget_probably_tight` when more than 25% of at least four compressions were
 expanded. Stats report; nothing is tuned automatically. Accepted
 views save original bytes and serialize the same dataset through a bounded,
@@ -348,7 +352,14 @@ unrecognized command it was). A
 file read also stays exact up to 16 KiB, and it is not ranked by diagnostic
 words (a string saying `error` in source code is not an outcome). Hooks take
 the profile from the parsed command (Codex passes `run --auto --profile`;
-Claude Code and OpenCode classify the command after the fact); earlier compact
+Claude Code and OpenCode classify the command after the fact). Classifying
+after the fact chooses a profile only, so it also reads lines the execution
+grammar rejects: it splits them on `;`, `&&`, `||`, `|` and newlines outside
+quotes, drops redirections and leading assignments, and takes the first
+recognized command, where `cat` of several files or with `-n`/`-b`/`-s`/`-v`
+and `nl` with its numbering options also read files (`sed -n 1,80p a; sed -n
+1,80p b`, `cat a b`, `nl -ba f | sed -n 40,90p`). Codex's grammar and what it
+wraps are unchanged. Earlier compact
 versions keep the 4 KiB target and 2 KiB threshold. The shell grammar and
 permission envelope remain in force. Watch/debug/interactive forms and unrecognized syntax stay
 native. Every eligible command executes once; stdout/stderr and process status
@@ -489,9 +500,11 @@ no repeat references. A repeat is journaled with the bytes it saved. An earlier
 bare-mode marker is read as that mode.
 
 **Relevance anchors.** On `UserPromptSubmit`, the prompt's quoted text, paths
-and file names, snake_case and CamelCase identifiers, error codes and numbers
-of three digits or more (3 to 64 bytes, at most 32, newest kept) are stored in
-the context's private state, never in the journal. A tool call adds the terms
+and file names, snake_case and CamelCase identifiers and error codes (3 to 64
+bytes, at most 32, newest kept) are stored in the context's private state,
+never in the journal. Bare numbers (lines, counts, years) and tool call ids
+(`toolu_...`) match lines by accident and are never terms, even ones an earlier
+version stored; a prompt the host generates (`<task-notification>`) adds none. A tool call adds the terms
 its command names: the literal pattern of `rg`, `grep` or `git grep` (a regular
 expression with operators names nothing; `|` branches split), and the filter
 of `cargo test NAME`, `pytest -k`, `jest -t` or `go test -run`; a subagent also
@@ -500,8 +513,10 @@ run (`run --auto --session KEY`); OpenCode passes its session ID (it has no
 prompt hook, so only command terms apply there). A term found on more than
 half of an output's lines singles nothing out and is ignored for that output.
 A unit containing a remaining term ranks with first diagnostics (tier 3) while
-anchored units fit a third of the budget. File reads take anchors too. The
-view depends on the anchors; the artifact does not.
+anchored units fit a third of the budget. A unit lifted by an anchor alone is
+relevant, not a diagnostic: it never caps ordinary lines at a quarter of the
+budget, as a real diagnostic does. File reads take anchors too. The view
+depends on the anchors; the artifact does not.
 
 **Tests.** A view of the tests profile whose output contains recognized
 failures gets a metadata line below the header: `failed=N: name (file:line),

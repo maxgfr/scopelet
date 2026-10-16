@@ -62,8 +62,29 @@ fn references_resolve_from_hashes_prefixes_and_last() {
     assert_eq!(store.resolve(hash).unwrap(), artifact);
     let error = format!("{:#}", store.resolve(&hash[..8]).unwrap_err());
     assert!(error.contains("matches 2 cached items"), "{error}");
+    // A typed prefix, as the event journal records one, names its kind.
+    assert_eq!(
+        store.resolve(&format!("blob:{}", &hash[..12])).unwrap(),
+        twin
+    );
+    assert_eq!(
+        store.resolve(&format!("artifact:{}", &hash[..12])).unwrap(),
+        artifact
+    );
+    let raw = cli(
+        dir.path(),
+        &["expand", &format!("blob:{}", &hash[..12]), "--raw"],
+    );
+    assert!(raw.status.success(), "{raw:?}");
+    assert_eq!(raw.stdout, store.get(&twin).unwrap());
 
-    for bad in ["abc", "zzzzzzzzzz", "artifact:short"] {
+    for bad in [
+        "abc",
+        "zzzzzzzzzz",
+        "artifact:short",
+        "blob:0123",
+        "other:0123456789ab",
+    ] {
         assert!(store.resolve(bad).is_err(), "{bad}");
     }
     assert!(store.resolve("00000000").is_err());

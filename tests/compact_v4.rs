@@ -255,6 +255,35 @@ fn anchor_terms_rank_their_lines_into_the_view() {
     assert!(!v3.contains("parse_header"), "{v3}");
 }
 
+/// A line an anchor ranks up is relevant, not a diagnostic: it does not cap
+/// the ordinary lines around it. Treated as one, a source read naming a
+/// prompt term filled a quarter of its budget (1548 bytes of 4096 for a
+/// 4836-byte read) and was compressed where it would otherwise stay exact.
+#[test]
+fn anchored_lines_do_not_cap_the_ordinary_lines_around_them() {
+    let dir = tempfile::tempdir().unwrap();
+    let raw: String = distinct_lines(240)
+        .lines()
+        .enumerate()
+        .map(|(i, line)| {
+            if i % 60 == 7 {
+                format!("    let version = Version::V4; // {line}\n")
+            } else {
+                format!("    let {line} = compute();\n")
+            }
+        })
+        .collect();
+    let plain = anchored(dir.path(), &raw, None, Version::V4, &[]);
+    let focused = anchored(dir.path(), &raw, None, Version::V4, &["Version"]);
+    assert!(focused.contains("Version::V4"), "{focused}");
+    assert!(
+        focused.len() * 10 >= plain.len() * 9,
+        "{} of {}: {focused}",
+        focused.len(),
+        plain.len()
+    );
+}
+
 /// A term on every line takes at most a third of the budget: diagnostics and
 /// the first and last lines keep their place.
 #[test]

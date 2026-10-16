@@ -480,8 +480,9 @@ impl Store {
 
     /// The full reference for what a user typed: `artifact:<sha256>` or
     /// `blob:<sha256>`; a bare 64-character hash (an artifact first); a
-    /// unique prefix of at least 8 hex characters; or `last`, the artifact of
-    /// the latest automatic compression.
+    /// unique prefix of at least 8 hex characters, bare or behind its type
+    /// (`blob:03f71fe1942b`, as the journal records it); or `last`, the
+    /// artifact of the latest automatic compression.
     pub fn resolve(&self, text: &str) -> Result<String> {
         let text = text.trim();
         if text == "last" {
@@ -490,17 +491,27 @@ impl Store {
             self.location(&id)?;
             return Ok(id);
         }
-        if text.contains(':') {
-            self.location(text)?;
-            return Ok(text.to_owned());
+        let mut kinds: &[(&str, &str)] = &[("artifact", "artifacts"), ("blob", "blobs")];
+        let mut hash = text;
+        if let Some((kind, rest)) = text.split_once(':') {
+            if content_hash_name(rest) || !matches!(kind, "artifact" | "blob") {
+                self.location(text)?;
+                return Ok(text.to_owned());
+            }
+            kinds = if kind == "blob" {
+                &kinds[1..]
+            } else {
+                &kinds[..1]
+            };
+            hash = rest;
         }
-        let hash = text.to_ascii_lowercase();
+        let hash = hash.to_ascii_lowercase();
         ensure!(
             hash.len() >= 8 && hash.len() <= 64 && hash.bytes().all(|b| b.is_ascii_hexdigit()),
             "expected artifact:<sha256>, blob:<sha256>, a hash or a prefix of at least 8 hex characters, or last"
         );
         let mut found = Vec::new();
-        for (kind, folder) in [("artifact", "artifacts"), ("blob", "blobs")] {
+        for &(kind, folder) in kinds {
             if hash.len() == 64 {
                 if self.root.join(folder).join(&hash).is_file() {
                     // A full hash names one item: the artifact when both exist.

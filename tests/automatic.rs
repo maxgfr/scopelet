@@ -881,9 +881,10 @@ fn the_event_journal_records_decisions_and_can_be_turned_off() {
     assert_eq!(events[0]["reason"], "small");
     assert_eq!(events[0]["host"], "claude");
     assert_eq!(events[0]["bytes_in"], 100);
-    // Nothing that could identify the command or its output.
+    // The program's bare name, nothing else of the command or its output.
+    assert_eq!(events[0]["program"], "npm");
     let line = events[0].to_string();
-    assert!(!line.contains("npm") && !line.contains("xxxx"), "{line}");
+    assert!(!line.contains("test") && !line.contains("xxxx"), "{line}");
     assert!(line.len() < 512);
 
     let quiet = tempfile::tempdir().unwrap();
@@ -1500,6 +1501,92 @@ fn stats_report_expand_kinds_repeats_anchors_and_tight_budgets() {
         .collect();
     assert!(!journal.contains("zzanchor"), "{journal}");
     assert!(journal.contains("\"anchored\":true"), "{journal}");
+    assert_eq!(stats["by_program"], json!({"npm": 4}), "{stats}");
+    assert_eq!(stats["unprofiled_programs"], json!([]), "{stats}");
+}
+
+/// Compressions are journaled with the bare name of the program that printed
+/// them, never its arguments; `stats` lists the programs that had no profile.
+#[test]
+fn stats_name_the_programs_whose_outputs_had_no_profile() {
+    let dir = tempfile::tempdir().unwrap();
+    let log: String = (0..300)
+        .map(|i| format!("row {i} of the zzsecret_report done\n"))
+        .collect();
+    for command in [
+        "./tools/report.sh --token zzsecret_arg; echo done",
+        "./tools/report.sh --other",
+        "cd sub && terraform plan",
+    ] {
+        let event = bash_result("p1", command, &log.replace("row", command));
+        hook_v4(dir.path(), "claude", event);
+    }
+    let out = cli(dir.path())
+        .args(["stats", "--days", "1"])
+        .output()
+        .unwrap();
+    let stats: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(
+        stats["unprofiled_programs"],
+        json!([["report.sh", 2], ["terraform", 1]]),
+        "{stats}"
+    );
+    assert_eq!(stats["by_program"]["report.sh"], 2, "{stats}");
+    let journal: String = fs::read_dir(dir.path().join("cache/events"))
+        .unwrap()
+        .flatten()
+        .map(|e| fs::read_to_string(e.path()).unwrap())
+        .collect();
+    assert!(journal.contains("\"program\":\"report.sh\""), "{journal}");
+    assert!(!journal.contains("zzsecret"), "{journal}");
+    assert!(!journal.contains("tools/"), "{journal}");
+}
+
+/// A host notification adds no relevance anchor, and bare numbers and tool
+/// call ids never are anchors, even when an earlier version stored them.
+#[test]
+fn host_notifications_and_numbers_add_no_anchors() {
+    let dir = tempfile::tempdir().unwrap();
+    let notification = json!({"hook_event_name":"UserPromptSubmit","session_id":"n1","prompt":"<task-notification>\n<task-id>toolu_01AbCd</task-id>\n<summary>zznotified_term at line 2655</summary>\n</task-notification>"});
+    hook_v4(dir.path(), "claude", notification);
+    let prompt = json!({"hook_event_name":"UserPromptSubmit","session_id":"n1","prompt":"why is `zzreal_term` slow since 2026?"});
+    hook_v4(dir.path(), "claude", prompt);
+    let key = scopelet::session::key("n1", None);
+    let state: Value =
+        serde_json::from_slice(&fs::read(dir.path().join("config/sessions").join(&key)).unwrap())
+            .unwrap();
+    assert_eq!(state["anchors"], json!(["zzreal_term"]), "{state}");
+
+    // A state written before this filter: its numbers no longer rank lines.
+    let older = json!({"anchors": ["2655", "toolu_01AbCd"]});
+    let key = scopelet::session::key("n2", None);
+    fs::write(
+        dir.path().join("config/sessions").join(&key),
+        older.to_string(),
+    )
+    .unwrap();
+    let log: String = (0..400)
+        .map(|i| {
+            let w: String = i
+                .to_string()
+                .bytes()
+                .map(|b| (b'a' + (b - b'0')) as char)
+                .collect();
+            if i == 200 {
+                format!("{w} step 2655 done\n")
+            } else {
+                format!("{w} step done\n")
+            }
+        })
+        .collect();
+    hook_v4(dir.path(), "claude", bash_result("n2", "npm test", &log));
+    let journal: String = fs::read_dir(dir.path().join("cache/events"))
+        .unwrap()
+        .flatten()
+        .map(|e| fs::read_to_string(e.path()).unwrap())
+        .collect();
+    assert!(journal.contains("\"reason\":\"compressed\""), "{journal}");
+    assert!(!journal.contains("\"anchored\":true"), "{journal}");
 }
 
 /// Audit finding: commands first recognized with compact-v4 (installs, `git

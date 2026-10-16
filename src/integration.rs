@@ -545,7 +545,10 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
         .iter()
         .map(|f| output[*f].as_str().map_or(0, str::len))
         .sum();
-    let unchanged = |reason| crate::events::unchanged("claude", profile, version, total, reason);
+    let program = crate::commands::program(command);
+    let program = program.as_deref();
+    let unchanged =
+        |reason| crate::events::unchanged("claude", program, profile, version, total, reason);
     // Claude can attach persistence metadata before rendering its preview.
     // Replacing stdout here would make that preview truncate our compact
     // view a second time, hiding its final diagnostics and omission footer.
@@ -577,7 +580,7 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
             let hash = crate::session::short(&hash);
             if state.saw(hash)
                 && let Some(marker) =
-                    compress::repeat_recorded("claude", raw.as_bytes(), None, profile)
+                    compress::repeat_recorded("claude", program, raw.as_bytes(), None, profile)
             {
                 output[*field] = json!(String::from_utf8(marker)?);
                 repeated[i] = true;
@@ -618,8 +621,9 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
         if raw.len() > MAX_INPUT {
             return Ok(json!({}));
         }
-        let small = compress::automatic_anchored(
+        let small = compress::automatic_journaled(
             "claude",
+            program,
             raw.as_bytes(),
             None,
             profile,
@@ -651,6 +655,7 @@ fn anchors(event: &Value, state: Option<&crate::session::State>, command: &str) 
     {
         terms.extend(crate::session::load(&crate::session::key(session, None)).anchors);
     }
+    terms.retain(|t| !crate::session::incidental(t));
     terms.extend(crate::commands::anchors(command));
     terms
 }
@@ -728,7 +733,7 @@ fn subagent_guidance() -> String {
 /// output stays exact: the profile's in compact-v3, the default otherwise.
 fn limits(command: &str, version: compress::Version) -> (Option<Profile>, usize) {
     let profile = compress::effective_profile(
-        crate::commands::classify_for(command, version == compress::Version::V4),
+        crate::commands::classify_lenient(command, version == compress::Version::V4),
         version,
     );
     (profile, profile.map_or(compress::SMALL, Profile::small))
@@ -755,9 +760,11 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
         return Ok(json!({}));
     };
     let (profile, small) = limits(command, version);
+    let program = crate::commands::program(command);
     if raw.len() <= small {
         crate::events::unchanged(
             "opencode",
+            program.as_deref(),
             profile,
             version,
             raw.len(),
@@ -770,8 +777,9 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
     }
     let state = context_key(event).map(|key| crate::session::load(&key));
     let anchors = anchors(event, state.as_ref(), command);
-    let small = compress::automatic_anchored(
+    let small = compress::automatic_journaled(
         "opencode",
+        program.as_deref(),
         raw.as_bytes(),
         None,
         profile,

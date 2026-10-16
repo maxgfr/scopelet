@@ -55,7 +55,8 @@ impl State {
     }
 }
 
-/// Quoted text, paths, identifiers, error codes and long numbers.
+/// Quoted text, paths, identifiers and error codes. Numbers are matched so
+/// that their digits never start an identifier, then dropped.
 static TERM: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(concat!(
         r#""([^"\n]+)"|`([^`\n]+)`"#,
@@ -86,10 +87,16 @@ fn specific(word: &str) -> bool {
 
 /// The terms of a prompt an output line is likely to contain, in order of
 /// first appearance: quoted text, paths and file names, identifiers in
-/// snake_case or CamelCase, error codes and numbers of three digits or more.
-/// Deterministic and literal; 3 to 64 bytes each, at most `MAX_ANCHORS`.
+/// snake_case or CamelCase and error codes. Deterministic and literal; 3 to
+/// 64 bytes each, at most `MAX_ANCHORS`. A bare number (a line, a count, a
+/// year) and a tool call id (`toolu_...`) match lines by accident, and a
+/// prompt the host generates (`<task-notification>`) names no task: none of
+/// them is a term.
 pub fn prompt_anchors(prompt: &str) -> Vec<String> {
     let mut terms: Vec<String> = Vec::new();
+    if prompt.trim_start().starts_with("<task-notification>") {
+        return terms;
+    }
     for found in TERM.captures_iter(prompt) {
         let term = if let Some(m) = found.get(4) {
             m.as_str().trim_end_matches(['.', ',', '/'])
@@ -104,7 +111,10 @@ pub fn prompt_anchors(prompt: &str) -> Vec<String> {
                 None => continue,
             }
         };
-        if ANCHOR_BYTES.contains(&term.len()) && !terms.iter().any(|t| t == term) {
+        if !incidental(term)
+            && ANCHOR_BYTES.contains(&term.len())
+            && !terms.iter().any(|t| t == term)
+        {
             terms.push(term.to_owned());
         }
         if terms.len() == MAX_ANCHORS {
@@ -112,6 +122,12 @@ pub fn prompt_anchors(prompt: &str) -> Vec<String> {
         }
     }
     terms
+}
+
+/// A bare number or a tool call id: no term, even one stored by an earlier
+/// version.
+pub fn incidental(term: &str) -> bool {
+    term.bytes().all(|b| b.is_ascii_digit()) || term.starts_with("toolu_")
 }
 
 /// The file name of a context: the session, and the subagent inside it when
@@ -200,7 +216,6 @@ mod tests {
                 "HttpClient",
                 "connection reset by peer",
                 "E0502",
-                "4127",
                 "retry-policy",
                 "config.yaml",
             ]
@@ -209,7 +224,16 @@ mod tests {
         let many: String = (0..100).map(|i| format!("term_{i} ")).collect();
         assert_eq!(prompt_anchors(&many).len(), MAX_ANCHORS);
         let long = format!("\"{}\"", "x".repeat(65));
-        assert!(prompt_anchors(&long).is_empty());
+        assert!(prompt_anchors(&long).is_empty()); // Numbers and tool call ids match by accident; a host notification
+        // is no task.
+        assert_eq!(
+            prompt_anchors("see toolu_01AbCdEf at line 2655 in 2026, \"106\" and fix_it"),
+            ["fix_it"]
+        );
+        assert!(
+            prompt_anchors("<task-notification>\n<task-id>a1</task-id> parse_header 2655")
+                .is_empty()
+        );
     }
 
     #[test]

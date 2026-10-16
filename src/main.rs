@@ -405,10 +405,13 @@ fn execute(cli: Cli) -> Result<i32> {
             .and_then(scopelet::session::find)
             .map(|key| scopelet::session::load(&key).anchors)
             .unwrap_or_default();
+        anchors.retain(|t| !scopelet::session::incidental(t));
         anchors.extend(scopelet::commands::argv_anchors(command));
+        let program = scopelet::commands::argv_program(command);
         for (bytes, stderr) in [(&result.stdout, false), (&result.stderr, true)] {
-            let output = compress::automatic_anchored(
+            let output = compress::automatic_journaled(
                 "run",
+                program.as_deref(),
                 bytes,
                 cli.cache_dir.clone(),
                 *profile,

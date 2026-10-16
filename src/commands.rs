@@ -86,6 +86,167 @@ pub fn classify_for(command: &str, v4: bool) -> Option<Profile> {
         .find_map(|simple| profile_for(&simple.argv, v4))
 }
 
+/// `classify_for` for hosts that compress after the fact (Claude Code,
+/// OpenCode): a line outside the strict grammar (`;`, newlines, `$`, globs)
+/// is split on its operators, quotes respected, only to choose a profile,
+/// never to run it. `cat`/`nl` of several files or with numbering options
+/// read files here, so a code read in pieces keeps the file-read threshold.
+pub fn classify_lenient(command: &str, v4: bool) -> Option<Profile> {
+    if let Some(profile) = classify_for(command, v4) {
+        return Some(profile);
+    }
+    lenient_commands(command)
+        .iter()
+        .find_map(|argv| profile_for(argv, v4).or_else(|| reads_files(argv)))
+}
+
+/// The program a command line runs, for the local journal: the first
+/// recognized command's, else the first command's. A bare name of at most
+/// 32 safe characters, never a path or an argument; `other` otherwise.
+pub fn program(command: &str) -> Option<String> {
+    let commands = lenient_commands(command);
+    let argv = commands
+        .iter()
+        .find(|argv| profile(argv).is_some() || reads_files(argv).is_some())
+        .or_else(|| commands.iter().find(|argv| name(&argv[0]) != "cd"))?;
+    safe_program(argv)
+}
+
+/// `program` of an argument vector; `sh -c SCRIPT` is read as its script.
+pub fn argv_program(args: &[String]) -> Option<String> {
+    match args {
+        [shell, flag, script] if matches!(name(shell), "sh" | "bash") && flag == "-c" => {
+            program(script)
+        }
+        [] => None,
+        _ => safe_program(args),
+    }
+}
+
+fn safe_program(argv: &[String]) -> Option<String> {
+    let program = name(argv.first()?);
+    let safe = (1..=32).contains(&program.len())
+        && program
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"._+-".contains(&b));
+    Some(if safe { program } else { "other" }.to_owned())
+}
+
+/// `cat`/`nl` of one or more files, with numbering options only.
+fn reads_files(args: &[String]) -> Option<Profile> {
+    let mut files = 0;
+    let mut rest = args[1..].iter();
+    match name(&args[0]) {
+        "cat" => {
+            for arg in rest {
+                match arg.strip_prefix('-') {
+                    Some(flags)
+                        if !flags.is_empty() && flags.chars().all(|c| "nbsv".contains(c)) => {}
+                    Some(_) => return None,
+                    None => files += 1,
+                }
+            }
+        }
+        "nl" => {
+            // Numbering options, each with its value (`-b a` or `-ba`).
+            const VALUED: [&str; 6] = ["-b", "-w", "-n", "-s", "-v", "-i"];
+            while let Some(arg) = rest.next() {
+                if VALUED.contains(&arg.as_str()) {
+                    rest.next()?;
+                } else if !arg.starts_with('-') {
+                    files += 1;
+                } else if !arg.get(..2).is_some_and(|o| VALUED.contains(&o)) {
+                    return None;
+                }
+            }
+        }
+        _ => return None,
+    }
+    (files > 0).then_some(Profile::FileRead)
+}
+
+/// The simple commands of a command line, split on `;`, `&`, `|` and
+/// newlines outside quotes, without redirections or leading assignments.
+/// Words keep `$`, globs and the like as literal text: this reading only
+/// names what runs.
+fn lenient_commands(command: &str) -> Vec<Vec<String>> {
+    let mut commands: Vec<Vec<String>> = Vec::new();
+    let mut words: Vec<String> = Vec::new();
+    let mut word = String::new();
+    let mut started = false;
+    let mut chars = command.chars().peekable();
+    let finish = |words: &mut Vec<String>, word: &mut String, started: &mut bool| {
+        if *started {
+            words.push(std::mem::take(word));
+            *started = false;
+        }
+    };
+    let end = |commands: &mut Vec<Vec<String>>, words: &mut Vec<String>| {
+        let mut argv: Vec<String> = Vec::new();
+        let mut skip = false;
+        for word in words.drain(..) {
+            if std::mem::take(&mut skip) {
+                continue;
+            }
+            // `>`, `2>`, `>>`, `<` alone take the next word as their target;
+            // `2>&1`, `>/dev/null` carry it.
+            let redirect = word.trim_start_matches(|c: char| c.is_ascii_digit() || c == '&');
+            if redirect.starts_with(['<', '>']) {
+                skip = redirect.trim_start_matches(['<', '>', '&']).is_empty();
+                continue;
+            }
+            let assignment = argv.is_empty()
+                && word.split_once('=').is_some_and(|(n, _)| {
+                    !n.is_empty() && n.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+                });
+            if !assignment {
+                argv.push(word);
+            }
+        }
+        if !argv.is_empty() {
+            commands.push(argv);
+        }
+    };
+    while let Some(c) = chars.next() {
+        match c {
+            ' ' | '\t' => finish(&mut words, &mut word, &mut started),
+            '\'' | '"' => {
+                started = true;
+                for inner in chars.by_ref() {
+                    if inner == c {
+                        break;
+                    }
+                    word.push(inner);
+                }
+            }
+            '\\' => {
+                started = true;
+                match chars.next() {
+                    Some('\n') | None => {}
+                    Some(next) => word.push(next),
+                }
+            }
+            ';' | '&' | '|' | '\n' | '\r' | '(' | ')' => {
+                // `2>&1` and `&>` are redirections, not separators.
+                if c == '&' && (word.ends_with('>') || chars.peek() == Some(&'>')) {
+                    word.push(c);
+                    started = true;
+                    continue;
+                }
+                finish(&mut words, &mut word, &mut started);
+                end(&mut commands, &mut words);
+            }
+            c => {
+                word.push(c);
+                started = true;
+            }
+        }
+    }
+    finish(&mut words, &mut word, &mut started);
+    end(&mut commands, &mut words);
+    commands
+}
+
 /// `profile` as a compact version sees it (see `classify_for`).
 pub fn profile_for(args: &[String], v4: bool) -> Option<Profile> {
     profile(args).filter(|_| v4 || !recognized_since_v4(args))

@@ -284,6 +284,9 @@ impl<'a> Anchoring<'a> {
                 .is_some_and(|v| self.matches(&v.to_string())),
         };
         if found {
+            // Only a unit ranked below a diagnostic's tier was lifted by
+            // the anchor alone.
+            unit.anchored = unit.priority < 2;
             unit.priority = 3;
             self.left -= unit.size;
             self.promoted += 1;
@@ -400,6 +403,21 @@ pub fn automatic_anchored<'a>(
     version: Version,
     anchors: &[String],
 ) -> Cow<'a, [u8]> {
+    automatic_journaled(host, None, bytes, path, profile, budget, version, anchors)
+}
+
+/// `automatic_anchored` that journals the program that printed `bytes`.
+#[allow(clippy::too_many_arguments)]
+pub fn automatic_journaled<'a>(
+    host: &str,
+    program: Option<&str>,
+    bytes: &'a [u8],
+    path: Option<PathBuf>,
+    profile: Option<crate::commands::Profile>,
+    budget: Option<usize>,
+    version: Version,
+    anchors: &[String],
+) -> Cow<'a, [u8]> {
     let shape = Shape::of(profile, budget, version);
     let anchors = if version == Version::V4 { anchors } else { &[] };
     let (output, decision) =
@@ -411,6 +429,7 @@ pub fn automatic_anchored<'a>(
             crate::events::Event {
                 host: host.into(),
                 profile: effective_profile(profile, version).map(|p| p.name().into()),
+                program: program.map(str::to_owned),
                 bytes_in: bytes.len(),
                 bytes_out: output.len(),
                 reason: Some(decision.reason),
@@ -601,6 +620,7 @@ fn repeat_marker(id: &str, lines: usize) -> String {
 /// caller then treats the output as new.
 pub fn repeat_recorded(
     host: &str,
+    program: Option<&str>,
     bytes: &[u8],
     path: Option<PathBuf>,
     profile: Option<crate::commands::Profile>,
@@ -616,6 +636,7 @@ pub fn repeat_recorded(
         crate::events::Event {
             host: host.into(),
             profile: effective_profile(profile, Version::V4).map(|p| p.name().into()),
+            program: program.map(str::to_owned),
             bytes_in: bytes.len(),
             bytes_out: marker.len(),
             reason: Some(Reason::Repeat),
@@ -741,6 +762,8 @@ struct Unit<'a> {
     /// Order inside its tier when nonzero: higher first (a compact-v4 diff's
     /// files by change density). Zero keeps head and tail alternation.
     weight: u16,
+    /// Ranked up by a relevance anchor: relevant, not a diagnostic.
+    anchored: bool,
 }
 
 /// The label in front of a unit. Compact-v3 labels are written when the unit
@@ -776,6 +799,7 @@ impl<'a> Unit<'a> {
             size,
             priority,
             weight: 0,
+            anchored: false,
         }
     }
     /// Compact-v3 text unit; a line too large for the budget is cut on a
@@ -798,6 +822,7 @@ impl<'a> Unit<'a> {
             truncated: 0,
             priority,
             weight: 0,
+            anchored: false,
         };
         let cap = limit.min(TRUNCATED_PREFIX);
         let bytes = if unit.size > limit {
@@ -962,6 +987,7 @@ fn units<'a>(
                 size: encoding::size(value, limit).unwrap_or(limit + 1) + record.source.len() + 3,
                 priority,
                 weight: 0,
+                anchored: false,
             };
             anchoring.promote(&mut unit);
             units.push(unit);
@@ -2159,7 +2185,12 @@ impl Tiers {
             order,
             tiers,
             smallest_after,
-            diagnostics: units.iter().any(|u| matches!(u.priority, 2 | 3)),
+            // A line an anchor ranked up is no outcome: it does not cap the
+            // ordinary lines around it, or a source read that names a prompt
+            // term would show a quarter of its budget.
+            diagnostics: units
+                .iter()
+                .any(|u| matches!(u.priority, 2 | 3) && !u.anchored),
         }
     }
 }

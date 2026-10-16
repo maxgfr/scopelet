@@ -325,9 +325,11 @@ for package installs, 4 KiB for tests, 8 KiB for searches, Git and logs, 16 KiB
 for file reads, which stay whole up to 16 KiB so an ordinary source file is read
 as written. Small automatic outputs never open the cache store. A local
 journal, never transmitted, records each decision; `scopelet stats` shows
-compressions, bytes saved, why outputs passed through, repeats, and per profile
-how often a view was expanded and how, flagging a profile whose views are
-expanded too often (`SCOPELET_EVENTS=0` turns it off).
+compressions, bytes saved, why outputs passed through, repeats, which programs
+were compressed without a profile, and per profile how often a view was
+expanded and how, flagging a profile whose views are expanded too often
+(`SCOPELET_EVENTS=0` turns it off). It names a program by its bare name only,
+never its arguments.
 
 Inside a view, `compact-v4` (the default) reads each line the way a terminal
 would, dropping colour codes and keeping only the final state of a progress bar.

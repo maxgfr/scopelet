@@ -75,10 +75,11 @@ deleted separately. Remove automatic hooks first with `scopelet uninstall --agen
 The binary and local cache can be removed separately. Scopelet configures no
 proxy and sends nothing anywhere: it keeps a local journal, never transmitted,
 of its compression decisions in `<cache>/events/YYYY-MM.jsonl` (time, host,
-profile, byte counts, reason, version and short hash prefixes; no content,
-command or path). `scopelet stats [--days N]` summarizes it: compressions,
-bytes saved, why outputs passed through and how often a compressed view was
-expanded afterwards. `SCOPELET_EVENTS=0` turns the journal off; `clean` does
+profile, the program's bare name, byte counts, reason, version and short hash
+prefixes; no content, argument or path). `scopelet stats [--days N]`
+summarizes it: compressions, bytes saved, why outputs passed through, which
+programs had no profile and how often a compressed view was expanded
+afterwards. `SCOPELET_EVENTS=0` turns the journal off; `clean` does
 not remove it.
 
 ## Automatic installation and modes

@@ -1,6 +1,6 @@
 //! Command profiles: which commands hooks recognize, and the compact-v3
 //! budget and exact-size threshold each profile gives its output.
-use scopelet::commands::{Profile, classify, invokes_wrapper, profile};
+use scopelet::commands::{Profile, classify, classify_lenient, invokes_wrapper, profile, program};
 use serde_json::{Value, json};
 
 fn args(command: &str) -> Vec<String> {
@@ -172,6 +172,64 @@ fn command_lines_are_classified_and_wrappers_found_by_words() {
     assert!(!invokes_wrapper("rg rtk src"));
 }
 
+#[test]
+fn hosts_that_compress_afterwards_classify_composed_reads_leniently() {
+    for command in [
+        "sed -n 1,80p src/a.rs; sed -n 200,260p src/b.rs",
+        "sed -n 1,80p src/a.rs\nsed -n 1,9p src/b.rs",
+        "cat src/a.rs src/b.rs",
+        "cat -n src/a.rs",
+        "nl -ba src/a.rs | sed -n 40,120p",
+        "nl -b a src/a.rs | head -50",
+        "cd sub; cat \"my file.rs\" 2>/dev/null",
+        "cat src/*.rs",
+    ] {
+        assert_eq!(
+            classify_lenient(command, true),
+            Some(Profile::FileRead),
+            "{command}"
+        );
+    }
+    // Strictly parsed lines keep their profile; the lenient reading only
+    // fills in what the strict grammar rejects.
+    assert_eq!(
+        classify_lenient("cargo test; echo done", true),
+        Some(Profile::Tests)
+    );
+    assert_eq!(
+        classify_lenient("echo 'a;b' | rg x src", true),
+        Some(Profile::Search)
+    );
+    for command in [
+        "cat",
+        "cat -",
+        "cat -A f",
+        "nl -x f",
+        "echo $HOME; ls",
+        "cat > f <<EOF\nx\nEOF",
+    ] {
+        assert_eq!(classify_lenient(command, true), None, "{command}");
+    }
+    // Codex's execution grammar is unchanged.
+    assert_eq!(classify("sed -n 1,9p a; sed -n 1,9p b"), None);
+    assert_eq!(classify("cat a b"), None);
+}
+
+#[test]
+fn the_journaled_program_is_a_bare_name() {
+    for (command, expected) in [
+        ("cd sub && cargo test 2>&1", Some("cargo")),
+        ("FOO=1 /usr/bin/python3 x.py; echo ok", Some("python3")),
+        ("echo start; nl -ba f | sed -n 1,9p", Some("nl")),
+        ("cd sub", None),
+        ("make deploy", Some("make")),
+        ("./scripts/do\\ it.sh --token=abc", Some("other")),
+        ("", None),
+    ] {
+        assert_eq!(program(command).as_deref(), expected, "{command}");
+    }
+}
+
 /// A word per number, without digits, so lines do not fold by template.
 fn word(i: usize) -> String {
     i.to_string()
@@ -252,6 +310,18 @@ fn claude_keeps_ordinary_source_reads_whole_and_compresses_large_ones() {
         ),
         json!({})
     );
+    // A read in pieces is a file read too: it stays whole below 16 KiB.
+    for command in [
+        "sed -n 1,150p src/lib.rs; sed -n 150,300p src/lib.rs",
+        "cat src/lib.rs src/main.rs",
+        "nl -ba src/lib.rs | sed -n 1,300p",
+    ] {
+        assert_eq!(
+            hook(dir.path(), "claude", event(command, source.clone())),
+            json!({}),
+            "{command}"
+        );
+    }
     // The same bytes from a test run are compressed to the tests budget.
     let replaced = hook(dir.path(), "claude", event("cargo test", source.clone()));
     let stdout = replaced["hookSpecificOutput"]["updatedToolOutput"]["stdout"]

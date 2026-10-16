@@ -3,8 +3,9 @@
 //! One JSON line per event in `<cache>/events/YYYY-MM.jsonl`, under 512
 //! bytes: time, host, kind, profile, byte counts, reason, compact version,
 //! 12-character prefixes of the artifact and original it produced, whether
-//! relevance anchors ranked lines up, and for an expansion its kind. No
-//! content, command, path or anchor term is recorded. Writing is best effort and
+//! relevance anchors ranked lines up, the bare name of the program that
+//! printed the output, and for an expansion its kind. No content, argument,
+//! path or anchor term is recorded. Writing is best effort and
 //! `SCOPELET_EVENTS=0` turns it off.
 use crate::compress::Reason;
 use serde::{Deserialize, Serialize};
@@ -25,6 +26,11 @@ pub struct Event {
     pub kind: Kind,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub profile: Option<String>,
+    /// The bare name of the program that printed the output (its first
+    /// recognized command's, else its first), `other` when it is not a
+    /// short plain name; none when unknown.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub program: Option<String>,
     pub bytes_in: usize,
     pub bytes_out: usize,
     /// Why the output was or was not replaced; none for an expansion.
@@ -135,6 +141,7 @@ pub fn record(cache: Option<PathBuf>, mut event: Event) {
 /// Journal an output left unchanged before compression was attempted.
 pub fn unchanged(
     host: &str,
+    program: Option<&str>,
     profile: Option<crate::commands::Profile>,
     version: crate::compress::Version,
     bytes: usize,
@@ -149,6 +156,7 @@ pub fn unchanged(
             host: host.into(),
             kind: Kind::Compress,
             profile: crate::compress::effective_profile(profile, version).map(|p| p.name().into()),
+            program: program.map(str::to_owned),
             bytes_in: bytes,
             bytes_out: bytes,
             reason: Some(reason),
@@ -171,6 +179,9 @@ pub fn expanded(cache: Option<PathBuf>, reference: &str, how: &str) {
         },
     );
 }
+
+/// Programs `stats` lists among compressions without a profile.
+const UNPROFILED_LISTED: usize = 10;
 
 /// Expansions above this share of a profile's compressions suggest its
 /// budget is too tight (with at least `TIGHT_MIN` compressions).
@@ -212,6 +223,11 @@ pub struct Stats {
     pub pass_through: BTreeMap<String, usize>,
     /// Compressions by profile (`none` when unrecognized).
     pub by_profile: BTreeMap<String, usize>,
+    /// Compressions by program (`unknown` before this was journaled).
+    pub by_program: BTreeMap<String, usize>,
+    /// The programs whose compressions had no profile, most frequent first
+    /// (at most `UNPROFILED_LISTED`): where a new profile would help most.
+    pub unprofiled_programs: Vec<(String, usize)>,
     pub expands: usize,
     /// Expansions by how they read the evidence (`find`, `range`, `page`,
     /// `manifest`, `raw`; `unknown` before this was journaled).
@@ -266,6 +282,8 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
     };
     let mut compressed: Vec<&Event> = Vec::new();
     let profile_of = |e: &Event| e.profile.clone().unwrap_or_else(|| "none".into());
+    let program_of = |e: &Event| e.program.clone().unwrap_or_else(|| "unknown".into());
+    let mut unprofiled: BTreeMap<String, usize> = BTreeMap::new();
     for event in &events {
         match (event.kind, event.reason) {
             (Kind::Compress, Some(Reason::Compressed)) => {
@@ -273,6 +291,10 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
                 stats.bytes_in += event.bytes_in as u64;
                 stats.bytes_out += event.bytes_out as u64;
                 *stats.by_profile.entry(profile_of(event)).or_default() += 1;
+                *stats.by_program.entry(program_of(event)).or_default() += 1;
+                if event.profile.is_none() {
+                    *unprofiled.entry(program_of(event)).or_default() += 1;
+                }
                 let profile = stats.profiles.entry(profile_of(event)).or_default();
                 profile.compressions += 1;
                 if event.anchored {
@@ -306,6 +328,11 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
         }
     }
     stats.bytes_saved = stats.bytes_in.saturating_sub(stats.bytes_out);
+    let mut unprofiled: Vec<(String, usize)> = unprofiled.into_iter().collect();
+    // Most frequent first; equal counts keep name order (a stable sort).
+    unprofiled.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
+    unprofiled.truncate(UNPROFILED_LISTED);
+    stats.unprofiled_programs = unprofiled;
     // An expansion counts for a compression it follows and names.
     let expanded = |c: &&&Event| {
         events.iter().any(|e| {
