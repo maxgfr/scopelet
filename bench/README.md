@@ -90,6 +90,32 @@ only the medians are quoted. `tests/content_gate.rs` reads
 `bench/results/content.json`, so a publish that changes a fixture fails the
 build until the Rust mirror is updated too.
 
+## Tokens: what does each grammar cost?
+
+`tokens.py` counts what the byte probes only estimate: the tokens a view costs
+the model. It compresses every content fixture, and a cargo run over twelve
+test binaries, in compact-v4, in compact-v5 and in v5 with each part of its
+grammar alone (`SCOPELET_V5_GRAMMAR=labels`, `header` or `tables`), then counts
+the raw output and each view with `POST /v1/messages/count_tokens`, the free
+and exact count of the model's tokenizer. Counts are net of the message frame
+(a message holding `.`, less its one token: the API refuses an empty one). It
+refuses to run without `--live`, reads the key only from `ANTHROPIC_API_KEY`,
+and a count that fails is `null` in the report with its error, never zero.
+
+```sh
+cargo build --release --locked
+ANTHROPIC_API_KEY=... python3 bench/tokens.py --live   # bench/results/tokens.json
+```
+
+On the 24 cases (`results/tokens.json`), compact-v5 costs 6.2% fewer view
+tokens than v4 for `claude-opus-5-5` and `claude-haiku-5-5` alike (they share
+a tokenizer here), and no case costs more: labels without `input:` save 3.4%,
+the short header 1.0%, CSV tables 1.8% (25% on a 1000-row JSON array). Labels
+matter most on line-heavy views (a `log -p` 8.5%, `kubectl` JSON 9.2%).
+Dropping the explanation of cargo `totals` would save 14 of 926 tokens on the
+workspace run, so it stays. `test_tokens.py` checks the counting, the summary
+and the `--live` guard with a stand-in tokenizer.
+
 ## Live sessions: does a session cost fewer tokens?
 
 `live.py` is the only benchmark that calls a model, and it refuses to run
@@ -129,4 +155,15 @@ overall medians. `publish.py` replaces `bench/results/` on a release, live
 reports included: a report describes the binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
+
+`results/live-20261016-v4-v5-haiku.json` pairs compact-v4 with compact-v5 (one
+binary, haiku, 3 rounds of the four tasks). Both arms answered 12 of 12
+correctly with a median of 3 tool calls, but v5's median total input was
+higher (77,714 against 61,035 tokens): `count_failures` fell 17%, `review_diff`
+held, `fix_test` and `find_receipt` rose. Paired sessions that took the same
+tool path differ by under 0.3% (38,291 and 38,178; 61,124 and 61,037), so the
+gap is the model choosing other paths, which v4 also did in its third round;
+a 6% smaller view is below what twelve sessions can resolve. By the rule set
+before the run (no higher median input or tool calls), v5 stays opt-in and v4
+the default. The tasks run Python tests, so no `totals` line was involved.
 
