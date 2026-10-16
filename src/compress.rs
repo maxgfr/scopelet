@@ -10,15 +10,15 @@ type HashSet<K> = foldhash::HashSet<K>;
 
 pub const DEFAULT_BUDGET: usize = 4096;
 pub const SMALL: usize = 2048;
-/// Line limit of automatic compression in v1/v2 and of explicit compact
-/// queries: selection memory grows with the number of units.
+/// Line limit of explicit compact queries: selection memory grows with the
+/// number of units.
 pub const MAX_LINES: usize = 100_000;
-/// Compact-v3's lighter units keep the peak resident size of automatic
-/// compression under 128 MB up to this many lines (measured with
+/// Automatic compression's light units keep its peak resident size under
+/// 128 MB up to this many lines (measured with
 /// `bench/performance.py --stress`).
-pub const V3_MAX_LINES: usize = 250_000;
+pub const AUTO_MAX_LINES: usize = 250_000;
 
-// Compact-v3 tuning. These are judgement calls, not derived constants: they
+// Selection tuning. These are judgement calls, not derived constants: they
 // were chosen to behave well on the shared fixtures in `bench/content.py` and
 // are pinned by `tests/content_gate.rs`, so changing one has to be re-measured
 // there rather than argued from first principles.
@@ -46,16 +46,11 @@ const BLOCK_MIN_LINES: usize = 3;
 /// units, and rendering is measured after each, so this bounds work rather
 /// than correctness.
 const REFILL_PASSES: usize = 4;
-const PLACEHOLDER: &str =
-    "artifact:0000000000000000000000000000000000000000000000000000000000000000";
 static SCOPELET_MARKER: LazyLock<memchr::memmem::Finder<'static>> =
     LazyLock::new(|| memchr::memmem::Finder::new("[scopelet "));
 static PERSISTED_MARKER: LazyLock<memchr::memmem::Finder<'static>> =
     LazyLock::new(|| memchr::memmem::Finder::new("<persisted-output>"));
-static SIGNAL: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"(?i)\b(error|failed|failure|panic|panicked|exception|traceback|warning|assertionerror|caused by|test result|tests? passed|tests? failed)\b|^\s*(FAIL|PASS|E\s+|FATAL|×|✕)").unwrap()
-});
-/// Compact-v3 vocabulary: diagnostics and summaries that decide an outcome.
+/// Diagnostic vocabulary: diagnostics and summaries that decide an outcome.
 /// Anchored markers stay case-sensitive: their convention is upper case, and
 /// matching them loosely turns any line starting with `e ` into a diagnostic.
 /// So do error and exception type names (`TypeError`, `KeyError`,
@@ -81,14 +76,6 @@ static WEAK: LazyLock<regex::Regex> = LazyLock::new(|| {
 static FRAME: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r#"^(?-u:\s+)at .*\(.*:[0-9]+:[0-9]+\)|^(?-u:\s+)File ".*", line [0-9]+|^(?-u:\s+)at [\w$.<>/-]+\([^()]*\)(?-u:\s*)$|\.go:[0-9]+ \+0x[0-9a-f]+|^(?-u:\s*)--> \S+:[0-9]+:[0-9]+"#).unwrap()
 });
-/// Definition lines of source code and Markdown headings: what a large file
-/// read keeps as its outline in compact-v5 (`outline`). Keywords and
-/// indentation are ASCII, like the other vocabularies.
-static OUTLINE: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"^(?-u:\s*)(?:pub[\s(]|export\s|(?:async\s+)?(?:def|fn|function)[\s*(]|(?:class|struct|enum|trait|interface|type)\s|impl[\s<]|func[\s(]|@[A-Za-z_])|^#{1,6}\s").unwrap()
-});
-/// A file read larger than this shows its outline first (compact-v5).
-const OUTLINE_MIN_BYTES: usize = 16 * 1024;
 /// A file extension at the end of a token: `.rs`, `.py`, `.java`.
 static EXTENSION: LazyLock<regex::Regex> =
     LazyLock::new(|| regex::Regex::new(r"\.[A-Za-z][A-Za-z0-9]{0,4}$").unwrap());
@@ -109,109 +96,6 @@ fn diagnostic(pattern: &regex::Regex, line: &str) -> bool {
         let name = token.trim_end_matches(|c: char| c.is_ascii_digit() || ":,;)]}'\"`".contains(c));
         !(token.contains('/') || token.contains("::") || EXTENSION.is_match(name))
     })
-}
-
-/// Versions are ordered: every check of a version's feature is `>=` the
-/// version that introduced it.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
-pub enum Version {
-    #[value(name = "1")]
-    V1,
-    #[value(name = "2")]
-    V2,
-    #[value(name = "3")]
-    V3,
-    #[default]
-    #[value(name = "4")]
-    V4,
-    /// Compact-v4's selection, written in fewer bytes (see `Grammar`).
-    #[value(name = "5")]
-    V5,
-}
-impl Version {
-    /// The number `--compact-version` and `SCOPELET_COMPACT_VERSION` take.
-    pub fn number(self) -> u8 {
-        match self {
-            Self::V1 => 1,
-            Self::V2 => 2,
-            Self::V3 => 3,
-            Self::V4 => 4,
-            Self::V5 => 5,
-        }
-    }
-
-    pub fn configured(explicit: Option<Self>) -> Result<Self> {
-        if let Some(version) = explicit {
-            return Ok(version);
-        }
-        match std::env::var("SCOPELET_COMPACT_VERSION") {
-            Ok(v) if v == "1" => Ok(Self::V1),
-            Ok(v) if v == "2" => Ok(Self::V2),
-            Ok(v) if v == "3" => Ok(Self::V3),
-            Ok(v) if v == "4" => Ok(Self::V4),
-            Ok(v) if v == "5" => Ok(Self::V5),
-            Err(std::env::VarError::NotPresent) => Ok(Self::default()),
-            _ => anyhow::bail!("SCOPELET_COMPACT_VERSION must be 1, 2, 3, 4 or 5"),
-        }
-    }
-    /// Compact-v3 and later: command profiles, display copies, folding and
-    /// tiered selection. V4 only changes the envelope around the same body.
-    pub fn profiled(self) -> bool {
-        self >= Self::V3
-    }
-    /// Partial JSON tables with indices and provenance (everything after v1).
-    fn tables(self) -> bool {
-        self != Self::V1
-    }
-}
-
-/// What compact-v5 changes from compact-v4. Each part can be turned off alone,
-/// so a probe can measure what it saves (`SCOPELET_V5_GRAMMAR`, a
-/// comma-separated list of the parts to keep; all of them when unset).
-/// `labels`, `header` and `tables` only write v4's selection in fewer bytes:
-/// with only them, a v5 view shows exactly the units the v4 view of the same
-/// input shows. `artifacts` and `outline` change the selection.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-struct Grammar {
-    /// `labels`: a view of one `input` text drops `input:` from its labels.
-    labels: bool,
-    /// `header`: a 12-character ID and no recovery syntax, which the session
-    /// guidance carries.
-    header: bool,
-    /// `tables`: a table of scalar cells as a header and CSV rows.
-    tables: bool,
-    /// `artifacts`: a listing shows each build or dependency directory
-    /// (`node_modules`, `target`, ...) as one counted line, whatever its size.
-    artifacts: bool,
-    /// `outline`: a large file read ranks its definition lines above the
-    /// head and tail padding.
-    outline: bool,
-}
-
-static V5_GRAMMAR: LazyLock<Grammar> = LazyLock::new(|| {
-    let parts = std::env::var("SCOPELET_V5_GRAMMAR").ok();
-    let has = |part: &str| {
-        parts
-            .as_deref()
-            .is_none_or(|parts| parts.split(',').any(|p| p.trim() == part))
-    };
-    Grammar {
-        labels: has("labels"),
-        header: has("header"),
-        tables: has("tables"),
-        artifacts: has("artifacts"),
-        outline: has("outline"),
-    }
-});
-
-impl Grammar {
-    fn of(version: Version) -> Self {
-        if version >= Version::V5 {
-            *V5_GRAMMAR
-        } else {
-            Self::default()
-        }
-    }
 }
 
 /// Conservative detection retained for callers; automatic ingestion reuses parsed values.
@@ -284,8 +168,7 @@ impl Decision {
 /// take: a term found on every line cannot flood the view.
 const ANCHOR_SHARE: usize = 3;
 
-/// Literal terms that mark a line as relevant to the task (compact-v4): the
-/// prompt's and the command's. A unit containing one ranks with first
+/// Literal terms that mark a line as relevant to the task: the prompt's and the command's. A unit containing one ranks with first
 /// diagnostics (tier 3) while anchored units fit `ANCHOR_SHARE` of the
 /// budget. The view depends on them; the artifact does not.
 struct Anchoring<'a> {
@@ -349,26 +232,13 @@ impl<'a> Anchoring<'a> {
         };
         if found {
             // Only a unit ranked below a diagnostic's tier was lifted by
-            // the anchor alone; an outline line stays no outcome.
+            // the anchor alone.
             unit.anchored |= unit.priority < 2;
             unit.priority = 3;
             self.left -= unit.size;
             self.promoted += 1;
         }
     }
-}
-
-/// The profile that shapes an output: a recognized command's, in compact-v3
-/// and later. Earlier versions keep their single default shape.
-pub fn effective_profile(
-    profile: Option<crate::commands::Profile>,
-    version: Version,
-) -> Option<crate::commands::Profile> {
-    // Install arrived with compact-v4: earlier versions keep the defaults
-    // they gave an unrecognized command.
-    profile.filter(|p| {
-        version.profiled() && (version >= Version::V4 || *p != crate::commands::Profile::Install)
-    })
 }
 
 /// How one output is compressed: its byte target, the size up to which it
@@ -378,7 +248,7 @@ struct Shape {
     budget: usize,
     small: usize,
     reading: bool,
-    /// The effective profile: the recognized command's in compact-v3 and later.
+    /// The recognized command's profile.
     profile: Option<crate::commands::Profile>,
 }
 
@@ -391,14 +261,8 @@ impl Shape {
             profile: None,
         }
     }
-    /// A recognized command's shape in compact-v3; `budget` overrides its
-    /// target.
-    fn of(
-        profile: Option<crate::commands::Profile>,
-        budget: Option<usize>,
-        version: Version,
-    ) -> Self {
-        let profile = effective_profile(profile, version);
+    /// A recognized command's shape; `budget` overrides its target.
+    fn of(profile: Option<crate::commands::Profile>, budget: Option<usize>) -> Self {
         Self {
             budget: budget.unwrap_or(profile.map_or(DEFAULT_BUDGET, |p| p.budget())),
             small: profile.map_or(SMALL, |p| p.small()),
@@ -408,38 +272,25 @@ impl Shape {
     }
 }
 
-pub fn automatic(bytes: &[u8], store: &Store, budget: usize) -> Result<Vec<u8>> {
-    automatic_with(bytes, Shape::plain(budget), Version::V1, &[], || {
-        Ok(store.clone())
-    })
-    .map(|(output, _)| output.into_owned())
-}
-
 /// The store factory is not invoked for a rejected or ineligible substitution.
 pub fn automatic_lazy<'a>(
     bytes: &'a [u8],
     path: Option<PathBuf>,
     budget: usize,
-    version: Version,
 ) -> Result<Cow<'a, [u8]>> {
-    automatic_with(bytes, Shape::plain(budget), version, &[], || {
-        Store::open(path)
-    })
-    .map(|(output, _)| output)
+    automatic_with(bytes, Shape::plain(budget), &[], || Store::open(path)).map(|(output, _)| output)
 }
 
 /// `automatic_lazy` for the output of a recognized command: its profile's
 /// budget unless `budget` is given and, for a file read, no diagnostic
-/// ranking (a word like `error` in source code is not an outcome). Profiles
-/// only shape compact-v3; earlier versions keep their defaults.
+/// ranking (a word like `error` in source code is not an outcome).
 pub fn automatic_profile<'a>(
     bytes: &'a [u8],
     path: Option<PathBuf>,
     profile: Option<crate::commands::Profile>,
     budget: Option<usize>,
-    version: Version,
 ) -> Result<Cow<'a, [u8]>> {
-    automatic_decision(bytes, path, profile, budget, version).map(|(output, _)| output)
+    automatic_decision(bytes, path, profile, budget).map(|(output, _)| output)
 }
 
 /// `automatic_decision` that journals its decision in the local event
@@ -451,27 +302,23 @@ pub fn automatic_recorded<'a>(
     path: Option<PathBuf>,
     profile: Option<crate::commands::Profile>,
     budget: Option<usize>,
-    version: Version,
 ) -> Cow<'a, [u8]> {
-    automatic_anchored(host, bytes, path, profile, budget, version, &[])
+    automatic_anchored(host, bytes, path, profile, budget, &[])
 }
 
-/// `automatic_recorded` that ranks up lines containing one of `anchors`
-/// (compact-v4 only; earlier versions ignore them).
+/// `automatic_recorded` that ranks up lines containing one of `anchors`.
 pub fn automatic_anchored<'a>(
     host: &str,
     bytes: &'a [u8],
     path: Option<PathBuf>,
     profile: Option<crate::commands::Profile>,
     budget: Option<usize>,
-    version: Version,
     anchors: &[String],
 ) -> Cow<'a, [u8]> {
-    automatic_journaled(host, None, bytes, path, profile, budget, version, anchors)
+    automatic_journaled(host, None, bytes, path, profile, budget, anchors)
 }
 
 /// `automatic_anchored` that journals the program that printed `bytes`.
-#[allow(clippy::too_many_arguments)]
 pub fn automatic_journaled<'a>(
     host: &str,
     program: Option<&str>,
@@ -479,25 +326,21 @@ pub fn automatic_journaled<'a>(
     path: Option<PathBuf>,
     profile: Option<crate::commands::Profile>,
     budget: Option<usize>,
-    version: Version,
     anchors: &[String],
 ) -> Cow<'a, [u8]> {
-    let shape = Shape::of(profile, budget, version);
-    let anchors = if version >= Version::V4 { anchors } else { &[] };
-    let (output, decision) =
-        automatic_with(bytes, shape, version, anchors, || Store::open(path.clone()))
-            .unwrap_or_else(|_| (Cow::Borrowed(bytes), Decision::unchanged(Reason::Error)));
+    let shape = Shape::of(profile, budget);
+    let (output, decision) = automatic_with(bytes, shape, anchors, || Store::open(path.clone()))
+        .unwrap_or_else(|_| (Cow::Borrowed(bytes), Decision::unchanged(Reason::Error)));
     if !bytes.is_empty() {
         crate::events::record(
             path,
             crate::events::Event {
                 host: host.into(),
-                profile: effective_profile(profile, version).map(|p| p.name().into()),
+                profile: profile.map(|p| p.name().into()),
                 program: program.map(str::to_owned),
                 bytes_in: bytes.len(),
                 bytes_out: output.len(),
                 reason: Some(decision.reason),
-                version: Some(version.number()),
                 artifact: decision.artifact.as_deref().map(crate::events::prefix),
                 blob: decision.blob.as_deref().map(crate::events::prefix),
                 anchored: decision.anchored,
@@ -514,16 +357,13 @@ pub fn automatic_decision<'a>(
     path: Option<PathBuf>,
     profile: Option<crate::commands::Profile>,
     budget: Option<usize>,
-    version: Version,
 ) -> Result<(Cow<'a, [u8]>, Decision)> {
-    let shape = Shape::of(profile, budget, version);
-    automatic_with(bytes, shape, version, &[], || Store::open(path))
+    automatic_with(bytes, Shape::of(profile, budget), &[], || Store::open(path))
 }
 
 fn automatic_with<'a>(
     bytes: &'a [u8],
     shape: Shape,
-    version: Version,
     anchors: &[String],
     store: impl FnOnce() -> Result<Store>,
 ) -> Result<(Cow<'a, [u8]>, Decision)> {
@@ -532,28 +372,19 @@ fn automatic_with<'a>(
         (1024..=1024 * 1024).contains(&shape.budget),
         "max_bytes must be 1024..1048576"
     );
-    let max_lines = if version.profiled() {
-        V3_MAX_LINES
-    } else {
-        MAX_LINES
-    };
     if bytes.len() <= shape.small {
         return unchanged(Reason::Small);
     }
-    if memchr::memchr_iter(b'\n', bytes).count() > max_lines {
+    if memchr::memchr_iter(b'\n', bytes).count() > AUTO_MAX_LINES {
         return unchanged(Reason::TooManyLines);
     }
     // Existing Scopelet output and host previews are never compressed again.
-    // Compact-v3 only recognizes their markers where they are written, at the
-    // start of a line: a source file quoting `"[scopelet "` is not a view.
+    // Their markers are only recognized where they are written, at the start
+    // of a line: a source file quoting `"[scopelet "` is not a view.
     let marked = |finder: &memchr::memmem::Finder<'_>| {
-        if version.profiled() {
-            finder
-                .find_iter(bytes)
-                .any(|i| i == 0 || bytes[i - 1] == b'\n')
-        } else {
-            finder.find(bytes).is_some()
-        }
+        finder
+            .find_iter(bytes)
+            .any(|i| i == 0 || bytes[i - 1] == b'\n')
     };
     if marked(&SCOPELET_MARKER) {
         return unchanged(Reason::AlreadyCompressed);
@@ -566,17 +397,17 @@ fn automatic_with<'a>(
     };
     let parsed = Parsed::detected(text.to_owned());
     let format = parsed.format();
-    let mut data = Dataset {
+    let data = Dataset {
         records: parsed.records("input", String::new()),
         notes: vec![SUPPLIED.into()],
         ..Dataset::default()
     };
-    // A compact-v4 test view names its failures, then its totals, right
-    // below the header. The lines take at most a quarter of the budget; a
+    // A test view names its failures, then its totals, right below the
+    // header. The lines take at most a quarter of the budget; a
     // longer one is left out rather than starving the view of the output it
     // describes.
     let mut action = String::new();
-    if version >= Version::V4 && shape.profile == Some(crate::commands::Profile::Tests) {
+    if shape.profile == Some(crate::commands::Profile::Tests) {
         for line in [failure_line(text), totals_line(text)]
             .into_iter()
             .flatten()
@@ -592,12 +423,10 @@ fn automatic_with<'a>(
     anchoring.focus(text);
     let (mut result, shown) = view(
         &data,
-        PLACEHOLDER,
         shape.budget - failed_len,
-        version,
         Some(text),
-        max_lines,
-        Kind::of(shape.profile, version),
+        AUTO_MAX_LINES,
+        Kind::of(shape.profile),
         &mut anchoring,
     )?;
     if let Some(line) = &failed {
@@ -608,29 +437,18 @@ fn automatic_with<'a>(
         return unchanged(Reason::Savings);
     }
     let store = store()?;
-    // Compact-v3 artifacts name the original blob instead of storing every
-    // record a second time; earlier versions keep their exact v1 artifacts.
-    let artifact = if version.profiled() {
-        let (artifact, blob) = store_original(&store, bytes, format)?;
-        data.snapshots.push(snapshot(blob, bytes.len()));
-        artifact
-    } else {
-        let blob = store.put("blob", bytes)?;
-        for record in &mut data.records {
-            record.blob = Some(blob.clone());
-        }
-        data.snapshots.push(snapshot(blob, bytes.len()));
-        store.put_json(&data)?
-    };
+    // The artifact names the original blob instead of storing every record a
+    // second time.
+    let (artifact, blob) = store_original(&store, bytes, format)?;
     store.set_last(&artifact);
-    identify(&mut result, &data, &artifact, version);
+    identify(&mut result, &artifact);
     ensure!(
         result.len() <= shape.budget,
         "compact metadata exceeds budget"
     );
     let decision = Decision {
         reason: Reason::Compressed,
-        blob: Some(data.snapshots[0].blob.clone()),
+        blob: Some(blob),
         artifact: Some(artifact),
         anchored: anchoring.promoted > 0,
     };
@@ -669,17 +487,10 @@ fn store_original(store: &Store, bytes: &[u8], format: Format) -> Result<(String
     Ok((artifact, blob))
 }
 
-/// The compact-v4 reference that replaces an output already shown in the
-/// same context.
-fn repeat_marker(id: &str, lines: usize, version: Version) -> String {
-    let recover = if Grammar::of(version).header {
-        ""
-    } else {
-        "; expand ID"
-    };
+/// The reference that replaces an output already shown in the same context.
+fn repeat_marker(id: &str, lines: usize) -> String {
     format!(
-        "{}{id} repeat: identical to output already shown in this conversation ({lines} lines){recover}]\n",
-        prefix(version)
+        "{PREFIX}{id} repeat: identical to output already shown in this conversation ({lines} lines)]\n"
     )
 }
 
@@ -694,29 +505,22 @@ pub fn repeat_recorded(
     bytes: &[u8],
     path: Option<PathBuf>,
     profile: Option<crate::commands::Profile>,
-    version: Version,
 ) -> Option<Vec<u8>> {
     let text = std::str::from_utf8(bytes).ok()?;
     let format = Parsed::detected(text.to_owned()).format();
     let store = Store::open(path.clone()).ok()?;
     let (artifact, blob) = store_original(&store, bytes, format).ok()?;
     store.set_last(&artifact);
-    let marker = repeat_marker(
-        short_id(&artifact, version),
-        clean::line_count(text),
-        version,
-    )
-    .into_bytes();
+    let marker = repeat_marker(short_id(&artifact), clean::line_count(text)).into_bytes();
     crate::events::record(
         path,
         crate::events::Event {
             host: host.into(),
-            profile: effective_profile(profile, version).map(|p| p.name().into()),
+            profile: profile.map(|p| p.name().into()),
             program: program.map(str::to_owned),
             bytes_in: bytes.len(),
             bytes_out: marker.len(),
             reason: Some(Reason::Repeat),
-            version: Some(version.number()),
             artifact: Some(crate::events::prefix(&artifact)),
             blob: Some(crate::events::prefix(&blob)),
             ..Default::default()
@@ -725,125 +529,55 @@ pub fn repeat_recorded(
     Some(marker)
 }
 
+/// The compact view of an explicit query's result, stored whole as its
+/// artifact.
 pub fn compact(data: &Dataset, store: &Store, budget: usize) -> Result<String> {
-    compact_version(data, store, budget, Version::V1)
-}
-pub fn compact_version(
-    data: &Dataset,
-    store: &Store,
-    budget: usize,
-    version: Version,
-) -> Result<String> {
     let (mut text, _) = view(
         data,
-        PLACEHOLDER,
         budget,
-        version,
         None,
         MAX_LINES,
         Kind::default(),
         &mut Anchoring::new(&[]),
     )?;
     let id = store.put_json(data)?;
-    identify(&mut text, data, &id, version);
+    identify(&mut text, &id);
     Ok(text)
 }
 
 /// Write the stored artifact's reference into a view's header. Only our
 /// header is substituted, never placeholder-looking text in original evidence.
-fn identify(text: &mut String, data: &Dataset, artifact: &str, version: Version) {
-    if version >= Version::V4 {
-        let at = V4_PREFIX.len();
-        let id = short_id(artifact, version);
-        text.replace_range(at..at + id.len(), id);
-    } else {
-        let end = text.find('\n').unwrap() + 1;
-        text.replace_range(..end, &header(data, artifact, version));
-    }
+fn identify(text: &mut String, artifact: &str) {
+    let at = PREFIX.len();
+    let id = short_id(artifact);
+    text.replace_range(at..at + id.len(), id);
 }
 
-fn header(data: &Dataset, artifact: &str, version: Version) -> String {
-    match version {
-        Version::V1 => format!(
-            "[scopelet compact-v1 {artifact} scan_complete={}; original: scopelet expand {artifact} --manifest]\n",
-            data.scan_complete
-        ),
-        Version::V2 => format!(
-            "[scopelet compact-v2 {artifact} scan_complete={}; recover: scopelet expand {artifact} --find TEXT (or --manifest)]\n",
-            data.scan_complete
-        ),
-        // ID refers to the artifact reference above: the id is not repeated.
-        Version::V3 => format!(
-            "[scopelet compact-v3 {artifact} scan_complete={}; recover: scopelet expand ID --find TEXT (or --manifest)]\n",
-            data.scan_complete
-        ),
-        Version::V4 | Version::V5 => header_v4(
-            short_id(artifact, version),
-            version,
-            0,
-            0,
-            data.scan_complete,
-        ),
-    }
-}
-
-/// Hex characters of the artifact hash a compact-v4 header shows. `expand`
-/// resolves it like any unique prefix of 8 or more characters.
-const SHORT_ID: usize = 16;
-/// The same in a compact-v5 header: still unique in any local cache, and
-/// `expand` fails loudly rather than guess when it is not.
-const SHORT_ID_V5: usize = 12;
-const V4_PREFIX: &str = "[scopelet v4 ";
-const PLACEHOLDER_ID: &str = "0000000000000000";
-
-/// The prefix of a view's header: every compact-v4 and v5 header starts
-/// with `[scopelet vN ` and its ID.
-fn prefix(version: Version) -> &'static str {
-    if version >= Version::V5 {
-        "[scopelet v5 "
-    } else {
-        V4_PREFIX
-    }
-}
-
-fn id_len(version: Version) -> usize {
-    if Grammar::of(version).header {
-        SHORT_ID_V5
-    } else {
-        SHORT_ID
-    }
-}
+/// Hex characters of the artifact hash a header shows: unique in any local
+/// cache, and `expand` fails loudly rather than guess when it is not. It
+/// resolves the ID like any unique prefix of 8 or more characters.
+const SHORT_ID: usize = 12;
+/// Every view and repeat reference starts with this and its ID. `v5` names
+/// the format since compact-v5 introduced it; earlier views read `v4` or
+/// `compact-vN`.
+const PREFIX: &str = "[scopelet v5 ";
+const PLACEHOLDER_ID: &str = "000000000000";
 
 /// The first hex characters of a reference a header shows, or the
 /// placeholder.
-fn short_id(reference: &str, version: Version) -> &str {
-    let len = id_len(version);
+fn short_id(reference: &str) -> &str {
     let hash = reference.split_once(':').map_or(reference, |(_, h)| h);
-    hash.get(..len).unwrap_or(&PLACEHOLDER_ID[..len])
+    hash.get(..SHORT_ID).unwrap_or(PLACEHOLDER_ID)
 }
 
-/// The single line that frames a compact-v4 view: its short artifact ID,
-/// whether the display is complete or how many units it omits, and
-/// `scan_complete=false` only when the source scan was incomplete. There is
-/// no footer.
+/// The single line that frames a view: its short artifact ID, whether the
+/// display is complete or how many units it omits, and `scan_complete=false`
+/// only when the source scan was incomplete. There is no footer, and no
+/// recovery syntax: the session guidance carries it.
 /// `abridged` counts units shown only in part (a line cut behind
 /// `text_truncated`, a record shown without some of its fields): a view with
 /// any is not complete either.
-/// Compact-v5 writes the same facts with a shorter ID, and without the
-/// recovery syntax the session guidance already gives.
-fn header_v4(
-    id: &str,
-    version: Version,
-    omitted: usize,
-    abridged: usize,
-    scan_complete: bool,
-) -> String {
-    let start = prefix(version);
-    let recover = if Grammar::of(version).header {
-        ""
-    } else {
-        "; expand ID --find TEXT"
-    };
+fn header(id: &str, omitted: usize, abridged: usize, scan_complete: bool) -> String {
     let scan = if scan_complete {
         ""
     } else {
@@ -855,16 +589,10 @@ fn header_v4(
         String::new()
     };
     if omitted == 0 && abridged.is_empty() {
-        format!("{start}{id}{scan} complete]\n")
+        format!("{PREFIX}{id}{scan} complete]\n")
     } else {
-        format!("{start}{id}{scan} omitted={omitted}{abridged}; gaps are not absence{recover}]\n")
+        format!("{PREFIX}{id}{scan} omitted={omitted}{abridged}; gaps are not absence]\n")
     }
-}
-fn footer(omitted: usize) -> String {
-    format!(
-        "[scopelet display_complete={} omitted_units={omitted}; gaps are omitted, not evidence of absence]\n",
-        omitted == 0
-    )
 }
 
 struct Unit<'a> {
@@ -873,22 +601,24 @@ struct Unit<'a> {
     line: Option<Cow<'a, str>>,
     /// Label and metadata before the text.
     label: Label,
-    /// Original length of a v3 line cut behind `text_truncated`; 0 when whole.
+    /// Original length of a line cut behind `text_truncated`; 0 when whole.
     truncated: usize,
+    /// Bytes the unit takes as written, label included.
     size: usize,
     priority: u8,
-    /// Order inside its tier when nonzero: higher first (a compact-v4 diff's
-    /// files by change density). Zero keeps head and tail alternation.
+    /// Order inside its tier when nonzero: higher first (a diff's files by
+    /// change density). Zero keeps head and tail alternation.
     weight: u16,
-    /// Ranked up by a relevance anchor or as a large file's outline (compact-v5):
-    /// relevant, not a diagnostic.
+    /// Ranked up by a relevance anchor: relevant, not a diagnostic.
     anchored: bool,
 }
 
-/// The label in front of a unit. Compact-v3 labels are written when the unit
-/// is rendered, so building units for a large input allocates no strings.
+/// The label in front of a unit. Labels are written when the unit is
+/// rendered, so building units for a large input allocates no strings.
+/// `bare` labels (a view of the one `input` text) leave out `source:`.
 enum Label {
-    /// Earlier versions: the complete prefix, including the separating space.
+    /// A complete label written as is: a JSON record's (empty) or a
+    /// generated file's summary.
     Prefix(String),
     /// `source:a`
     Line(usize),
@@ -908,31 +638,32 @@ fn digits(n: usize) -> usize {
 const TRUNCATED_MARK: &str = " text_truncated bytes=";
 
 impl<'a> Unit<'a> {
-    fn text(record: &'a Record, prefix: String, line: Cow<'a, str>, priority: u8) -> Self {
-        let size = prefix.len() + line.len() + usize::from(!line.ends_with('\n'));
+    /// A unit shown as its label alone (a generated file's summary).
+    fn summary(record: &'a Record, label: String, priority: u8) -> Self {
         Self {
             record,
-            line: Some(line),
-            label: Label::Prefix(prefix),
+            size: label.len() + 1,
+            line: Some(Cow::Borrowed("")),
+            label: Label::Prefix(label),
             truncated: 0,
-            size,
             priority,
             weight: 0,
             anchored: false,
         }
     }
-    /// Compact-v3 text unit; a line too large for the budget is cut on a
-    /// character boundary behind a `text_truncated bytes=N` marker. `raw`
-    /// yields the source line and is only called for a line that is cut.
-    fn text_v3(
+    /// A text unit; a line too large for the budget is cut on a character
+    /// boundary behind a `text_truncated bytes=N` marker. `raw` yields the
+    /// source line and is only called for a line that is cut.
+    fn text(
         record: &'a Record,
         label: Label,
         view: Cow<'a, str>,
         raw: impl FnOnce() -> &'a str,
         priority: u8,
         limit: usize,
+        bare: bool,
     ) -> Self {
-        let label_len = label.len(&record.source);
+        let label_len = label.len(&record.source, bare);
         let mut unit = Self {
             record,
             size: label_len + 1 + view.len() + 1,
@@ -976,8 +707,7 @@ impl<'a> Unit<'a> {
             _ => None,
         }
     }
-    /// Render the unit; `bare` (compact-v5) drops its `source:`. Its size
-    /// stays what the labelled unit takes, which selection counts.
+    /// Render the unit; `bare` must be what its size was measured with.
     fn append(&self, output: &mut String, bare: bool) {
         if let Some(line) = &self.line {
             let start = output.len();
@@ -993,16 +723,7 @@ impl<'a> Unit<'a> {
             if !line.ends_with('\n') {
                 output.push('\n');
             }
-            let dropped = if bare {
-                self.record.source.len() + 1
-            } else {
-                0
-            };
-            debug_assert_eq!(
-                output.len() - start + dropped,
-                self.size,
-                "unit size drifted"
-            );
+            debug_assert_eq!(output.len() - start, self.size, "unit size drifted");
         } else {
             output.push_str(&self.record.source);
             output.push_str(": ");
@@ -1014,9 +735,9 @@ impl<'a> Unit<'a> {
 
 impl Label {
     /// Byte length of the label, without the space that follows it.
-    fn len(&self, source: &str) -> usize {
-        source.len()
-            + 1
+    fn len(&self, source: &str, bare: bool) -> usize {
+        let source = if bare { 0 } else { source.len() + 1 };
+        source
             + match *self {
                 Self::Prefix(ref prefix) => return prefix.len(),
                 Self::Line(a) => digits(a),
@@ -1029,20 +750,10 @@ impl Label {
                 }
             }
     }
-    /// `bare` writes the label without its `source:` (a compact-v5 view of
-    /// one input); a prefix label then drops the same leading `source:`.
     fn write(&self, source: &str, bare: bool, output: &mut String) {
         use std::fmt::Write;
         if let Self::Prefix(prefix) = self {
-            let label = if bare {
-                prefix
-                    .strip_prefix(source)
-                    .and_then(|rest| rest.strip_prefix(':'))
-                    .unwrap_or(prefix)
-            } else {
-                prefix
-            };
-            output.push_str(label);
+            output.push_str(prefix);
             return;
         }
         if !bare {
@@ -1093,99 +804,37 @@ fn first_of_template(seen: &mut HashSet<String>, line: &str, key: &mut String) -
 fn units<'a>(
     data: &'a Dataset,
     limit: usize,
-    version: Version,
     kind: Kind,
     anchoring: &mut Anchoring<'_>,
 ) -> Vec<Unit<'a>> {
     let mut units = Vec::new();
     let mut distinct = BTreeSet::new();
     let mut seen = Seen::default();
-    let v2_signal = |s: &str| SIGNAL.is_match(s);
-    let v3_signal = |s: &str| diagnostic(&STRONG, s);
-    let signal: &dyn Fn(&str) -> bool = if version.profiled() {
-        &v3_signal
-    } else {
-        &v2_signal
-    };
+    let signal = |s: &str| diagnostic(&STRONG, s);
     for (ordinal, record) in data.records.iter().enumerate() {
-        if let Some(value) = &record.value {
-            let priority = if version == Version::V1 {
-                if SIGNAL.is_match(&value.to_string()) {
-                    3
-                } else {
-                    0
-                }
-            } else if ordinal == 0 || ordinal + 1 == data.records.len() {
-                4
-            } else if let Some(signal) = signal_value(value, signal) {
-                if distinct.insert(signal) { 3 } else { 2 }
-            } else {
-                0
-            };
-            let mut unit = Unit {
-                record,
-                line: None,
-                label: Label::Prefix(String::new()),
-                truncated: 0,
-                size: encoding::size(value, limit).unwrap_or(limit + 1) + record.source.len() + 3,
-                priority,
-                weight: 0,
-                anchored: false,
-            };
-            anchoring.promote(&mut unit);
-            units.push(unit);
+        let Some(value) = &record.value else {
+            text_units(record, limit, kind, &mut seen, anchoring, &mut units);
             continue;
-        }
-        if version.profiled() {
-            text_units_v3(record, limit, kind, &mut seen, anchoring, &mut units);
-            continue;
-        }
-        let lines: Vec<_> = record.text.split_inclusive('\n').collect();
-        let mut nearby = vec![false; lines.len()];
-        let signals: Vec<_> = lines.iter().map(|line| SIGNAL.is_match(line)).collect();
-        for (i, &signal) in signals.iter().enumerate() {
-            if signal {
-                nearby[i.saturating_sub(3)..(i + 9).min(lines.len())].fill(true);
-            }
-        }
-        let front = lines.len().min(3);
-        nearby[..front].fill(true);
-        nearby[lines.len().saturating_sub(5)..].fill(true);
-        let base = record.start_line.unwrap_or(1);
-        let mut i = 0;
-        while i < lines.len() {
-            let mut end = i + 1;
-            while end < lines.len() && lines[end] == lines[i] {
-                end += 1;
-            }
-            let line = lines[i];
-            let priority = if i == 0 || end == lines.len() {
-                4
-            } else if signals[i] {
-                if version == Version::V1 || distinct.insert(line) {
-                    3
-                } else {
-                    2
-                }
-            } else if nearby[i..end].iter().any(|&v| v) {
-                1
-            } else {
-                0
-            };
-            let prefix = if end == i + 1 {
-                format!("{}:{} ", record.source, base + i)
-            } else {
-                format!(
-                    "{}:{}-{} repeat={} ",
-                    record.source,
-                    base + i,
-                    base + end - 1,
-                    end - i
-                )
-            };
-            units.push(Unit::text(record, prefix, Cow::Borrowed(line), priority));
-            i = end;
-        }
+        };
+        let priority = if ordinal == 0 || ordinal + 1 == data.records.len() {
+            4
+        } else if let Some(signal) = signal_value(value, &signal) {
+            if distinct.insert(signal) { 3 } else { 2 }
+        } else {
+            0
+        };
+        let mut unit = Unit {
+            record,
+            line: None,
+            label: Label::Prefix(String::new()),
+            truncated: 0,
+            size: encoding::size(value, limit).unwrap_or(limit + 1) + record.source.len() + 3,
+            priority,
+            weight: 0,
+            anchored: false,
+        };
+        anchoring.promote(&mut unit);
+        units.push(unit);
     }
     units
 }
@@ -1216,8 +865,8 @@ impl Bits {
     }
 }
 
-/// Compact-v3 text units work on display copies of the lines (terminal
-/// control sequences and carriage-return overwrites removed) while labels stay
+/// Text units work on display copies of the lines (terminal control
+/// sequences and carriage-return overwrites removed) while labels stay
 /// absolute source lines. Identical lines fold into their first occurrence
 /// wherever they are; lines without a diagnostic fold with the lines sharing
 /// their template; oversized lines are cut instead of vetoing the view.
@@ -1230,9 +879,14 @@ impl Bits {
 /// shown (see `search_capped`). `kind.similar_on_overflow`: a text that fits
 /// `limit` with its labels folds identical lines only, since the numbers that
 /// tell similar lines apart (counts, ids, statuses) are often the evidence.
-/// `kind.outline`: a file read over `OUTLINE_MIN_BYTES` ranks its definition
-/// lines with a failure's detail, and they fold with identical text only.
-fn text_units_v3<'a>(
+/// `kind.bare`: labels leave out `source:`, and sizes are measured so.
+///
+/// A stack frame or location ranks with the diagnostic it locates when that
+/// diagnostic is the first of its template and the nearest nontrivial line
+/// above it, within `GLUE_REACH` lines: rustc's `--> file:line:col` under its
+/// `error[...]` line, a trace's first frame under its exception. The rule
+/// does not chain, so a long trace lifts one frame.
+fn text_units<'a>(
     record: &'a Record,
     limit: usize,
     kind: Kind,
@@ -1290,17 +944,12 @@ fn text_units_v3<'a>(
             .collect()
     };
     let (mut strong, mut weak) = (Bits::new(n), Bits::new(n));
-    let outlined = reading && kind.outline && record.text.len() > OUTLINE_MIN_BYTES;
-    let mut outline = Bits::new(if outlined { n } else { 0 });
     // Trivial lines (`}`, a blank line, a `|` gutter) carry no evidence of
     // their own: they stay where they are, between the lines they separate.
     let mut trivial = Bits::new(n);
     for i in 0..n {
         let origin = first[i] as usize;
         if origin == i {
-            if outlined && OUTLINE.is_match(&views[i]) {
-                outline.set(i);
-            }
             if !reading && diagnostic(&STRONG, &views[i]) {
                 strong.set(i);
             } else if !reading && diagnostic(&WEAK, &views[i]) {
@@ -1309,9 +958,6 @@ fn text_units_v3<'a>(
                 trivial.set(i);
             }
         } else {
-            if outlined && outline.get(origin) {
-                outline.set(i);
-            }
             if strong.get(origin) {
                 strong.set(i);
             }
@@ -1433,7 +1079,6 @@ fn text_units_v3<'a>(
             slot_of_first[origin]
         } else if exact_only
             || results.get(i)
-            || (outlined && outline.get(i))
             || matches!(role(i), Diff::File | Diff::Change | Diff::Message)
         {
             // Headers, changes and commit messages are evidence: they never
@@ -1551,6 +1196,10 @@ fn text_units_v3<'a>(
         .collect();
     // (unit index, first line, last line) of each glued unit.
     let mut trivial_units: Vec<(usize, usize, usize)> = Vec::new();
+    // Lines shown in place as the first diagnostic of their template: the
+    // frame right below one ranks with it.
+    let mut first_diagnostic = Bits::new(n);
+    let bare = kind.bare;
     let mut i = 0;
     while i < n {
         let slot = owner[i] as usize;
@@ -1588,15 +1237,13 @@ fn text_units_v3<'a>(
             if count == 1 { 2 } else { 1 }
         } else if role(i) == Diff::Meta {
             0
-        } else if outlined && outline.get(i) {
-            // A large file's structure outranks its head and tail padding.
-            2
         } else if glued.get(i) {
             trivial_units.push((units.len(), first_line, last));
             TRIVIAL
         } else if strong.get(i) {
             // The first diagnostic of each template, then its variants.
             if first_of_template(&mut seen.strong, &views[i], &mut key) {
+                first_diagnostic.set(i);
                 3
             } else {
                 2
@@ -1607,6 +1254,16 @@ fn text_units_v3<'a>(
             } else {
                 1
             }
+        } else if !folds[slot]
+            && FRAME.is_match(&views[i])
+            && (i.saturating_sub(GLUE_REACH)..i)
+                .rev()
+                .find(|&j| !trivial.get(j))
+                .is_some_and(|j| first_diagnostic.get(j))
+        {
+            // Where the failure above happened: shown with it, not lost
+            // among the locations of a flood of warnings.
+            3
         } else if group.count == 1 && mostly_folded && !trivial.get(i) {
             // The rare line among folded noise is what the reader is after.
             2
@@ -1636,23 +1293,23 @@ fn text_units_v3<'a>(
             raw_at = i + 1;
             line
         };
-        let mut unit = Unit::text_v3(record, label, view, raw, priority, limit);
-        // An outline line is structure, not an outcome: it does not cap the
-        // ordinary lines around it.
-        unit.anchored = outlined && outline.get(i);
+        let mut unit = Unit::text(record, label, view, raw, priority, limit, bare);
         if let Some(section) = sections.iter().find(|s| s.generated && s.header == i) {
-            unit = Unit::text(
+            let source = if bare {
+                String::new()
+            } else {
+                format!("{}:", record.source)
+            };
+            unit = Unit::summary(
                 record,
                 format!(
-                    "{}:{}-{} file={} changed=+{}/-{} omitted",
-                    record.source,
+                    "{source}{}-{} file={} changed=+{}/-{} omitted",
                     base + i,
                     base + section.end - 1,
                     section.path,
                     section.added,
                     section.removed
                 ),
-                Cow::Borrowed(""),
                 priority,
             );
         } else if kind.install && INSTALL_SUMMARY.is_match(unit.line.as_deref().unwrap_or("")) {
@@ -1724,53 +1381,45 @@ fn text_units_v3<'a>(
                 (Some(p), None) | (None, Some(p)) => p,
                 (None, None) => 0,
             };
-            // Nor does a blank line or brace beside an outline line.
-            units[unit].anchored |= outlined;
         }
         carried(&mut carry, priority, line);
     }
 }
 
-/// How an output is read beyond its version: as a file (no diagnostic
-/// ranking) or, in compact-v4, as search results grouped by file.
+/// How an output is read: as a file (no diagnostic ranking), as search
+/// results grouped by file, and so on. Explicit queries keep the default.
 #[derive(Clone, Copy, Default)]
 struct Kind {
     file_read: bool,
     search: bool,
-    /// Compact-v4 diffs: lockfiles and generated files collapse to one
-    /// counted line and real files rank by change density.
+    /// Diffs: lockfiles and generated files collapse to one counted line and
+    /// real files rank by change density.
     diff_files: bool,
     /// A package install: only diagnostics, their context and the first and
     /// last lines are shown, never ordinary progress.
     install: bool,
-    /// Compact-v4: lines that differ only by their numbers fold together only
-    /// when the text does not fit; one that fits folds identical lines only.
+    /// Lines that differ only by their numbers fold together only when the
+    /// text does not fit; one that fits folds identical lines only.
     similar_on_overflow: bool,
-    /// Compact-v4 test runs: cargo's per-binary `test result:` lines are
-    /// shown before ordinary lines and never fold by template.
+    /// Test runs: cargo's per-binary `test result:` lines are shown before
+    /// ordinary lines and never fold by template.
     tests: bool,
-    /// Compact-v5: a view whose every record is the one `input` text writes
-    /// its labels without `input:`.
+    /// A view whose every record is the one `input` text writes its labels
+    /// without `input:` (`view` decides; text units are measured so).
     bare: bool,
-    /// Compact-v5 listings: artifact directories fold to one counted line.
-    artifacts: bool,
-    /// Compact-v5 file reads: definition lines rank above padding.
-    outline: bool,
 }
 
 impl Kind {
-    fn of(profile: Option<crate::commands::Profile>, version: Version) -> Self {
+    fn of(profile: Option<crate::commands::Profile>) -> Self {
         use crate::commands::Profile;
         Self {
             file_read: profile == Some(Profile::FileRead),
-            search: version >= Version::V4 && profile == Some(Profile::Search),
-            diff_files: version >= Version::V4,
-            install: version >= Version::V4 && profile == Some(Profile::Install),
-            similar_on_overflow: version >= Version::V4,
-            tests: version >= Version::V4 && profile == Some(Profile::Tests),
-            bare: Grammar::of(version).labels,
-            artifacts: Grammar::of(version).artifacts && profile == Some(Profile::Search),
-            outline: Grammar::of(version).outline,
+            search: profile == Some(Profile::Search),
+            diff_files: true,
+            install: profile == Some(Profile::Install),
+            similar_on_overflow: true,
+            tests: profile == Some(Profile::Tests),
+            bare: true,
         }
     }
 }
@@ -1892,35 +1541,15 @@ fn extension(name: &str) -> &str {
     }
 }
 
-/// A compact-v4 listing: a directory of more than `LISTING_DIRECTORY`
-/// entries is summarized as `DIR/ files=N ext=E:n,...` before its first
-/// entry, and only its first and last entries are shown. Lines are labeled
-/// as everywhere else (`source:a`, or `source:a-b` range blocks). Returns
-/// (body, shown lines, omitted lines), or None when the text is not a
-/// listing or no directory folds.
-/// `bare` (compact-v5) writes the same lines without `source:`; where the
-/// budget cuts them is measured with it.
-/// `fold`: large directories are summarized (the text does not fit).
-/// `artifacts` (compact-v5): every entry under an artifact directory, and the
-/// lines naming that directory, become one `DIR/ files=N artifacts omitted`
-/// line where its first one was, whether or not the text fits.
-fn listing_view(
-    record: &Record,
-    available: usize,
-    bare: bool,
-    fold: bool,
-    artifacts: bool,
-) -> Option<(String, usize, usize)> {
+/// A listing too long to show whole: a directory of more than
+/// `LISTING_DIRECTORY` entries is summarized as `DIR/ files=N ext=E:n,...`
+/// before its first entry, and only its first and last entries are shown.
+/// Lines are labeled as everywhere else (`source:a`, or `source:a-b` range
+/// blocks; without `source:` when `bare`). Returns (body, shown lines,
+/// omitted lines), or None when the text is not a listing or no directory
+/// folds.
+fn listing_view(record: &Record, available: usize, bare: bool) -> Option<(String, usize, usize)> {
     use std::fmt::Write;
-    if !fold
-        && !(artifacts
-            && ARTIFACT_DIRECTORIES
-                .iter()
-                .chain([&ARTIFACT_SUFFIX])
-                .any(|d| record.text.contains(d)))
-    {
-        return None;
-    }
     let views: Vec<Cow<'_, str>> = record
         .text
         .split_inclusive('\n')
@@ -1928,56 +1557,9 @@ fn listing_view(
         .collect();
     let lines = parse_listing(&views)?;
     let mut hidden = Bits::new(lines.len());
-    // Artifact directories: their summary line, by the index it replaces.
-    let mut standalone: HashMap<usize, String> = HashMap::default();
-    if artifacts {
-        // Per directory: its files, and every line it covers.
-        let mut roots: HashMap<String, (usize, Vec<usize>)> = HashMap::default();
-        for (i, line) in lines.iter().enumerate() {
-            let (root, file) = match &line.directory {
-                Some(directory) => match artifact_root(directory) {
-                    Some(root) => (root.to_owned(), true),
-                    None if artifact_directory(line.name.trim_end_matches('/')) => (
-                        format!("{directory}{}/", line.name.trim_end_matches('/')),
-                        false,
-                    ),
-                    None => continue,
-                },
-                // An `ls -R` header names the directory its entries follow.
-                None => match views[i].trim_end_matches(['\n', '\r']).strip_suffix(':') {
-                    Some(header) => {
-                        match artifact_root(&format!("{}/", header.trim_end_matches('/'))) {
-                            Some(root) => (root.to_owned(), false),
-                            None => continue,
-                        }
-                    }
-                    None => continue,
-                },
-            };
-            let (files, covered) = roots.entry(root).or_default();
-            *files += usize::from(file);
-            covered.push(i);
-        }
-        for (root, (files, covered)) in roots {
-            // A directory listed without its contents has nothing to fold.
-            if files == 0 {
-                continue;
-            }
-            for &i in &covered {
-                hidden.set(i);
-            }
-            standalone.insert(
-                covered[0],
-                format!("{root} files={files} artifacts omitted\n"),
-            );
-        }
-    }
     let mut entries: HashMap<&str, Vec<usize>> = HashMap::default();
     for (i, line) in lines.iter().enumerate() {
-        if let Some(directory) = &line.directory
-            && fold
-            && !hidden.get(i)
-        {
+        if let Some(directory) = &line.directory {
             entries.entry(directory.as_str()).or_default().push(i);
         }
     }
@@ -2009,26 +1591,22 @@ fn listing_view(
             hidden.set(i);
         }
     }
-    if summary.is_empty() && standalone.is_empty() {
+    if summary.is_empty() {
         return None;
     }
     // Shown lines in order, cut where the budget ends: a summary always
     // travels with the entry it precedes.
     let base = record.start_line.unwrap_or(1);
+    let source = if bare {
+        String::new()
+    } else {
+        format!("{}:", record.source)
+    };
     let mut body = String::new();
-    // What the labelled body takes: the budget cuts the bare one alike.
-    let mut measured = 0;
     let (mut shown, mut i) = (0, 0);
     let n = lines.len();
     while i < n {
         if hidden.get(i) {
-            if let Some(line) = standalone.get(&i) {
-                if measured + line.len() > available {
-                    break;
-                }
-                measured += line.len();
-                body.push_str(line);
-            }
             i += 1;
             continue;
         }
@@ -2037,13 +1615,8 @@ fn listing_view(
             j += 1;
         }
         let text = |k: usize| views[k].trim_end_matches(['\n', '\r']);
-        let render = |end: usize, bare: bool| {
+        let render = |end: usize| {
             let mut part = summary.get(&i).cloned().unwrap_or_default();
-            let source = if bare {
-                String::new()
-            } else {
-                format!("{}:", record.source)
-            };
             if end + 1 - i >= BLOCK_MIN_LINES {
                 let _ = writeln!(part, "{source}{}-{}", base + i, base + end);
                 for k in i..=end {
@@ -2056,15 +1629,13 @@ fn listing_view(
             }
             part
         };
-        let mut part = render(j, false);
-        if measured + part.len() > available {
+        let mut part = render(j);
+        if body.len() + part.len() > available {
             // Keep the longest beginning of this run that fits, then stop.
-            let room = available - measured;
+            let room = available - body.len();
             let mut end = i;
-            let mut size = summary.get(&i).map_or(0, String::len)
-                + record.source.len()
-                + 2 * digits(base + j)
-                + 3;
+            let mut size =
+                summary.get(&i).map_or(0, String::len) + source.len() + 2 * digits(base + j) + 2;
             while end <= j && size + text(end).len() + 2 <= room {
                 size += text(end).len() + 2;
                 end += 1;
@@ -2072,59 +1643,22 @@ fn listing_view(
             if end == i {
                 break;
             }
-            part = render(end - 1, false);
-            if measured + part.len() > available {
+            part = render(end - 1);
+            if body.len() + part.len() > available {
                 break;
             }
-            body.push_str(&if bare { render(end - 1, true) } else { part });
+            body.push_str(&part);
             shown += end - i;
             break;
         }
-        measured += part.len();
-        body.push_str(&if bare { render(j, true) } else { part });
+        body.push_str(&part);
         shown += j + 1 - i;
         i = j + 1;
     }
     (!body.is_empty()).then(|| (body, shown, n - shown))
 }
 
-/// Build output, dependencies and caches a compact-v5 listing folds.
-const ARTIFACT_DIRECTORIES: &[&str] = &[
-    "node_modules",
-    "target",
-    "__pycache__",
-    ".git",
-    "dist",
-    "build",
-    ".venv",
-    "venv",
-    ".next",
-    "coverage",
-    ".pytest_cache",
-    ".mypy_cache",
-];
-/// Python's package metadata directories, `NAME.egg-info`.
-const ARTIFACT_SUFFIX: &str = ".egg-info";
-
-fn artifact_directory(name: &str) -> bool {
-    ARTIFACT_DIRECTORIES.contains(&name)
-        || name.len() > ARTIFACT_SUFFIX.len() && name.ends_with(ARTIFACT_SUFFIX)
-}
-
-/// The artifact directory `directory` (ending in `/`) lies in: its path up to
-/// and including the first artifact component.
-fn artifact_root(directory: &str) -> Option<&str> {
-    let mut end = 0;
-    for component in directory.split_inclusive('/') {
-        end += component.len();
-        if artifact_directory(component.trim_end_matches('/')) {
-            return Some(&directory[..end]);
-        }
-    }
-    None
-}
-
-/// Matches of one file a compact-v4 search shows before other files' later
+/// Matches of one file a search shows before other files' later
 /// ones: its first and last, then those containing an anchor, then the
 /// earliest.
 const SEARCH_MATCHES: usize = 5;
@@ -2421,14 +1955,13 @@ fn is_trivial(line: &str) -> bool {
     line.chars().filter(|c| !c.is_whitespace()).take(4).count() <= 3
 }
 
-/// Compact-v3 selection: tiers are filled alternately from the head and the
-/// tail so the final summary survives a flood of early diagnostics. When the
+/// Text selection: tiers are filled alternately from the head and the tail so the final summary survives a flood of early diagnostics. When the
 /// view carries diagnostics and cannot show every ordinary line anyway,
 /// ordinary lines stop at a quarter of `budget`, so the view ends where the
 /// evidence does instead of filling up with noise. `available` may exceed
 /// `budget` on a second pass that spends range-block savings, which must not
 /// raise that ceiling.
-/// The fill order of `select_v3`, computed once for every refill pass.
+/// The fill order of `select_tiers`, computed once for every refill pass.
 struct Tiers {
     /// Units in fill order: tier by tier, alternating head and tail.
     order: Vec<usize>,
@@ -2486,7 +2019,7 @@ impl Tiers {
     }
 }
 
-fn select_v3(units: &[Unit<'_>], plan: &Tiers, available: usize, budget: usize) -> Vec<usize> {
+fn select_tiers(units: &[Unit<'_>], plan: &Tiers, available: usize, budget: usize) -> Vec<usize> {
     let mut selected = vec![false; units.len()];
     let mut used = 0;
     let mut start = 0;
@@ -2525,14 +2058,14 @@ fn consecutive(a: &Unit<'_>, b: &Unit<'_>) -> bool {
     }
 }
 
-/// Compact-v3 rendering: three or more consecutive plain lines become one
+/// Text rendering: three or more consecutive plain lines become one
 /// `source:a-b` block whose lines are indented by a single space. In a
-/// compact-v4 search (`totals`), two or more consecutive plain lines of one
+/// search (`totals`), two or more consecutive plain lines of one
 /// file become `source:a-b file=PATH` and each line is shown without its
 /// `PATH:` or `PATH-` prefix; the file's first block counts the matches not
 /// shown (`more=N`).
-/// `bare` (compact-v5) writes every label without its `source:`.
-fn render_v3(
+/// `bare` writes every label without its `source:`, as units were measured.
+fn render(
     units: &[Unit<'_>],
     selected: &[usize],
     totals: Option<&HashMap<String, usize>>,
@@ -2648,19 +2181,18 @@ fn select(units: &[Unit<'_>], available: usize) -> Vec<usize> {
         .collect()
 }
 
-/// Compact-v3 selection and rendering, spending what range blocks save.
-/// Selection measures labelled lines; `bare` (compact-v5) then writes the
-/// same selection without `source:`.
-fn fill_v3(
+/// Text selection and rendering, spending what range blocks save. Units are
+/// measured as they are written, so the body is rendered once per pass.
+fn fill(
     units: &[Unit<'_>],
     available: usize,
     totals: Option<&HashMap<String, usize>>,
     bare: bool,
 ) -> (String, Vec<usize>) {
     let plan = Tiers::new(units);
-    let mut selected = select_v3(units, &plan, available, available);
+    let mut selected = select_tiers(units, &plan, available, available);
     let mut body = String::new();
-    render_v3(units, &selected, totals, false, &mut body);
+    render(units, &selected, totals, bare, &mut body);
     // Range blocks cost less than the per-line labels selection counted.
     // Spend that slack on more evidence, re-measuring the rendered bytes
     // each time and keeping only a pass that still fits the budget.
@@ -2670,19 +2202,15 @@ fn fill_v3(
         if slack == 0 {
             break;
         }
-        let more = select_v3(units, &plan, available + extra + slack, available);
+        let more = select_tiers(units, &plan, available + extra + slack, available);
         let mut extended = String::new();
-        render_v3(units, &more, totals, false, &mut extended);
+        render(units, &more, totals, bare, &mut extended);
         if more.len() <= selected.len() || extended.len() > available {
             break;
         }
         extra += slack;
         selected = more;
         body = extended;
-    }
-    if bare {
-        body.clear();
-        render_v3(units, &selected, totals, true, &mut body);
     }
     (body, selected)
 }
@@ -2914,76 +2442,39 @@ fn totals_line(text: &str) -> Option<String> {
     })
 }
 
-/// The metadata around a view's body. Compact-v1 to v3 open with a header
-/// naming the artifact and close with a footer counting omissions; compact-v4
-/// writes one header line, once the omitted count is known.
+/// The header that frames a view, written once its omissions are known.
+/// Budgets reserve what it actually takes.
 struct Frame {
-    version: Version,
     scan_complete: bool,
-    /// The opening header of v1 to v3; empty in v4.
-    head: String,
 }
 
 impl Frame {
-    fn new(data: &Dataset, artifact: &str, version: Version) -> Self {
+    fn new(data: &Dataset) -> Self {
         Self {
-            version,
             scan_complete: data.scan_complete,
-            head: if version >= Version::V4 {
-                String::new()
-            } else {
-                header(data, artifact, version)
-            },
         }
     }
-    /// Bytes of metadata a view of `units` units may need. V3 reserves exactly
-    /// the widest footer it can emit and v4 its widest header; earlier
-    /// versions keep their fixed reserve so their bytes stay identical.
+    /// The widest header a view of `units` units can carry.
     fn reserve(&self, units: usize) -> usize {
-        match self.version {
-            // V5 reserves v4's header, so both select the same units.
-            Version::V4 | Version::V5 => header_v4(
-                PLACEHOLDER_ID,
-                Version::V4,
-                units,
-                units,
-                self.scan_complete,
-            )
-            .len(),
-            Version::V3 => self.head.len() + footer(units).len(),
-            Version::V1 | Version::V2 => self.head.len() + 160,
-        }
+        self.header(units, units).len()
     }
-    /// Metadata of a complete table.
+    /// The header of a complete view.
     fn complete_reserve(&self) -> usize {
-        match self.version {
-            Version::V4 | Version::V5 => {
-                header_v4(PLACEHOLDER_ID, Version::V4, 0, 0, self.scan_complete).len()
-            }
-            _ => self.head.len() + TABLE_TAIL.len(),
-        }
+        self.header(0, 0).len()
     }
     fn complete(&self, table: &str) -> String {
-        match self.version {
-            Version::V4 | Version::V5 => self.header(0, 0) + table,
-            _ => format!("{}{table}{TABLE_TAIL}", self.head),
-        }
+        self.header(0, 0) + table
     }
     fn finish(&self, body: &str, omitted: usize) -> String {
         self.finish_abridged(body, omitted, 0)
     }
-    /// `finish` for a body of which `abridged` units are shown in part;
-    /// earlier versions do not count them.
+    /// `finish` for a body of which `abridged` units are shown in part.
     fn finish_abridged(&self, body: &str, omitted: usize, abridged: usize) -> String {
-        match self.version {
-            Version::V4 | Version::V5 => self.header(omitted, abridged) + body,
-            _ => format!("{}{body}{}", self.head, footer(omitted)),
-        }
+        self.header(omitted, abridged) + body
     }
-    /// A compact-v4 or v5 header with the placeholder ID.
+    /// The header with the placeholder ID.
     fn header(&self, omitted: usize, abridged: usize) -> String {
-        let id = &PLACEHOLDER_ID[..id_len(self.version)];
-        header_v4(id, self.version, omitted, abridged, self.scan_complete)
+        header(PLACEHOLDER_ID, omitted, abridged, self.scan_complete)
     }
 }
 
@@ -2997,18 +2488,11 @@ fn cut(units: &[Unit<'_>], selected: &[usize]) -> usize {
         .count()
 }
 
-/// The footer of a complete table before compact-v4.
-const TABLE_TAIL: &str =
-    "[scopelet display_complete=true omitted_units=0; rows map positionally to columns]\n";
-
 /// `original` is the text the records were parsed from, when there is one:
-/// compact-v3 shows it line by line when no whole JSON record fits.
-#[allow(clippy::too_many_arguments)]
+/// it is shown line by line when no whole JSON record fits.
 fn view(
     data: &Dataset,
-    artifact: &str,
     budget: usize,
-    version: Version,
     original: Option<&str>,
     max_units: usize,
     kind: Kind,
@@ -3033,52 +2517,44 @@ fn view(
         count <= max_units,
         "compact input exceeds {max_units} units; use an explicit query"
     );
-    let frame = Frame::new(data, artifact, version);
+    let frame = Frame::new(data);
     let available = budget.saturating_sub(frame.reserve(count));
     let uniform = compact_table::uniform(data);
-    // Compact-v4 tables name constant columns once; a complete one needs no
-    // indices, its rows being every record in order.
-    let v4 = version >= Version::V4;
-    let csv = Grammar::of(version).tables;
-    // Compact-v5 labels a view of the one `input` text by line alone.
-    let bare = kind.bare
-        && data
-            .records
-            .iter()
-            .all(|r| r.value.is_none() && r.source == "input");
+    // Tables name constant columns once; a complete one needs no indices,
+    // its rows being every record in order.
     if uniform {
         let indices: Vec<_> = (0..data.records.len()).collect();
-        if let Some(table) = compact_table::encode_with(
+        if let Some(table) = compact_table::encode(
             data,
             &indices,
-            version.tables() && !v4,
-            v4,
-            csv,
+            false,
             budget.saturating_sub(frame.complete_reserve()),
         ) {
             return Ok((frame.complete(&table), indices.len()));
         }
     }
-    if v4
-        && let [record] = data.records.as_slice()
+    if let [record] = data.records.as_slice()
         && let Some(value) = &record.value
         && let Some(table) =
-            compact_table::envelope(value, budget.saturating_sub(frame.complete_reserve()), csv)
+            compact_table::envelope(value, budget.saturating_sub(frame.complete_reserve()))
     {
         return Ok((frame.complete(&table), 1));
     }
-    // Matches per file of a compact-v4 search, for its `more=N` counts.
+    // A view of the one `input` text labels its lines by number alone.
+    let bare = kind.bare
+        && data
+            .records
+            .iter()
+            .all(|r| r.value.is_none() && r.source == "input");
+    // Matches per file of a search, for its `more=N` counts.
     let totals = kind.search.then(|| search_totals(data));
     let totals = totals.as_ref();
-    // A path listing too long to show whole folds its large directories;
-    // in compact-v5 any listing folds its artifact directories.
+    // A path listing too long to show whole folds its large directories.
     if kind.search
         && let [record] = data.records.as_slice()
         && record.value.is_none()
-        && let fold = record.text.len() > available
-        && (fold || kind.artifacts)
-        && let Some((body, shown, omitted)) =
-            listing_view(record, available, bare, fold, kind.artifacts)
+        && record.text.len() > available
+        && let Some((body, shown, omitted)) = listing_view(record, available, bare)
     {
         let output = frame.finish(&body, omitted);
         ensure!(output.len() <= budget, "compact metadata exceeds budget");
@@ -3092,28 +2568,28 @@ fn view(
         signal_value(value, &|s| diagnostic(&STRONG, s)).is_some()
             || anchoring.matches(&value.to_string())
     };
-    if v4
-        && let Some(text) = original
+    if let Some(text) = original
         && clean::line_count(text) < data.records.len().max(2)
         && data.records.iter().any(|r| {
             r.value
                 .as_ref()
                 .is_some_and(|v| encoding::size(v, available / 4).is_none())
         })
-        && let Some(projection) = compact_table::projection(data, available, &important, csv)
+        && let Some(projection) = compact_table::projection(data, available, &important)
     {
         let omitted = projection.total - projection.shown;
         let output = frame.finish_abridged(&projection.text, omitted, projection.abridged);
         ensure!(output.len() <= budget, "compact metadata exceeds budget");
         return Ok((output, projection.shown));
     }
+    let text_kind = Kind { bare, ..kind };
     anchoring.reset(available);
-    let mut units = units(data, available, version, kind, anchoring);
-    if uniform && version.tables() {
-        // Exact row costs include positional provenance. Fixed schema/envelope costs
-        // are counted by the same serializer as the final table.
-        let (columns, _) = compact_table::columns(data, v4);
-        if let Some(empty) = compact_table::encode_with(data, &[], true, v4, false, available) {
+    let mut units = units(data, available, text_kind, anchoring);
+    if uniform {
+        // Exact row costs include positional provenance. Fixed schema/envelope
+        // costs are counted on the JSON form the final table is fitted with.
+        let columns = compact_table::columns(data).0;
+        if let Some(empty) = compact_table::json_size(data, &[], true, available) {
             let varying_sources = data
                 .records
                 .iter()
@@ -3129,10 +2605,9 @@ fn view(
                         0
                     };
             }
-            let indices = select(&units, available.saturating_sub(empty.len()));
+            let indices = select(&units, available.saturating_sub(empty));
             if !indices.is_empty()
-                && let Some(table) =
-                    compact_table::encode_with(data, &indices, true, v4, csv, available)
+                && let Some(table) = compact_table::encode(data, &indices, true, available)
             {
                 let output = frame.finish(&table, units.len() - indices.len());
                 return Ok((output, indices.len()));
@@ -3140,48 +2615,38 @@ fn view(
         }
         // No table row fits: recompute ordinary-record costs before falling back.
         anchoring.reset(available);
-        units = self::units(data, available, version, kind, anchoring);
+        units = self::units(data, available, text_kind, anchoring);
     }
-    let (body, selected) = if version.profiled() {
-        let (body, selected) = fill_v3(&units, available, totals, bare);
-        if selected.is_empty()
-            && let Some(text) = original
-            && data.records.iter().any(|r| r.value.is_some())
-        {
-            // No whole JSON record fits: show the document by its source
-            // lines, which keep absolute labels into the same original.
-            let lines = clean::line_count(text);
-            let record = Record {
-                source: "input".into(),
-                blob: data.records[0].blob.clone(),
-                start_line: Some(1),
-                end_line: Some(lines),
-                text: text.to_owned(),
-                value: None,
-                omitted_lines: None,
-                text_truncated: false,
-            };
-            let available = budget.saturating_sub(frame.reserve(lines));
-            let mut seen = Seen::default();
-            let mut units = Vec::new();
-            anchoring.reset(available);
-            text_units_v3(&record, available, kind, &mut seen, anchoring, &mut units);
-            // The document's own lines: the one `input` text.
-            let (body, selected) = fill_v3(&units, available, totals, kind.bare);
-            let output =
-                frame.finish_abridged(&body, units.len() - selected.len(), cut(&units, &selected));
-            ensure!(output.len() <= budget, "compact metadata exceeds budget");
-            return Ok((output, selected.len()));
-        }
-        (body, selected)
-    } else {
-        let selected = select(&units, available);
-        let mut body = String::new();
-        for &i in &selected {
-            units[i].append(&mut body, false);
-        }
-        (body, selected)
-    };
+    let (body, selected) = fill(&units, available, totals, bare);
+    if selected.is_empty()
+        && let Some(text) = original
+        && data.records.iter().any(|r| r.value.is_some())
+    {
+        // No whole JSON record fits: show the document by its source lines,
+        // which keep absolute labels into the same original.
+        let lines = clean::line_count(text);
+        let record = Record {
+            source: "input".into(),
+            blob: data.records[0].blob.clone(),
+            start_line: Some(1),
+            end_line: Some(lines),
+            text: text.to_owned(),
+            value: None,
+            omitted_lines: None,
+            text_truncated: false,
+        };
+        let available = budget.saturating_sub(frame.reserve(lines));
+        let mut seen = Seen::default();
+        let mut units = Vec::new();
+        anchoring.reset(available);
+        // The document's own lines: the one `input` text.
+        text_units(&record, available, kind, &mut seen, anchoring, &mut units);
+        let (body, selected) = fill(&units, available, totals, kind.bare);
+        let output =
+            frame.finish_abridged(&body, units.len() - selected.len(), cut(&units, &selected));
+        ensure!(output.len() <= budget, "compact metadata exceeds budget");
+        return Ok((output, selected.len()));
+    }
     let output = frame.finish_abridged(&body, units.len() - selected.len(), cut(&units, &selected));
     ensure!(output.len() <= budget, "compact metadata exceeds budget");
     Ok((output, selected.len()))

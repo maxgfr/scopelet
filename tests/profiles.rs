@@ -1,4 +1,4 @@
-//! Command profiles: which commands hooks recognize, and the compact-v3
+//! Command profiles: which commands hooks recognize, and the compact view
 //! budget and exact-size threshold each profile gives its output.
 use scopelet::commands::{Profile, classify, classify_lenient, invokes_wrapper, profile, program};
 use serde_json::{Value, json};
@@ -143,20 +143,6 @@ fn profile_budgets_grow_with_what_the_output_is_for() {
     assert_eq!(Profile::Install.small(), 2048);
 }
 
-/// Install arrived with compact-v4: compact-v3 keeps treating an install as
-/// the unrecognized command it was.
-#[test]
-fn the_install_profile_shapes_compact_v4_only() {
-    use scopelet::compress::{Version, effective_profile};
-    let install = Some(Profile::Install);
-    assert_eq!(effective_profile(install, Version::V4), install);
-    assert_eq!(effective_profile(install, Version::V3), None);
-    assert_eq!(
-        effective_profile(Some(Profile::Tests), Version::V3),
-        Some(Profile::Tests)
-    );
-}
-
 #[test]
 fn command_lines_are_classified_and_wrappers_found_by_words() {
     assert_eq!(classify("cd sub && cargo test 2>&1"), Some(Profile::Tests));
@@ -185,7 +171,7 @@ fn hosts_that_compress_afterwards_classify_composed_reads_leniently() {
         "cat src/*.rs",
     ] {
         assert_eq!(
-            classify_lenient(command, true),
+            classify_lenient(command),
             Some(Profile::FileRead),
             "{command}"
         );
@@ -193,11 +179,11 @@ fn hosts_that_compress_afterwards_classify_composed_reads_leniently() {
     // Strictly parsed lines keep their profile; the lenient reading only
     // fills in what the strict grammar rejects.
     assert_eq!(
-        classify_lenient("cargo test; echo done", true),
+        classify_lenient("cargo test; echo done"),
         Some(Profile::Tests)
     );
     assert_eq!(
-        classify_lenient("echo 'a;b' | rg x src", true),
+        classify_lenient("echo 'a;b' | rg x src"),
         Some(Profile::Search)
     );
     for command in [
@@ -208,7 +194,7 @@ fn hosts_that_compress_afterwards_classify_composed_reads_leniently() {
         "echo $HOME; ls",
         "cat > f <<EOF\nx\nEOF",
     ] {
-        assert_eq!(classify_lenient(command, true), None, "{command}");
+        assert_eq!(classify_lenient(command), None, "{command}");
     }
     // Codex's execution grammar is unchanged.
     assert_eq!(classify("sed -n 1,9p a; sed -n 1,9p b"), None);
@@ -240,7 +226,6 @@ fn word(i: usize) -> String {
 
 fn hook(dir: &std::path::Path, agent: &str, event: Value) -> Value {
     let output = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
-        .env("SCOPELET_COMPACT_VERSION", "3")
         .env("SCOPELET_CONFIG_DIR", dir.join("config"))
         .env("SCOPELET_CACHE_DIR", dir.join("cache"))
         .args(["hook", agent])
@@ -252,7 +237,7 @@ fn hook(dir: &std::path::Path, agent: &str, event: Value) -> Value {
 }
 
 #[test]
-fn codex_rewrites_carry_the_profile_budget_in_v3() {
+fn codex_rewrites_carry_the_profile_budget() {
     let dir = tempfile::tempdir().unwrap();
     std::fs::write(dir.path().join("big.rs"), "fn x() {}\n".repeat(2000)).unwrap();
     std::fs::write(dir.path().join("mid.rs"), "fn x() {}\n".repeat(1000)).unwrap();
@@ -354,7 +339,6 @@ fn run_auto_accepts_a_byte_budget() {
     let script = format!("cat {}", file.display());
     for (budget, limit) in [("1024", 1024), ("16384", 16384)] {
         let output = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
-            .env("SCOPELET_COMPACT_VERSION", "3")
             .args(["--cache-dir"])
             .arg(dir.path())
             .args([
@@ -370,7 +354,7 @@ fn run_auto_accepts_a_byte_budget() {
             .output()
             .unwrap();
         assert!(output.status.success());
-        assert!(output.stdout.starts_with(b"[scopelet compact-v3"));
+        assert!(output.stdout.starts_with(b"[scopelet v5 "));
         assert!(output.stdout.len() <= limit && output.stdout.len() > limit / 2);
     }
 }
@@ -379,7 +363,7 @@ fn run_auto_accepts_a_byte_budget() {
 /// its budget with the file instead of stopping where a log's evidence would.
 #[test]
 fn a_file_read_is_not_ranked_by_diagnostic_words() {
-    use scopelet::compress::{self, Version};
+    use scopelet::compress;
     let dir = tempfile::tempdir().unwrap();
     let mut source: String = (0..1500)
         .map(|i| format!("    let {} = compute_{}();\n", word(i), word(i + 7)))
@@ -393,7 +377,6 @@ fn a_file_read_is_not_ranked_by_diagnostic_words() {
         Some(dir.path().into()),
         Some(Profile::FileRead),
         None,
-        Version::V3,
     )
     .unwrap();
     assert!(
@@ -402,24 +385,9 @@ fn a_file_read_is_not_ranked_by_diagnostic_words() {
         read.len()
     );
     // The same bytes and budget as a command's output stop at the evidence.
-    let output = compress::automatic_lazy(
-        source.as_bytes(),
-        Some(dir.path().into()),
-        16_384,
-        Version::V3,
-    )
-    .unwrap();
+    let output =
+        compress::automatic_lazy(source.as_bytes(), Some(dir.path().into()), 16_384).unwrap();
     assert!(output.len() < 8_000, "{}", output.len());
-    // Profiles only shape v3.
-    let v2 = compress::automatic_profile(
-        source.as_bytes(),
-        Some(dir.path().into()),
-        Some(Profile::FileRead),
-        None,
-        Version::V2,
-    )
-    .unwrap();
-    assert!(v2.len() <= 4096);
 }
 
 /// Recognition must never widen what a wrapped command can do: no option
@@ -474,7 +442,7 @@ fn options_that_write_run_or_wait_are_never_recognized() {
 /// ordinary source read whole too.
 #[test]
 fn the_file_read_threshold_applies_wherever_the_profile_is_given() {
-    use scopelet::compress::{self, Version};
+    use scopelet::compress;
     let dir = tempfile::tempdir().unwrap();
     let source: String = (0..300)
         .map(|i| format!("    let {} = {};\n", word(i), i))
@@ -485,14 +453,12 @@ fn the_file_read_threshold_applies_wherever_the_profile_is_given() {
         Some(dir.path().into()),
         Some(Profile::FileRead),
         None,
-        Version::V3,
     )
     .unwrap();
     assert_eq!(kept.as_ref(), source.as_bytes());
     let file = dir.path().join("x.rs");
     std::fs::write(&file, &source).unwrap();
     let output = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
-        .env("SCOPELET_COMPACT_VERSION", "3")
         .arg("--cache-dir")
         .arg(dir.path())
         .args([
@@ -510,13 +476,8 @@ fn the_file_read_threshold_applies_wherever_the_profile_is_given() {
         .unwrap();
     assert_eq!(output.stdout, source.as_bytes());
     // Without the profile the same bytes are an ordinary output.
-    let compressed = compress::automatic_profile(
-        source.as_bytes(),
-        Some(dir.path().into()),
-        None,
-        None,
-        Version::V3,
-    )
-    .unwrap();
+    let compressed =
+        compress::automatic_profile(source.as_bytes(), Some(dir.path().into()), None, None)
+            .unwrap();
     assert!(compressed.len() < source.len());
 }

@@ -34,7 +34,7 @@ impl Serialize for Rows<'_> {
 #[derive(Serialize)]
 struct Table<'a> {
     columns: &'a [&'a str],
-    /// Compact-v4: columns whose value is the same in every record, once.
+    /// Columns whose value is the same in every record, once.
     #[serde(skip_serializing_if = "Option::is_none")]
     constant: Option<BTreeMap<&'a str, &'a Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -65,9 +65,9 @@ pub(crate) fn uniform(data: &Dataset) -> bool {
         })
 }
 
-/// The columns of a uniform dataset's table and, with `constants`, the
-/// keys whose value is identical in every record, which leave the columns.
-pub(crate) fn columns(data: &Dataset, constants: bool) -> (Vec<&str>, Vec<&str>) {
+/// The columns of a uniform dataset's table and the keys whose value is
+/// identical in every record, which leave the columns.
+pub(crate) fn columns(data: &Dataset) -> (Vec<&str>, Vec<&str>) {
     let Some(object) = data
         .records
         .first()
@@ -79,8 +79,7 @@ pub(crate) fn columns(data: &Dataset, constants: bool) -> (Vec<&str>, Vec<&str>)
         &record.value.as_ref().unwrap()[key]
     }
     object.keys().map(String::as_str).partition(|key| {
-        !(constants
-            && data.records.len() >= 2
+        !(data.records.len() >= 2
             && data
                 .records
                 .iter()
@@ -88,28 +87,22 @@ pub(crate) fn columns(data: &Dataset, constants: bool) -> (Vec<&str>, Vec<&str>)
     })
 }
 
-/// A `table` line of the records at `indices`; `v2` adds their indices and
-/// the total, `constants` moves constant columns to `constant`. `csv`
-/// (compact-v5) writes the same table as a header and CSV rows when every
-/// cell is a scalar and its record sources follow from its indices (see
-/// `csv_table`). Whether the table fits is decided on its JSON form either
-/// way, so v4 and v5 show the same rows; the CSV form is never longer.
-pub(crate) fn encode_with(
-    data: &Dataset,
-    indices: &[usize],
-    v2: bool,
-    constants: bool,
-    csv: bool,
-    limit: usize,
-) -> Option<String> {
+/// The JSON table of the records at `indices`; `partial` adds their indices
+/// and the total.
+fn table<'a>(
+    data: &'a Dataset,
+    indices: &'a [usize],
+    partial: bool,
+    columns: &'a [&'a str],
+    fixed: &[&'a str],
+) -> Option<Table<'a>> {
     let first = data.records.first()?;
     let object = first.value.as_ref()?.as_object()?;
-    let (columns, fixed) = columns(data, constants);
-    let table = Table {
-        columns: &columns,
+    Some(Table {
+        columns,
         constant: (!fixed.is_empty())
             .then(|| fixed.iter().map(|&key| (key, &object[key])).collect()),
-        indices: v2.then_some(indices),
+        indices: partial.then_some(indices),
         record_sources: data
             .records
             .iter()
@@ -123,14 +116,42 @@ pub(crate) fn encode_with(
         rows: Rows {
             data,
             indices,
-            columns: &columns,
+            columns,
         },
         source: &first.source,
-        total_records: v2.then_some(data.records.len()),
-    };
+        total_records: partial.then_some(data.records.len()),
+    })
+}
+
+/// Bytes of the JSON `table` line of the records at `indices`, if at most
+/// `limit`: what deciding which rows fit measures.
+pub(crate) fn json_size(
+    data: &Dataset,
+    indices: &[usize],
+    partial: bool,
+    limit: usize,
+) -> Option<usize> {
+    let (columns, fixed) = columns(data);
+    let table = table(data, indices, partial, &columns, &fixed)?;
+    Some(encoding::size(&table, limit.saturating_sub(7))? + 7)
+}
+
+/// The table of the records at `indices`; `partial` adds their indices and
+/// the total, and constant columns move to `constant`. It is written as a
+/// header and CSV rows when every cell is a scalar and its record sources
+/// follow from its indices (see `csv_table`), else as a JSON `table` line.
+/// Whether the table fits is decided on its JSON form either way; the CSV
+/// form is never longer.
+pub(crate) fn encode(
+    data: &Dataset,
+    indices: &[usize],
+    partial: bool,
+    limit: usize,
+) -> Option<String> {
+    let (columns, fixed) = columns(data);
+    let table = table(data, indices, partial, &columns, &fixed)?;
     encoding::size(&table, limit.saturating_sub(7))?;
-    if csv
-        && let Some(text) = csv_table(data, indices, v2, &columns, &fixed, "table")
+    if let Some(text) = csv_table(data, indices, partial, &columns, &fixed, "table")
         && text.len() <= limit
     {
         return Some(text);
@@ -138,7 +159,7 @@ pub(crate) fn encode_with(
     Some(format!("table {}\n", serde_json::to_string(&table).ok()?))
 }
 
-/// Compact-v5 table: `LABEL COLUMNS rows=N`, or `rows=N/TOTAL
+/// CSV table: `LABEL COLUMNS rows=N`, or `rows=N/TOTAL
 /// indices=RANGES` when only some records are shown (`a-b` for three or more
 /// consecutive indices), then `constant KEY=VALUE,...` and one CSV row per
 /// record. None when a cell is an array or an object, or when a record's
@@ -252,7 +273,7 @@ fn ranges(indices: &[usize]) -> String {
     parts.join(",")
 }
 
-/// A scalar as a compact-v5 cell: numbers, booleans and null as JSON
+/// A scalar as a CSV cell: numbers, booleans and null as JSON
 /// writes them (exact digits kept), a string bare unless a reader could take
 /// it for something else, else as a JSON string. None for an array or an
 /// object.
@@ -313,21 +334,20 @@ pub(crate) struct Projection {
     pub abridged: usize,
 }
 
-/// Compact-v4 view of minified JSON too large to show whole: objects (a
+/// View of minified JSON too large to show whole: objects (a
 /// top-level array, or the dominant array of an object) as a table of the
 /// short scalar fields every one of them has, the rest named under
 /// `omitted_columns`, as many rows as fit. Values are exact; no field is
 /// invented.
 /// `important` marks the objects shown first (a diagnostic, an anchor); the
 /// others follow in order, and the table keeps source order.
-/// `csv` (compact-v5) writes the table as `LABEL COLUMNS rows=N/TOTAL`,
-/// `constant` and `omitted_columns` lines, then CSV rows; the rows chosen are
-/// those the JSON form fits.
+/// The table is written as `LABEL COLUMNS rows=N/TOTAL`, `constant` and
+/// `omitted_columns` lines, then CSV rows, when that is no longer than its
+/// JSON form; the rows chosen are those the JSON form fits.
 pub(crate) fn projection(
     data: &Dataset,
     limit: usize,
     important: &dyn Fn(&Value) -> bool,
-    csv: bool,
 ) -> Option<Projection> {
     let (envelope, pointer, items): (
         Option<serde_json::Map<String, Value>>,
@@ -469,7 +489,7 @@ pub(crate) fn projection(
         .map(|&i| columns.iter().map(|k| &objects[i][*k]).collect())
         .collect();
     let mut text = format!("{head}{label}{}\n", serde_json::to_string(&table).ok()?);
-    if csv {
+    {
         let mut short = format!(
             "{head}{}{} rows={}/{}\n",
             label,
@@ -496,12 +516,12 @@ pub(crate) fn projection(
     })
 }
 
-/// Compact-v4 view of an object whose array of same-keyed objects holds more
+/// View of an object whose array of same-keyed objects holds more
 /// than 80% of its bytes (`kubectl -o json`'s `items`): the rest of the
 /// object on an `envelope` line, then the array as `table=/POINTER` with
 /// constant columns factored out. Only when every row fits `limit`: a
 /// partial table would hide what folding the source lines keeps visible.
-pub(crate) fn envelope(value: &Value, limit: usize, csv: bool) -> Option<String> {
+pub(crate) fn envelope(value: &Value, limit: usize) -> Option<String> {
     let object = value.as_object()?;
     let (key, items) = dominant(value)?;
     let first = items[0].as_object()?;
@@ -532,12 +552,10 @@ pub(crate) fn envelope(value: &Value, limit: usize, csv: bool) -> Option<String>
         .collect();
     let envelope = format!("envelope {}\n", serde_json::to_string(&rest).ok()?);
     let indices: Vec<usize> = (0..items.len()).collect();
-    let table = encode_with(
+    let table = encode(
         &rows,
         &indices,
         false,
-        true,
-        csv,
         limit.checked_sub(envelope.len() + key.len() + 2)?,
     )?;
     let pointer = key.replace('~', "~0").replace('/', "~1");

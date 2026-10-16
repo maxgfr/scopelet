@@ -1,4 +1,4 @@
-//! Display-only cleaning of text lines for compact-v3.
+//! Display-only cleaning of text lines for compact views.
 //!
 //! Stored bytes, line counts and absolute line labels never change: every
 //! function here maps one source line to one displayed line, so `input:N`

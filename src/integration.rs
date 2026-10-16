@@ -352,7 +352,7 @@ fn pinned_binary(binary: &Path) -> (Option<bool>, Option<String>) {
 /// `cd DIR &&`, `|| true`, or a read-only filter after a pipe), and its
 /// output must not already be bounded by a final `head`, `tail`, `wc` or
 /// `grep -c`/`-l`/`-q`.
-fn command_args(command: &str, version: compress::Version) -> Option<(Vec<String>, Profile)> {
+fn command_args(command: &str) -> Option<(Vec<String>, Profile)> {
     use crate::shell::{Joint, Plan};
     let script = crate::shell::parse(command)?;
     let last = script.steps.len() - 1;
@@ -377,7 +377,7 @@ fn command_args(command: &str, version: compress::Version) -> Option<(Vec<String
             }
             continue;
         }
-        let profile = crate::commands::profile_for(&first.argv, version >= compress::Version::V4)?;
+        let profile = crate::commands::profile(&first.argv)?;
         if !first
             .env
             .iter()
@@ -490,20 +490,19 @@ struct ClaudeResult<'a> {
 /// alone: Bash's `stdout` and `stderr`; Grep's `content` in `content` mode,
 /// as search results (its `files_with_matches` and `count` modes, and any
 /// unknown shape, pass through).
-fn claude_fields<'a>(event: &'a Value, version: compress::Version) -> Option<ClaudeResult<'a>> {
+fn claude_fields(event: &Value) -> Option<ClaudeResult<'_>> {
     let output = &event["tool_response"];
     if event["tool_name"] == "Grep" {
         if output["mode"] != "content" || !output["content"].is_string() {
             return None;
         }
-        let profile = compress::effective_profile(Some(Profile::Search), version);
         let anchors = event["tool_input"]["pattern"]
             .as_str()
             .map(crate::commands::pattern_anchors)
             .unwrap_or_default();
         return Some(ClaudeResult {
             fields: &["content"],
-            profile,
+            profile: Some(Profile::Search),
             small: compress::SMALL,
             command: "",
             anchors,
@@ -517,7 +516,7 @@ fn claude_fields<'a>(event: &'a Value, version: compress::Version) -> Option<Cla
     {
         return None;
     }
-    let (profile, small) = limits(command, version);
+    let (profile, small) = limits(command);
     Some(ClaudeResult {
         fields: &["stdout", "stderr"],
         profile,
@@ -529,8 +528,8 @@ fn claude_fields<'a>(event: &'a Value, version: compress::Version) -> Option<Cla
 
 /// Claude Code's PostToolUse: replace the text fields of a Bash or Grep
 /// result by their views, keeping every other field as it was.
-fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
-    let Some(result) = claude_fields(event, version) else {
+fn claude_result(event: &Value) -> Result<Value> {
+    let Some(result) = claude_fields(event) else {
         return Ok(json!({}));
     };
     let ClaudeResult {
@@ -547,8 +546,7 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
         .sum();
     let program = crate::commands::program(command);
     let program = program.as_deref();
-    let unchanged =
-        |reason| crate::events::unchanged("claude", program, profile, version, total, reason);
+    let unchanged = |reason| crate::events::unchanged("claude", program, profile, total, reason);
     // Claude can attach persistence metadata before rendering its preview.
     // Replacing stdout here would make that preview truncate our compact
     // view a second time, hiding its final diagnostics and omission footer.
@@ -565,10 +563,10 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
         return Ok(json!({}));
     }
     let mut changed = false;
-    // Compact-v4 replaces a field identical to one this context was already
-    // shown (whole, as a view or raw) by a reference to it.
+    // A field identical to one this context was already shown (whole, as a
+    // view or raw) is replaced by a reference to it.
     let mut repeated = vec![false; fields.len()];
-    let context = context_key(event).filter(|_| version >= compress::Version::V4);
+    let context = context_key(event);
     let mut state = context.as_deref().map(crate::session::load);
     if let Some(state) = &mut state {
         for (i, field) in fields.iter().enumerate() {
@@ -579,14 +577,8 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
             let hash = digest(raw.as_bytes());
             let hash = crate::session::short(&hash);
             if state.saw(hash)
-                && let Some(marker) = compress::repeat_recorded(
-                    "claude",
-                    program,
-                    raw.as_bytes(),
-                    None,
-                    profile,
-                    version,
-                )
+                && let Some(marker) =
+                    compress::repeat_recorded("claude", program, raw.as_bytes(), None, profile)
             {
                 output[*field] = json!(String::from_utf8(marker)?);
                 repeated[i] = true;
@@ -595,13 +587,8 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
             state.remember(hash);
         }
     }
-    let anchors = if version >= compress::Version::V4 {
-        let mut terms = anchors(event, state.as_ref(), command);
-        terms.extend(extra);
-        terms
-    } else {
-        Vec::new()
-    };
+    let mut anchors = anchors(event, state.as_ref(), command);
+    anchors.extend(extra);
     let remembered = || {
         if let (Some(key), Some(state)) = (&context, &state) {
             // Best effort: a lost write only misses a later repeat.
@@ -634,7 +621,6 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
             None,
             profile,
             None,
-            version,
             &anchors,
         );
         if small.as_ref() != raw.as_bytes() {
@@ -736,18 +722,15 @@ fn subagent_guidance() -> String {
     )
 }
 /// The recognized profile of a command line and the size up to which its
-/// output stays exact: the profile's in compact-v3, the default otherwise.
-fn limits(command: &str, version: compress::Version) -> (Option<Profile>, usize) {
-    let profile = compress::effective_profile(
-        crate::commands::classify_lenient(command, version >= compress::Version::V4),
-        version,
-    );
+/// output stays exact: the profile's, the default otherwise.
+fn limits(command: &str) -> (Option<Profile>, usize) {
+    let profile = crate::commands::classify_lenient(command);
     (profile, profile.map_or(compress::SMALL, Profile::small))
 }
 
 /// OpenCode's plugin sends two events: a system-prompt pass (rebuilt on every
 /// model step, so no per-session state) and one bash result to compress.
-fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Result<Value> {
+fn opencode(event: &Value, mode: Preference) -> Result<Value> {
     let name = event["hook_event_name"].as_str().unwrap_or("");
     if mode == Preference::Off {
         return Ok(json!({}));
@@ -765,14 +748,13 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
     let Some(raw) = event["tool_response"]["output"].as_str() else {
         return Ok(json!({}));
     };
-    let (profile, small) = limits(command, version);
+    let (profile, small) = limits(command);
     let program = crate::commands::program(command);
     if raw.len() <= small {
         crate::events::unchanged(
             "opencode",
             program.as_deref(),
             profile,
-            version,
             raw.len(),
             compress::Reason::Small,
         );
@@ -790,7 +772,6 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
         None,
         profile,
         None,
-        version,
         &anchors,
     );
     if small.as_ref() == raw.as_bytes() {
@@ -799,9 +780,6 @@ fn opencode(event: &Value, mode: Preference, version: compress::Version) -> Resu
     Ok(json!({"output": String::from_utf8(small.into_owned())?}))
 }
 pub fn hook_stdin(agent: Agent) -> Result<Value> {
-    hook_stdin_version(agent, compress::Version::configured(None)?)
-}
-pub fn hook_stdin_version(agent: Agent, version: compress::Version) -> Result<Value> {
     ensure!(agent != Agent::All, "hook needs one agent");
     let mut bytes = Vec::new();
     std::io::stdin()
@@ -809,15 +787,12 @@ pub fn hook_stdin_version(agent: Agent, version: compress::Version) -> Result<Va
         .read_to_end(&mut bytes)?;
     ensure!(bytes.len() <= MAX_INPUT * 3, "hook input too large");
     let event: Value = serde_json::from_slice(&bytes)?;
-    hook_version(agent, &event, version)
+    hook(agent, &event)
 }
-pub fn hook(agent: Agent, event: &Value) -> Result<Value> {
-    hook_version(agent, event, compress::Version::configured(None)?)
-}
-fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Result<Value> {
+fn hook(agent: Agent, event: &Value) -> Result<Value> {
     let mode = preference()?;
     if agent == Agent::Opencode {
-        return opencode(event, mode, version);
+        return opencode(event, mode);
     }
     let name = event["hook_event_name"].as_str().unwrap_or("");
     if matches!(name, "SessionStart" | "UserPromptSubmit") {
@@ -842,12 +817,10 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         let Some(command) = event["tool_input"]["command"].as_str() else {
             return Ok(json!({}));
         };
-        let Some((args, profile)) = command_args(command, version) else {
+        let Some((args, profile)) = command_args(command) else {
             return Ok(json!({}));
         };
-        let small = compress::effective_profile(Some(profile), version)
-            .map_or(compress::SMALL, Profile::small);
-        if small_file_read(&args, small, event) {
+        if small_file_read(&args, profile.small(), event) {
             return Ok(json!({}));
         }
         let binary = std::env::current_exe()?;
@@ -856,17 +829,9 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
             format!("--session {} ", crate::session::short(&key))
         });
         let command = format!(
-            "{} run --auto --timeout 3600 {session}{} -- {}",
+            "{} run --auto --timeout 3600 {session}--profile {} -- {}",
             quote(&binary.to_string_lossy()),
-            match compress::effective_profile(Some(profile), version) {
-                // Each profile has its own budget, in v3 only.
-                Some(profile) => format!(
-                    "--compact-version {} --profile {}",
-                    version.number(),
-                    profile.name()
-                ),
-                None => format!("--compact-version {}", version.number()),
-            },
+            profile.name(),
             args.iter().map(|s| quote(s)).collect::<Vec<_>>().join(" ")
         );
         let mut input = event["tool_input"].clone();
@@ -876,7 +841,7 @@ fn hook_version(agent: Agent, event: &Value, version: compress::Version) -> Resu
         );
     }
     if agent == Agent::Claude && name == "PostToolUse" {
-        return claude_result(event, version);
+        return claude_result(event);
     }
     Ok(json!({}))
 }

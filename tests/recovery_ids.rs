@@ -1,9 +1,6 @@
 //! Recovery ergonomics: references as people type them, regex and
 //! case-insensitive search of originals, and blobs paged by lines.
-use scopelet::{
-    compress::{self, Version},
-    store::Store,
-};
+use scopelet::{compress, store::Store};
 use serde_json::Value;
 
 fn cli(cache: &std::path::Path, args: &[&str]) -> std::process::Output {
@@ -20,14 +17,25 @@ fn json(output: &std::process::Output) -> Value {
     serde_json::from_slice(&output.stdout).unwrap()
 }
 
-fn compressed(cache: &std::path::Path, raw: &str) -> String {
-    let output =
-        compress::automatic_lazy(raw.as_bytes(), Some(cache.into()), 4096, Version::V3).unwrap();
+/// The view of `raw` and the 12 hex characters its header shows.
+fn view(cache: &std::path::Path, raw: &str) -> (String, String) {
+    let output = compress::automatic_lazy(raw.as_bytes(), Some(cache.into()), 4096).unwrap();
     let text = String::from_utf8(output.into_owned()).unwrap();
-    text.split_whitespace()
-        .find(|s| s.starts_with("artifact:"))
-        .expect("compressed")
-        .to_owned()
+    let id = text
+        .strip_prefix("[scopelet v5 ")
+        .and_then(|rest| rest.get(..12))
+        .expect("view header")
+        .to_owned();
+    (text, id)
+}
+
+/// The full artifact reference of the view of `raw`.
+fn compressed(cache: &std::path::Path, raw: &str) -> String {
+    let (_, id) = view(cache, raw);
+    Store::open(Some(cache.into()))
+        .unwrap()
+        .resolve(&id)
+        .unwrap()
 }
 
 fn log(lines: usize) -> String {
@@ -94,29 +102,24 @@ fn references_resolve_from_hashes_prefixes_and_last() {
     assert_eq!(store.resolve("last").unwrap(), newer);
 }
 
-/// A compact-v4 header shows 16 hex characters of its artifact: `expand`
-/// resolves them as a prefix, and fails loudly when two cached items share
-/// them instead of picking one.
+/// A header shows 12 hex characters of its artifact: `expand` resolves them
+/// as a prefix, as it does the 16 that views before 1.0 showed, and fails
+/// loudly when two cached items share them instead of picking one.
 #[test]
-fn a_v4_short_id_resolves_and_an_ambiguous_one_fails() {
+fn a_short_id_resolves_and_an_ambiguous_one_fails() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(Some(dir.path().into())).unwrap();
-    let raw = log(500);
-    let output =
-        compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 4096, Version::V4)
-            .unwrap();
-    let text = String::from_utf8(output.into_owned()).unwrap();
-    let id = text
-        .strip_prefix("[scopelet v4 ")
-        .and_then(|rest| rest.get(..16))
-        .expect("v4 header");
+    let (_, id) = view(dir.path(), &log(500));
+    let id = id.as_str();
     let artifact = store.resolve(id).unwrap();
-    assert_eq!(&artifact["artifact:".len().."artifact:".len() + 16], id);
+    assert_eq!(&artifact["artifact:".len().."artifact:".len() + 12], id);
     let found = json(&cli(dir.path(), &["expand", id, "--find", "PANICKED"]));
     assert_eq!(found["total_records"], 1);
+    let older = &artifact["artifact:".len().."artifact:".len() + 16];
+    assert_eq!(store.resolve(older).unwrap(), artifact);
 
-    // Another cached item whose name starts with the same 16 characters.
-    let twin = format!("{id}{}", "f".repeat(48));
+    // Another cached item whose name starts with the same 12 characters.
+    let twin = format!("{id}{}", "f".repeat(52));
     std::fs::write(dir.path().join("artifacts").join(&twin), b"{}").unwrap();
     let error = format!("{:#}", store.resolve(id).unwrap_err());
     assert!(error.contains("matches 2 cached items"), "{error}");

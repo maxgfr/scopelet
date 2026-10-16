@@ -8,13 +8,7 @@
 //! default compact presentation; facts must stay visible in the view and the
 //! original bytes must remain recoverable from the store. Pending facts are
 //! what a planned change should make visible: they are reported, not enforced.
-use scopelet::{
-    commands::Profile,
-    compress::{self, Version},
-    model::Dataset,
-    sources,
-    store::Store,
-};
+use scopelet::{commands::Profile, compress, model::Dataset, sources, store::Store};
 
 use std::collections::BTreeMap;
 
@@ -48,7 +42,7 @@ struct Fixture {
     facts_visible: bool,
     /// Facts a planned change should make visible: reported, never enforced.
     pending: Vec<String>,
-    /// The command profile that produced it, which sets the v3 budget.
+    /// The command profile that produced it, which sets the view's budget.
     profile: Option<Profile>,
 }
 
@@ -248,12 +242,7 @@ fn source_form(fact: &str) -> String {
 }
 
 /// Pending facts missing from the view, or an error when a gate fails.
-fn check(
-    name: &str,
-    fixture: &Fixture,
-    cache: &std::path::Path,
-    version: Version,
-) -> Result<Vec<String>, String> {
+fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<String>, String> {
     let (budget, small) = fixture.limits();
     // Hooks leave an output up to its profile's threshold untouched.
     let output = if fixture.bytes.len() <= small {
@@ -264,7 +253,6 @@ fn check(
             Some(cache.to_path_buf()),
             fixture.profile,
             None,
-            version,
         )
         .map_err(|e| format!("{name}: {e:#}"))?
     };
@@ -295,10 +283,12 @@ fn check(
         ));
     }
     let text = std::str::from_utf8(&output).map_err(|e| format!("{name}: {e}"))?;
-    let short = text.starts_with("[scopelet v4 ") || text.starts_with("[scopelet v5 ");
-    if !short && !text.starts_with("[scopelet compact-v") {
+    let Some(reference) = text
+        .strip_prefix("[scopelet v5 ")
+        .and_then(|rest| rest.get(..12))
+    else {
         return Err(format!("{name}: missing compact header"));
-    }
+    };
     if fixture.facts_visible {
         for fact in &fixture.facts {
             if !text.contains(fact) {
@@ -310,14 +300,7 @@ fn check(
             "{name}: oversized line not marked text_truncated:\n{text}"
         ));
     }
-    // Compact-v4 shows 16 hex characters of the artifact, v5 12; earlier
-    // versions the whole reference. All resolve to the same stored artifact.
-    let reference = text
-        .split_whitespace()
-        .nth(2)
-        .filter(|id| short && matches!(id.len(), 12 | 16))
-        .or_else(|| text.split_whitespace().find(|s| s.starts_with("artifact:")))
-        .ok_or_else(|| format!("{name}: no artifact reference"))?;
+    // The header shows 12 hex characters of the artifact.
     let store = Store::open(Some(cache.to_path_buf())).unwrap();
     let artifact = store
         .resolve(reference)
@@ -355,17 +338,7 @@ fn check(
 }
 
 #[test]
-fn default_compression_meets_reduction_visibility_and_recovery_gates() {
-    gates(Version::default());
-}
-
-/// Compact-v5 writes v4's selection in fewer bytes: every gate still holds.
-#[test]
-fn compact_v5_meets_the_same_gates() {
-    gates(Version::V5);
-}
-
-fn gates(version: Version) {
+fn compression_meets_reduction_visibility_and_recovery_gates() {
     let dir = tempfile::tempdir().unwrap();
     let cache = dir.path().join("cache");
     let synthetic = fixtures();
@@ -376,7 +349,7 @@ fn gates(version: Version) {
         .chain(files.iter().map(|(name, fixture)| (name.as_str(), fixture)));
     let (mut failures, mut pending) = (Vec::new(), Vec::new());
     for (name, fixture) in all {
-        match check(name, fixture, &cache, version) {
+        match check(name, fixture, &cache) {
             Ok(missing) => pending.extend(missing),
             Err(error) => failures.push(error),
         }

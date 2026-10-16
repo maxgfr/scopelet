@@ -6,7 +6,6 @@ use std::fs;
 fn cli(dir: &std::path::Path) -> Command {
     let mut command = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
     command
-        .env("SCOPELET_COMPACT_VERSION", "1")
         .env("SCOPELET_CONFIG_DIR", dir.join("config"))
         .env("SCOPELET_CACHE_DIR", dir.join("cache"))
         .env("CODEX_HOME", dir.join("codex"))
@@ -14,8 +13,23 @@ fn cli(dir: &std::path::Path) -> Command {
         .env("OPENCODE_CONFIG_DIR", dir.join("opencode"));
     command
 }
+
+/// The automatic view of `raw` at `budget`, stored under `dir/cache`.
+fn automatic(raw: &[u8], dir: &std::path::Path, budget: usize) -> Vec<u8> {
+    compress::automatic_lazy(raw, Some(dir.join("cache")), budget)
+        .unwrap()
+        .into_owned()
+}
+
+/// The 12 hex characters a view's header shows.
+fn view_id(text: &str) -> &str {
+    text.strip_prefix("[scopelet v5 ")
+        .and_then(|rest| rest.get(..12))
+        .unwrap_or_else(|| panic!("no view header: {text}"))
+}
+
 #[test]
-fn compression_keeps_middle_error_and_original_crlf_bytes() {
+fn compression_keeps_middle_error_and_shows_crlf_lines_clean() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(Some(dir.path().join("cache"))).unwrap();
     let raw = format!(
@@ -23,15 +37,15 @@ fn compression_keeps_middle_error_and_original_crlf_bytes() {
         "working\r\n".repeat(500),
         "working\r\n".repeat(500)
     );
-    let output = compress::automatic(raw.as_bytes(), &store, 4096).unwrap();
-    let text = String::from_utf8(output).unwrap();
-    assert!(text.contains("AssertionError: expected 9007199254740993, got 0\r\n"));
-    assert!(text.contains("repeat=500"));
-    let artifact = text
-        .split_whitespace()
-        .find(|s| s.starts_with("artifact:"))
-        .unwrap();
-    let data: Value = serde_json::from_slice(&store.get(artifact).unwrap()).unwrap();
+    let text = String::from_utf8(automatic(raw.as_bytes(), dir.path(), 4096)).unwrap();
+    assert!(text.contains("AssertionError: expected 9007199254740993, got 0\n"));
+    assert!(!text.contains('\r'), "{text}");
+    assert!(
+        text.contains("\n1 repeat=1000 last=1001 working\n"),
+        "{text}"
+    );
+    let artifact = store.resolve(view_id(&text)).unwrap();
+    let data: Value = serde_json::from_slice(&store.get(&artifact).unwrap()).unwrap();
     assert_eq!(
         store
             .get(data["snapshots"][0]["blob"].as_str().unwrap())
@@ -42,43 +56,42 @@ fn compression_keeps_middle_error_and_original_crlf_bytes() {
 #[test]
 fn small_binary_and_already_persisted_outputs_stay_exact() {
     let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(Some(dir.path().join("cache"))).unwrap();
     for bytes in [
         b"hello\r\n".to_vec(),
         vec![255; 5000],
         format!("<persisted-output>{}", "a".repeat(5000)).into_bytes(),
     ] {
-        assert_eq!(compress::automatic(&bytes, &store, 4096).unwrap(), bytes);
+        assert_eq!(automatic(&bytes, dir.path(), 4096), bytes);
     }
 }
 #[test]
 fn structured_selection_keeps_whole_records_and_marks_omissions() {
     let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(Some(dir.path().join("cache"))).unwrap();
     let rows: Vec<_> = (0..100)
-        .map(|i| json!({"id":i,"value":"x".repeat(100),"state":if i==50 {"failed"} else {"ok"}}))
+        .map(|i| json!({"id":i,"value":format!("{}{i}", "x".repeat(100)),"state":if i==50 {"failed"} else {"ok"}}))
         .collect();
     let raw = serde_json::to_vec(&rows).unwrap();
-    let text = String::from_utf8(compress::automatic(&raw, &store, 4096).unwrap()).unwrap();
-    assert!(text.contains("\"id\":50"));
-    assert!(text.contains("display_complete=false"));
-    for line in text
+    let text = String::from_utf8(automatic(&raw, dir.path(), 4096)).unwrap();
+    assert!(text.contains(" omitted="), "{text}");
+    assert!(
+        text.lines()
+            .nth(1)
+            .unwrap()
+            .starts_with("table id,state,value rows="),
+        "{text}"
+    );
+    let shown: Vec<Value> = text
         .lines()
-        .filter(|l| l.starts_with("input"))
-        .map(|l| l.split_once(": ").unwrap().1)
-    {
-        let row: Value = serde_json::from_str(line).unwrap();
-        assert!(rows.contains(&row));
+        .skip(2)
+        .map(|line| {
+            let cells: Vec<&str> = line.split(',').collect();
+            json!({"id": cells[0].parse::<u64>().unwrap(), "state": cells[1], "value": cells[2]})
+        })
+        .collect();
+    assert!(shown.contains(&rows[50]), "{text}");
+    for row in &shown {
+        assert!(rows.contains(row), "{row}");
     }
-}
-#[test]
-fn giant_line_stays_native_when_no_complete_evidence_unit_fits() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(Some(dir.path().join("cache"))).unwrap();
-    let raw = "é".repeat(5000);
-    let output = compress::automatic(raw.as_bytes(), &store, 4096).unwrap();
-    let text = String::from_utf8(output).unwrap();
-    assert_eq!(text, raw);
 }
 #[test]
 fn auto_runs_once_preserves_streams_status_and_survives_bad_cache() {
@@ -232,7 +245,7 @@ fn claude_persistence_metadata_bypasses_compression_before_preview_rendering() {
         hook(dir.path(), "claude", inline)["hookSpecificOutput"]["updatedToolOutput"]["stdout"]
             .as_str()
             .unwrap()
-            .contains("[scopelet compact-v1")
+            .starts_with("[scopelet v5 ")
     );
 }
 /// Whether the cache store was opened: only the event journal may be written.
@@ -267,10 +280,12 @@ fn small_automatic_outputs_do_not_open_cache() {
 fn codex_small_file_reads_stay_native_and_large_reads_are_wrapped() {
     let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join("small.txt");
-    fs::write(&file, vec![b'x'; 2048]).unwrap();
+    // A file read stays exact up to the file-read profile's threshold.
+    let small = scopelet::commands::Profile::FileRead.small();
+    fs::write(&file, vec![b'x'; small]).unwrap();
     let mut event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":dir.path(),"tool_input":{"command":"cat small.txt"}});
     assert_eq!(hook(dir.path(), "codex", event.clone()), json!({}));
-    fs::write(&file, vec![b'x'; 2049]).unwrap();
+    fs::write(&file, vec![b'x'; small + 1]).unwrap();
     assert!(
         hook(dir.path(), "codex", event.clone())["hookSpecificOutput"]["updatedInput"]["command"]
             .as_str()
@@ -329,29 +344,25 @@ fn query_shortcuts_compute_exact_groups() {
 #[test]
 fn factored_json_preserves_every_cell_and_large_number() {
     let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(Some(dir.path().join("cache"))).unwrap();
     let rows:Vec<Value>=(0..60).map(|i| serde_json::from_str(&format!(r#"{{"long_identifier_column":{i},"nullable_annotation_column":null,"exact_quantity_column":900719925474099312345}}"#)).unwrap()).collect();
     let raw = serde_json::to_vec(&rows).unwrap();
-    let output = String::from_utf8(compress::automatic(&raw, &store, 4096).unwrap()).unwrap();
-    let table: Value = serde_json::from_str(
-        output
-            .lines()
-            .find_map(|l| l.strip_prefix("table "))
-            .unwrap(),
-    )
-    .unwrap();
-    for (index, row) in table["rows"].as_array().unwrap().iter().enumerate() {
-        let reconstructed: serde_json::Map<String, Value> = table["columns"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .zip(row.as_array().unwrap())
-            .map(|(key, value)| (key.as_str().unwrap().into(), value.clone()))
-            .collect();
-        assert_eq!(Value::Object(reconstructed), rows[index]);
+    let output = String::from_utf8(automatic(&raw, dir.path(), 4096)).unwrap();
+    let mut lines = output.lines();
+    assert!(lines.next().unwrap().ends_with(" complete]"), "{output}");
+    assert_eq!(lines.next(), Some("table long_identifier_column rows=60"));
+    assert_eq!(
+        lines.next(),
+        Some(
+            "constant exact_quantity_column=900719925474099312345,nullable_annotation_column=null"
+        )
+    );
+    let ids: Vec<&str> = lines.collect();
+    assert_eq!(ids.len(), rows.len());
+    for (index, (id, row)) in ids.iter().zip(&rows).enumerate() {
+        assert_eq!(id.parse::<usize>().unwrap(), index);
+        assert_eq!(row["long_identifier_column"], index);
     }
-    assert_eq!(table["rows"].as_array().unwrap().len(), rows.len());
-    assert!(output.contains("display_complete=true"));
+    assert!(output.contains("900719925474099312345"));
 }
 
 #[test]
@@ -424,16 +435,14 @@ fn recognized_and_lists_preserve_short_circuiting_and_status() {
 #[test]
 fn crowded_diagnostics_keep_first_and_final_evidence() {
     let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(Some(dir.path().join("cache"))).unwrap();
     let middle = (0..1000)
         .map(|i| format!("error: case {i} failed\n"))
         .collect::<String>();
     let raw = format!("running 1000 tests\n{middle}final status: 1000 failed; exit=7\n");
-    let text =
-        String::from_utf8(compress::automatic(raw.as_bytes(), &store, 1024).unwrap()).unwrap();
+    let text = String::from_utf8(automatic(raw.as_bytes(), dir.path(), 1024)).unwrap();
     assert!(text.contains("running 1000 tests"));
     assert!(text.contains("final status: 1000 failed; exit=7"));
-    assert!(text.contains("display_complete=false"));
+    assert!(text.contains(" omitted="));
     assert!(text.len() <= 1024);
 }
 
@@ -492,7 +501,7 @@ fn opencode_hook_compresses_large_bash_output_and_carries_the_mode() {
     let large = json!({"hook_event_name":"ToolOutput","tool_name":"Bash","tool_input":{"command":"npm test"},"tool_response":{"output":"noise\n".repeat(2000)}});
     let out = hook(dir.path(), "opencode", large.clone());
     let text = out["output"].as_str().unwrap();
-    assert!(text.contains("[scopelet compact-v1"));
+    assert!(text.starts_with("[scopelet v5 "), "{text}");
     assert!(text.len() < 6000);
     let mut small = large.clone();
     small["tool_response"]["output"] = json!("x".repeat(2048));
@@ -615,7 +624,6 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
     let out = std::process::Command::new(node)
         .arg(&entry)
         .env("SCOPELET_CACHE_DIR", dir.path().join("cache"))
-        .env("SCOPELET_COMPACT_VERSION", "1")
         .env("XDG_DATA_HOME", dir.path().join("data"))
         .output()
         .unwrap();
@@ -629,7 +637,7 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
         result["compressed"]
             .as_str()
             .unwrap()
-            .contains("[scopelet compact-v1")
+            .starts_with("[scopelet v5 ")
     );
     assert_eq!(result["small"], "fine\n");
     assert_eq!(result["title"], "npm test");
@@ -646,7 +654,7 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
         v2["content"][0]["text"]
             .as_str()
             .unwrap()
-            .contains("[scopelet compact-v1")
+            .starts_with("[scopelet v5 ")
     );
     assert_eq!(v2["output"]["output"], v2["content"][0]["text"]);
     assert_eq!(result["v2"]["small"]["content"][0]["text"], "fine\n");
@@ -655,7 +663,7 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
         result["v2"]["bash"]["content"][0]["text"]
             .as_str()
             .unwrap()
-            .contains("[scopelet compact-v1")
+            .starts_with("[scopelet v5 ")
     );
     assert_eq!(result["v2"]["system"]["system"][0]["text"], "base");
     assert!(
@@ -669,14 +677,10 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
     let find = |name: &str, pattern: &str| -> Value {
         let result = &result["v2"]["truncated"][name];
         let text = result["content"][0]["text"].as_str().unwrap();
-        assert!(text.contains("[scopelet compact-v1"), "{name}: {text}");
+        assert!(text.starts_with("[scopelet v5 "), "{name}: {text}");
         assert_eq!(result["output"]["output"], result["content"][0]["text"]);
-        let artifact = text
-            .split_whitespace()
-            .find(|s| s.starts_with("artifact:"))
-            .unwrap();
         let out = cli(dir.path())
-            .args(["expand", artifact, "--find", pattern, "--regex"])
+            .args(["expand", view_id(text), "--find", pattern, "--regex"])
             .output()
             .unwrap();
         assert!(out.status.success());
@@ -883,8 +887,12 @@ fn the_event_journal_records_decisions_and_can_be_turned_off() {
     assert_eq!(events[0]["bytes_in"], 100);
     // The program's bare name, nothing else of the command or its output.
     assert_eq!(events[0]["program"], "npm");
+    assert_eq!(events[0]["profile"], "tests");
     let line = events[0].to_string();
-    assert!(!line.contains("test") && !line.contains("xxxx"), "{line}");
+    assert!(
+        !line.contains("npm test") && !line.contains("xxxx"),
+        "{line}"
+    );
     assert!(line.len() < 512);
 
     let quiet = tempfile::tempdir().unwrap();
@@ -906,7 +914,6 @@ fn stats_count_compressions_pass_throughs_and_later_expansions() {
     let big: String = (0..2000).map(|i| format!("line {i} of noise\n")).collect();
     let run = |stdin: &str| -> Vec<u8> {
         cli(dir.path())
-            .env("SCOPELET_COMPACT_VERSION", "3")
             .arg("compress")
             .write_stdin(stdin.to_owned())
             .output()
@@ -915,12 +922,8 @@ fn stats_count_compressions_pass_throughs_and_later_expansions() {
     };
     let view = String::from_utf8(run(&big)).unwrap();
     run("tiny\n");
-    let artifact = view
-        .split_whitespace()
-        .find(|s| s.starts_with("artifact:"))
-        .unwrap();
     cli(dir.path())
-        .args(["expand", &artifact[9..21], "--manifest"])
+        .args(["expand", view_id(&view), "--manifest"])
         .assert()
         .success();
     let out = cli(dir.path())
@@ -1035,17 +1038,6 @@ fn codex_passes_the_context_key_to_the_wrapped_run() {
         .failure();
 }
 
-fn hook_v4(dir: &std::path::Path, agent: &str, event: Value) -> Value {
-    let result = cli(dir)
-        .env("SCOPELET_COMPACT_VERSION", "4")
-        .args(["hook", agent])
-        .write_stdin(event.to_string())
-        .output()
-        .unwrap();
-    assert!(result.status.success());
-    serde_json::from_slice(&result.stdout).unwrap()
-}
-
 /// The text Claude would show for a PostToolUse result: the replaced stream,
 /// or the original when the hook left it alone.
 fn shown(event: &Value, result: &Value, stream: &str) -> String {
@@ -1062,10 +1054,7 @@ fn bash_result(session: &str, command: &str, stdout: &str) -> Value {
 
 /// The original bytes behind a repeat reference, through `expand`.
 fn recovered(dir: &std::path::Path, text: &str) -> Vec<u8> {
-    let id = text
-        .strip_prefix("[scopelet v4 ")
-        .and_then(|rest| rest.get(..16))
-        .unwrap();
+    let id = view_id(text);
     let manifest = cli(dir)
         .args(["expand", id, "--manifest"])
         .output()
@@ -1090,23 +1079,15 @@ fn repeat_outputs_become_a_reference_to_what_was_shown() {
         .map(|i| format!("worker {i} finished batch\n"))
         .collect();
     let event = bash_result("r1", "npm test", &log);
-    let first = shown(
-        &event,
-        &hook_v4(dir.path(), "claude", event.clone()),
-        "stdout",
-    );
-    assert!(first.starts_with("[scopelet v4 "), "{first}");
+    let first = shown(&event, &hook(dir.path(), "claude", event.clone()), "stdout");
+    assert!(first.starts_with("[scopelet v5 "), "{first}");
     assert!(!first.contains("repeat:"), "{first}");
-    let second = shown(
-        &event,
-        &hook_v4(dir.path(), "claude", event.clone()),
-        "stdout",
-    );
-    let id = &first[13..29];
+    let second = shown(&event, &hook(dir.path(), "claude", event.clone()), "stdout");
+    let id = view_id(&first);
     assert_eq!(
         second,
         format!(
-            "[scopelet v4 {id} repeat: identical to output already shown in this conversation (400 lines); expand ID]\n"
+            "[scopelet v5 {id} repeat: identical to output already shown in this conversation (400 lines)]\n"
         )
     );
     assert_eq!(recovered(dir.path(), &second), log.as_bytes());
@@ -1114,24 +1095,19 @@ fn repeat_outputs_become_a_reference_to_what_was_shown() {
     // A file read up to 16 KiB is shown whole the first time, then referenced.
     let source = "fn parse(input: &str) -> usize { input.len() }\n".repeat(80);
     let read = bash_result("r1", "cat src/parse.rs", &source);
-    assert_eq!(hook_v4(dir.path(), "claude", read.clone()), json!({}));
-    let again = shown(
-        &read,
-        &hook_v4(dir.path(), "claude", read.clone()),
-        "stdout",
-    );
+    assert_eq!(hook(dir.path(), "claude", read.clone()), json!({}));
+    let again = shown(&read, &hook(dir.path(), "claude", read.clone()), "stdout");
     assert!(again.contains(" repeat: identical"), "{again}");
     assert_eq!(recovered(dir.path(), &again), source.as_bytes());
 
     // Small outputs are never referenced: they cost less than the marker.
     let small = bash_result("r1", "git status", "On branch main\n");
-    assert_eq!(hook_v4(dir.path(), "claude", small.clone()), json!({}));
-    assert_eq!(hook_v4(dir.path(), "claude", small), json!({}));
+    assert_eq!(hook(dir.path(), "claude", small.clone()), json!({}));
+    assert_eq!(hook(dir.path(), "claude", small), json!({}));
 }
 
 /// Repeats are judged per context: another subagent, a compaction, a
-/// persisted preview, a missing session or an earlier compact version never
-/// produce a reference.
+/// persisted preview or a missing session never produce a reference.
 #[test]
 fn repeat_references_stay_inside_one_uncompacted_context() {
     let dir = tempfile::tempdir().unwrap();
@@ -1139,12 +1115,7 @@ fn repeat_references_stay_inside_one_uncompacted_context() {
         .map(|i| format!("worker {i} finished batch\n"))
         .collect();
     let is_repeat = |event: &Value| {
-        shown(
-            event,
-            &hook_v4(dir.path(), "claude", event.clone()),
-            "stdout",
-        )
-        .contains("repeat:")
+        shown(event, &hook(dir.path(), "claude", event.clone()), "stdout").contains("repeat:")
     };
     let main = bash_result("r2", "npm test", &log);
     assert!(!is_repeat(&main));
@@ -1154,32 +1125,20 @@ fn repeat_references_stay_inside_one_uncompacted_context() {
     assert!(is_repeat(&subagent));
     assert!(is_repeat(&main));
     let compact = json!({"hook_event_name":"SessionStart","session_id":"r2","source":"compact"});
-    hook_v4(dir.path(), "claude", compact);
+    hook(dir.path(), "claude", compact);
     assert!(!is_repeat(&main));
     assert!(is_repeat(&main));
 
     // Only a preview of a persisted output reached the model.
     let mut persisted = bash_result("r3", "npm test", &log);
     persisted["tool_response"]["persistedOutputPath"] = json!("/synthetic/tool-results/a.txt");
-    assert_eq!(hook_v4(dir.path(), "claude", persisted), json!({}));
+    assert_eq!(hook(dir.path(), "claude", persisted), json!({}));
     assert!(!is_repeat(&bash_result("r3", "npm test", &log)));
 
     let mut anonymous = bash_result("r4", "npm test", &log);
     anonymous.as_object_mut().unwrap().remove("session_id");
     assert!(!is_repeat(&anonymous));
     assert!(!is_repeat(&anonymous));
-
-    let v3 = bash_result("r5", "npm test", &log);
-    for _ in 0..2 {
-        let result = cli(dir.path())
-            .env("SCOPELET_COMPACT_VERSION", "3")
-            .args(["hook", "claude"])
-            .write_stdin(v3.to_string())
-            .output()
-            .unwrap();
-        let result: Value = serde_json::from_slice(&result.stdout).unwrap();
-        assert!(shown(&v3, &result, "stdout").starts_with("[scopelet compact-v3 "));
-    }
 }
 
 /// A repeat is journaled with the bytes it saved, and nothing of its content.
@@ -1190,12 +1149,8 @@ fn repeat_references_are_journaled() {
         .map(|i| format!("worker {i} finished batch\n"))
         .collect();
     let event = bash_result("r6", "npm test", &log);
-    hook_v4(dir.path(), "claude", event.clone());
-    let marker = shown(
-        &event,
-        &hook_v4(dir.path(), "claude", event.clone()),
-        "stdout",
-    );
+    hook(dir.path(), "claude", event.clone());
+    let marker = shown(&event, &hook(dir.path(), "claude", event.clone()), "stdout");
     let folder = dir.path().join("cache/events");
     let events: Vec<Value> = fs::read_dir(folder)
         .unwrap()
@@ -1212,7 +1167,7 @@ fn repeat_references_are_journaled() {
     let repeat = events.iter().find(|e| e["reason"] == "repeat").unwrap();
     assert_eq!(repeat["bytes_in"], log.len());
     assert_eq!(repeat["bytes_out"], marker.len());
-    assert_eq!(repeat["version"], 4);
+    assert!(repeat.get("version").is_none(), "{repeat}");
     assert!(!repeat.to_string().contains("worker"), "{repeat}");
 }
 
@@ -1248,10 +1203,10 @@ fn grep_content_results_are_compressed_and_other_shapes_pass() {
         .collect();
     event["tool_response"]["content"] = json!(content.trim_end());
     event["tool_response"]["numLines"] = json!(600);
-    let result = hook_v4(dir.path(), "claude", event.clone());
+    let result = hook(dir.path(), "claude", event.clone());
     let output = &result["hookSpecificOutput"]["updatedToolOutput"];
     let view = output["content"].as_str().unwrap();
-    assert!(view.starts_with("[scopelet v4 "), "{view}");
+    assert!(view.starts_with("[scopelet v5 "), "{view}");
     assert!(view.contains(" file=src/mod0.rs"), "{view}");
     assert!(view.len() < content.len() / 2, "{}", view.len());
     for field in ["mode", "numFiles", "filenames", "numLines", "totalLines"] {
@@ -1260,7 +1215,7 @@ fn grep_content_results_are_compressed_and_other_shapes_pass() {
     assert_eq!(recovered(dir.path(), view), content.trim_end().as_bytes());
 
     // Shown twice in one context, it becomes a repeat reference.
-    let again = hook_v4(dir.path(), "claude", event.clone());
+    let again = hook(dir.path(), "claude", event.clone());
     let again = again["hookSpecificOutput"]["updatedToolOutput"]["content"]
         .as_str()
         .unwrap();
@@ -1269,15 +1224,15 @@ fn grep_content_results_are_compressed_and_other_shapes_pass() {
     // Other modes and unknown shapes pass through, however large.
     let mut files = grep_fixture("claude_grep_files");
     files["tool_response"]["filenames"] = json!(vec!["src/x.rs"; 3000]);
-    assert_eq!(hook_v4(dir.path(), "claude", files), json!({}));
+    assert_eq!(hook(dir.path(), "claude", files), json!({}));
     let mut count = grep_fixture("claude_grep_count");
     count["tool_response"]["content"] = json!("src/mod1.rs:1\n".repeat(400));
-    assert_eq!(hook_v4(dir.path(), "claude", count), json!({}));
+    assert_eq!(hook(dir.path(), "claude", count), json!({}));
     let mut unknown = event.clone();
     unknown["tool_response"] = json!({"text": content});
-    assert_eq!(hook_v4(dir.path(), "claude", unknown), json!({}));
+    assert_eq!(hook(dir.path(), "claude", unknown), json!({}));
     // Codex has no Grep tool to compress.
-    assert_eq!(hook_v4(dir.path(), "codex", event), json!({}));
+    assert_eq!(hook(dir.path(), "codex", event), json!({}));
 }
 
 /// The installed Claude PostToolUse hook matches Bash and Grep; reinstalling
@@ -1439,7 +1394,7 @@ fn stats_report_expand_kinds_repeats_anchors_and_tight_budgets() {
             .collect()
     };
     let prompt = json!({"hook_event_name":"UserPromptSubmit","session_id":"st","prompt":"why does `zzanchor_term` break?"});
-    hook_v4(dir.path(), "claude", prompt);
+    hook(dir.path(), "claude", prompt);
     let mut views = Vec::new();
     for seed in 0..4 {
         let mut out = words(seed + 1);
@@ -1447,20 +1402,15 @@ fn stats_report_expand_kinds_repeats_anchors_and_tight_budgets() {
             out.insert_str(out.len() / 2, "bcd zzanchor_term step done\n");
         }
         let event = bash_result("st", "npm test", &out);
-        let result = hook_v4(dir.path(), "claude", event.clone());
+        let result = hook(dir.path(), "claude", event.clone());
         views.push(shown(&event, &result, "stdout"));
     }
     // The first output again: a repeat reference.
     let again = bash_result("st", "npm test", &words(1));
     assert!(
-        shown(
-            &again,
-            &hook_v4(dir.path(), "claude", again.clone()),
-            "stdout"
-        )
-        .contains("repeat:")
+        shown(&again, &hook(dir.path(), "claude", again.clone()), "stdout").contains("repeat:")
     );
-    let id = |view: &str| view[13..29].to_owned();
+    let id = |view: &str| view_id(view).to_owned();
     cli(dir.path())
         .args(["expand", &id(&views[0]), "--find", "step"])
         .assert()
@@ -1519,7 +1469,7 @@ fn stats_name_the_programs_whose_outputs_had_no_profile() {
         "cd sub && terraform plan",
     ] {
         let event = bash_result("p1", command, &log.replace("row", command));
-        hook_v4(dir.path(), "claude", event);
+        hook(dir.path(), "claude", event);
     }
     let out = cli(dir.path())
         .args(["stats", "--days", "1"])
@@ -1548,9 +1498,9 @@ fn stats_name_the_programs_whose_outputs_had_no_profile() {
 fn host_notifications_and_numbers_add_no_anchors() {
     let dir = tempfile::tempdir().unwrap();
     let notification = json!({"hook_event_name":"UserPromptSubmit","session_id":"n1","prompt":"<task-notification>\n<task-id>toolu_01AbCd</task-id>\n<summary>zznotified_term at line 2655</summary>\n</task-notification>"});
-    hook_v4(dir.path(), "claude", notification);
+    hook(dir.path(), "claude", notification);
     let prompt = json!({"hook_event_name":"UserPromptSubmit","session_id":"n1","prompt":"why is `zzreal_term` slow since 2026?"});
-    hook_v4(dir.path(), "claude", prompt);
+    hook(dir.path(), "claude", prompt);
     let key = scopelet::session::key("n1", None);
     let state: Value =
         serde_json::from_slice(&fs::read(dir.path().join("config/sessions").join(&key)).unwrap())
@@ -1579,7 +1529,7 @@ fn host_notifications_and_numbers_add_no_anchors() {
             }
         })
         .collect();
-    hook_v4(dir.path(), "claude", bash_result("n2", "npm test", &log));
+    hook(dir.path(), "claude", bash_result("n2", "npm test", &log));
     let journal: String = fs::read_dir(dir.path().join("cache/events"))
         .unwrap()
         .flatten()
@@ -1589,35 +1539,27 @@ fn host_notifications_and_numbers_add_no_anchors() {
     assert!(!journal.contains("\"anchored\":true"), "{journal}");
 }
 
-/// Audit finding: commands first recognized with compact-v4 (installs, `git
-/// ls-files`, `uv run` with options) stay native for Codex under earlier
-/// versions, as they always did, and are wrapped under v4.
+/// Audit finding: package installs, `git ls-files` and `uv run` with
+/// options are wrapped for Codex with their profile, and no format flag.
 #[test]
-fn codex_wraps_commands_new_in_v4_only_under_v4() {
+fn codex_wraps_installs_listings_and_uv_runs_with_their_profile() {
     let dir = tempfile::tempdir().unwrap();
-    for command in [
-        "npm install",
-        "git ls-files",
-        "uv run --with pytest python -m pytest -q",
+    for (command, profile) in [
+        ("npm install", "install"),
+        ("git ls-files", "search"),
+        ("uv run --with pytest python -m pytest -q", "tests"),
     ] {
         let event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":command}});
-        for version in ["1", "3"] {
-            let out = cli(dir.path())
-                .env("SCOPELET_COMPACT_VERSION", version)
-                .args(["hook", "codex"])
-                .write_stdin(event.to_string())
-                .output()
-                .unwrap();
-            let value: Value = serde_json::from_slice(&out.stdout).unwrap();
-            assert_eq!(value, json!({}), "v{version}: {command}");
-        }
-        let wrapped = hook_v4(dir.path(), "codex", event);
+        let wrapped = hook(dir.path(), "codex", event);
+        let rewritten = wrapped["hookSpecificOutput"]["updatedInput"]["command"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{command}: {wrapped}"));
         assert!(
-            wrapped["hookSpecificOutput"]["updatedInput"]["command"]
-                .as_str()
-                .unwrap()
-                .contains("--compact-version 4"),
-            "{command}: {wrapped}"
+            rewritten.contains(&format!(
+                " run --auto --timeout 3600 --profile {profile} -- "
+            )),
+            "{command}: {rewritten}"
         );
+        assert!(!rewritten.contains("compact"), "{command}: {rewritten}");
     }
 }

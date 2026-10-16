@@ -98,8 +98,8 @@ pub fn search(
 /// Store a recovery result and render its page at `offset`, as
 /// `render::render` does. A result whose only record is one whole stored text
 /// original (a single-line blob paged or searched shows its only line) names
-/// that blob, as a compact-v3 artifact does (schema 2), instead of storing the
-/// original a second time for every recovery.
+/// that blob, as an automatic view's artifact does (schema 2), instead of
+/// storing the original a second time for every recovery.
 pub fn render(data: &Dataset, store: &Store, budget: usize, offset: usize) -> Result<View> {
     if let [record] = data.records.as_slice()
         && let Some(blob) = record.blob.as_deref()

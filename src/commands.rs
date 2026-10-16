@@ -2,7 +2,7 @@
 use std::path::Path;
 
 /// What a recognized command produces, which sets how much of it a
-/// compact-v3 view keeps.
+/// compact view keeps.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
 pub enum Profile {
     /// Builds, tests, linters and type checkers: the outcome and its evidence.
@@ -30,7 +30,7 @@ impl Profile {
             Self::Install => "install",
         }
     }
-    /// Compact-v3 byte target for this output.
+    /// Byte target of a compact view of this output.
     pub fn budget(self) -> usize {
         match self {
             Self::Tests => 4 * 1024,
@@ -75,29 +75,23 @@ fn wrapper_launcher(word: &str) -> bool {
 /// The profile of the first recognized command in a command line, for hosts
 /// that compress after the fact; None when it does not parse or names none.
 pub fn classify(command: &str) -> Option<Profile> {
-    classify_for(command, true)
-}
-
-/// `classify` as a compact version sees it: before compact-v4 (`v4` false),
-/// the commands first recognized with it are not recognized.
-pub fn classify_for(command: &str, v4: bool) -> Option<Profile> {
     crate::shell::parse(command)?
         .commands()
-        .find_map(|simple| profile_for(&simple.argv, v4))
+        .find_map(|simple| profile(&simple.argv))
 }
 
-/// `classify_for` for hosts that compress after the fact (Claude Code,
+/// `classify` for hosts that compress after the fact (Claude Code,
 /// OpenCode): a line outside the strict grammar (`;`, newlines, `$`, globs)
 /// is split on its operators, quotes respected, only to choose a profile,
 /// never to run it. `cat`/`nl` of several files or with numbering options
 /// read files here, so a code read in pieces keeps the file-read threshold.
-pub fn classify_lenient(command: &str, v4: bool) -> Option<Profile> {
-    if let Some(profile) = classify_for(command, v4) {
+pub fn classify_lenient(command: &str) -> Option<Profile> {
+    if let Some(profile) = classify(command) {
         return Some(profile);
     }
     lenient_commands(command)
         .iter()
-        .find_map(|argv| profile_for(argv, v4).or_else(|| reads_files(argv)))
+        .find_map(|argv| profile(argv).or_else(|| reads_files(argv)))
 }
 
 /// The program a command line runs, for the local journal: the first
@@ -245,31 +239,6 @@ fn lenient_commands(command: &str) -> Vec<Vec<String>> {
     finish(&mut words, &mut word, &mut started);
     end(&mut commands, &mut words);
     commands
-}
-
-/// `profile` as a compact version sees it (see `classify_for`).
-pub fn profile_for(args: &[String], v4: bool) -> Option<Profile> {
-    profile(args).filter(|_| v4 || !recognized_since_v4(args))
-}
-
-/// Commands first recognized with compact-v4: package installs, `git
-/// ls-files`, and `uv run` with uv options or a `python -m` tool. Earlier
-/// versions leave them native, as they always did.
-fn recognized_since_v4(args: &[String]) -> bool {
-    if profile(args) == Some(Profile::Install) {
-        return true;
-    }
-    let rest: Vec<&str> = args.iter().skip(1).map(String::as_str).collect();
-    match args.first().map(|a| name(a)) {
-        Some("git") => rest.contains(&"ls-files"),
-        Some("uv") => {
-            rest.first() == Some(&"run")
-                && rest
-                    .get(1)
-                    .is_some_and(|a| a.starts_with('-') || matches!(*a, "python" | "python3"))
-        }
-        _ => false,
-    }
 }
 
 /// Whether a command line runs Scopelet or another output wrapper, whose
@@ -882,28 +851,6 @@ mod tests {
             .map(|s| s.to_string())
             .collect();
         assert_eq!(argv_anchors(&wrapped), ["parse_header"]);
-    }
-
-    #[test]
-    fn commands_recognized_since_v4_stay_native_before_it() {
-        for command in [
-            "npm install",
-            "pip install requests",
-            "git ls-files",
-            "uv run --with pytest python -m pytest",
-            "uv run python -m pytest",
-        ] {
-            assert!(profile_for(&args(command), true).is_some(), "{command}");
-            assert_eq!(profile_for(&args(command), false), None, "{command}");
-            assert_eq!(classify_for(command, false), None, "{command}");
-        }
-        for command in ["cargo test", "uv run pytest", "git log -p", "rg needle"] {
-            assert_eq!(
-                profile_for(&args(command), false),
-                profile(&args(command)),
-                "{command}"
-            );
-        }
     }
 
     #[test]

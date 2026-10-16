@@ -1,9 +1,4 @@
-use scopelet::{
-    compress::{self, Version},
-    model::*,
-    pipeline, query, recovery, sources,
-    store::Store,
-};
+use scopelet::{compress, model::*, pipeline, query, recovery, sources, store::Store};
 use serde_json::{Value, json};
 use std::{
     fs,
@@ -13,33 +8,26 @@ use std::{
 fn cancel() -> Arc<AtomicBool> {
     Arc::new(AtomicBool::new(false))
 }
-fn artifact(text: &str) -> &str {
-    text.split_whitespace()
-        .find(|s| s.starts_with("artifact:"))
-        .unwrap()
-}
-
 #[test]
 fn rejected_compression_never_opens_a_store() {
     let dir = tempfile::tempdir().unwrap();
-    for version in [Version::V1, Version::V2, Version::V3] {
-        for raw in [
-            b"small\r\n".to_vec(),
-            vec![255; 5000],
-            "é".repeat(5000).into_bytes(),
-            format!("<persisted-output>{}", "x".repeat(6000)).into_bytes(),
-        ] {
-            // V3 cuts an oversized line instead of rejecting the whole view.
-            if version == Version::V3 && raw.starts_with("é".as_bytes()) {
-                continue;
-            }
-            let path = dir.path().join("must-not-exist");
-            assert_eq!(
-                &*compress::automatic_lazy(&raw, Some(path.clone()), 4096, version).unwrap(),
-                raw
-            );
-            assert!(!path.exists());
-        }
+    for raw in [
+        b"small\r\n".to_vec(),
+        vec![255; 5000],
+        format!("<persisted-output>{}", "x".repeat(6000)).into_bytes(),
+        // Already a view: never compressed again.
+        format!(
+            "[scopelet v5 000000000000 complete]\n{}",
+            "x\n".repeat(3000)
+        )
+        .into_bytes(),
+    ] {
+        let path = dir.path().join("must-not-exist");
+        assert_eq!(
+            &*compress::automatic_lazy(&raw, Some(path.clone()), 4096).unwrap(),
+            raw
+        );
+        assert!(!path.exists());
     }
 }
 
@@ -79,44 +67,13 @@ fn streaming_serialization_preserves_hashes_and_rejects_corruption() {
 }
 
 #[test]
-fn v2_partial_tables_keep_cells_indices_and_provenance() {
-    let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(Some(dir.path().into())).unwrap();
-    let rows: Vec<Value> = (0..300).map(|i| json!({"id":i,"nullable":null,"message":if i==250 {"fatal error"} else {"okay"},"payload":"é".repeat(30)})).collect();
-    let raw = serde_json::to_vec(&rows).unwrap();
-    let output =
-        compress::automatic_lazy(&raw, Some(dir.path().into()), 4096, Version::V2).unwrap();
-    assert!(output.len() <= 4096);
-    let text = std::str::from_utf8(&output).unwrap();
-    let table: Value =
-        serde_json::from_str(text.lines().find_map(|s| s.strip_prefix("table ")).unwrap()).unwrap();
-    assert_eq!(table["total_records"], 300);
-    assert!(text.contains("display_complete=false"));
-    let indices = table["indices"].as_array().unwrap();
-    assert!(indices.contains(&json!(250)));
-    for (pos, index) in indices.iter().enumerate() {
-        let index = index.as_u64().unwrap() as usize;
-        for (col, key) in table["columns"].as_array().unwrap().iter().enumerate() {
-            assert_eq!(table["rows"][pos][col], rows[index][key.as_str().unwrap()]);
-        }
-        assert_eq!(
-            table["record_sources"][pos],
-            format!("input#record={index}")
-        );
-    }
-    let data: Dataset = store.dataset(artifact(text)).unwrap();
-    assert_eq!(store.get(&data.snapshots[0].blob).unwrap(), raw);
-}
-
-#[test]
 fn distinct_late_diagnostics_survive_repeated_early_errors() {
     let dir = tempfile::tempdir().unwrap();
     let raw = format!(
         "start\n{}fatal error: rare root cause\nend\n",
         "error: retry failed\nworking\n".repeat(1000)
     );
-    let out = compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 1024, Version::V2)
-        .unwrap();
+    let out = compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 1024).unwrap();
     assert!(
         std::str::from_utf8(&out)
             .unwrap()
@@ -347,69 +304,48 @@ fn supported_command_profiles_are_bounded_and_noninteractive() {
 }
 
 #[test]
-fn v2_hook_propagates_version_without_changing_other_fields() {
-    let dir = tempfile::tempdir().unwrap();
-    let event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"rg needle src","timeout":917,"sandbox_permissions":"use_default"}});
-    let mut command = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
-    let out = command
-        .env("SCOPELET_CONFIG_DIR", dir.path())
-        .args(["--compact-version", "2", "hook", "codex"])
-        .write_stdin(serde_json::to_vec(&event).unwrap())
-        .output()
-        .unwrap();
-    assert!(out.status.success());
-    let output: Value = serde_json::from_slice(&out.stdout).unwrap();
-    let input = &output["hookSpecificOutput"]["updatedInput"];
-    assert_eq!(input["timeout"], 917);
-    assert_eq!(input["sandbox_permissions"], "use_default");
-    assert!(
-        input["command"]
-            .as_str()
-            .unwrap()
-            .contains("--compact-version 2")
-    );
-}
-
-#[test]
-fn v2_huge_records_and_malformed_jsonl_keep_originals() {
-    let dir = tempfile::tempdir().unwrap();
-    for raw in [
-        json!({"value":"x".repeat(50000)}).to_string(),
-        "{\"error\":null}\n".repeat(1000) + "malformed JSONL\n",
-    ] {
-        let output =
-            compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 1024, Version::V2)
-                .unwrap();
-        if output.as_ref() != raw.as_bytes() {
-            let text = std::str::from_utf8(&output).unwrap();
-            let store = Store::open(Some(dir.path().into())).unwrap();
-            let data: Dataset = store.dataset(artifact(text)).unwrap();
-            assert!(data.records.iter().all(|r| r.value.is_none()));
-            assert_eq!(store.get(&data.snapshots[0].blob).unwrap(), raw.as_bytes());
-        }
-    }
-}
-
-#[test]
 fn invalid_environment_keeps_hooks_fail_open_and_cleanup_available() {
     let dir = tempfile::tempdir().unwrap();
-    let mut command = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
-    let out = command
-        .env("SCOPELET_COMPACT_VERSION", "invalid")
-        .args(["hook", "codex"])
-        .write_stdin("{}")
-        .output()
-        .unwrap();
-    assert!(out.status.success());
-    assert_eq!(
-        serde_json::from_slice::<Value>(&out.stdout).unwrap(),
-        json!({})
-    );
-    assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
-        .env("SCOPELET_COMPACT_VERSION", "invalid")
-        .args(["--cache-dir", dir.path().to_str().unwrap(), "clean"])
-        .assert()
-        .success();
+    let event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"cargo test"}});
+    // No configuration root (HOME unset), then an unreadable mode file.
+    let corrupt = dir.path().join("config");
+    fs::create_dir(&corrupt).unwrap();
+    fs::write(corrupt.join("mode.json"), b"not json").unwrap();
+    let environments: [&dyn Fn(&mut assert_cmd::Command); 2] = [
+        &|command| {
+            command
+                .env_remove("HOME")
+                .env_remove("XDG_CONFIG_HOME")
+                .env_remove("SCOPELET_CONFIG_DIR");
+        },
+        &|command| {
+            command.env("SCOPELET_CONFIG_DIR", &corrupt);
+        },
+    ];
+    for environment in environments {
+        let mut command = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
+        environment(&mut command);
+        let out = command
+            .args(["hook", "codex"])
+            .write_stdin(event.to_string())
+            .output()
+            .unwrap();
+        assert!(out.status.success());
+        assert_eq!(
+            serde_json::from_slice::<Value>(&out.stdout).unwrap(),
+            json!({})
+        );
+        let mut command = assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
+        environment(&mut command);
+        command
+            .args([
+                "--cache-dir",
+                dir.path().join("cache").to_str().unwrap(),
+                "clean",
+            ])
+            .assert()
+            .success();
+    }
 }
 
 #[test]
@@ -469,117 +405,4 @@ fn standalone_compression_preserves_interruption_exit_status() {
     std::thread::sleep(Duration::from_millis(30));
     drop(input);
     assert_eq!(child.wait().unwrap().code(), Some(130));
-}
-
-#[test]
-fn compact_defaults_to_v4_and_explicit_version_overrides_environment() {
-    use assert_cmd::Command;
-    let dir = tempfile::tempdir().unwrap();
-    let raw = "working\n".repeat(1000);
-    for (env, explicit, expected) in [
-        (None, None, "4"),
-        (Some("1"), None, "1"),
-        (Some("2"), None, "2"),
-        (Some("3"), None, "3"),
-        (Some("4"), None, "4"),
-        (Some("2"), Some("1"), "1"),
-        (Some("1"), Some("3"), "3"),
-        (Some("3"), Some("4"), "4"),
-        (Some("invalid"), Some("2"), "2"),
-    ] {
-        let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
-        cmd.args(["--cache-dir", dir.path().to_str().unwrap(), "compress"])
-            .env_remove("SCOPELET_COMPACT_VERSION");
-        if let Some(value) = env {
-            cmd.env("SCOPELET_COMPACT_VERSION", value);
-        }
-        if let Some(value) = explicit {
-            cmd.args(["--compact-version", value]);
-        }
-        let result = cmd.write_stdin(raw.as_bytes()).assert().success();
-        let header = if expected == "4" {
-            "[scopelet v4 ".to_owned()
-        } else {
-            format!("[scopelet compact-v{expected} ")
-        };
-        assert!(String::from_utf8_lossy(&result.get_output().stdout).starts_with(&header));
-    }
-}
-
-/// Earlier presentations are frozen: v1 and v2 bytes match the released 0.3.2
-/// binary and v3 bytes the released 0.7.2 binary for the shared
-/// `repeated_errors` and `diagnostics` fixtures.
-#[test]
-fn legacy_compact_versions_stay_byte_identical_and_unknown_versions_fail() {
-    use assert_cmd::Command;
-    let dir = tempfile::tempdir().unwrap();
-    let noise: String = (0..1000)
-        .map(|i| format!("progress {i:04}: {}\n", "unchanged ".repeat(12)))
-        .collect();
-    let repeated = format!(
-        "start\n{}fatal error: rare root cause\nend\n",
-        "error: retry failed\nworking\n".repeat(1000)
-    );
-    let diagnostics =
-        format!("{noise}error: audit-7139 amount=47\nwarning: do NOT disable validation\n");
-    for (raw, version, expected) in [
-        (
-            &repeated,
-            "1",
-            "bb884d78540a83e3bc9087edd56fb366c6be7d2f1ee299c2aa49863f7f3c411a",
-        ),
-        (
-            &repeated,
-            "2",
-            "53dc151cc137265353fa3e71ccaa4a893afd2f886a1f4a1532d30da04430b75e",
-        ),
-        (
-            &diagnostics,
-            "1",
-            "84111908c22fba4007dfaf56fd18a2edb6e2757d3fc351e2e685bd2a1fe01ab4",
-        ),
-        (
-            &diagnostics,
-            "2",
-            "b9449d6f073b2ebdd07b7ed30e077f5d3150b299403d7e8ac9f90e19a5c87eae",
-        ),
-        (
-            &repeated,
-            "3",
-            "498e5673c727ec8625a36cbd109ed407e1b660ab3a48104aeb6a4aeddedc9f15",
-        ),
-        (
-            &diagnostics,
-            "3",
-            "0fa36251df3471838628fef32697dc9458884f9f5525598dceb71b3e24010091",
-        ),
-    ] {
-        let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
-        let result = cmd
-            .args(["--cache-dir", dir.path().to_str().unwrap()])
-            .args(["--compact-version", version, "compress"])
-            .env_remove("SCOPELET_COMPACT_VERSION")
-            .write_stdin(raw.as_bytes())
-            .assert()
-            .success();
-        assert_eq!(
-            scopelet::store::digest(&result.get_output().stdout),
-            expected,
-            "compact-v{version} output drifted"
-        );
-    }
-    Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
-        .args(["--compact-version", "6", "compress"])
-        .write_stdin(repeated.as_bytes())
-        .assert()
-        .failure();
-    let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
-    let out = cmd
-        .args(["--cache-dir", dir.path().to_str().unwrap(), "compress"])
-        .env("SCOPELET_COMPACT_VERSION", "6")
-        .write_stdin(repeated.as_bytes())
-        .output()
-        .unwrap();
-    assert!(!out.status.success());
-    assert!(String::from_utf8_lossy(&out.stderr).contains("must be 1, 2, 3, 4 or 5"));
 }

@@ -1,10 +1,10 @@
 //! A local journal of compression decisions, never transmitted.
 //!
 //! One JSON line per event in `<cache>/events/YYYY-MM.jsonl`, under 512
-//! bytes: time, host, kind, profile, byte counts, reason, compact version,
-//! 12-character prefixes of the artifact and original it produced, whether
-//! relevance anchors ranked lines up, the bare name of the program that
-//! printed the output, and for an expansion its kind. No content, argument,
+//! bytes: time, host, kind, profile, byte counts, reason, 12-character
+//! prefixes of the artifact and original it produced, whether relevance
+//! anchors ranked lines up, the bare name of the program that printed the
+//! output, and for an expansion its kind. No content, argument,
 //! path or anchor term is recorded. Writing is best effort and
 //! `SCOPELET_EVENTS=0` turns it off.
 use crate::compress::Reason;
@@ -36,6 +36,8 @@ pub struct Event {
     /// Why the output was or was not replaced; none for an expansion.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<Reason>,
+    /// The compact format version, written before 1.0 when several
+    /// coexisted; kept so older journals still parse.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<u8>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -143,7 +145,6 @@ pub fn unchanged(
     host: &str,
     program: Option<&str>,
     profile: Option<crate::commands::Profile>,
-    version: crate::compress::Version,
     bytes: usize,
     reason: crate::compress::Reason,
 ) {
@@ -155,12 +156,11 @@ pub fn unchanged(
         Event {
             host: host.into(),
             kind: Kind::Compress,
-            profile: crate::compress::effective_profile(profile, version).map(|p| p.name().into()),
+            profile: profile.map(|p| p.name().into()),
             program: program.map(str::to_owned),
             bytes_in: bytes,
             bytes_out: bytes,
             reason: Some(reason),
-            version: Some(version.number()),
             ..Event::default()
         },
     );

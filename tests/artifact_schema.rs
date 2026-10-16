@@ -1,9 +1,10 @@
-//! Schema-2 artifacts: compact-v3 automatic compression stores the original
-//! once and an artifact that names it, instead of a second copy of every
-//! record. Readers parse the records again from the verified blob.
+//! Schema-2 artifacts: automatic compression stores the original once and an
+//! artifact that names it, instead of a second copy of every record. Readers
+//! parse the records again from the verified blob. Explicit compact queries
+//! still store schema-1 artifacts, which stay readable.
 use assert_cmd::Command;
 use scopelet::{
-    compress::{self, Version},
+    compress,
     model::{Dataset, Operation, Request, Source},
     sources,
     store::Store,
@@ -11,14 +12,18 @@ use scopelet::{
 use serde_json::Value;
 use std::sync::{Arc, atomic::AtomicBool};
 
-fn artifact(text: &str) -> &str {
-    text.split_whitespace()
-        .find(|s| s.starts_with("artifact:"))
-        .expect("artifact reference")
+/// The full artifact reference a view's header names by its short ID.
+fn artifact(dir: &std::path::Path, text: &str) -> String {
+    let id = text
+        .strip_prefix("[scopelet v5 ")
+        .and_then(|rest| rest.get(..12))
+        .expect("view header");
+    Store::open(Some(dir.into())).unwrap().resolve(id).unwrap()
 }
 
-fn compress_with(dir: &std::path::Path, raw: &[u8], version: Version) -> Option<String> {
-    let output = compress::automatic_lazy(raw, Some(dir.to_path_buf()), 4096, version).unwrap();
+/// The automatic view of `raw`, or None when it passes through.
+fn compressed(dir: &std::path::Path, raw: &[u8]) -> Option<String> {
+    let output = compress::automatic_lazy(raw, Some(dir.to_path_buf()), 4096).unwrap();
     (output.as_ref() != raw).then(|| String::from_utf8(output.into_owned()).unwrap())
 }
 
@@ -49,13 +54,13 @@ fn inputs() -> Vec<(&'static str, String)> {
 }
 
 #[test]
-fn v3_artifacts_name_the_blob_and_rehydrate_to_the_same_dataset() {
+fn artifacts_name_the_blob_and_rehydrate_to_the_same_dataset() {
     for (name, raw) in inputs() {
         let dir = tempfile::tempdir().unwrap();
         let store = Store::open(Some(dir.path().into())).unwrap();
-        let text = compress_with(dir.path(), raw.as_bytes(), Version::V3)
+        let text = compressed(dir.path(), raw.as_bytes())
             .unwrap_or_else(|| panic!("{name} passed through"));
-        let id = artifact(&text);
+        let id = &artifact(dir.path(), &text);
         let stored: Value = serde_json::from_slice(&store.get(id).unwrap()).unwrap();
         assert_eq!(stored["schema_version"], 2, "{name}");
         assert!(stored.get("records").is_none(), "{name}");
@@ -80,12 +85,6 @@ fn v3_artifacts_name_the_blob_and_rehydrate_to_the_same_dataset() {
         assert_eq!(data.records, expected.records, "{name}");
         assert_eq!(data.snapshots[0].blob, expected.snapshots[0].blob, "{name}");
 
-        // And the same records a v2 artifact stores, where v2 compresses.
-        if let Some(v2) = compress_with(dir.path(), raw.as_bytes(), Version::V2) {
-            let v2 = store.dataset(artifact(&v2)).unwrap();
-            assert_eq!(data.records, v2.records, "{name}");
-            assert_eq!(data.notes, v2.notes, "{name}");
-        }
         // Metadata alone does not read the blob.
         assert!(store.dataset_head(id).unwrap().records.is_empty());
         assert_eq!(
@@ -102,8 +101,8 @@ fn a_megabyte_input_stores_one_original_and_a_small_artifact() {
         .map(|i| format!("{i:06} worker processed an item in the queue ok\n"))
         .collect();
     assert!(raw.len() >= 1_000_000);
-    let text = compress_with(dir.path(), raw.as_bytes(), Version::V3).unwrap();
-    let id = artifact(&text);
+    let text = compressed(dir.path(), raw.as_bytes()).unwrap();
+    let id = artifact(dir.path(), &text);
     let artifact_bytes = std::fs::metadata(dir.path().join("artifacts").join(&id[9..]))
         .unwrap()
         .len();
@@ -123,10 +122,11 @@ fn an_older_reader_rejects_a_schema_2_artifact_instead_of_misreading_it() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(Some(dir.path().into())).unwrap();
     let (_, raw) = &inputs()[0];
-    let text = compress_with(dir.path(), raw.as_bytes(), Version::V3).unwrap();
-    let error = serde_json::from_slice::<Dataset>(&store.get(artifact(&text)).unwrap())
-        .unwrap_err()
-        .to_string();
+    let text = compressed(dir.path(), raw.as_bytes()).unwrap();
+    let error =
+        serde_json::from_slice::<Dataset>(&store.get(&artifact(dir.path(), &text)).unwrap())
+            .unwrap_err()
+            .to_string();
     assert!(error.contains("missing field `records`"), "{error}");
 }
 
@@ -135,8 +135,8 @@ fn a_missing_or_damaged_original_fails_the_rehydration() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(Some(dir.path().into())).unwrap();
     let (_, raw) = &inputs()[0];
-    let text = compress_with(dir.path(), raw.as_bytes(), Version::V3).unwrap();
-    let id = artifact(&text);
+    let text = compressed(dir.path(), raw.as_bytes()).unwrap();
+    let id = &artifact(dir.path(), &text);
     let blob = store.dataset_head(id).unwrap().snapshots[0].blob.clone();
     let path = dir.path().join("blobs").join(&blob[5..]);
     std::fs::write(&path, b"tampered").unwrap();
@@ -153,11 +153,11 @@ fn queries_over_a_schema_2_artifact_store_self_contained_results() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(Some(dir.path().into())).unwrap();
     let (_, raw) = &inputs()[0];
-    let text = compress_with(dir.path(), raw.as_bytes(), Version::V3).unwrap();
+    let text = compressed(dir.path(), raw.as_bytes()).unwrap();
     let request = Request {
         version: 1,
         source: Source::Artifact {
-            id: artifact(&text).into(),
+            id: artifact(dir.path(), &text),
         },
         operations: vec![Operation::Search {
             patterns: vec!["late failure".into()],
@@ -182,7 +182,8 @@ fn queries_over_a_schema_2_artifact_store_self_contained_results() {
 fn expand_pages_and_describes_a_schema_2_artifact() {
     let dir = tempfile::tempdir().unwrap();
     let (_, raw) = &inputs()[0];
-    let text = compress_with(dir.path(), raw.as_bytes(), Version::V3).unwrap();
+    let text = compressed(dir.path(), raw.as_bytes()).unwrap();
+    let id = artifact(dir.path(), &text);
     let run = |args: &[&str]| -> Value {
         let output = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
             .arg("--cache-dir")
@@ -193,11 +194,53 @@ fn expand_pages_and_describes_a_schema_2_artifact() {
         assert!(output.status.success(), "{output:?}");
         serde_json::from_slice(&output.stdout).unwrap()
     };
-    let manifest = run(&["expand", artifact(&text), "--manifest"]);
+    let manifest = run(&["expand", &id, "--manifest"]);
     assert_eq!(manifest["artifact_schema_version"], 2);
     assert_eq!(manifest["total_records"], 1);
-    let page = run(&["expand", artifact(&text)]);
+    let page = run(&["expand", &id]);
     assert_eq!(page["records"][0]["source"], "input");
-    let found = run(&["expand", artifact(&text), "--find", "late failure"]);
+    let found = run(&["expand", &id, "--find", "late failure"]);
     assert_eq!(found["total_records"], 1);
+}
+
+/// An explicit compact query stores its result whole, as a schema-1
+/// artifact: `expand` reads it back by the view's short ID.
+#[test]
+fn an_explicit_query_writes_a_schema_1_artifact_that_expand_reads() {
+    let dir = tempfile::tempdir().unwrap();
+    let (_, raw) = &inputs()[0];
+    let file = dir.path().join("build.log");
+    std::fs::write(&file, raw).unwrap();
+    let cli = |args: &[&str]| {
+        let output = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
+            .arg("--cache-dir")
+            .arg(dir.path().join("cache"))
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        output.stdout
+    };
+    let view = String::from_utf8(cli(&[
+        "query",
+        "--file",
+        file.to_str().unwrap(),
+        "--find",
+        "late failure",
+        "--output",
+        "compact",
+    ]))
+    .unwrap();
+    assert!(view.contains("late failure"), "{view}");
+    let id = &artifact(&dir.path().join("cache"), &view);
+    let json = |args: &[&str]| -> Value { serde_json::from_slice(&cli(args)).unwrap() };
+    let manifest = json(&["expand", id, "--manifest"]);
+    // Schema 1 is the manifest's default: only later schemas are named.
+    assert!(
+        manifest.get("artifact_schema_version").is_none(),
+        "{manifest}"
+    );
+    assert_eq!(manifest["total_records"], 1, "{manifest}");
+    let found = json(&["expand", id, "--find", "late failure"]);
+    assert_eq!(found["total_records"], 1, "{found}");
 }

@@ -23,9 +23,6 @@ struct Cli {
     cache_dir: Option<PathBuf>,
     #[command(subcommand)]
     command: Cmd,
-    /// Compact text representation; defaults to SCOPELET_COMPACT_VERSION or 4.
-    #[arg(long, global = true, value_enum)]
-    compact_version: Option<compress::Version>,
 }
 
 #[derive(Subcommand)]
@@ -126,7 +123,7 @@ enum Cmd {
         mode: Mode,
         #[arg(long)]
         max_bytes: Option<usize>,
-        /// With --auto: the kind of output, which sets the compact-v3 budget
+        /// With --auto: the kind of output, which sets the compact budget
         /// (unless --max-bytes is given) and, for file-read, reads the output
         /// as a file rather than as an outcome.
         #[arg(long, value_enum, requires = "auto")]
@@ -321,7 +318,6 @@ fn top_view(
 }
 
 fn execute(cli: Cli) -> Result<i32> {
-    let compact_version = compress::Version::configured(cli.compact_version);
     match &cli.command {
         Cmd::Install { agent } => {
             print(&integration::install(*agent, false)?)?;
@@ -338,22 +334,12 @@ fn execute(cli: Cli) -> Result<i32> {
         }
         Cmd::Hook { agent } => {
             // Hook failures must not prevent the host from executing the native call.
-            let result = compact_version
-                .and_then(|version| integration::hook_stdin_version(*agent, version))
-                .unwrap_or_else(|_| json!({}));
+            let result = integration::hook_stdin(*agent).unwrap_or_else(|_| json!({}));
             print(&result)?;
             return Ok(0);
         }
         _ => {}
     }
-    let compact_version = if matches!(
-        cli.command,
-        Cmd::Compress { .. } | Cmd::Run { .. } | Cmd::Query { .. }
-    ) {
-        compact_version?
-    } else {
-        compress::Version::default()
-    };
     let cancel = Arc::new(AtomicBool::new(false));
     scopelet::process::cancel_on_termination(cancel.clone())?;
     if matches!(cli.command, Cmd::Doctor) {
@@ -416,7 +402,6 @@ fn execute(cli: Cli) -> Result<i32> {
                 cli.cache_dir.clone(),
                 *profile,
                 *max_bytes,
-                compact_version,
                 &anchors,
             );
             if stderr {
@@ -446,14 +431,7 @@ fn execute(cli: Cli) -> Result<i32> {
             .take(MAX_INPUT as u64 + 1)
             .read_to_end(&mut bytes)?;
         ensure!(bytes.len() <= MAX_INPUT, "input exceeds 32 MiB");
-        let output = compress::automatic_recorded(
-            "cli",
-            &bytes,
-            cli.cache_dir,
-            profile,
-            max_bytes,
-            compact_version,
-        );
+        let output = compress::automatic_recorded("cli", &bytes, cli.cache_dir, profile, max_bytes);
         std::io::stdout().write_all(&output)?;
         return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
             130
@@ -573,11 +551,10 @@ fn execute(cli: Cli) -> Result<i32> {
             pipeline::validate(&request)?;
             let data = scopelet::query::execute(&request, &store, cancel.clone())?;
             if matches!(output, Output::Compact) {
-                let text = compress::compact_version(
+                let text = compress::compact(
                     &data,
                     &store,
                     request.max_bytes.unwrap_or(compress::DEFAULT_BUDGET),
-                    compact_version,
                 )?;
                 std::io::stdout().write_all(text.as_bytes())?;
                 return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
@@ -700,12 +677,7 @@ fn execute(cli: Cli) -> Result<i32> {
                 let prefix =
                     format!("exit_code={code} stdout={stdout_blob} stderr={stderr_blob}\n");
                 ensure!(budget >= prefix.len() + 512, "compact run budget too small");
-                let text = compress::compact_version(
-                    &data,
-                    &store,
-                    budget - prefix.len(),
-                    compact_version,
-                )?;
+                let text = compress::compact(&data, &store, budget - prefix.len())?;
                 std::io::stdout().write_all(format!("{prefix}{text}").as_bytes())?;
                 return Ok(code);
             }

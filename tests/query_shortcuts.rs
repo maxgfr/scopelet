@@ -4,7 +4,6 @@ use serde_json::{Value, json};
 
 fn cli(dir: &std::path::Path, args: &[&str]) -> std::process::Output {
     assert_cmd::Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
-        .env_remove("SCOPELET_COMPACT_VERSION")
         .arg("--cache-dir")
         .arg(dir.join("cache"))
         .args(args)
