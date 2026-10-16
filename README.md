@@ -350,6 +350,7 @@ Then:
 | `input:40-44 file=src/a.rs more=7` then ` 12:text` | search results of one file, its path written once; 7 of its matches not shown |
 | `input:9-95 file=Cargo.lock changed=+43/-3 omitted` | a lockfile's or generated file's diff, counted |
 | `src/components/ files=402 ext=tsx:400,ts:2` | a large directory of a listing, with its first and last entries |
+| `./node_modules/ files=402 artifacts omitted` | v5 only: a build, dependency or cache directory of a listing, every entry left out |
 | `envelope {…}` then `table=/items {…}` | a JSON object's other fields, then its dominant array as a table |
 | `"constant":{…}`, `"omitted_columns":[…]` | columns equal in every row, named once; fields left out of the rows |
 
@@ -361,11 +362,12 @@ from both ends so a final summary survives a flood of errors.
 `--compact-version 1|2|3` still produce the earlier formats byte for byte.
 `--compact-version 5` (or `SCOPELET_COMPACT_VERSION=5`) is opt-in: v4's
 selection with a 12-character ID, labels without `input:` (`42 text`) and
-tables as CSV rows, 6.2% fewer view tokens on the benchmark fixtures, plus two
+tables as CSV rows, 6.1% fewer view tokens on the benchmark fixtures, plus two
 selection rules: a listing folds build and dependency directories
 (`./node_modules/ files=402 artifacts omitted`) and a file read over 16 KiB
-shows its definition lines first. A paired live campaign did not show a
-session-level saving, so v4 stays the default
+shows its definition lines first. Over twelve live tasks (144 haiku and 48
+sonnet sessions, all correct), no v5 arm cost significantly less per
+successful task than v4, so v4 stays the default
 ([bench/README.md](bench/README.md)).
 [Contracts and limits](docs/design.md).
 

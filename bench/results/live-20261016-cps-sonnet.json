@@ -1,0 +1,2043 @@
+{
+  "kind": "live Claude Code sessions; tokens and cost from the session result, not estimates",
+  "model": "sonnet",
+  "runs": 2,
+  "tasks": [
+    "fix_test",
+    "find_receipt",
+    "count_failures",
+    "review_diff",
+    "search_symbol",
+    "git_log_find",
+    "listing_artifacts",
+    "large_file_fix",
+    "stack_trace",
+    "json_api",
+    "build_warnings",
+    "pytest_many"
+  ],
+  "baseline": "v4",
+  "claude_version": "2.1.300 (Claude Code)",
+  "arms": [
+    {
+      "name": "v4",
+      "version": "4",
+      "parts": null,
+      "binary_sha256": "bfd3db2f62e3de4ac8b115b8cc866c886a1bc2cad2692280c0e136d9dea6d1b0"
+    },
+    {
+      "name": "v5g",
+      "version": "5",
+      "parts": "labels,header,tables",
+      "binary_sha256": "bfd3db2f62e3de4ac8b115b8cc866c886a1bc2cad2692280c0e136d9dea6d1b0"
+    }
+  ],
+  "records": [
+    {
+      "arm": "v4",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6913,
+      "cache_read_input_tokens": 50153,
+      "output_tokens": 523,
+      "turns": 4,
+      "cost_usd": 0.027539800000000003,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I changed `restock_needed` in `inventory.py` to use `<=` instead of `<`, which fixes the off-by-one at the threshold. The first run had one failure (`test_restock_at_threshold`), and after the fix all 302 tests pass.",
+      "session_error": false,
+      "input_total": 57072,
+      "exit_code": 0,
+      "seconds": 6.8,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6931,
+      "cache_read_input_tokens": 50173,
+      "output_tokens": 504,
+      "turns": 4,
+      "cost_usd": 0.0273968,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed the off-by-one in `restock_needed` in `inventory.py` by changing `<` to `<=`, and all 302 tests now pass (one failed before the fix).",
+      "session_error": false,
+      "input_total": 57110,
+      "exit_code": 0,
+      "seconds": 6.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5576,
+      "cache_read_input_tokens": 30922,
+      "output_tokens": 72,
+      "turns": 2,
+      "cost_usd": 0.0177602,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 36502,
+      "exit_code": 0,
+      "seconds": 5.5,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5589,
+      "cache_read_input_tokens": 30931,
+      "output_tokens": 132,
+      "turns": 2,
+      "cost_usd": 0.018393599999999996,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 36524,
+      "exit_code": 0,
+      "seconds": 4.3,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "count_failures",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5547,
+      "cache_read_input_tokens": 30931,
+      "output_tokens": 144,
+      "turns": 2,
+      "cost_usd": 0.018408599999999997,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 36482,
+      "exit_code": 0,
+      "seconds": 5.4,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "count_failures",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5551,
+      "cache_read_input_tokens": 30934,
+      "output_tokens": 145,
+      "turns": 2,
+      "cost_usd": 0.018428899999999998,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 36489,
+      "exit_code": 0,
+      "seconds": 6.2,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7470,
+      "cache_read_input_tokens": 50861,
+      "output_tokens": 153,
+      "turns": 3,
+      "cost_usd": 0.0253031,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 58337,
+      "exit_code": 0,
+      "seconds": 6.7,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7457,
+      "cache_read_input_tokens": 50876,
+      "output_tokens": 161,
+      "turns": 3,
+      "cost_usd": 0.0253521,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 58339,
+      "exit_code": 0,
+      "seconds": 5.6,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "search_symbol",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5538,
+      "cache_read_input_tokens": 30934,
+      "output_tokens": 80,
+      "turns": 2,
+      "cost_usd": 0.017746400000000002,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 36476,
+      "exit_code": 0,
+      "seconds": 6.2,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "search_symbol",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5546,
+      "cache_read_input_tokens": 30942,
+      "output_tokens": 80,
+      "turns": 2,
+      "cost_usd": 0.0177672,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 36492,
+      "exit_code": 0,
+      "seconds": 6.4,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "git_log_find",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7132,
+      "cache_read_input_tokens": 49794,
+      "output_tokens": 239,
+      "turns": 3,
+      "cost_usd": 0.025211400000000002,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 56932,
+      "exit_code": 0,
+      "seconds": 5.7,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "git_log_find",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7102,
+      "cache_read_input_tokens": 49774,
+      "output_tokens": 215,
+      "turns": 3,
+      "cost_usd": 0.024894400000000004,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 56882,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "listing_artifacts",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 6061,
+      "cache_read_input_tokens": 68088,
+      "output_tokens": 404,
+      "turns": 4,
+      "cost_usd": 0.0260173,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 74157,
+      "exit_code": 0,
+      "seconds": 7.9,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9056,
+      "cache_read_input_tokens": 52569,
+      "output_tokens": 353,
+      "turns": 3,
+      "cost_usd": 0.0314389,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 61631,
+      "exit_code": 0,
+      "seconds": 8.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "large_file_fix",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6938,
+      "cache_read_input_tokens": 50218,
+      "output_tokens": 441,
+      "turns": 4,
+      "cost_usd": 0.026788799999999998,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I changed `max` to `min` in `compute_late_fee` in `billing.py`, so the fee is now capped at a quarter of the amount instead of floored there. Two of the four tests failed before the change, and all four pass after it.",
+      "session_error": false,
+      "input_total": 57162,
+      "exit_code": 0,
+      "seconds": 8.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7762,
+      "cache_read_input_tokens": 69959,
+      "output_tokens": 811,
+      "turns": 6,
+      "cost_usd": 0.0345269,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 2,
+        "Read": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed `compute_late_fee` in `billing.py` by changing `max` to `min` so the fee is capped at a quarter of the amount instead of floored there, and all 4 tests in `test_billing` now pass (2 failed before the fix).",
+      "session_error": false,
+      "input_total": 77729,
+      "exit_code": 0,
+      "seconds": 11.6,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "stack_trace",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 7134,
+      "cache_read_input_tokens": 30943,
+      "output_tokens": 228,
+      "turns": 2,
+      "cost_usd": 0.0232173,
+      "tool_calls": 1,
+      "tools": {
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 38081,
+      "exit_code": 0,
+      "seconds": 5.5,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "stack_trace",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9552,
+      "cache_read_input_tokens": 73114,
+      "output_tokens": 681,
+      "turns": 5,
+      "cost_usd": 0.0380174,
+      "tool_calls": 4,
+      "tools": {
+        "Grep": 2,
+        "Read": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 82674,
+      "exit_code": 0,
+      "seconds": 10.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "json_api",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5608,
+      "cache_read_input_tokens": 30948,
+      "output_tokens": 189,
+      "turns": 2,
+      "cost_usd": 0.0190128,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 36560,
+      "exit_code": 0,
+      "seconds": 5.9,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "json_api",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5516,
+      "cache_read_input_tokens": 30952,
+      "output_tokens": 93,
+      "turns": 2,
+      "cost_usd": 0.0178232,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 36472,
+      "exit_code": 0,
+      "seconds": 4.7,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6087,
+      "cache_read_input_tokens": 49281,
+      "output_tokens": 273,
+      "turns": 3,
+      "cost_usd": 0.0228876,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 55374,
+      "exit_code": 0,
+      "seconds": 6.4,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 5982,
+      "cache_read_input_tokens": 49246,
+      "output_tokens": 156,
+      "turns": 3,
+      "cost_usd": 0.0214516,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 55234,
+      "exit_code": 0,
+      "seconds": 5.8,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 7203,
+      "cache_read_input_tokens": 89160,
+      "output_tokens": 701,
+      "turns": 6,
+      "cost_usd": 0.033953500000000005,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 3,
+        "Edit": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed the off-by-one in `rates.py` by changing the tier boundaries from `<=` to `<`, so 1000 and 5000 units now fall into the next tier. The first run had 2 failures (at 1000 and 5000 units), and after the fix all 600 tests pass.",
+      "session_error": false,
+      "input_total": 96373,
+      "exit_code": 0,
+      "seconds": 10.8,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "pytest_many",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7135,
+      "cache_read_input_tokens": 69482,
+      "output_tokens": 745,
+      "turns": 5,
+      "cost_usd": 0.032251699999999994,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed the boundary bug in `rates.py` by changing `<=` to `<` in both tier checks, so 1000 units now gets 0.08 and 5000 gets 0.05. The tests failed on those two cases before the fix, and all 600 pass now.",
+      "session_error": false,
+      "input_total": 76625,
+      "exit_code": 0,
+      "seconds": 11.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6798,
+      "cache_read_input_tokens": 50102,
+      "output_tokens": 397,
+      "turns": 4,
+      "cost_usd": 0.025987200000000002,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I changed `restock_needed` in `inventory.py` to use `<=` instead of `<`, which fixes the off-by-one at the threshold. `test_restock_at_threshold` had been the one failure, and all 302 tests now pass.",
+      "session_error": false,
+      "input_total": 56906,
+      "exit_code": 0,
+      "seconds": 7.2,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6922,
+      "cache_read_input_tokens": 50163,
+      "output_tokens": 501,
+      "turns": 4,
+      "cost_usd": 0.027343299999999997,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed the off-by-one in `restock_needed` in `inventory.py` by changing `<` to `<=`, and all 302 tests now pass (one failed before the fix).",
+      "session_error": false,
+      "input_total": 57091,
+      "exit_code": 0,
+      "seconds": 6.8,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5581,
+      "cache_read_input_tokens": 30927,
+      "output_tokens": 72,
+      "turns": 2,
+      "cost_usd": 0.0177732,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 36512,
+      "exit_code": 0,
+      "seconds": 4.8,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5585,
+      "cache_read_input_tokens": 30931,
+      "output_tokens": 72,
+      "turns": 2,
+      "cost_usd": 0.017783599999999997,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 36520,
+      "exit_code": 0,
+      "seconds": 5.1,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "count_failures",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5557,
+      "cache_read_input_tokens": 30939,
+      "output_tokens": 146,
+      "turns": 2,
+      "cost_usd": 0.018454399999999996,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 36500,
+      "exit_code": 0,
+      "seconds": 5.6,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "count_failures",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5552,
+      "cache_read_input_tokens": 30935,
+      "output_tokens": 145,
+      "turns": 2,
+      "cost_usd": 0.018431500000000003,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 36491,
+      "exit_code": 0,
+      "seconds": 4.6,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7452,
+      "cache_read_input_tokens": 50875,
+      "output_tokens": 157,
+      "turns": 3,
+      "cost_usd": 0.0252995,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 58333,
+      "exit_code": 0,
+      "seconds": 5.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7437,
+      "cache_read_input_tokens": 50869,
+      "output_tokens": 148,
+      "turns": 3,
+      "cost_usd": 0.025171399999999997,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 58312,
+      "exit_code": 0,
+      "seconds": 6.0,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "search_symbol",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5549,
+      "cache_read_input_tokens": 30942,
+      "output_tokens": 81,
+      "turns": 2,
+      "cost_usd": 0.0177847,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 36495,
+      "exit_code": 0,
+      "seconds": 4.7,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "search_symbol",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5545,
+      "cache_read_input_tokens": 30938,
+      "output_tokens": 81,
+      "turns": 2,
+      "cost_usd": 0.0177743,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 36487,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "git_log_find",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7519,
+      "cache_read_input_tokens": 49807,
+      "output_tokens": 229,
+      "turns": 3,
+      "cost_usd": 0.026080199999999998,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 57332,
+      "exit_code": 0,
+      "seconds": 6.0,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "git_log_find",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 8189,
+      "cache_read_input_tokens": 91166,
+      "output_tokens": 355,
+      "turns": 5,
+      "cost_usd": 0.0331591,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 4
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 99365,
+      "exit_code": 0,
+      "seconds": 7.9,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9031,
+      "cache_read_input_tokens": 52561,
+      "output_tokens": 289,
+      "turns": 3,
+      "cost_usd": 0.030735600000000002,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 61598,
+      "exit_code": 0,
+      "seconds": 7.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9783,
+      "cache_read_input_tokens": 52569,
+      "output_tokens": 370,
+      "turns": 3,
+      "cost_usd": 0.0334264,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 62358,
+      "exit_code": 0,
+      "seconds": 8.2,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7763,
+      "cache_read_input_tokens": 69981,
+      "output_tokens": 812,
+      "turns": 6,
+      "cost_usd": 0.0345416,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 2,
+        "Read": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed `compute_late_fee` in `billing.py` by changing `max` to `min`, so the fee is now capped at a quarter of the amount instead of floored at it; the two failing tests now pass, and all 4 tests in `test_billing` pass on the second run.",
+      "session_error": false,
+      "input_total": 77752,
+      "exit_code": 0,
+      "seconds": 10.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "large_file_fix",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7015,
+      "cache_read_input_tokens": 50304,
+      "output_tokens": 446,
+      "turns": 4,
+      "cost_usd": 0.0270399,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed `compute_late_fee` in `billing.py` by changing `max` to `min`, so the fee is now capped at a quarter of the amount instead of floored at it. The two failing tests passed on the second run, and all 4 tests in `test_billing` now pass.",
+      "session_error": false,
+      "input_total": 57325,
+      "exit_code": 0,
+      "seconds": 6.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "stack_trace",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 7139,
+      "cache_read_input_tokens": 30947,
+      "output_tokens": 182,
+      "turns": 2,
+      "cost_usd": 0.022770199999999997,
+      "tool_calls": 1,
+      "tools": {
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 38090,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "stack_trace",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 7152,
+      "cache_read_input_tokens": 30947,
+      "output_tokens": 254,
+      "turns": 2,
+      "cost_usd": 0.0235227,
+      "tool_calls": 1,
+      "tools": {
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 38103,
+      "exit_code": 0,
+      "seconds": 5.3,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 5726,
+      "cache_read_input_tokens": 49250,
+      "output_tokens": 275,
+      "turns": 3,
+      "cost_usd": 0.022002,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 54982,
+      "exit_code": 0,
+      "seconds": 6.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "json_api",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 5592,
+      "cache_read_input_tokens": 30944,
+      "output_tokens": 177,
+      "turns": 2,
+      "cost_usd": 0.018852400000000002,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 36540,
+      "exit_code": 0,
+      "seconds": 5.3,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 5734,
+      "cache_read_input_tokens": 49220,
+      "output_tokens": 156,
+      "turns": 3,
+      "cost_usd": 0.020829,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 54960,
+      "exit_code": 0,
+      "seconds": 5.6,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6044,
+      "cache_read_input_tokens": 49290,
+      "output_tokens": 276,
+      "turns": 3,
+      "cost_usd": 0.022811,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 55340,
+      "exit_code": 0,
+      "seconds": 7.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 7371,
+      "cache_read_input_tokens": 89439,
+      "output_tokens": 861,
+      "turns": 6,
+      "cost_usd": 0.0360014,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 3,
+        "Edit": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed the tier boundaries in `rates.py` by changing `<=` to `<` for the 1000 and 5000 cutoffs, and all 600 tests now pass (2 failed before the fix).",
+      "session_error": false,
+      "input_total": 96820,
+      "exit_code": 0,
+      "seconds": 11.7,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 7357,
+      "cache_read_input_tokens": 89408,
+      "output_tokens": 861,
+      "turns": 6,
+      "cost_usd": 0.0359633,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 3,
+        "Edit": 2
+      },
+      "models_served": [
+        "claude-sonnet-5-5"
+      ],
+      "answer": "I fixed the off-by-one in `tiered_rate` in `rates.py` by changing `<=` to `<` at the 1000 and 5000 boundaries, and all 600 tests now pass (2 failed before the fix).",
+      "session_error": false,
+      "input_total": 96775,
+      "exit_code": 0,
+      "seconds": 10.7,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    }
+  ],
+  "summary": {
+    "fix_test": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.054883100000000004,
+        "cost_unknown": 0,
+        "cost_per_success": 0.027441550000000002,
+        "median_input_total": 57081.5,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 6917.5,
+        "median_cache_read_input_tokens": 50158.0,
+        "median_output_tokens": 512.0,
+        "median_turns": 4.0,
+        "median_tool_calls": 3.0,
+        "median_cost_usd": 0.027441550000000002,
+        "median_seconds": 6.8
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.053384,
+        "cost_unknown": 0,
+        "cost_per_success": 0.026692,
+        "median_input_total": 57008.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 6864.5,
+        "median_cache_read_input_tokens": 50137.5,
+        "median_output_tokens": 450.5,
+        "median_turns": 4.0,
+        "median_tool_calls": 3.0,
+        "median_cost_usd": 0.026692,
+        "median_seconds": 7.050000000000001
+      }
+    },
+    "find_receipt": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0355438,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0177719,
+        "median_input_total": 36511.0,
+        "median_input_tokens": 4.0,
+        "median_cache_creation_input_tokens": 5580.5,
+        "median_cache_read_input_tokens": 30926.5,
+        "median_output_tokens": 72.0,
+        "median_turns": 2.0,
+        "median_tool_calls": 1.0,
+        "median_cost_usd": 0.0177719,
+        "median_seconds": 5.3
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0361668,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0180834,
+        "median_input_total": 36518.0,
+        "median_input_tokens": 4.0,
+        "median_cache_creation_input_tokens": 5585.0,
+        "median_cache_read_input_tokens": 30929.0,
+        "median_output_tokens": 102.0,
+        "median_turns": 2.0,
+        "median_tool_calls": 1.0,
+        "median_cost_usd": 0.0180834,
+        "median_seconds": 4.55
+      }
+    },
+    "count_failures": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0368401,
+        "cost_unknown": 0,
+        "cost_per_success": 0.01842005,
+        "median_input_total": 36486.5,
+        "median_input_tokens": 4.0,
+        "median_cache_creation_input_tokens": 5549.5,
+        "median_cache_read_input_tokens": 30933.0,
+        "median_output_tokens": 144.5,
+        "median_turns": 2.0,
+        "median_tool_calls": 1.0,
+        "median_cost_usd": 0.01842005,
+        "median_seconds": 5.0
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.036883299999999994,
+        "cost_unknown": 0,
+        "cost_per_success": 0.018441649999999997,
+        "median_input_total": 36494.5,
+        "median_input_tokens": 4.0,
+        "median_cache_creation_input_tokens": 5554.0,
+        "median_cache_read_input_tokens": 30936.5,
+        "median_output_tokens": 145.5,
+        "median_turns": 2.0,
+        "median_tool_calls": 1.0,
+        "median_cost_usd": 0.018441649999999997,
+        "median_seconds": 5.9
+      }
+    },
+    "review_diff": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.05047449999999999,
+        "cost_unknown": 0,
+        "cost_per_success": 0.025237249999999996,
+        "median_input_total": 58324.5,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 7453.5,
+        "median_cache_read_input_tokens": 50865.0,
+        "median_output_tokens": 150.5,
+        "median_turns": 3.0,
+        "median_tool_calls": 2.0,
+        "median_cost_usd": 0.025237249999999996,
+        "median_seconds": 6.35
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0506516,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0253258,
+        "median_input_total": 58336.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 7454.5,
+        "median_cache_read_input_tokens": 50875.5,
+        "median_output_tokens": 159.0,
+        "median_turns": 3.0,
+        "median_tool_calls": 2.0,
+        "median_cost_usd": 0.0253258,
+        "median_seconds": 5.55
+      }
+    },
+    "search_symbol": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0355207,
+        "cost_unknown": 0,
+        "cost_per_success": 0.01776035,
+        "median_input_total": 36481.5,
+        "median_input_tokens": 4.0,
+        "median_cache_creation_input_tokens": 5541.5,
+        "median_cache_read_input_tokens": 30936.0,
+        "median_output_tokens": 80.5,
+        "median_turns": 2.0,
+        "median_tool_calls": 1.0,
+        "median_cost_usd": 0.01776035,
+        "median_seconds": 6.15
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0355519,
+        "cost_unknown": 0,
+        "cost_per_success": 0.01777595,
+        "median_input_total": 36493.5,
+        "median_input_tokens": 4.0,
+        "median_cache_creation_input_tokens": 5547.5,
+        "median_cache_read_input_tokens": 30942.0,
+        "median_output_tokens": 80.5,
+        "median_turns": 2.0,
+        "median_tool_calls": 1.0,
+        "median_cost_usd": 0.01777595,
+        "median_seconds": 5.550000000000001
+      }
+    },
+    "git_log_find": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0583705,
+        "cost_unknown": 0,
+        "cost_per_success": 0.02918525,
+        "median_input_total": 78148.5,
+        "median_input_tokens": 8.0,
+        "median_cache_creation_input_tokens": 7660.5,
+        "median_cache_read_input_tokens": 70480.0,
+        "median_output_tokens": 297.0,
+        "median_turns": 4.0,
+        "median_tool_calls": 3.0,
+        "median_cost_usd": 0.02918525,
+        "median_seconds": 6.800000000000001
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0509746,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0254873,
+        "median_input_total": 57107.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 7310.5,
+        "median_cache_read_input_tokens": 49790.5,
+        "median_output_tokens": 222.0,
+        "median_turns": 3.0,
+        "median_tool_calls": 2.0,
+        "median_cost_usd": 0.0254873,
+        "median_seconds": 6.05
+      }
+    },
+    "listing_artifacts": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0594437,
+        "cost_unknown": 0,
+        "cost_per_success": 0.02972185,
+        "median_input_total": 68257.5,
+        "median_input_tokens": 7.0,
+        "median_cache_creation_input_tokens": 7922.0,
+        "median_cache_read_input_tokens": 60328.5,
+        "median_output_tokens": 387.0,
+        "median_turns": 3.5,
+        "median_tool_calls": 2.5,
+        "median_cost_usd": 0.02972185,
+        "median_seconds": 8.05
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0621745,
+        "cost_unknown": 0,
+        "cost_per_success": 0.03108725,
+        "median_input_total": 61614.5,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 9043.5,
+        "median_cache_read_input_tokens": 52565.0,
+        "median_output_tokens": 321.0,
+        "median_turns": 3.0,
+        "median_tool_calls": 2.0,
+        "median_cost_usd": 0.03108725,
+        "median_seconds": 7.8
+      }
+    },
+    "large_file_fix": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.05382869999999999,
+        "cost_unknown": 0,
+        "cost_per_success": 0.026914349999999997,
+        "median_input_total": 57243.5,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 6976.5,
+        "median_cache_read_input_tokens": 50261.0,
+        "median_output_tokens": 443.5,
+        "median_turns": 4.0,
+        "median_tool_calls": 3.0,
+        "median_cost_usd": 0.026914349999999997,
+        "median_seconds": 7.300000000000001
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0690685,
+        "cost_unknown": 0,
+        "cost_per_success": 0.03453425,
+        "median_input_total": 77740.5,
+        "median_input_tokens": 8.0,
+        "median_cache_creation_input_tokens": 7762.5,
+        "median_cache_read_input_tokens": 69970.0,
+        "median_output_tokens": 811.5,
+        "median_turns": 6.0,
+        "median_tool_calls": 5.0,
+        "median_cost_usd": 0.03453425,
+        "median_seconds": 11.05
+      }
+    },
+    "stack_trace": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.046740000000000004,
+        "cost_unknown": 0,
+        "cost_per_success": 0.023370000000000002,
+        "median_input_total": 38092.0,
+        "median_input_tokens": 4.0,
+        "median_cache_creation_input_tokens": 7143.0,
+        "median_cache_read_input_tokens": 30945.0,
+        "median_output_tokens": 241.0,
+        "median_turns": 2.0,
+        "median_tool_calls": 1.0,
+        "median_cost_usd": 0.023370000000000002,
+        "median_seconds": 5.4
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0607876,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0303938,
+        "median_input_total": 60382.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 8345.5,
+        "median_cache_read_input_tokens": 52030.5,
+        "median_output_tokens": 431.5,
+        "median_turns": 3.5,
+        "median_tool_calls": 2.5,
+        "median_cost_usd": 0.0303938,
+        "median_seconds": 8.1
+      }
+    },
+    "json_api": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0378652,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0189326,
+        "median_input_total": 36550.0,
+        "median_input_tokens": 4.0,
+        "median_cache_creation_input_tokens": 5600.0,
+        "median_cache_read_input_tokens": 30946.0,
+        "median_output_tokens": 183.0,
+        "median_turns": 2.0,
+        "median_tool_calls": 1.0,
+        "median_cost_usd": 0.0189326,
+        "median_seconds": 5.6
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.039825200000000005,
+        "cost_unknown": 0,
+        "cost_per_success": 0.019912600000000003,
+        "median_input_total": 45727.0,
+        "median_input_tokens": 5.0,
+        "median_cache_creation_input_tokens": 5621.0,
+        "median_cache_read_input_tokens": 40101.0,
+        "median_output_tokens": 184.0,
+        "median_turns": 2.5,
+        "median_tool_calls": 1.5,
+        "median_cost_usd": 0.019912600000000003,
+        "median_seconds": 5.6
+      }
+    },
+    "build_warnings": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.045698600000000006,
+        "cost_unknown": 0,
+        "cost_per_success": 0.022849300000000003,
+        "median_input_total": 55357.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 6065.5,
+        "median_cache_read_input_tokens": 49285.5,
+        "median_output_tokens": 274.5,
+        "median_turns": 3.0,
+        "median_tool_calls": 2.0,
+        "median_cost_usd": 0.022849300000000003,
+        "median_seconds": 6.75
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0422806,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0211403,
+        "median_input_total": 55097.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 5858.0,
+        "median_cache_read_input_tokens": 49233.0,
+        "median_output_tokens": 156.0,
+        "median_turns": 3.0,
+        "median_tool_calls": 2.0,
+        "median_cost_usd": 0.0211403,
+        "median_seconds": 5.699999999999999
+      }
+    },
+    "pytest_many": {
+      "v4": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0699168,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0349584,
+        "median_input_total": 96574.0,
+        "median_input_tokens": 10.0,
+        "median_cache_creation_input_tokens": 7280.0,
+        "median_cache_read_input_tokens": 89284.0,
+        "median_output_tokens": 781.0,
+        "median_turns": 6.0,
+        "median_tool_calls": 5.0,
+        "median_cost_usd": 0.0349584,
+        "median_seconds": 10.75
+      },
+      "v5g": {
+        "runs": 2,
+        "correct": 2,
+        "with_usage": 2,
+        "total_cost_usd": 0.0682531,
+        "cost_unknown": 0,
+        "cost_per_success": 0.03412655,
+        "median_input_total": 86722.5,
+        "median_input_tokens": 9.0,
+        "median_cache_creation_input_tokens": 7253.0,
+        "median_cache_read_input_tokens": 79460.5,
+        "median_output_tokens": 803.0,
+        "median_turns": 5.5,
+        "median_tool_calls": 4.5,
+        "median_cost_usd": 0.03412655,
+        "median_seconds": 11.6
+      }
+    },
+    "all": {
+      "v4": {
+        "runs": 24,
+        "correct": 24,
+        "with_usage": 24,
+        "total_cost_usd": 0.5851257,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0243802375,
+        "median_input_total": 56153.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 6917.5,
+        "median_cache_read_input_tokens": 49542.0,
+        "median_output_tokens": 246.5,
+        "median_turns": 3.0,
+        "median_tool_calls": 2.0,
+        "median_cost_usd": 0.02434705,
+        "median_seconds": 6.25
+      },
+      "v5g": {
+        "runs": 24,
+        "correct": 24,
+        "with_usage": 24,
+        "total_cost_usd": 0.6060017,
+        "cost_unknown": 0,
+        "cost_per_success": 0.025250070833333332,
+        "median_input_total": 56894.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 7016.5,
+        "median_cache_read_input_tokens": 49790.5,
+        "median_output_tokens": 198.5,
+        "median_turns": 3.0,
+        "median_tool_calls": 2.0,
+        "median_cost_usd": 0.02509695,
+        "median_seconds": 6.15
+      }
+    },
+    "paired": {
+      "v5g": {
+        "baseline": "v4",
+        "pairs": 24,
+        "tasks": 12,
+        "correct": {
+          "v5g": 24,
+          "v4": 24
+        },
+        "cost_per_success_delta": {
+          "value": 0.0008698333333333336,
+          "ci95": [
+            -0.0007372041666666648,
+            0.002709195833333334
+          ],
+          "draws": 10000,
+          "undefined_draws": 0
+        },
+        "mean_delta": {
+          "cost_usd": {
+            "value": 0.0008698333333333328,
+            "pairs_known": 24,
+            "pairs_unknown": 0,
+            "ci95": [
+              -0.0007372041666666673,
+              0.0027091958333333335
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          },
+          "input_total": {
+            "value": 1177.75,
+            "pairs_known": 24,
+            "pairs_unknown": 0,
+            "ci95": [
+              -5103.458333333333,
+              7560.083333333333
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          },
+          "turns": {
+            "value": 0.16666666666666666,
+            "pairs_known": 24,
+            "pairs_unknown": 0,
+            "ci95": [
+              -0.25,
+              0.625
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          }
+        },
+        "detail": [
+          {
+            "task": "fix_test",
+            "round": 0,
+            "cost_usd": -0.00014300000000000423,
+            "input_total": 38,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "fix_test",
+            "round": 1,
+            "cost_usd": -0.0013560999999999955,
+            "input_total": -185,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 0,
+            "cost_usd": 0.0006333999999999958,
+            "input_total": 22,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 1,
+            "cost_usd": -1.0399999999997217e-05,
+            "input_total": -8,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 0,
+            "cost_usd": 2.0300000000000873e-05,
+            "input_total": 7,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 1,
+            "cost_usd": 2.289999999999237e-05,
+            "input_total": 9,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 0,
+            "cost_usd": 4.900000000000043e-05,
+            "input_total": 2,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 1,
+            "cost_usd": 0.00012810000000000252,
+            "input_total": 21,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 0,
+            "cost_usd": 2.0799999999997903e-05,
+            "input_total": 16,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 1,
+            "cost_usd": 1.0400000000000686e-05,
+            "input_total": 8,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 0,
+            "cost_usd": -0.00031699999999999784,
+            "input_total": -50,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 1,
+            "cost_usd": -0.007078899999999999,
+            "input_total": -42033,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 0,
+            "cost_usd": 0.005421599999999999,
+            "input_total": -12526,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 1,
+            "cost_usd": -0.0026908,
+            "input_total": -760,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 0,
+            "cost_usd": 0.007738100000000001,
+            "input_total": 20567,
+            "turns": 2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 1,
+            "cost_usd": 0.0075017,
+            "input_total": 20427,
+            "turns": 2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 0,
+            "cost_usd": 0.0148001,
+            "input_total": 44593,
+            "turns": 3,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 1,
+            "cost_usd": -0.0007525000000000032,
+            "input_total": -13,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 0,
+            "cost_usd": -0.001189599999999999,
+            "input_total": -88,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 1,
+            "cost_usd": 0.003149599999999999,
+            "input_total": 18442,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 0,
+            "cost_usd": -0.0014359999999999998,
+            "input_total": -140,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 1,
+            "cost_usd": -0.001982000000000001,
+            "input_total": -380,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 0,
+            "cost_usd": -0.0017018000000000102,
+            "input_total": -19748,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 1,
+            "cost_usd": 3.8100000000006184e-05,
+            "input_total": 45,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

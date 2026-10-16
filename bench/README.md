@@ -93,9 +93,10 @@ build until the Rust mirror is updated too.
 ## Tokens: what does each grammar cost?
 
 `tokens.py` counts what the byte probes only estimate: the tokens a view costs
-the model. It compresses every content fixture, and a cargo run over twelve
-test binaries, in compact-v4, in compact-v5 and in v5 with each part of its
-grammar alone (`SCOPELET_V5_GRAMMAR=labels`, `header` or `tables`), then counts
+the model. It compresses every content fixture, a cargo run over twelve test
+binaries, a `find .` listing with `node_modules` and a 48 KB source file, in
+compact-v4, in compact-v5 and in v5 with each of its parts alone
+(`SCOPELET_V5_GRAMMAR=labels`, `header`, `tables`, `artifacts` or `outline`), then counts
 the raw output and each view with `POST /v1/messages/count_tokens`, the free
 and exact count of the model's tokenizer. Counts are net of the message frame
 (a message holding `.`, less its one token: the API refuses an empty one). It
@@ -107,11 +108,17 @@ cargo build --release --locked
 ANTHROPIC_API_KEY=... python3 bench/tokens.py --live   # bench/results/tokens.json
 ```
 
-On the 24 cases (`results/tokens.json`), compact-v5 costs 6.2% fewer view
+On the 26 cases (`results/tokens.json`), compact-v5 costs 11.8% fewer view
 tokens than v4 for `claude-opus-5-5` and `claude-haiku-5-5` alike (they share
-a tokenizer here), and no case costs more: labels without `input:` save 3.4%,
-the short header 1.0%, CSV tables 1.8% (25% on a 1000-row JSON array). Labels
-matter most on line-heavy views (a `log -p` 8.5%, `kubectl` JSON 9.2%).
+a tokenizer here), and no case costs more. Most of the gap is the listing
+built for `artifacts` (4,169 tokens in v4, which shows it whole, 1,630 in v5).
+On the 24 cases measured for 0.10.0, v5 saves 6.1%: labels without `input:`
+3.4%, the short header 1.0%, CSV tables 1.8% (25% on a 1000-row JSON array),
+`artifacts` nothing (no listing there) and `outline` costs 0.1%: on
+`rust_large` and the 48 KB source it spends the budget on signatures instead
+of padding (the source: 6,588 tokens with `outline` alone against 6,437 in v4,
+every fact still visible).
+Labels matter most on line-heavy views (a `log -p` 8.5%, `kubectl` JSON 9.2%).
 Dropping the explanation of cargo `totals` would save 14 of 926 tokens on the
 workspace run, so it stays. `test_tokens.py` checks the counting, the summary
 and the `--live` guard with a stand-in tokenizer.
@@ -186,8 +193,10 @@ Cost per success, not tokens, is the measure: in Claude Code the prompt
 cache is most of the bill and tool outputs a few percent, so a turn more
 costs more than a smaller view saves.
 
-`publish.py` replaces `bench/results/` on a release, live
-reports included: a report describes the binaries it names, recorded by hash.
+A release commit takes only `content.json` and `performance.json` from
+`publish.py` (which, run locally, empties `bench/results/` first); live,
+token and NAP reports stay until replaced on purpose. A report describes the
+binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
 
@@ -201,6 +210,52 @@ gap is the model choosing other paths, which v4 also did in its third round;
 a 6% smaller view is below what twelve sessions can resolve. By the rule set
 before the run (no higher median input or tool calls), v5 stays opt-in and v4
 the default. The tasks run Python tests, so no `totals` line was involved.
+
+### Cost per success: twelve tasks, four arms (October 2026)
+
+`results/live-20261016-cps-haiku.json` runs the twelve tasks three times with
+four arms of one frozen binary: `off`, `v4`, `v5g` (v5 with its grammar only,
+`@5:labels,header,tables`) and `v5` (whole). Every session was served by
+`claude-haiku-5-5`, every cost is known, and all 144 answered correctly.
+
+| Arm | Cost | Cost per success | Delta vs v4, 95% interval | Turns | Tool calls |
+|---|---:|---:|---|---:|---:|
+| off | $0.0799 | $0.002220 | −$0.000114 [−0.000457, +0.000240] | 133 | 97 |
+| v4 | $0.0840 | $0.002334 | | 163 | 127 |
+| v5g | $0.0779 | $0.002164 | −$0.000170 [−0.000425, +0.000050] | 146 | 110 |
+| v5 | $0.0823 | $0.002286 | −$0.000049 [−0.000335, +0.000261] | 160 | 124 |
+
+`results/live-20261016-cps-sonnet.json` repeats v4 against v5g twice with
+`claude-sonnet-5-5`: 48 of 48 correct, v5g +$0.00087 per success
+[−0.00074, +0.00271], no difference either way.
+
+The rule set before the runs made an arm the default only if, in haiku, the
+upper bound of its cost-per-success delta against v4 was below zero, with as
+many successes, a mean NAP at most 2 points under v4's, no more median turns,
+and no significant loss in sonnet. No arm passes the first condition, so v4
+stays the default and v5 stays opt-in with all its parts.
+
+What the sessions show:
+
+- A turn costs the same in every arm (median input per turn 19,324 tokens
+  without Scopelet, 19,635 with v4): the session guidance is a few hundred
+  tokens. Cost follows turns, and `off` took significantly fewer than v4
+  (−0.83 per session [−1.39, −0.28]).
+- The model saw few views: over 36 sessions per arm, 5 (v4) to 10 (v5g)
+  results were Scopelet views. It narrows most commands itself (`grep`,
+  `head`, `| tail`), and 8 to 11 results per arm were over Claude Code's
+  inline limit: Claude saves those to a file and shows a 2 KB preview, which
+  the hook leaves alone in every arm (see `docs/design.md`). A failing test at
+  the end of a long run is not in that preview (`pytest_many`).
+- After a v5 listing folded by `artifacts`, the model wrote that the output
+  "looks truncated and decorated" and counted again (`listing_artifacts`: 14
+  tool calls in v5 against 4 without Scopelet).
+- In `build_warnings`, a view under the 4 KB test budget keeps the
+  `error[E0308]` line but not the `--> src/ledger/settle.rs:88:17` below it:
+  that location ranks with the first occurrence of every distinct warning and
+  loses to them. v4 took 13 tool calls there, `off` 6.
+- In this environment `find` resolves to `fd` (sessions keep the user's
+  shell), so every arm met `fd` errors and retried: noise shared by all arms.
 
 
 ## Next action: does a view change what the agent does next?
@@ -231,3 +286,23 @@ decomposition, the scoring and the guards with a stand-in client.
 python3 bench/live.py --live --arm off ... --transcripts /tmp/tx
 ANTHROPIC_API_KEY=... python3 bench/nap.py --live --transcripts /tmp/tx --out /tmp/nap
 ```
+
+`results/nap-20261016.json` replays the 36 `off` sessions of the haiku
+campaign with `claude-haiku-5-5`. Of their large results, 8 were saved by
+Claude Code (persisted; every arm shows the same preview) and one Grep was cut
+by the host; 8 steps remain, 3 draws each, no failed call:
+
+| Form | View bytes | Mean input tokens | NAP | Coarse NAP |
+|---|---:|---:|---:|---:|
+| raw | 161,595 | 11,799 | 0.92 | 1.00 |
+| v4 | 43,538 | 4,098 | 0.38 | 0.46 |
+| v5 grammar only | 39,578 | 3,927 | 0.38 | 0.46 |
+| v5 | 20,372 | 2,487 | 0.38 | 0.42 |
+
+Every form kept the next action of `fix_test` (3 steps: the failure is in
+every view). On `listing_artifacts` (3 steps) and `git_log_find` (1), the raw
+output let the model answer at once; with any view it ran one more command
+first. v5 changes the next action no more often than v4 (condition (c) holds),
+but every compressed view changes it on 5 of 8 steps, consistent with the extra
+turns of the live sessions. Eight steps are few: this measures a
+direction, not a rate.

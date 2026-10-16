@@ -1,0 +1,2220 @@
+{
+  "kind": "next-action preservation; tokens from the API usage, not estimates",
+  "model": "claude-haiku-5-5",
+  "draws": 3,
+  "conditions": [
+    {
+      "name": "raw",
+      "version": null,
+      "parts": null
+    },
+    {
+      "name": "v4",
+      "version": "4",
+      "parts": null
+    },
+    {
+      "name": "v5g",
+      "version": "5",
+      "parts": "labels,header,tables"
+    },
+    {
+      "name": "v5",
+      "version": "5",
+      "parts": null
+    }
+  ],
+  "binary_sha256": "bfd3db2f62e3de4ac8b115b8cc866c886a1bc2cad2692280c0e136d9dea6d1b0",
+  "steps": [
+    {
+      "transcript": "0-fix_test-off.jsonl.gz",
+      "round": 0,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"---\"; cat inventory.py; echo \"---\"; cat test_inventory.py",
+      "view_bytes": {
+        "raw": 22461,
+        "v4": 2231,
+        "v5g": 2114,
+        "v5": 2114
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Edit"
+      },
+      "nap": {
+        "raw": 1.0,
+        "v4": 1.0,
+        "v5g": 1.0,
+        "v5": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "v4": 1.0,
+        "v5g": 1.0,
+        "v5": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 217,
+            "input_total": 11198,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 217,
+            "input_total": 11198,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 270,
+            "input_total": 11198,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v4": [
+          {
+            "input_tokens": 970,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 308,
+            "input_total": 2149,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 970,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 318,
+            "input_total": 2149,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 970,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 299,
+            "input_total": 2149,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5g": [
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 286,
+            "input_total": 2104,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 329,
+            "input_total": 2104,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 294,
+            "input_total": 2104,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5": [
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 321,
+            "input_total": 2104,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 288,
+            "input_total": 2104,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 299,
+            "input_total": 2104,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "0-listing_artifacts-off.jsonl.gz",
+      "round": 0,
+      "task": "listing_artifacts",
+      "step": 0,
+      "tool": "Bash",
+      "command": "find . ",
+      "view_bytes": {
+        "raw": 20224,
+        "v4": 8162,
+        "v5g": 7271,
+        "v5": 869
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 378,
+            "input_total": 13346,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 411,
+            "input_total": 13346,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 397,
+            "input_total": 13346,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "v4": [
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 286,
+            "input_total": 5751,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 287,
+            "input_total": 5751,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 284,
+            "input_total": 5751,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5g": [
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 297,
+            "input_total": 5447,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 291,
+            "input_total": 5447,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 274,
+            "input_total": 5447,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5": [
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 317,
+            "input_total": 1607,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 390,
+            "input_total": 1607,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 405,
+            "input_total": 1607,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-fix_test-off.jsonl.gz",
+      "round": 1,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"---\"; cat inventory.py; echo \"---\"; cat test_inventory.py",
+      "view_bytes": {
+        "raw": 22461,
+        "v4": 2231,
+        "v5g": 2114,
+        "v5": 2114
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Edit"
+      },
+      "nap": {
+        "raw": 1.0,
+        "v4": 1.0,
+        "v5g": 1.0,
+        "v5": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "v4": 1.0,
+        "v5g": 1.0,
+        "v5": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 10020,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 319,
+            "input_total": 11202,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10020,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 316,
+            "input_total": 11202,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10020,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 251,
+            "input_total": 11202,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v4": [
+          {
+            "input_tokens": 969,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 310,
+            "input_total": 2151,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 969,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 300,
+            "input_total": 2151,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 969,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 295,
+            "input_total": 2151,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5g": [
+          {
+            "input_tokens": 924,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 315,
+            "input_total": 2106,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 924,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 352,
+            "input_total": 2106,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 924,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 354,
+            "input_total": 2106,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5": [
+          {
+            "input_tokens": 924,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 333,
+            "input_total": 2106,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 924,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 342,
+            "input_total": 2106,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 924,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 351,
+            "input_total": 2106,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-git_log_find-off.jsonl.gz",
+      "round": 1,
+      "task": "git_log_find",
+      "step": 1,
+      "tool": "Bash",
+      "command": "git log -p --format='COMMIT %H %s' -- pricing.py",
+      "view_bytes": {
+        "raw": 14357,
+        "v4": 8172,
+        "v5g": 7497,
+        "v5": 7497
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 7512,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 194,
+            "input_total": 8862,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7512,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 184,
+            "input_total": 8862,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7512,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 203,
+            "input_total": 8862,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "v4": [
+          {
+            "input_tokens": 4047,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 322,
+            "input_total": 5397,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4047,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 303,
+            "input_total": 5397,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4047,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 416,
+            "input_total": 5397,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5g": [
+          {
+            "input_tokens": 3819,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 394,
+            "input_total": 5169,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3819,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 431,
+            "input_total": 5169,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": "head:50"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3819,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 592,
+            "input_total": 5169,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5": [
+          {
+            "input_tokens": 3819,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 302,
+            "input_total": 5169,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3819,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 528,
+            "input_total": 5169,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3819,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1350,
+            "output_tokens": 474,
+            "input_total": 5169,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git log",
+              "paths": [
+                "pricing.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-listing_artifacts-off.jsonl.gz",
+      "round": 1,
+      "task": "listing_artifacts",
+      "step": 0,
+      "tool": "Bash",
+      "command": "find . ",
+      "view_bytes": {
+        "raw": 20224,
+        "v4": 8162,
+        "v5g": 7271,
+        "v5": 869
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 416,
+            "input_total": 13347,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 557,
+            "input_total": 13347,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 475,
+            "input_total": 13347,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "v4": [
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 267,
+            "input_total": 5752,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 292,
+            "input_total": 5752,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 269,
+            "input_total": 5752,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5g": [
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 289,
+            "input_total": 5448,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 265,
+            "input_total": 5448,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 282,
+            "input_total": 5448,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5": [
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 344,
+            "input_total": 1608,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 256,
+            "input_total": 1608,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 392,
+            "input_total": 1608,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-fix_test-off.jsonl.gz",
+      "round": 2,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"---\"; cat inventory.py; echo \"---\"; cat test_inventory.py",
+      "view_bytes": {
+        "raw": 22461,
+        "v4": 2231,
+        "v5g": 2114,
+        "v5": 2114
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Edit"
+      },
+      "nap": {
+        "raw": 1.0,
+        "v4": 1.0,
+        "v5g": 1.0,
+        "v5": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "v4": 1.0,
+        "v5g": 1.0,
+        "v5": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 217,
+            "input_total": 11201,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 217,
+            "input_total": 11201,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 294,
+            "input_total": 11201,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v4": [
+          {
+            "input_tokens": 970,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 302,
+            "input_total": 2152,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 970,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 305,
+            "input_total": 2152,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 970,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 303,
+            "input_total": 2152,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5g": [
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 334,
+            "input_total": 2107,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 343,
+            "input_total": 2107,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 316,
+            "input_total": 2107,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5": [
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 318,
+            "input_total": 2107,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 341,
+            "input_total": 2107,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 925,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 339,
+            "input_total": 2107,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-listing_artifacts-off.jsonl.gz",
+      "round": 2,
+      "task": "listing_artifacts",
+      "step": 0,
+      "tool": "Bash",
+      "command": "find . ",
+      "view_bytes": {
+        "raw": 20224,
+        "v4": 8162,
+        "v5g": 7271,
+        "v5": 869
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 378,
+            "input_total": 13347,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 479,
+            "input_total": 13347,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 12213,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 389,
+            "input_total": 13347,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "v4": [
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 294,
+            "input_total": 5752,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 290,
+            "input_total": 5752,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4618,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 275,
+            "input_total": 5752,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5g": [
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 274,
+            "input_total": 5448,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 286,
+            "input_total": 5448,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4314,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 353,
+            "input_total": 5448,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5": [
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 369,
+            "input_total": 1608,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 300,
+            "input_total": 1608,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 474,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1134,
+            "output_tokens": 270,
+            "input_total": 1608,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "find",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-stack_trace-off.jsonl.gz",
+      "round": 2,
+      "task": "stack_trace",
+      "step": 1,
+      "tool": "Grep",
+      "command": "(?i)settlement|caused by|exception|error",
+      "view_bytes": {
+        "raw": 19183,
+        "v4": 4187,
+        "v5g": 3926,
+        "v5": 3926
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "logs/service.log"
+        ],
+        "pattern": "Caused by|Exception|ERROR|FAIL|\\tat |^\\s+at ",
+        "program": null,
+        "range": null,
+        "tool": "Grep"
+      },
+      "nap": {
+        "raw": 0.3333333333333333,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "v4": 0.6666666666666666,
+        "v5g": 0.6666666666666666,
+        "v5": 0.3333333333333333
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 10434,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 303,
+            "input_total": 11891,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "Caused by|Exception|ERROR|FAIL|\\tat |^\\s+at ",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10434,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 298,
+            "input_total": 11891,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "Caused by|Exception|Error|FAILED|ERROR|WARN",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10434,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 319,
+            "input_total": 11891,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "ERROR|FAIL|Caused by|^\\s+at |^\\S*Exception|^\\S*Error",
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v4": [
+          {
+            "input_tokens": 2222,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 234,
+            "input_total": 3679,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "service.log"
+              ],
+              "pattern": "\"ERROR",
+              "range": "head:150"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2222,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 402,
+            "input_total": 3679,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "(?i)caused by|FAIL|ERROR|settlement failed|\\bat com\\.|\\bat org\\.|\\bat java\\.",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2222,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 185,
+            "input_total": 3679,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "Caused by|ERROR|FAIL|Exception",
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "v5g": [
+          {
+            "input_tokens": 2129,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 210,
+            "input_total": 3586,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "ERROR|Caused by|FAIL|Exception|\\bat ",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2129,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 313,
+            "input_total": 3586,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "ERROR|Caused by|FAILED|failed",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2129,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 282,
+            "input_total": 3586,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "rg",
+              "paths": [
+                "service.log"
+              ],
+              "pattern": "\"Caused",
+              "range": "head:100"
+            },
+            "error": null
+          }
+        ],
+        "v5": [
+          {
+            "input_tokens": 2129,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 280,
+            "input_total": 3586,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "service.log"
+              ],
+              "pattern": "\"ERROR",
+              "range": "head:100"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2129,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 231,
+            "input_total": 3586,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "service.log"
+              ],
+              "pattern": "\"Caused",
+              "range": "head:50"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2129,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1457,
+            "output_tokens": 272,
+            "input_total": 3586,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "Caused by|ERROR|FAIL|Exception|\\bat ",
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "transcript": "0-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "0-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "0-search_symbol-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "1-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "1-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "1-search_symbol-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "1-stack_trace-off.jsonl.gz",
+      "step": 0,
+      "tool": "Grep",
+      "reason": "shown text is not the tool response"
+    },
+    {
+      "transcript": "2-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "2-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    }
+  ],
+  "summary": {
+    "steps": 8,
+    "steps_scored": 8,
+    "conditions": {
+      "raw": {
+        "mean_nap": 0.9166666666666666,
+        "mean_nap_coarse": 1.0,
+        "view_bytes": 161595,
+        "mean_input_total": 11799.25,
+        "draws": 24,
+        "errors": 0
+      },
+      "v4": {
+        "mean_nap": 0.375,
+        "mean_nap_coarse": 0.4583333333333333,
+        "view_bytes": 43538,
+        "mean_input_total": 4097.875,
+        "draws": 24,
+        "errors": 0
+      },
+      "v5g": {
+        "mean_nap": 0.375,
+        "mean_nap_coarse": 0.4583333333333333,
+        "view_bytes": 39578,
+        "mean_input_total": 3926.875,
+        "draws": 24,
+        "errors": 0
+      },
+      "v5": {
+        "mean_nap": 0.375,
+        "mean_nap_coarse": 0.4166666666666667,
+        "view_bytes": 20372,
+        "mean_input_total": 2486.875,
+        "draws": 24,
+        "errors": 0
+      }
+    },
+    "by_task": {
+      "fix_test": {
+        "steps": 3,
+        "raw": 1.0,
+        "v4": 1.0,
+        "v5g": 1.0,
+        "v5": 1.0,
+        "coarse": {
+          "raw": 1.0,
+          "v4": 1.0,
+          "v5g": 1.0,
+          "v5": 1.0
+        }
+      },
+      "git_log_find": {
+        "steps": 1,
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0,
+        "coarse": {
+          "raw": 1.0,
+          "v4": 0.0,
+          "v5g": 0.0,
+          "v5": 0.0
+        }
+      },
+      "listing_artifacts": {
+        "steps": 3,
+        "raw": 1.0,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0,
+        "coarse": {
+          "raw": 1.0,
+          "v4": 0.0,
+          "v5g": 0.0,
+          "v5": 0.0
+        }
+      },
+      "stack_trace": {
+        "steps": 1,
+        "raw": 0.3333333333333333,
+        "v4": 0.0,
+        "v5g": 0.0,
+        "v5": 0.0,
+        "coarse": {
+          "raw": 1.0,
+          "v4": 0.6666666666666666,
+          "v5g": 0.6666666666666666,
+          "v5": 0.3333333333333333
+        }
+      }
+    }
+  }
+}

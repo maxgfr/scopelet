@@ -1,0 +1,5971 @@
+{
+  "kind": "live Claude Code sessions; tokens and cost from the session result, not estimates",
+  "model": "haiku",
+  "runs": 3,
+  "tasks": [
+    "fix_test",
+    "find_receipt",
+    "count_failures",
+    "review_diff",
+    "search_symbol",
+    "git_log_find",
+    "listing_artifacts",
+    "large_file_fix",
+    "stack_trace",
+    "json_api",
+    "build_warnings",
+    "pytest_many"
+  ],
+  "baseline": "v4",
+  "claude_version": "2.1.300 (Claude Code)",
+  "arms": [
+    {
+      "name": "off",
+      "version": null,
+      "parts": null,
+      "binary_sha256": null
+    },
+    {
+      "name": "v4",
+      "version": "4",
+      "parts": null,
+      "binary_sha256": "bfd3db2f62e3de4ac8b115b8cc866c886a1bc2cad2692280c0e136d9dea6d1b0"
+    },
+    {
+      "name": "v5g",
+      "version": "5",
+      "parts": "labels,header,tables",
+      "binary_sha256": "bfd3db2f62e3de4ac8b115b8cc866c886a1bc2cad2692280c0e136d9dea6d1b0"
+    },
+    {
+      "name": "v5",
+      "version": "5",
+      "parts": null,
+      "binary_sha256": "bfd3db2f62e3de4ac8b115b8cc866c886a1bc2cad2692280c0e136d9dea6d1b0"
+    }
+  ],
+  "records": [
+    {
+      "arm": "off",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 16739,
+      "cache_read_input_tokens": 60471,
+      "output_tokens": 634,
+      "turns": 4,
+      "cost_usd": 0.0030146849999999996,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed the off-by-one in `inventory.py` by changing `restock_needed` from `quantity < threshold` to `quantity <= threshold`, and after that change all 302 tests pass (the tests were left untouched).",
+      "session_error": false,
+      "input_total": 77216,
+      "exit_code": 0,
+      "seconds": 7.1,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "fix_test",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7766,
+      "cache_read_input_tokens": 71932,
+      "output_tokens": 776,
+      "turns": 5,
+      "cost_usd": 0.00207887,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 2,
+        "Read": 1,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The off-by-one in `restock_needed` is fixed (`<` changed to `<=`, matching its \"at or below\" docstring), and all 302 tests now pass, up from 1 failure before the change.",
+      "session_error": false,
+      "input_total": 79706,
+      "exit_code": 0,
+      "seconds": 8.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "fix_test",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7991,
+      "cache_read_input_tokens": 72429,
+      "output_tokens": 783,
+      "turns": 5,
+      "cost_usd": 0.002115465,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The bug was an off-by-one in `restock_needed` (`<` where the docstring says \"at or below\"), so I changed it to `<=`, and all 302 tests now pass after the rerun.",
+      "session_error": false,
+      "input_total": 80428,
+      "exit_code": 0,
+      "seconds": 7.5,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "fix_test",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7890,
+      "cache_read_input_tokens": 71262,
+      "output_tokens": 749,
+      "turns": 5,
+      "cost_usd": 0.00207417,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The bug was in `restock_needed` in `inventory.py`, which used `<` where its docstring says \"at or below\", so I changed it to `<=`; all 302 tests in `test_inventory` now pass, up from one failure before the fix.",
+      "session_error": false,
+      "input_total": 79160,
+      "exit_code": 0,
+      "seconds": 7.2,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 6186,
+      "cache_read_input_tokens": 31497,
+      "output_tokens": 213,
+      "turns": 2,
+      "cost_usd": 0.00119512,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 37687,
+      "exit_code": 0,
+      "seconds": 5.0,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 6514,
+      "cache_read_input_tokens": 31700,
+      "output_tokens": 324,
+      "turns": 2,
+      "cost_usd": 0.0012936500000000001,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 38218,
+      "exit_code": 0,
+      "seconds": 5.1,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 6513,
+      "cache_read_input_tokens": 31712,
+      "output_tokens": 307,
+      "turns": 2,
+      "cost_usd": 0.0012851450000000001,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 38229,
+      "exit_code": 0,
+      "seconds": 4.4,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 6478,
+      "cache_read_input_tokens": 31704,
+      "output_tokens": 308,
+      "turns": 2,
+      "cost_usd": 0.0012811900000000002,
+      "tool_calls": 1,
+      "tools": {
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 38186,
+      "exit_code": 0,
+      "seconds": 5.2,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "count_failures",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7447,
+      "cache_read_input_tokens": 70125,
+      "output_tokens": 972,
+      "turns": 4,
+      "cost_usd": 0.002118925,
+      "tool_calls": 3,
+      "tools": {
+        "Glob": 1,
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 77580,
+      "exit_code": 0,
+      "seconds": 9.6,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "count_failures",
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 10969,
+      "cache_read_input_tokens": 161260,
+      "output_tokens": 1825,
+      "turns": 8,
+      "cost_usd": 0.0038978249999999993,
+      "tool_calls": 7,
+      "tools": {
+        "Bash": 7
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 172245,
+      "exit_code": 0,
+      "seconds": 14.3,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "count_failures",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7332,
+      "cache_read_input_tokens": 51321,
+      "output_tokens": 974,
+      "turns": 4,
+      "cost_usd": 0.0019173100000000002,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 58659,
+      "exit_code": 0,
+      "seconds": 13.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "count_failures",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7488,
+      "cache_read_input_tokens": 70666,
+      "output_tokens": 897,
+      "turns": 4,
+      "cost_usd": 0.00209196,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 78162,
+      "exit_code": 0,
+      "seconds": 8.4,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8162,
+      "cache_read_input_tokens": 52100,
+      "output_tokens": 513,
+      "turns": 3,
+      "cost_usd": 0.0017983499999999998,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 60268,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8421,
+      "cache_read_input_tokens": 52594,
+      "output_tokens": 574,
+      "turns": 3,
+      "cost_usd": 0.0018661649999999997,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 61021,
+      "exit_code": 0,
+      "seconds": 6.8,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8451,
+      "cache_read_input_tokens": 52517,
+      "output_tokens": 480,
+      "turns": 3,
+      "cost_usd": 0.001822145,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 60974,
+      "exit_code": 0,
+      "seconds": 6.8,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8480,
+      "cache_read_input_tokens": 52566,
+      "output_tokens": 550,
+      "turns": 3,
+      "cost_usd": 0.00186126,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 61052,
+      "exit_code": 0,
+      "seconds": 8.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7591,
+      "cache_read_input_tokens": 51681,
+      "output_tokens": 241,
+      "turns": 3,
+      "cost_usd": 0.001586785,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 1,
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 59278,
+      "exit_code": 0,
+      "seconds": 5.8,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7984,
+      "cache_read_input_tokens": 52223,
+      "output_tokens": 414,
+      "turns": 3,
+      "cost_usd": 0.00172783,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 60213,
+      "exit_code": 0,
+      "seconds": 6.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7876,
+      "cache_read_input_tokens": 52179,
+      "output_tokens": 305,
+      "turns": 3,
+      "cost_usd": 0.00165939,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 60061,
+      "exit_code": 0,
+      "seconds": 5.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7937,
+      "cache_read_input_tokens": 52151,
+      "output_tokens": 378,
+      "turns": 3,
+      "cost_usd": 0.001703235,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 1,
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 60094,
+      "exit_code": 0,
+      "seconds": 5.4,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "git_log_find",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 8741,
+      "cache_read_input_tokens": 70488,
+      "output_tokens": 713,
+      "turns": 4,
+      "cost_usd": 0.002154805,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 79237,
+      "exit_code": 0,
+      "seconds": 7.9,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "git_log_find",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9518,
+      "cache_read_input_tokens": 92476,
+      "output_tokens": 1111,
+      "turns": 6,
+      "cost_usd": 0.00267101,
+      "tool_calls": 5,
+      "tools": {
+        "Grep": 1,
+        "Bash": 4
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 102004,
+      "exit_code": 0,
+      "seconds": 9.6,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "git_log_find",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 8526,
+      "cache_read_input_tokens": 93012,
+      "output_tokens": 1033,
+      "turns": 5,
+      "cost_usd": 0.00251337,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 4
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 101548,
+      "exit_code": 0,
+      "seconds": 9.3,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "git_log_find",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 8167,
+      "cache_read_input_tokens": 71529,
+      "output_tokens": 844,
+      "turns": 4,
+      "cost_usd": 0.002158965,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 79704,
+      "exit_code": 0,
+      "seconds": 8.3,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "listing_artifacts",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 18661,
+      "cache_read_input_tokens": 31522,
+      "output_tokens": 844,
+      "turns": 3,
+      "cost_usd": 0.003070245,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 50187,
+      "exit_code": 0,
+      "seconds": 7.0,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7761,
+      "cache_read_input_tokens": 51141,
+      "output_tokens": 1004,
+      "turns": 3,
+      "cost_usd": 0.0019841349999999997,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 58908,
+      "exit_code": 0,
+      "seconds": 8.0,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 12430,
+      "cache_read_input_tokens": 55709,
+      "output_tokens": 1347,
+      "turns": 4,
+      "cost_usd": 0.00278494,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 68145,
+      "exit_code": 0,
+      "seconds": 9.8,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "listing_artifacts",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7772,
+      "cache_read_input_tokens": 71308,
+      "output_tokens": 1292,
+      "turns": 4,
+      "cost_usd": 0.00233138,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 79088,
+      "exit_code": 0,
+      "seconds": 9.8,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9087,
+      "cache_read_input_tokens": 72750,
+      "output_tokens": 1060,
+      "turns": 5,
+      "cost_usd": 0.002394175,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I changed `compute_late_fee` in `billing.py` to cap the fee with `min(fee, amount * 0.25)` instead of `max`, and all 4 tests in `test_billing` now pass (up from 2 failures), with the test file untouched.",
+      "session_error": false,
+      "input_total": 81845,
+      "exit_code": 0,
+      "seconds": 8.8,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9213,
+      "cache_read_input_tokens": 73147,
+      "output_tokens": 1163,
+      "turns": 7,
+      "cost_usd": 0.002465395,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 2,
+        "Grep": 1,
+        "Read": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I fixed `compute_late_fee` in billing.py by changing `max` to `min` so the 25% cap actually caps the fee, and `python3 -m unittest test_billing` now passes all 4 tests (it had 2 failures before).",
+      "session_error": false,
+      "input_total": 82368,
+      "exit_code": 0,
+      "seconds": 9.3,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "large_file_fix",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8176,
+      "cache_read_input_tokens": 51995,
+      "output_tokens": 785,
+      "turns": 4,
+      "cost_usd": 0.0019350499999999998,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I fixed `compute_late_fee` in `billing.py` by changing its cap from `max` to `min`, and all 4 tests in `test_billing` now pass (they failed 2 of 4 before).",
+      "session_error": false,
+      "input_total": 60177,
+      "exit_code": 0,
+      "seconds": 7.7,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "large_file_fix",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8141,
+      "cache_read_input_tokens": 51968,
+      "output_tokens": 797,
+      "turns": 4,
+      "cost_usd": 0.001936405,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed `compute_late_fee` in `billing.py` by changing the cap from `max` to `min`, so the fee is capped at a quarter of the amount as its docstring says; `python3 -m unittest test_billing` went from 2 failures to all 4 tests passing, with the test file unchanged.",
+      "session_error": false,
+      "input_total": 60115,
+      "exit_code": 0,
+      "seconds": 7.7,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "stack_trace",
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 9427,
+      "cache_read_input_tokens": 110728,
+      "output_tokens": 1155,
+      "turns": 6,
+      "cost_usd": 0.002864355,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 3,
+        "Grep": 1,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 120167,
+      "exit_code": 0,
+      "seconds": 13.9,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "stack_trace",
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 15625,
+      "cache_read_input_tokens": 148175,
+      "output_tokens": 1327,
+      "turns": 7,
+      "cost_usd": 0.004099775,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 2,
+        "Grep": 3,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 163814,
+      "exit_code": 0,
+      "seconds": 13.5,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "stack_trace",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 10828,
+      "cache_read_input_tokens": 91051,
+      "output_tokens": 1064,
+      "turns": 5,
+      "cost_usd": 0.00279701,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 4
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 101889,
+      "exit_code": 0,
+      "seconds": 12.0,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "stack_trace",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 12768,
+      "cache_read_input_tokens": 55465,
+      "output_tokens": 780,
+      "turns": 4,
+      "cost_usd": 0.00254125,
+      "tool_calls": 3,
+      "tools": {
+        "Grep": 2,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 68239,
+      "exit_code": 0,
+      "seconds": 11.4,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6772,
+      "cache_read_input_tokens": 50677,
+      "output_tokens": 713,
+      "turns": 3,
+      "cost_usd": 0.0017103700000000001,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 57455,
+      "exit_code": 0,
+      "seconds": 7.5,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6941,
+      "cache_read_input_tokens": 51225,
+      "output_tokens": 536,
+      "turns": 3,
+      "cost_usd": 0.001648475,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 58172,
+      "exit_code": 0,
+      "seconds": 7.7,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7096,
+      "cache_read_input_tokens": 51234,
+      "output_tokens": 633,
+      "turns": 3,
+      "cost_usd": 0.0017164399999999998,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 58336,
+      "exit_code": 0,
+      "seconds": 7.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6872,
+      "cache_read_input_tokens": 51130,
+      "output_tokens": 516,
+      "turns": 3,
+      "cost_usd": 0.0016289000000000002,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 58008,
+      "exit_code": 0,
+      "seconds": 6.2,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7586,
+      "cache_read_input_tokens": 51417,
+      "output_tokens": 405,
+      "turns": 3,
+      "cost_usd": 0.00166552,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 59009,
+      "exit_code": 0,
+      "seconds": 5.1,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "build_warnings",
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 12625,
+      "cache_read_input_tokens": 215801,
+      "output_tokens": 3036,
+      "turns": 10,
+      "cost_usd": 0.005256135,
+      "tool_calls": 9,
+      "tools": {
+        "Bash": 7,
+        "Glob": 1,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs\n\nThe file isn't in the repo, and `build.py` doesn't compile anything. It hardcodes the warnings and the error message, so the path is only what the script prints.",
+      "session_error": false,
+      "input_total": 228446,
+      "exit_code": 0,
+      "seconds": 24.9,
+      "correct": true,
+      "scopelet_events": 7,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7866,
+      "cache_read_input_tokens": 51866,
+      "output_tokens": 465,
+      "turns": 3,
+      "cost_usd": 0.00173501,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 59738,
+      "exit_code": 0,
+      "seconds": 6.0,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "build_warnings",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9163,
+      "cache_read_input_tokens": 73628,
+      "output_tokens": 993,
+      "turns": 4,
+      "cost_usd": 0.002378955,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 1,
+        "Grep": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 82799,
+      "exit_code": 0,
+      "seconds": 9.2,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "off",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9207,
+      "cache_read_input_tokens": 93891,
+      "output_tokens": 1518,
+      "turns": 6,
+      "cost_usd": 0.0028497849999999996,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 4,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed the boundary bug in `rates.py` by changing the `<=` comparisons at 1000 and 5000 to strict `<` (matching the docstring and tests), and after the fix all 600 tests in `test_rates` pass, up from 2 failures at 1000 and 5000.",
+      "session_error": false,
+      "input_total": 103108,
+      "exit_code": 0,
+      "seconds": 11.3,
+      "correct": true,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9572,
+      "cache_read_input_tokens": 94467,
+      "output_tokens": 1354,
+      "turns": 6,
+      "cost_usd": 0.0028191699999999997,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 4,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The bug was an off-by-one at the tier boundaries in `rates.py` (`<=` changed to `<` at 1000 and 5000, matching the docstring), and after the fix all 600 tests pass without touching the tests.",
+      "session_error": false,
+      "input_total": 104049,
+      "exit_code": 0,
+      "seconds": 12.0,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 0
+    },
+    {
+      "arm": "v5g",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9759,
+      "cache_read_input_tokens": 94952,
+      "output_tokens": 1230,
+      "turns": 7,
+      "cost_usd": 0.002785395,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 3,
+        "Read": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "All 600 tests in `test_rates` now pass after I changed the tier boundaries in `rates.py` from `<=` to `<`, matching the docstring's \"below\" wording and the tests (they failed before the fix at 1000 and 5000 units).",
+      "session_error": false,
+      "input_total": 104721,
+      "exit_code": 0,
+      "seconds": 11.2,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 0
+    },
+    {
+      "arm": "v5",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 10125,
+      "cache_read_input_tokens": 95017,
+      "output_tokens": 1410,
+      "turns": 6,
+      "cost_usd": 0.002921795,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 4,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The bug was an off-by-one at the tier boundaries in `rates.py`: `<=` put exactly 1000 and 5000 units in the cheaper tier, so I changed both to `<`, and after that `python3 -m unittest -v test_rates` passes all 600 tests.",
+      "session_error": false,
+      "input_total": 105152,
+      "exit_code": 0,
+      "seconds": 10.6,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 0
+    },
+    {
+      "arm": "v4",
+      "task": "fix_test",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 8001,
+      "cache_read_input_tokens": 71565,
+      "output_tokens": 825,
+      "turns": 5,
+      "cost_usd": 0.002129075,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I fixed the off-by-one in `inventory.py` by changing `restock_needed` from `<` to `<=` so it matches its \"at or below the threshold\" docstring, and all 302 tests now pass after re-running `python3 -m unittest -v test_inventory`.",
+      "session_error": false,
+      "input_total": 79574,
+      "exit_code": 0,
+      "seconds": 9.3,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "fix_test",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7905,
+      "cache_read_input_tokens": 71289,
+      "output_tokens": 745,
+      "turns": 5,
+      "cost_usd": 0.002074315,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The bug was the strict `<` in `restock_needed` in inventory.py, which I changed to `<=` to match its \"at or below\" docstring; after the fix all 302 tests pass (the test file is untouched).",
+      "session_error": false,
+      "input_total": 79202,
+      "exit_code": 0,
+      "seconds": 7.0,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11696,
+      "cache_read_input_tokens": 55620,
+      "output_tokens": 713,
+      "turns": 5,
+      "cost_usd": 0.0023753000000000003,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 2,
+        "Read": 1,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The off-by-one in `restock_needed` is fixed (`<` changed to `<=` so stock at the threshold triggers a restock, matching its docstring), and all 302 tests now pass, up from 1 failure before the change.",
+      "session_error": false,
+      "input_total": 67322,
+      "exit_code": 0,
+      "seconds": 7.0,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 16849,
+      "cache_read_input_tokens": 60482,
+      "output_tokens": 737,
+      "turns": 4,
+      "cost_usd": 0.003080045,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The off-by-one in `restock_needed` is fixed (`<` changed to `<=`, matching its \"at or below the threshold\" docstring), and the test suite now passes all 302 tests, up from 1 failure before.",
+      "session_error": false,
+      "input_total": 77337,
+      "exit_code": 0,
+      "seconds": 9.0,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "find_receipt",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7119,
+      "cache_read_input_tokens": 70566,
+      "output_tokens": 705,
+      "turns": 4,
+      "cost_usd": 0.0019488349999999999,
+      "tool_calls": 3,
+      "tools": {
+        "Grep": 1,
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 77693,
+      "exit_code": 0,
+      "seconds": 8.4,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 6500,
+      "cache_read_input_tokens": 31708,
+      "output_tokens": 307,
+      "turns": 2,
+      "cost_usd": 0.00128348,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 38212,
+      "exit_code": 0,
+      "seconds": 4.7,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "find_receipt",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6782,
+      "cache_read_input_tokens": 50946,
+      "output_tokens": 449,
+      "turns": 3,
+      "cost_usd": 0.00158231,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 57734,
+      "exit_code": 0,
+      "seconds": 5.9,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "find_receipt",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6603,
+      "cache_read_input_tokens": 50507,
+      "output_tokens": 464,
+      "turns": 3,
+      "cost_usd": 0.001563045,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 57116,
+      "exit_code": 0,
+      "seconds": 6.2,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "count_failures",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7266,
+      "cache_read_input_tokens": 70346,
+      "output_tokens": 684,
+      "turns": 4,
+      "cost_usd": 0.00195451,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Glob": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 77620,
+      "exit_code": 0,
+      "seconds": 8.3,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "count_failures",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7316,
+      "cache_read_input_tokens": 70529,
+      "output_tokens": 850,
+      "turns": 4,
+      "cost_usd": 0.00204559,
+      "tool_calls": 3,
+      "tools": {
+        "Glob": 1,
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 77853,
+      "exit_code": 0,
+      "seconds": 9.0,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "count_failures",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 7627,
+      "cache_read_input_tokens": 90630,
+      "output_tokens": 949,
+      "turns": 5,
+      "cost_usd": 0.002335175,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Glob": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 98267,
+      "exit_code": 0,
+      "seconds": 8.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "count_failures",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 7180,
+      "cache_read_input_tokens": 89288,
+      "output_tokens": 893,
+      "turns": 5,
+      "cost_usd": 0.00223788,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Glob": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 96478,
+      "exit_code": 0,
+      "seconds": 9.9,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8459,
+      "cache_read_input_tokens": 52545,
+      "output_tokens": 484,
+      "turns": 3,
+      "cost_usd": 0.0018254250000000003,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 61010,
+      "exit_code": 0,
+      "seconds": 7.2,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8501,
+      "cache_read_input_tokens": 52591,
+      "output_tokens": 679,
+      "turns": 3,
+      "cost_usd": 0.0019286350000000002,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 61098,
+      "exit_code": 0,
+      "seconds": 6.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8474,
+      "cache_read_input_tokens": 52564,
+      "output_tokens": 525,
+      "turns": 3,
+      "cost_usd": 0.0018479899999999999,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 61044,
+      "exit_code": 0,
+      "seconds": 7.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "review_diff",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 8909,
+      "cache_read_input_tokens": 72897,
+      "output_tokens": 718,
+      "turns": 4,
+      "cost_usd": 0.0022023950000000002,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 81814,
+      "exit_code": 0,
+      "seconds": 7.4,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7925,
+      "cache_read_input_tokens": 52165,
+      "output_tokens": 361,
+      "turns": 3,
+      "cost_usd": 0.001693375,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 60096,
+      "exit_code": 0,
+      "seconds": 5.2,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7938,
+      "cache_read_input_tokens": 52187,
+      "output_tokens": 359,
+      "turns": 3,
+      "cost_usd": 0.0016942200000000002,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 60131,
+      "exit_code": 0,
+      "seconds": 5.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7924,
+      "cache_read_input_tokens": 52170,
+      "output_tokens": 355,
+      "turns": 3,
+      "cost_usd": 0.0016903,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 60100,
+      "exit_code": 0,
+      "seconds": 5.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7713,
+      "cache_read_input_tokens": 51748,
+      "output_tokens": 358,
+      "turns": 3,
+      "cost_usd": 0.001661205,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 59467,
+      "exit_code": 0,
+      "seconds": 5.5,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "git_log_find",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 8620,
+      "cache_read_input_tokens": 92654,
+      "output_tokens": 1190,
+      "turns": 5,
+      "cost_usd": 0.00260004,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 4
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 101284,
+      "exit_code": 0,
+      "seconds": 20.4,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "git_log_find",
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 12366,
+      "cache_read_input_tokens": 119595,
+      "output_tokens": 1534,
+      "turns": 6,
+      "cost_usd": 0.0035099000000000003,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 5
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 131973,
+      "exit_code": 0,
+      "seconds": 14.9,
+      "correct": true,
+      "scopelet_events": 5,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "git_log_find",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9555,
+      "cache_read_input_tokens": 94324,
+      "output_tokens": 992,
+      "turns": 5,
+      "cost_usd": 0.002634615,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 4
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 103889,
+      "exit_code": 0,
+      "seconds": 9.8,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "git_log_find",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 14280,
+      "cache_read_input_tokens": 51028,
+      "output_tokens": 552,
+      "turns": 3,
+      "cost_usd": 0.0025718800000000003,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 65314,
+      "exit_code": 0,
+      "seconds": 6.7,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 10188,
+      "cache_read_input_tokens": 53496,
+      "output_tokens": 1332,
+      "turns": 3,
+      "cost_usd": 0.00247506,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 63690,
+      "exit_code": 0,
+      "seconds": 9.8,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8940,
+      "cache_read_input_tokens": 52293,
+      "output_tokens": 937,
+      "turns": 3,
+      "cost_usd": 0.00210953,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 61239,
+      "exit_code": 0,
+      "seconds": 7.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "listing_artifacts",
+      "input_tokens": 18,
+      "cache_creation_input_tokens": 14285,
+      "cache_read_input_tokens": 191811,
+      "output_tokens": 2706,
+      "turns": 10,
+      "cost_usd": 0.005058535,
+      "tool_calls": 9,
+      "tools": {
+        "Bash": 6,
+        "Glob": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 206114,
+      "exit_code": 0,
+      "seconds": 19.7,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "listing_artifacts",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 18339,
+      "cache_read_input_tokens": 31523,
+      "output_tokens": 569,
+      "turns": 2,
+      "cost_usd": 0.002892505,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 49866,
+      "exit_code": 0,
+      "seconds": 5.5,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9022,
+      "cache_read_input_tokens": 72974,
+      "output_tokens": 1138,
+      "turns": 7,
+      "cost_usd": 0.00242729,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 2,
+        "Grep": 1,
+        "Read": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I fixed `compute_late_fee` in `billing.py` by changing its cap from `max(fee, amount * 0.25)` to `min(fee, amount * 0.25)`, and all 4 tests now pass (they were 2 failures before, with no test edits).",
+      "session_error": false,
+      "input_total": 82004,
+      "exit_code": 0,
+      "seconds": 14.4,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9241,
+      "cache_read_input_tokens": 73191,
+      "output_tokens": 1195,
+      "turns": 7,
+      "cost_usd": 0.002485335,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 2,
+        "Grep": 1,
+        "Read": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I changed `max` to `min` in `compute_late_fee` (billing.py:921) so the 25% cap limits the fee instead of setting a floor, and `python3 -m unittest test_billing` now passes all 4 tests (it failed 2 before the fix, and I left the tests unedited).",
+      "session_error": false,
+      "input_total": 82440,
+      "exit_code": 0,
+      "seconds": 9.0,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "large_file_fix",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8074,
+      "cache_read_input_tokens": 51946,
+      "output_tokens": 717,
+      "turns": 4,
+      "cost_usd": 0.00188781,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed `compute_late_fee` in `billing.py` by changing its cap from `max` to `min`, so `python3 -m unittest test_billing` now passes all 4 tests (it had 2 failures before).",
+      "session_error": false,
+      "input_total": 60026,
+      "exit_code": 0,
+      "seconds": 7.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "large_file_fix",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7995,
+      "cache_read_input_tokens": 51563,
+      "output_tokens": 842,
+      "turns": 4,
+      "cost_usd": 0.0019366049999999999,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I fixed `compute_late_fee` in `billing.py` by changing the cap from `max` to `min` (so the fee is capped at 25% of the amount rather than floored at it), and the tests now pass (4 of 4) after the initial run had 2 failures.",
+      "session_error": false,
+      "input_total": 59564,
+      "exit_code": 0,
+      "seconds": 7.3,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "stack_trace",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8363,
+      "cache_read_input_tokens": 51331,
+      "output_tokens": 499,
+      "turns": 3,
+      "cost_usd": 0.0018087849999999998,
+      "tool_calls": 2,
+      "tools": {
+        "Grep": 1,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 59700,
+      "exit_code": 0,
+      "seconds": 5.9,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "stack_trace",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 11917,
+      "cache_read_input_tokens": 96150,
+      "output_tokens": 1223,
+      "turns": 5,
+      "cost_usd": 0.0030636250000000004,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 1,
+        "Grep": 2,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 108077,
+      "exit_code": 0,
+      "seconds": 11.1,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "stack_trace",
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 12400,
+      "cache_read_input_tokens": 158893,
+      "output_tokens": 1947,
+      "turns": 8,
+      "cost_usd": 0.00411403,
+      "tool_calls": 7,
+      "tools": {
+        "Bash": 5,
+        "Grep": 1,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 171309,
+      "exit_code": 0,
+      "seconds": 17.3,
+      "correct": true,
+      "scopelet_events": 5,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "stack_trace",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9779,
+      "cache_read_input_tokens": 73095,
+      "output_tokens": 658,
+      "turns": 4,
+      "cost_usd": 0.002283125,
+      "tool_calls": 3,
+      "tools": {
+        "Grep": 2,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 82882,
+      "exit_code": 0,
+      "seconds": 7.6,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "json_api",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 7245,
+      "cache_read_input_tokens": 70882,
+      "output_tokens": 792,
+      "turns": 4,
+      "cost_usd": 0.002011245,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 78135,
+      "exit_code": 0,
+      "seconds": 9.2,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7075,
+      "cache_read_input_tokens": 51222,
+      "output_tokens": 618,
+      "turns": 3,
+      "cost_usd": 0.0017061949999999998,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 58303,
+      "exit_code": 0,
+      "seconds": 7.4,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7184,
+      "cache_read_input_tokens": 51189,
+      "output_tokens": 701,
+      "turns": 3,
+      "cost_usd": 0.00176099,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 58379,
+      "exit_code": 0,
+      "seconds": 7.0,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6885,
+      "cache_read_input_tokens": 50873,
+      "output_tokens": 547,
+      "turns": 3,
+      "cost_usd": 0.0016434549999999998,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 57764,
+      "exit_code": 0,
+      "seconds": 9.3,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8089,
+      "cache_read_input_tokens": 52201,
+      "output_tokens": 413,
+      "turns": 3,
+      "cost_usd": 0.001740235,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 60296,
+      "exit_code": 0,
+      "seconds": 5.8,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8356,
+      "cache_read_input_tokens": 52202,
+      "output_tokens": 611,
+      "turns": 3,
+      "cost_usd": 0.00187262,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 1,
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 60564,
+      "exit_code": 0,
+      "seconds": 6.0,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7809,
+      "cache_read_input_tokens": 51845,
+      "output_tokens": 390,
+      "turns": 3,
+      "cost_usd": 0.001690175,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 59660,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7663,
+      "cache_read_input_tokens": 51422,
+      "output_tokens": 482,
+      "turns": 3,
+      "cost_usd": 0.001713695,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 59091,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v4",
+      "task": "pytest_many",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 12904,
+      "cache_read_input_tokens": 80841,
+      "output_tokens": 1302,
+      "turns": 6,
+      "cost_usd": 0.00307321,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 3,
+        "Read": 1,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed the boundary bug in `rates.py` by changing `<=` to `<` in `tiered_rate` (matching the docstring and tests), and all 600 tests now pass on re-run, with the test file left untouched.",
+      "session_error": false,
+      "input_total": 93753,
+      "exit_code": 0,
+      "seconds": 9.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "pytest_many",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9072,
+      "cache_read_input_tokens": 73134,
+      "output_tokens": 1199,
+      "turns": 5,
+      "cost_usd": 0.00246564,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed the tier boundaries in `rates.py` (`<=` changed to `<` for the 1000 and 5000 thresholds, matching the docstring), and after the change `python3 -m unittest -v test_rates` passes all 600 tests, up from 2 failures before.",
+      "session_error": false,
+      "input_total": 82214,
+      "exit_code": 0,
+      "seconds": 9.8,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 1
+    },
+    {
+      "arm": "v5",
+      "task": "pytest_many",
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 10552,
+      "cache_read_input_tokens": 117983,
+      "output_tokens": 1890,
+      "turns": 8,
+      "cost_usd": 0.00344503,
+      "tool_calls": 7,
+      "tools": {
+        "Bash": 5,
+        "Grep": 1,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "All 600 tests pass after I changed the two boundary comparisons in `rates.py` from `<=` to `<` (the tests expect 1000 and 5000 to fall into the lower-rate tiers), leaving the tests untouched.",
+      "session_error": false,
+      "input_total": 128547,
+      "exit_code": 0,
+      "seconds": 14.7,
+      "correct": true,
+      "scopelet_events": 6,
+      "round": 1
+    },
+    {
+      "arm": "off",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9468,
+      "cache_read_input_tokens": 93733,
+      "output_tokens": 1461,
+      "turns": 6,
+      "cost_usd": 0.00285233,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 4,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The bug was an off-by-one at the tier boundaries in `rates.py` (`<=` changed to `<`, so 1000 and 5000 units now fall into the higher-volume-threshold tiers as the tests expect), and after the fix all 600 tests pass.",
+      "session_error": false,
+      "input_total": 103211,
+      "exit_code": 0,
+      "seconds": 15.8,
+      "correct": true,
+      "round": 1
+    },
+    {
+      "arm": "v5g",
+      "task": "fix_test",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 11668,
+      "cache_read_input_tokens": 79228,
+      "output_tokens": 716,
+      "turns": 5,
+      "cost_usd": 0.00260958,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 2,
+        "Read": 1,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed the off-by-one in `inventory.py` by changing `restock_needed` from `<` to `<=` to match its \"at or below\" docstring, and all 302 tests now pass (the one failure, `test_restock_at_threshold`, is resolved without touching the tests).",
+      "session_error": false,
+      "input_total": 90904,
+      "exit_code": 0,
+      "seconds": 6.5,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7775,
+      "cache_read_input_tokens": 51672,
+      "output_tokens": 798,
+      "turns": 5,
+      "cost_usd": 0.0018881950000000003,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I fixed the off-by-one in `inventory.py` by changing `restock_needed` from `<` to `<=` so it matches its docstring (\"at or below the threshold\"), and all 302 tests now pass after the change (they failed before, on `test_restock_at_threshold`).",
+      "session_error": false,
+      "input_total": 59453,
+      "exit_code": 0,
+      "seconds": 7.0,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 16776,
+      "cache_read_input_tokens": 60474,
+      "output_tokens": 676,
+      "turns": 4,
+      "cost_usd": 0.0030403399999999994,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed the off-by-one in `inventory.py` by changing `restock_needed` from `quantity < threshold` to `quantity <= threshold` to match its docstring, and after the change all 302 tests pass (the test file was not edited).",
+      "session_error": false,
+      "input_total": 77256,
+      "exit_code": 0,
+      "seconds": 6.9,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "fix_test",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 11660,
+      "cache_read_input_tokens": 55587,
+      "output_tokens": 698,
+      "turns": 5,
+      "cost_usd": 0.00236297,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 2,
+        "Read": 1,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The off-by-one in `inventory.py` is fixed (`restock_needed` now uses `<=` to match its \"at or below\" docstring), and the tests went from 1 failure to all 302 passing without touching `test_inventory.py`.",
+      "session_error": false,
+      "input_total": 67253,
+      "exit_code": 0,
+      "seconds": 6.9,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 6582,
+      "cache_read_input_tokens": 31712,
+      "output_tokens": 355,
+      "turns": 2,
+      "cost_usd": 0.00131777,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 38298,
+      "exit_code": 0,
+      "seconds": 5.1,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "find_receipt",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6821,
+      "cache_read_input_tokens": 50951,
+      "output_tokens": 468,
+      "turns": 3,
+      "cost_usd": 0.001596735,
+      "tool_calls": 2,
+      "tools": {
+        "Grep": 1,
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 57778,
+      "exit_code": 0,
+      "seconds": 6.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "find_receipt",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 6247,
+      "cache_read_input_tokens": 31497,
+      "output_tokens": 306,
+      "turns": 2,
+      "cost_usd": 0.001249245,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 37748,
+      "exit_code": 0,
+      "seconds": 4.5,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "find_receipt",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6820,
+      "cache_read_input_tokens": 50944,
+      "output_tokens": 502,
+      "turns": 3,
+      "cost_usd": 0.0016135400000000001,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "RCPT-7139-QX",
+      "session_error": false,
+      "input_total": 57770,
+      "exit_code": 0,
+      "seconds": 6.6,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "count_failures",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 7678,
+      "cache_read_input_tokens": 90640,
+      "output_tokens": 997,
+      "turns": 5,
+      "cost_usd": 0.0023656500000000004,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Glob": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 98328,
+      "exit_code": 0,
+      "seconds": 8.7,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "count_failures",
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 8023,
+      "cache_read_input_tokens": 110641,
+      "output_tokens": 1462,
+      "turns": 6,
+      "cost_usd": 0.002841485,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 5
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 118676,
+      "exit_code": 0,
+      "seconds": 11.1,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "count_failures",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 7070,
+      "cache_read_input_tokens": 89297,
+      "output_tokens": 841,
+      "turns": 5,
+      "cost_usd": 0.0021982200000000003,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Glob": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 96377,
+      "exit_code": 0,
+      "seconds": 10.4,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "count_failures",
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 10494,
+      "cache_read_input_tokens": 137654,
+      "output_tokens": 1376,
+      "turns": 7,
+      "cost_usd": 0.0033776899999999996,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 6
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "41",
+      "session_error": false,
+      "input_total": 148162,
+      "exit_code": 0,
+      "seconds": 14.0,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8942,
+      "cache_read_input_tokens": 52524,
+      "output_tokens": 453,
+      "turns": 3,
+      "cost_usd": 0.0018700899999999998,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 61472,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "review_diff",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8298,
+      "cache_read_input_tokens": 52528,
+      "output_tokens": 465,
+      "turns": 3,
+      "cost_usd": 0.0017956299999999999,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 60832,
+      "exit_code": 0,
+      "seconds": 6.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "review_diff",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 8910,
+      "cache_read_input_tokens": 72884,
+      "output_tokens": 663,
+      "turns": 4,
+      "cost_usd": 0.00217489,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 81802,
+      "exit_code": 0,
+      "seconds": 6.9,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "review_diff",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 8781,
+      "cache_read_input_tokens": 73735,
+      "output_tokens": 634,
+      "turns": 4,
+      "cost_usd": 0.002152775,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 2,
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/auth.py:62",
+      "session_error": false,
+      "input_total": 82524,
+      "exit_code": 0,
+      "seconds": 7.0,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7911,
+      "cache_read_input_tokens": 52159,
+      "output_tokens": 353,
+      "turns": 3,
+      "cost_usd": 0.001687565,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 60076,
+      "exit_code": 0,
+      "seconds": 5.2,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7813,
+      "cache_read_input_tokens": 52116,
+      "output_tokens": 239,
+      "turns": 3,
+      "cost_usd": 0.001617885,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 1,
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 59935,
+      "exit_code": 0,
+      "seconds": 15.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "search_symbol",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 6311,
+      "cache_read_input_tokens": 31504,
+      "output_tokens": 390,
+      "turns": 2,
+      "cost_usd": 0.001299315,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 37819,
+      "exit_code": 0,
+      "seconds": 6.0,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "search_symbol",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7799,
+      "cache_read_input_tokens": 52104,
+      "output_tokens": 233,
+      "turns": 3,
+      "cost_usd": 0.001613015,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/pkg_g/mod_bih.py:15",
+      "session_error": false,
+      "input_total": 59909,
+      "exit_code": 0,
+      "seconds": 5.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "git_log_find",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 8465,
+      "cache_read_input_tokens": 71297,
+      "output_tokens": 755,
+      "turns": 4,
+      "cost_usd": 0.002149395,
+      "tool_calls": 3,
+      "tools": {
+        "Grep": 1,
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 79770,
+      "exit_code": 0,
+      "seconds": 9.1,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "git_log_find",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 11277,
+      "cache_read_input_tokens": 74989,
+      "output_tokens": 906,
+      "turns": 4,
+      "cost_usd": 0.0026133149999999997,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 86274,
+      "exit_code": 0,
+      "seconds": 9.1,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "git_log_find",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 8111,
+      "cache_read_input_tokens": 31764,
+      "output_tokens": 221,
+      "turns": 2,
+      "cost_usd": 0.0014424149999999998,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 39879,
+      "exit_code": 0,
+      "seconds": 4.4,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "git_log_find",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9098,
+      "cache_read_input_tokens": 94048,
+      "output_tokens": 1011,
+      "turns": 5,
+      "cost_usd": 0.00258423,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 4
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Tidy pricing helpers",
+      "session_error": false,
+      "input_total": 103156,
+      "exit_code": 0,
+      "seconds": 9.7,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "listing_artifacts",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9344,
+      "cache_read_input_tokens": 72519,
+      "output_tokens": 1489,
+      "turns": 4,
+      "cost_usd": 0.00263849,
+      "tool_calls": 3,
+      "tools": {
+        "Bash": 3
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 81871,
+      "exit_code": 0,
+      "seconds": 12.8,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9633,
+      "cache_read_input_tokens": 53497,
+      "output_tokens": 1049,
+      "turns": 3,
+      "cost_usd": 0.002264195,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 63136,
+      "exit_code": 0,
+      "seconds": 9.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "listing_artifacts",
+      "input_tokens": 4,
+      "cache_creation_input_tokens": 18331,
+      "cache_read_input_tokens": 31517,
+      "output_tokens": 523,
+      "turns": 2,
+      "cost_usd": 0.002868445,
+      "tool_calls": 1,
+      "tools": {
+        "Bash": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 49852,
+      "exit_code": 0,
+      "seconds": 5.3,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "listing_artifacts",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9350,
+      "cache_read_input_tokens": 53276,
+      "output_tokens": 761,
+      "turns": 3,
+      "cost_usd": 0.00208261,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "52",
+      "session_error": false,
+      "input_total": 62632,
+      "exit_code": 0,
+      "seconds": 8.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9028,
+      "cache_read_input_tokens": 72996,
+      "output_tokens": 1120,
+      "turns": 7,
+      "cost_usd": 0.0024192600000000003,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 2,
+        "Grep": 1,
+        "Read": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed `compute_late_fee` in `billing.py` by changing `max` to `min` so the 25% cap applies, and all 4 tests in `test_billing` now pass (they failed 2/4 before).",
+      "session_error": false,
+      "input_total": 82032,
+      "exit_code": 0,
+      "seconds": 9.3,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9069,
+      "cache_read_input_tokens": 73020,
+      "output_tokens": 1171,
+      "turns": 7,
+      "cost_usd": 0.002450125,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 2,
+        "Grep": 1,
+        "Read": 2,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I changed `max` to `min` in `compute_late_fee` (billing.py:921) so the 25% cap limits the fee instead of setting a floor, and `python3 -m unittest test_billing` now passes all 4 tests (it failed 2 before the fix).",
+      "session_error": false,
+      "input_total": 82097,
+      "exit_code": 0,
+      "seconds": 8.7,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 8345,
+      "cache_read_input_tokens": 72081,
+      "output_tokens": 936,
+      "turns": 5,
+      "cost_usd": 0.002232735,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "I fixed `compute_late_fee` in `billing.py` by changing its cap from `max` to `min` (so the fee is capped at a quarter of the amount instead of floored at it), and the tests now pass 4/4 after re-running `python3 -m unittest test_billing`.",
+      "session_error": false,
+      "input_total": 80434,
+      "exit_code": 0,
+      "seconds": 7.4,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "large_file_fix",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9280,
+      "cache_read_input_tokens": 72888,
+      "output_tokens": 1283,
+      "turns": 5,
+      "cost_usd": 0.00253118,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed `compute_late_fee` in `billing.py` by changing its cap from `max` to `min` (it was raising the fee to a quarter of the amount instead of capping it there), and all 4 tests in `test_billing` now pass, up from 2 failures.",
+      "session_error": false,
+      "input_total": 82176,
+      "exit_code": 0,
+      "seconds": 11.6,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "stack_trace",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 13622,
+      "cache_read_input_tokens": 80515,
+      "output_tokens": 908,
+      "turns": 4,
+      "cost_usd": 0.0029627,
+      "tool_calls": 3,
+      "tools": {
+        "Grep": 2,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 94145,
+      "exit_code": 0,
+      "seconds": 8.6,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "stack_trace",
+      "input_tokens": 14,
+      "cache_creation_input_tokens": 11000,
+      "cache_read_input_tokens": 138290,
+      "output_tokens": 1298,
+      "turns": 7,
+      "cost_usd": 0.0034083,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 5,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 149304,
+      "exit_code": 0,
+      "seconds": 13.1,
+      "correct": true,
+      "scopelet_events": 3,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "stack_trace",
+      "input_tokens": 12,
+      "cache_creation_input_tokens": 20489,
+      "cache_read_input_tokens": 142329,
+      "output_tokens": 1260,
+      "turns": 6,
+      "cost_usd": 0.004615615,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 1,
+        "Grep": 3,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 162830,
+      "exit_code": 0,
+      "seconds": 13.3,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "stack_trace",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7831,
+      "cache_read_input_tokens": 51067,
+      "output_tokens": 407,
+      "turns": 3,
+      "cost_usd": 0.001693645,
+      "tool_calls": 2,
+      "tools": {
+        "Grep": 1,
+        "Read": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "LedgerService.java:214",
+      "session_error": false,
+      "input_total": 58904,
+      "exit_code": 0,
+      "seconds": 6.2,
+      "correct": true,
+      "scopelet_events": 1,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7181,
+      "cache_read_input_tokens": 51311,
+      "output_tokens": 609,
+      "turns": 3,
+      "cost_usd": 0.0017158350000000002,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 58498,
+      "exit_code": 0,
+      "seconds": 8.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7338,
+      "cache_read_input_tokens": 51409,
+      "output_tokens": 705,
+      "turns": 3,
+      "cost_usd": 0.00178444,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 58753,
+      "exit_code": 0,
+      "seconds": 7.5,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 6911,
+      "cache_read_input_tokens": 50993,
+      "output_tokens": 513,
+      "turns": 3,
+      "cost_usd": 0.0016309049999999998,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 57910,
+      "exit_code": 0,
+      "seconds": 7.0,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "json_api",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7210,
+      "cache_read_input_tokens": 51413,
+      "output_tokens": 665,
+      "turns": 3,
+      "cost_usd": 0.0017484800000000002,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "26",
+      "session_error": false,
+      "input_total": 58629,
+      "exit_code": 0,
+      "seconds": 7.3,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 9553,
+      "cache_read_input_tokens": 52240,
+      "output_tokens": 722,
+      "turns": 3,
+      "cost_usd": 0.002078125,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 1,
+        "Grep": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 61799,
+      "exit_code": 0,
+      "seconds": 7.9,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 8219,
+      "cache_read_input_tokens": 52233,
+      "output_tokens": 490,
+      "turns": 3,
+      "cost_usd": 0.001795305,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 60458,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7631,
+      "cache_read_input_tokens": 51411,
+      "output_tokens": 414,
+      "turns": 3,
+      "cost_usd": 0.001675585,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 59048,
+      "exit_code": 0,
+      "seconds": 6.8,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "build_warnings",
+      "input_tokens": 6,
+      "cache_creation_input_tokens": 7993,
+      "cache_read_input_tokens": 51951,
+      "output_tokens": 548,
+      "turns": 3,
+      "cost_usd": 0.001793235,
+      "tool_calls": 2,
+      "tools": {
+        "Bash": 2
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "src/ledger/settle.rs",
+      "session_error": false,
+      "input_total": 59950,
+      "exit_code": 0,
+      "seconds": 6.1,
+      "correct": true,
+      "scopelet_events": 2,
+      "round": 2
+    },
+    {
+      "arm": "v5g",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9600,
+      "cache_read_input_tokens": 94969,
+      "output_tokens": 1287,
+      "turns": 6,
+      "cost_usd": 0.00279419,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 4,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed the tier boundaries in `rates.py` (`<=` to `<`, matching the \"below\" in the docstring and the tests), and all 600 tests now pass after the change, up from 2 failures at 1000 and 5000 units.",
+      "session_error": false,
+      "input_total": 104579,
+      "exit_code": 0,
+      "seconds": 11.6,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 2
+    },
+    {
+      "arm": "v5",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 9786,
+      "cache_read_input_tokens": 94840,
+      "output_tokens": 1441,
+      "turns": 7,
+      "cost_usd": 0.00289315,
+      "tool_calls": 6,
+      "tools": {
+        "Bash": 4,
+        "Read": 1,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "Fixed the tier boundaries in `rates.py` by changing `<=` to `<` so 1000 and 5000 units fall into the higher-volume tiers as the tests expect; the tests went from 2 failures to all 600 passing on re-run.",
+      "session_error": false,
+      "input_total": 104636,
+      "exit_code": 0,
+      "seconds": 10.8,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 2
+    },
+    {
+      "arm": "off",
+      "task": "pytest_many",
+      "input_tokens": 8,
+      "cache_creation_input_tokens": 9095,
+      "cache_read_input_tokens": 72689,
+      "output_tokens": 1137,
+      "turns": 5,
+      "cost_usd": 0.0024330650000000003,
+      "tool_calls": 4,
+      "tools": {
+        "Bash": 3,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The bug was an off-by-one at the tier boundaries in `rates.py` (`<=` changed to `<` so 1000 and 5000 fall into the next tier, as the docstring says), and after the fix all 600 tests pass.",
+      "session_error": false,
+      "input_total": 81792,
+      "exit_code": 0,
+      "seconds": 19.5,
+      "correct": true,
+      "round": 2
+    },
+    {
+      "arm": "v4",
+      "task": "pytest_many",
+      "input_tokens": 10,
+      "cache_creation_input_tokens": 10067,
+      "cache_read_input_tokens": 94979,
+      "output_tokens": 1551,
+      "turns": 6,
+      "cost_usd": 0.002984665,
+      "tool_calls": 5,
+      "tools": {
+        "Bash": 4,
+        "Edit": 1
+      },
+      "models_served": [
+        "claude-haiku-5-5"
+      ],
+      "answer": "The bug was `<=` instead of `<` at the 1000 and 5000 tier boundaries in `rates.py`, and after changing those to `<` all 600 tests in `python3 -m unittest -v test_rates` pass (they failed before with 2 failures).",
+      "session_error": false,
+      "input_total": 105056,
+      "exit_code": 0,
+      "seconds": 10.6,
+      "correct": true,
+      "scopelet_events": 4,
+      "round": 2
+    }
+  ],
+  "summary": {
+    "fix_test": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.009135069999999999,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0030450233333333327,
+        "median_input_total": 77256,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 16776,
+        "median_cache_read_input_tokens": 60474,
+        "median_output_tokens": 676,
+        "median_turns": 4,
+        "median_tool_calls": 3,
+        "median_cost_usd": 0.0030403399999999994,
+        "median_seconds": 7.1
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.006570915,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002190305,
+        "median_input_total": 79574,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 8001,
+        "median_cache_read_input_tokens": 71565,
+        "median_output_tokens": 776,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.002129075,
+        "median_seconds": 8.3
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00679936,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0022664533333333335,
+        "median_input_total": 80428,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 7991,
+        "median_cache_read_input_tokens": 72429,
+        "median_output_tokens": 745,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.002115465,
+        "median_seconds": 7.0
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.006337665000000001,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0021125550000000003,
+        "median_input_total": 67322,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7890,
+        "median_cache_read_input_tokens": 55620,
+        "median_output_tokens": 749,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.00207417,
+        "median_seconds": 7.0
+      }
+    },
+    "find_receipt": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00400741,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0013358033333333334,
+        "median_input_total": 37748,
+        "median_input_tokens": 4,
+        "median_cache_creation_input_tokens": 6247,
+        "median_cache_read_input_tokens": 31497,
+        "median_output_tokens": 306,
+        "median_turns": 2,
+        "median_tool_calls": 1,
+        "median_cost_usd": 0.001249245,
+        "median_seconds": 5.0
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.004856025,
+        "cost_unknown": 0,
+        "cost_per_success": 0.001618675,
+        "median_input_total": 57770,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 6820,
+        "median_cache_read_input_tokens": 50944,
+        "median_output_tokens": 502,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0016135400000000001,
+        "median_seconds": 6.6
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.003886395,
+        "cost_unknown": 0,
+        "cost_per_success": 0.001295465,
+        "median_input_total": 38229,
+        "median_input_tokens": 4,
+        "median_cache_creation_input_tokens": 6513,
+        "median_cache_read_input_tokens": 31712,
+        "median_output_tokens": 307,
+        "median_turns": 2,
+        "median_tool_calls": 1,
+        "median_cost_usd": 0.0012851450000000001,
+        "median_seconds": 4.7
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.004460235,
+        "cost_unknown": 0,
+        "cost_per_success": 0.001486745,
+        "median_input_total": 57734,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 6782,
+        "median_cache_read_input_tokens": 50946,
+        "median_output_tokens": 449,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.00158231,
+        "median_seconds": 5.9
+      }
+    },
+    "count_failures": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.006555025,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002185008333333333,
+        "median_input_total": 96377,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 7180,
+        "median_cache_read_input_tokens": 89288,
+        "median_output_tokens": 893,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.0021982200000000003,
+        "median_seconds": 9.9
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.009230025,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0030766749999999996,
+        "median_input_total": 148162,
+        "median_input_tokens": 14,
+        "median_cache_creation_input_tokens": 10494,
+        "median_cache_read_input_tokens": 137654,
+        "median_output_tokens": 1376,
+        "median_turns": 7,
+        "median_tool_calls": 6,
+        "median_cost_usd": 0.0033776899999999996,
+        "median_seconds": 14.0
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.0063285500000000005,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002109516666666667,
+        "median_input_total": 77853,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 7332,
+        "median_cache_read_input_tokens": 70529,
+        "median_output_tokens": 974,
+        "median_turns": 4,
+        "median_tool_calls": 3,
+        "median_cost_usd": 0.00204559,
+        "median_seconds": 9.0
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00726862,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0024228733333333335,
+        "median_input_total": 98267,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 7627,
+        "median_cache_read_input_tokens": 90630,
+        "median_output_tokens": 949,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.002335175,
+        "median_seconds": 8.9
+      }
+    },
+    "review_diff": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.0061756350000000005,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002058545,
+        "median_input_total": 81802,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 8909,
+        "median_cache_read_input_tokens": 72884,
+        "median_output_tokens": 663,
+        "median_turns": 4,
+        "median_tool_calls": 3,
+        "median_cost_usd": 0.00217489,
+        "median_seconds": 6.9
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.005844365,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0019481216666666667,
+        "median_input_total": 61021,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8459,
+        "median_cache_read_input_tokens": 52594,
+        "median_output_tokens": 574,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0018661649999999997,
+        "median_seconds": 7.0
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00562087,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0018736233333333334,
+        "median_input_total": 61098,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8501,
+        "median_cache_read_input_tokens": 52524,
+        "median_output_tokens": 480,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0018700899999999998,
+        "median_seconds": 6.8
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00550488,
+        "cost_unknown": 0,
+        "cost_per_success": 0.00183496,
+        "median_input_total": 61044,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8474,
+        "median_cache_read_input_tokens": 52564,
+        "median_output_tokens": 525,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0018479899999999999,
+        "median_seconds": 7.5
+      }
+    },
+    "search_symbol": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.004547305,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0015157683333333332,
+        "median_input_total": 59278,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7591,
+        "median_cache_read_input_tokens": 51681,
+        "median_output_tokens": 358,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.001586785,
+        "median_seconds": 5.8
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00503422,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0016780733333333334,
+        "median_input_total": 60096,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7925,
+        "median_cache_read_input_tokens": 52165,
+        "median_output_tokens": 361,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.001693375,
+        "median_seconds": 5.2
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.005041175,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0016803916666666668,
+        "median_input_total": 60076,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7911,
+        "median_cache_read_input_tokens": 52179,
+        "median_output_tokens": 353,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.001687565,
+        "median_seconds": 5.2
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00501142,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0016704733333333334,
+        "median_input_total": 60094,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7924,
+        "median_cache_read_input_tokens": 52151,
+        "median_output_tokens": 355,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0016903,
+        "median_seconds": 5.9
+      }
+    },
+    "git_log_find": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.0061691,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0020563666666666668,
+        "median_input_total": 65314,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8741,
+        "median_cache_read_input_tokens": 51028,
+        "median_output_tokens": 552,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.002154805,
+        "median_seconds": 6.7
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00785528,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0026184266666666664,
+        "median_input_total": 102004,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 9098,
+        "median_cache_read_input_tokens": 92654,
+        "median_output_tokens": 1111,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.00260004,
+        "median_seconds": 9.7
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.008172665,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002724221666666667,
+        "median_input_total": 101548,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 8526,
+        "median_cache_read_input_tokens": 93012,
+        "median_output_tokens": 1033,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.00251337,
+        "median_seconds": 9.3
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.007406895,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002468965,
+        "median_input_total": 86274,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 9555,
+        "median_cache_read_input_tokens": 74989,
+        "median_output_tokens": 906,
+        "median_turns": 4,
+        "median_tool_calls": 3,
+        "median_cost_usd": 0.0026133149999999997,
+        "median_seconds": 9.1
+      }
+    },
+    "listing_artifacts": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.008831195,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0029437316666666665,
+        "median_input_total": 49866,
+        "median_input_tokens": 4,
+        "median_cache_creation_input_tokens": 18339,
+        "median_cache_read_input_tokens": 31522,
+        "median_output_tokens": 569,
+        "median_turns": 2,
+        "median_tool_calls": 1,
+        "median_cost_usd": 0.002892505,
+        "median_seconds": 5.5
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.0065418049999999995,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0021806016666666666,
+        "median_input_total": 62632,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 9350,
+        "median_cache_read_input_tokens": 53276,
+        "median_output_tokens": 1004,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.00208261,
+        "median_seconds": 8.3
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00753296,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0025109866666666665,
+        "median_input_total": 68145,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 9344,
+        "median_cache_read_input_tokens": 55709,
+        "median_output_tokens": 1347,
+        "median_turns": 4,
+        "median_tool_calls": 3,
+        "median_cost_usd": 0.00263849,
+        "median_seconds": 9.8
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00965411,
+        "cost_unknown": 0,
+        "cost_per_success": 0.003218036666666667,
+        "median_input_total": 79088,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 9633,
+        "median_cache_read_input_tokens": 71308,
+        "median_output_tokens": 1292,
+        "median_turns": 4,
+        "median_tool_calls": 3,
+        "median_cost_usd": 0.00233138,
+        "median_seconds": 9.9
+      }
+    },
+    "large_file_fix": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.006563515,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0021878383333333333,
+        "median_input_total": 80434,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 8345,
+        "median_cache_read_input_tokens": 72081,
+        "median_output_tokens": 936,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.002232735,
+        "median_seconds": 7.4
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.007423865,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0024746216666666665,
+        "median_input_total": 82176,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 9213,
+        "median_cache_read_input_tokens": 72974,
+        "median_output_tokens": 1163,
+        "median_turns": 7,
+        "median_tool_calls": 6,
+        "median_cost_usd": 0.002465395,
+        "median_seconds": 11.6
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.006839645,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002279881666666667,
+        "median_input_total": 82032,
+        "median_input_tokens": 8,
+        "median_cache_creation_input_tokens": 9028,
+        "median_cache_read_input_tokens": 72996,
+        "median_output_tokens": 1120,
+        "median_turns": 7,
+        "median_tool_calls": 6,
+        "median_cost_usd": 0.0024192600000000003,
+        "median_seconds": 9.0
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00627434,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0020914466666666666,
+        "median_input_total": 60115,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8141,
+        "median_cache_read_input_tokens": 51968,
+        "median_output_tokens": 797,
+        "median_turns": 4,
+        "median_tool_calls": 3,
+        "median_cost_usd": 0.001936405,
+        "median_seconds": 7.7
+      }
+    },
+    "stack_trace": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.009763095,
+        "cost_unknown": 0,
+        "cost_per_success": 0.003254365,
+        "median_input_total": 120167,
+        "median_input_tokens": 12,
+        "median_cache_creation_input_tokens": 9779,
+        "median_cache_read_input_tokens": 110728,
+        "median_output_tokens": 1155,
+        "median_turns": 6,
+        "median_tool_calls": 5,
+        "median_cost_usd": 0.002864355,
+        "median_seconds": 13.3
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.007602205,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002534068333333333,
+        "median_input_total": 59700,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8363,
+        "median_cache_read_input_tokens": 51331,
+        "median_output_tokens": 499,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0018087849999999998,
+        "median_seconds": 6.2
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.008823335,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0029411116666666665,
+        "median_input_total": 101889,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 11917,
+        "median_cache_read_input_tokens": 91051,
+        "median_output_tokens": 1064,
+        "median_turns": 5,
+        "median_tool_calls": 4,
+        "median_cost_usd": 0.0029627,
+        "median_seconds": 11.1
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.01006358,
+        "cost_unknown": 0,
+        "cost_per_success": 0.003354526666666667,
+        "median_input_total": 149304,
+        "median_input_tokens": 14,
+        "median_cache_creation_input_tokens": 12400,
+        "median_cache_read_input_tokens": 138290,
+        "median_output_tokens": 1298,
+        "median_turns": 7,
+        "median_tool_calls": 6,
+        "median_cost_usd": 0.0034083,
+        "median_seconds": 13.1
+      }
+    },
+    "json_api": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00498473,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0016615766666666666,
+        "median_input_total": 57764,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 6885,
+        "median_cache_read_input_tokens": 50873,
+        "median_output_tokens": 547,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0016434549999999998,
+        "median_seconds": 7.5
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.0054082,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0018027333333333333,
+        "median_input_total": 58629,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7210,
+        "median_cache_read_input_tokens": 51413,
+        "median_output_tokens": 665,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0017484800000000002,
+        "median_seconds": 7.7
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00513847,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0017128233333333334,
+        "median_input_total": 58336,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7096,
+        "median_cache_read_input_tokens": 51234,
+        "median_output_tokens": 618,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.0017158350000000002,
+        "median_seconds": 7.4
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00517433,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0017247766666666669,
+        "median_input_total": 58379,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7184,
+        "median_cache_read_input_tokens": 51189,
+        "median_output_tokens": 701,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.00176099,
+        "median_seconds": 7.0
+      }
+    },
+    "build_warnings": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.0050548,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0016849333333333334,
+        "median_input_total": 59048,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 7631,
+        "median_cache_read_input_tokens": 51417,
+        "median_output_tokens": 414,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.001675585,
+        "median_seconds": 6.1
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.008789605,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0029298683333333336,
+        "median_input_total": 60296,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8089,
+        "median_cache_read_input_tokens": 52201,
+        "median_output_tokens": 548,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.001793235,
+        "median_seconds": 6.1
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.005685755,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0018952516666666667,
+        "median_input_total": 60564,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8356,
+        "median_cache_read_input_tokens": 52202,
+        "median_output_tokens": 611,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.00187262,
+        "median_seconds": 6.0
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.0058644349999999994,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0019548116666666666,
+        "median_input_total": 60458,
+        "median_input_tokens": 6,
+        "median_cache_creation_input_tokens": 8219,
+        "median_cache_read_input_tokens": 52233,
+        "median_output_tokens": 490,
+        "median_turns": 3,
+        "median_tool_calls": 2,
+        "median_cost_usd": 0.001795305,
+        "median_seconds": 6.1
+      }
+    },
+    "pytest_many": {
+      "off": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.00813518,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002711726666666667,
+        "median_input_total": 103108,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 9207,
+        "median_cache_read_input_tokens": 93733,
+        "median_output_tokens": 1461,
+        "median_turns": 6,
+        "median_tool_calls": 5,
+        "median_cost_usd": 0.0028497849999999996,
+        "median_seconds": 15.8
+      },
+      "v4": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.008877045,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002959015,
+        "median_input_total": 104049,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 10067,
+        "median_cache_read_input_tokens": 94467,
+        "median_output_tokens": 1354,
+        "median_turns": 6,
+        "median_tool_calls": 5,
+        "median_cost_usd": 0.002984665,
+        "median_seconds": 10.6
+      },
+      "v5g": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.008045225,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0026817416666666664,
+        "median_input_total": 104579,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 9600,
+        "median_cache_read_input_tokens": 94952,
+        "median_output_tokens": 1230,
+        "median_turns": 6,
+        "median_tool_calls": 5,
+        "median_cost_usd": 0.002785395,
+        "median_seconds": 11.2
+      },
+      "v5": {
+        "runs": 3,
+        "correct": 3,
+        "with_usage": 3,
+        "total_cost_usd": 0.009259975,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0030866583333333335,
+        "median_input_total": 105152,
+        "median_input_tokens": 10,
+        "median_cache_creation_input_tokens": 10125,
+        "median_cache_read_input_tokens": 95017,
+        "median_output_tokens": 1441,
+        "median_turns": 7,
+        "median_tool_calls": 6,
+        "median_cost_usd": 0.002921795,
+        "median_seconds": 10.8
+      }
+    },
+    "all": {
+      "off": {
+        "runs": 36,
+        "correct": 36,
+        "with_usage": 36,
+        "total_cost_usd": 0.07992206,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0022200572222222225,
+        "median_input_total": 62791.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 8253.5,
+        "median_cache_read_input_tokens": 51924.0,
+        "median_output_tokens": 660.5,
+        "median_turns": 3.5,
+        "median_tool_calls": 2.5,
+        "median_cost_usd": 0.002186555,
+        "median_seconds": 7.05
+      },
+      "v4": {
+        "runs": 36,
+        "correct": 36,
+        "with_usage": 36,
+        "total_cost_usd": 0.084033555,
+        "cost_unknown": 0,
+        "cost_per_success": 0.0023342654166666667,
+        "median_input_total": 77656.5,
+        "median_input_tokens": 8.0,
+        "median_cache_creation_input_tokens": 8440.0,
+        "median_cache_read_input_tokens": 70456.0,
+        "median_output_tokens": 768.5,
+        "median_turns": 4.0,
+        "median_tool_calls": 3.0,
+        "median_cost_usd": 0.00208074,
+        "median_seconds": 8.3
+      },
+      "v5g": {
+        "runs": 36,
+        "correct": 36,
+        "with_usage": 36,
+        "total_cost_usd": 0.077914405,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002164289027777778,
+        "median_input_total": 64972.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 8458.0,
+        "median_cache_read_input_tokens": 54150.0,
+        "median_output_tokens": 769.0,
+        "median_turns": 4.0,
+        "median_tool_calls": 3.0,
+        "median_cost_usd": 0.00207622,
+        "median_seconds": 7.9
+      },
+      "v5": {
+        "runs": 36,
+        "correct": 36,
+        "with_usage": 36,
+        "total_cost_usd": 0.082280485,
+        "cost_unknown": 0,
+        "cost_per_success": 0.002285569027777778,
+        "median_input_total": 65229.0,
+        "median_input_tokens": 6.0,
+        "median_cache_creation_input_tokens": 8154.0,
+        "median_cache_read_input_tokens": 54481.0,
+        "median_output_tokens": 788.5,
+        "median_turns": 4.0,
+        "median_tool_calls": 3.0,
+        "median_cost_usd": 0.0020830650000000003,
+        "median_seconds": 8.350000000000001
+      }
+    },
+    "paired": {
+      "off": {
+        "baseline": "v4",
+        "pairs": 36,
+        "tasks": 12,
+        "correct": {
+          "off": 36,
+          "v4": 36
+        },
+        "cost_per_success_delta": {
+          "value": -0.00011420819444444424,
+          "ci95": [
+            -0.00045682250000000013,
+            0.00023967375000000018
+          ],
+          "draws": 10000,
+          "undefined_draws": 0
+        },
+        "mean_delta": {
+          "cost_usd": {
+            "value": -0.0001142081944444444,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -0.0004568224999999999,
+              0.00023967375
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          },
+          "input_total": {
+            "value": -13179.222222222223,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -26012.61111111111,
+              -949.0277777777778
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          },
+          "turns": {
+            "value": -0.8333333333333334,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -1.3888888888888888,
+              -0.2777777777777778
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          }
+        },
+        "detail": [
+          {
+            "task": "fix_test",
+            "round": 0,
+            "cost_usd": 0.0009358149999999996,
+            "input_total": -2490,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "fix_test",
+            "round": 1,
+            "cost_usd": 0.0009509700000000002,
+            "input_total": -2237,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "fix_test",
+            "round": 2,
+            "cost_usd": 0.0006773699999999996,
+            "input_total": 10003,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 0,
+            "cost_usd": -9.85300000000001e-05,
+            "input_total": -531,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 1,
+            "cost_usd": -0.0003857899999999998,
+            "input_total": -20577,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 2,
+            "cost_usd": -0.00036429500000000016,
+            "input_total": -20022,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 0,
+            "cost_usd": -0.0017788999999999995,
+            "input_total": -94665,
+            "turns": -4,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 1,
+            "cost_usd": 0.0002833699999999998,
+            "input_total": 18858,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 2,
+            "cost_usd": -0.0011794699999999993,
+            "input_total": -51785,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 0,
+            "cost_usd": -6.781499999999993e-05,
+            "input_total": -753,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 1,
+            "cost_usd": 0.0003769699999999999,
+            "input_total": 20804,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 2,
+            "cost_usd": 2.211500000000007e-05,
+            "input_total": -722,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 0,
+            "cost_usd": -0.00014104500000000002,
+            "input_total": -935,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 1,
+            "cost_usd": -3.2169999999999985e-05,
+            "input_total": -629,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 2,
+            "cost_usd": -0.0003136999999999999,
+            "input_total": -22090,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 0,
+            "cost_usd": -0.000516205,
+            "input_total": -22767,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 1,
+            "cost_usd": -2.815999999999973e-05,
+            "input_total": -35970,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 2,
+            "cost_usd": -0.001141815,
+            "input_total": -63277,
+            "turns": -3,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 0,
+            "cost_usd": 0.0010861100000000004,
+            "input_total": -8721,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 1,
+            "cost_usd": 0.00041744500000000023,
+            "input_total": -13824,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 2,
+            "cost_usd": 0.0007858349999999999,
+            "input_total": -12780,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 0,
+            "cost_usd": -7.121999999999988e-05,
+            "input_total": -523,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 1,
+            "cost_usd": -0.000490685,
+            "input_total": -22440,
+            "turns": -3,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 2,
+            "cost_usd": -0.00029844500000000005,
+            "input_total": -1742,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 0,
+            "cost_usd": -0.00123542,
+            "input_total": -43647,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 1,
+            "cost_usd": 0.0004743400000000002,
+            "input_total": 23182,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 2,
+            "cost_usd": 0.0029219700000000003,
+            "input_total": 103926,
+            "turns": 3,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 0,
+            "cost_usd": 6.189500000000018e-05,
+            "input_total": -717,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 1,
+            "cost_usd": -0.0003677900000000002,
+            "input_total": -20371,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 2,
+            "cost_usd": -0.0001175750000000004,
+            "input_total": -719,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 0,
+            "cost_usd": -0.003590615,
+            "input_total": -169437,
+            "turns": -7,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 1,
+            "cost_usd": -2.653999999999981e-05,
+            "input_total": -1205,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 2,
+            "cost_usd": -0.00011764999999999996,
+            "input_total": -902,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 0,
+            "cost_usd": 3.0614999999999896e-05,
+            "input_total": -941,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 1,
+            "cost_usd": -0.0002208799999999997,
+            "input_total": 9458,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 2,
+            "cost_usd": -0.0005515999999999997,
+            "input_total": -23264,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          }
+        ]
+      },
+      "v5g": {
+        "baseline": "v4",
+        "pairs": 36,
+        "tasks": 12,
+        "correct": {
+          "v5g": 36,
+          "v4": 36
+        },
+        "cost_per_success_delta": {
+          "value": -0.0001699763888888886,
+          "ci95": [
+            -0.0004247581944444444,
+            5.007500000000012e-05
+          ],
+          "draws": 10000,
+          "undefined_draws": 0
+        },
+        "mean_delta": {
+          "cost_usd": {
+            "value": -0.0001699763888888888,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -0.00042475819444444434,
+              5.007500000000008e-05
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          },
+          "input_total": {
+            "value": -10671.027777777777,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -23699.25,
+              99.13888888888889
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          },
+          "turns": {
+            "value": -0.4722222222222222,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -0.9722222222222222,
+              -0.027777777777777776
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          }
+        },
+        "detail": [
+          {
+            "task": "fix_test",
+            "round": 0,
+            "cost_usd": 3.6594999999999944e-05,
+            "input_total": 722,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "fix_test",
+            "round": 1,
+            "cost_usd": -5.475999999999962e-05,
+            "input_total": -372,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "fix_test",
+            "round": 2,
+            "cost_usd": 0.00024660999999999997,
+            "input_total": 23651,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 0,
+            "cost_usd": -8.505000000000014e-06,
+            "input_total": 11,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 1,
+            "cost_usd": -0.0006653549999999999,
+            "input_total": -39481,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 2,
+            "cost_usd": -0.0002957700000000001,
+            "input_total": -19472,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 0,
+            "cost_usd": -0.001980514999999999,
+            "input_total": -113586,
+            "turns": -4,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 1,
+            "cost_usd": 9.10799999999999e-05,
+            "input_total": 233,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 2,
+            "cost_usd": -0.0010120399999999992,
+            "input_total": -49834,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 0,
+            "cost_usd": -4.401999999999965e-05,
+            "input_total": -47,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 1,
+            "cost_usd": 0.00010320999999999985,
+            "input_total": 88,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 2,
+            "cost_usd": -0.0002826850000000002,
+            "input_total": -21052,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 0,
+            "cost_usd": -6.844000000000012e-05,
+            "input_total": -152,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 1,
+            "cost_usd": 8.450000000001859e-07,
+            "input_total": 35,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 2,
+            "cost_usd": 7.455000000000005e-05,
+            "input_total": 167,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 0,
+            "cost_usd": -0.00015764000000000012,
+            "input_total": -456,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 1,
+            "cost_usd": 0.0009098600000000002,
+            "input_total": 30689,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 2,
+            "cost_usd": -0.00043483499999999974,
+            "input_total": -23386,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 0,
+            "cost_usd": 0.0008008050000000004,
+            "input_total": 9237,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 1,
+            "cost_usd": -0.00036552999999999976,
+            "input_total": -2451,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 2,
+            "cost_usd": 0.0005558799999999999,
+            "input_total": 19239,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 0,
+            "cost_usd": -0.0005303450000000002,
+            "input_total": -22191,
+            "turns": -3,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 1,
+            "cost_usd": 5.804500000000006e-05,
+            "input_total": 436,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 2,
+            "cost_usd": -0.00011191999999999973,
+            "input_total": -144,
+            "turns": 2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 0,
+            "cost_usd": -0.001302765,
+            "input_total": -61925,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 1,
+            "cost_usd": 0.0012548400000000006,
+            "input_total": 48377,
+            "turns": 2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 2,
+            "cost_usd": 0.001269055,
+            "input_total": 35241,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 0,
+            "cost_usd": 6.796499999999991e-05,
+            "input_total": 164,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 1,
+            "cost_usd": -0.0003050500000000003,
+            "input_total": -19832,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 2,
+            "cost_usd": -3.264499999999998e-05,
+            "input_total": -131,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 0,
+            "cost_usd": -0.0035211250000000004,
+            "input_total": -168708,
+            "turns": -7,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 1,
+            "cost_usd": 0.00013238500000000005,
+            "input_total": 268,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 2,
+            "cost_usd": 0.0002848900000000001,
+            "input_total": 1849,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 0,
+            "cost_usd": -3.377499999999978e-05,
+            "input_total": 672,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 1,
+            "cost_usd": -0.00060757,
+            "input_total": -11539,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 2,
+            "cost_usd": -0.00019047499999999985,
+            "input_total": -477,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          }
+        ]
+      },
+      "v5": {
+        "baseline": "v4",
+        "pairs": 36,
+        "tasks": 12,
+        "correct": {
+          "v5": 36,
+          "v4": 36
+        },
+        "cost_per_success_delta": {
+          "value": -4.8696388888888956e-05,
+          "ci95": [
+            -0.000334744027777778,
+            0.0002607952777777781
+          ],
+          "draws": 10000,
+          "undefined_draws": 0
+        },
+        "mean_delta": {
+          "cost_usd": {
+            "value": -4.86963888888888e-05,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -0.0003347440277777777,
+              0.0002607952777777779
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          },
+          "input_total": {
+            "value": -2962.722222222222,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -17220.722222222223,
+              12577.388888888889
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          },
+          "turns": {
+            "value": -0.08333333333333333,
+            "pairs_known": 36,
+            "pairs_unknown": 0,
+            "ci95": [
+              -0.7777777777777778,
+              0.6944444444444444
+            ],
+            "draws": 10000,
+            "undefined_draws": 0
+          }
+        },
+        "detail": [
+          {
+            "task": "fix_test",
+            "round": 0,
+            "cost_usd": -4.699999999999843e-06,
+            "input_total": -546,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "fix_test",
+            "round": 1,
+            "cost_usd": 0.0002462250000000005,
+            "input_total": -12252,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "fix_test",
+            "round": 2,
+            "cost_usd": -0.00047477499999999955,
+            "input_total": -7800,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 0,
+            "cost_usd": -1.2459999999999945e-05,
+            "input_total": -32,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 1,
+            "cost_usd": -0.0003665249999999999,
+            "input_total": -19959,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "find_receipt",
+            "round": 2,
+            "cost_usd": -1.6805000000000162e-05,
+            "input_total": 8,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 0,
+            "cost_usd": -0.0018058649999999994,
+            "input_total": -94083,
+            "turns": -4,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 1,
+            "cost_usd": 0.0003806650000000001,
+            "input_total": 20647,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "count_failures",
+            "round": 2,
+            "cost_usd": -0.0005362049999999997,
+            "input_total": -29486,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 0,
+            "cost_usd": -4.90499999999971e-06,
+            "input_total": 31,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 1,
+            "cost_usd": 2.2564999999999565e-05,
+            "input_total": 34,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "review_diff",
+            "round": 2,
+            "cost_usd": -0.0003571450000000001,
+            "input_total": -21692,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 0,
+            "cost_usd": -2.4595000000000086e-05,
+            "input_total": -119,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 1,
+            "cost_usd": -3.0749999999999528e-06,
+            "input_total": 4,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "search_symbol",
+            "round": 2,
+            "cost_usd": 4.869999999999918e-06,
+            "input_total": 26,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 0,
+            "cost_usd": -0.000512045,
+            "input_total": -22300,
+            "turns": -2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 1,
+            "cost_usd": 3.45749999999998e-05,
+            "input_total": 2605,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "git_log_find",
+            "round": 2,
+            "cost_usd": 2.9084999999999875e-05,
+            "input_total": -16882,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 0,
+            "cost_usd": 0.00034724500000000037,
+            "input_total": 20180,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 1,
+            "cost_usd": 0.0025834750000000004,
+            "input_total": 142424,
+            "turns": 7,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "listing_artifacts",
+            "round": 2,
+            "cost_usd": 0.00018158500000000017,
+            "input_total": 504,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 0,
+            "cost_usd": -0.00052899,
+            "input_total": -22253,
+            "turns": -3,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 1,
+            "cost_usd": -0.00053948,
+            "input_total": -21978,
+            "turns": -3,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "large_file_fix",
+            "round": 2,
+            "cost_usd": -8.105500000000002e-05,
+            "input_total": -79,
+            "turns": 2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 0,
+            "cost_usd": -0.0015585249999999998,
+            "input_total": -95575,
+            "turns": -3,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 1,
+            "cost_usd": 0.0023052450000000005,
+            "input_total": 111609,
+            "turns": 5,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "stack_trace",
+            "round": 2,
+            "cost_usd": 0.001714655,
+            "input_total": 90400,
+            "turns": 4,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 0,
+            "cost_usd": -1.9574999999999758e-05,
+            "input_total": -164,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 1,
+            "cost_usd": -0.000250255,
+            "input_total": -19756,
+            "turns": -1,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "json_api",
+            "round": 2,
+            "cost_usd": 3.595999999999981e-05,
+            "input_total": 124,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 0,
+            "cost_usd": -0.0028771800000000004,
+            "input_total": -145647,
+            "turns": -6,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 1,
+            "cost_usd": -5.005999999999999e-05,
+            "input_total": -636,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "build_warnings",
+            "round": 2,
+            "cost_usd": 2.0700000000000666e-06,
+            "input_total": 508,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 0,
+            "cost_usd": 0.00010262500000000029,
+            "input_total": 1103,
+            "turns": 0,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 1,
+            "cost_usd": 0.00037182000000000014,
+            "input_total": 34794,
+            "turns": 2,
+            "correct": [
+              true,
+              true
+            ]
+          },
+          {
+            "task": "pytest_many",
+            "round": 2,
+            "cost_usd": -9.151499999999991e-05,
+            "input_total": -420,
+            "turns": 1,
+            "correct": [
+              true,
+              true
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

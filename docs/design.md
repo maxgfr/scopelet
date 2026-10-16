@@ -584,9 +584,13 @@ visible. No missing field becomes null and decimals stay exact.
 ## Compact-v5
 
 `--compact-version 5` and `SCOPELET_COMPACT_VERSION=5` select compact-v5, which
-is opt-in: it costs 6.2% fewer view tokens than v4 on the benchmark fixtures,
-but a paired live campaign did not show a lower median session input, the
-condition set for making it the default (`bench/README.md`). Its grammar
+is opt-in: it costs 6.1% fewer view tokens than v4 on the 0.10.0 fixtures
+(11.8% with a listing and a large source added), but two paired live
+campaigns did not show a session-level saving: neither a lower median input
+nor, over twelve tasks, a cost per successful task whose 95% interval lies
+below v4's, the condition set for making it the default (`bench/README.md`).
+In Claude Code a session's cost follows its turns, and every compressed view
+sometimes costs one more command. Its grammar
 parts write compact-v4's selection in fewer bytes; two selection rules,
 `artifacts` and `outline`, change what is selected and are described last.
 With only the grammar parts (`SCOPELET_V5_GRAMMAR=labels,header,tables`), a v5
