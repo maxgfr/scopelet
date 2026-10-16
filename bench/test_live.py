@@ -404,7 +404,9 @@ class SessionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'SCOPELET_EVENTS': '0'}), \
                 patch.object(live.subprocess, 'run', side_effect=lambda args, **kw: calls.append((args, kw['env']))):
             env = live.install(live.parse_arm('single=/bin/echo'), Path(temp))
-            self.assertEqual(calls[0][0], ['/bin/echo', 'install', '--agent', 'claude'])
+            # The arm's binary as resolved (`/bin` is a link to `/usr/bin` on
+            # some systems).
+            self.assertEqual(calls[0][0], [str(Path('/bin/echo').resolve()), 'install', '--agent', 'claude'])
             self.assertEqual({k for k in env if k.startswith('SCOPELET_')}, {'SCOPELET_CONFIG_DIR', 'SCOPELET_CACHE_DIR'})
         with tempfile.TemporaryDirectory() as temp, patch.object(live.subprocess, 'run', side_effect=AssertionError):
             env = live.install(live.parse_arm('off'), Path(temp))
