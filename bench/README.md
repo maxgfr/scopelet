@@ -184,7 +184,9 @@ every record, per-task and overall medians and:
 
 Cost per success, not tokens, is the measure: in Claude Code the prompt
 cache is most of the bill and tool outputs a few percent, so a turn more
-costs more than a smaller view saves. `publish.py` replaces `bench/results/` on a release, live
+costs more than a smaller view saves.
+
+`publish.py` replaces `bench/results/` on a release, live
 reports included: a report describes the binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
@@ -200,3 +202,32 @@ a 6% smaller view is below what twelve sessions can resolve. By the rule set
 before the run (no higher median input or tool calls), v5 stays opt-in and v4
 the default. The tasks run Python tests, so no `totals` line was involved.
 
+
+## Next action: does a view change what the agent does next?
+
+`nap.py` measures next-action preservation, after CoACT, without a trained
+model. It replays the `off` transcripts `live.py --transcripts` kept: at each
+Bash or Grep result, the conversation up to that result is rebuilt (the task
+prompt, assistant turns without their thinking blocks, earlier results as
+recorded) and the result is shown in four forms, each produced by the real
+hook (`scopelet hook claude` on a simulated `PostToolUse`, after the task
+prompt as `UserPromptSubmit`): raw, compact-v4, v5 with its grammar only and
+v5 whole. Steps where no condition changed the output (below the profile's
+exact-size threshold) are skipped. Each form goes to `POST /v1/messages` with
+a short agent prompt and Bash, Read, Edit, Grep, Glob and Write tools, the
+shared prefix cached; sampling cannot be set on current models, so each form
+is drawn three times.
+
+The next action is decomposed into its tool, program, paths, search pattern
+and line range, or a final answer judged by the task's own check. A form's
+NAP at a step is the share of its draws equal to raw's most frequent action;
+raw's own share is the noise floor. Input tokens are the API's exact usage. A
+failed call is `null` with its error, never zero. It refuses to run without
+`--live`, reads the key only from `ANTHROPIC_API_KEY` and never writes into
+an existing output directory. `test_nap.py` checks the rebuilding, the
+decomposition, the scoring and the guards with a stand-in client.
+
+```sh
+python3 bench/live.py --live --arm off ... --transcripts /tmp/tx
+ANTHROPIC_API_KEY=... python3 bench/nap.py --live --transcripts /tmp/tx --out /tmp/nap
+```
