@@ -229,8 +229,10 @@ Median over 30 runs, cold application cache, macOS arm64, Scopelet
 <!-- speed-table:end -->
 
 These figures are replaced on every release: `bench/publish.py` measures the
-new binary, writes the two reports under `bench/results/` and rewrites this
-table. No older version's numbers are kept anywhere in the repository.
+new binary, writes the content and performance reports under
+`bench/results/` and rewrites this table. The live, token and next-action
+reports beside them name the binary they measured by its SHA-256 and stay
+until a new campaign replaces them.
 
 Every stored item is a synced temporary renamed into place, and every read is
 checked against its content hash, so an interrupted write yields a missing or
@@ -238,15 +240,19 @@ rejected item, never a wrong one. Sending the same output twice reuses the
 stored original by address instead of reading and re-hashing it.
 
 > [!IMPORTANT]
-> **Bytes are not tokens, and none of the numbers above is a bill.** A live
-> campaign (`bench/live.py`, Claude Code 2.1.296 with Haiku, four synthetic
-> tasks, three paired rounds, 36 sessions) found every task done correctly
-> with Scopelet off, with 0.7.2's compact-v3 and with compact-v4. It did not
-> find a session saving above run-to-run noise: one extra turn costs about
-> 20,000 input tokens, the fixed context of a session is about 37,000, and
-> the paired median ratio of v4 to off was 1.01 (from 0.50 to 1.53). The
-> report is in `bench/results/`. Whole-session cost depends on your host,
-> model and task. Measure your own setup before you tell anyone a percentage.
+> **Bytes are not tokens, and none of the numbers above is a bill.** The
+> latest live campaign (`bench/live.py`, Claude Code 2.1.300, twelve synthetic
+> tasks, 144 Haiku and 48 Sonnet sessions in paired rounds) found every task
+> done correctly with Scopelet off, with compact-v4 and with compact-v5. It
+> found no billed cost per successful task that differs beyond run-to-run
+> noise: $0.00222 with Scopelet off and $0.00233 with v4 on Haiku, 95%
+> intervals overlapping zero. A session's cost follows its turns (each about
+> 19,500 input tokens, cache included), a compressed view sometimes costs one
+> more command, and the model narrows most commands itself; outputs over
+> about 30 KB are saved to a file by Claude Code, which shows its own
+> preview. The reports are in `bench/results/`. Whole-session cost depends on
+> your host, model and task. Measure your own setup before you tell anyone a
+> percentage.
 > [What is verified](docs/verification.md) ·
 > [benchmark reproduction](bench/README.md).
 

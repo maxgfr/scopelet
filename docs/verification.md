@@ -65,5 +65,10 @@ Bytes are not tokens, and no figure here is a bill. Earlier live-agent
 campaigns on Scopelet 0.1.x–0.3.x found no functional regression, but their
 run-to-run spread was wider than every token difference they measured, and they
 ran against binaries and a skill design that no longer ship. They were removed
-rather than kept as stale evidence. Whole-session cost depends on the host, the
-model and the task. Measure your own setup before quoting a percentage.
+rather than kept as stale evidence. The current campaigns (`bench/live.py`,
+twelve tasks, Claude Code 2.1.300 with Haiku and Sonnet) found every task done
+in every arm and no billed cost per successful task that differs from
+compact-v4's beyond noise, Scopelet off included; their reports name the
+binary they measured (`bench/README.md`). Whole-session cost depends on the
+host, the model and the task. Measure your own setup before quoting a
+percentage.

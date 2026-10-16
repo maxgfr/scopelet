@@ -1,8 +1,27 @@
 # Benchmarks
 
-Two offline probes measure the binary that ships. Neither calls a model, needs
-an API key, or talks to the network. Both refuse to overwrite an existing output
-directory: completed evidence is never replaced in place.
+| Probe | Question | Calls a model | Report |
+|---|---|---|---|
+| `content.py` | Does the view keep the facts? | no | `results/content.json`, every release |
+| `performance.py` | How fast, how much memory? | no | `results/performance.json`, every release |
+| `tokens.py` | What does each grammar cost in tokens? | token counting only (free) | `results/tokens.json` |
+| `live.py` | Does a session cost less per successful task? | yes, billed | `results/live-*.json` |
+| `nap.py` | Does a view change the agent's next action? | yes, billed | `results/nap-*.json` |
+
+The two offline probes measure the binary that ships on every release, need no
+API key and never talk to the network. The other three refuse to run without
+`--live` and read a key only from `ANTHROPIC_API_KEY` (or a Claude Code login
+for `live.py`). Every probe refuses to overwrite an existing output: completed
+evidence is never replaced in place, and a failed measurement stays in its
+report with its error, never as zero.
+
+Current figures, in short: on the twelve live tasks every arm answered every
+task, and no arm's cost per successful task differs from compact-v4's beyond
+noise, Scopelet off included (`live-20261016-cps-*.json`); compact-v5 shows
+6.1% fewer view tokens than v4 on the 0.10.0 fixtures (`tokens.json`, measured
+again on the released 0.11.0 binary, identical counts); every compressed view
+changes the next action on 5 of 8 replayed steps (`nap-20261016.json`). The
+details are below.
 
 Earlier live-agent campaigns (Codex Luna, Claude Haiku and Fable pilots against
 Caveman, Ponytail, RTK and Headroom, on Scopelet 0.1.x–0.3.x with the manual
@@ -165,8 +184,10 @@ kept, because Claude Code's OAuth credentials live in the login keychain;
 
 ```sh
 cargo build --release --locked
-python3 bench/live.py --live --runs 3 --arm off \
-  --arm v3=/path/to/scopelet-0.7.2@3 --arm v4=target/release/scopelet@4
+B=target/release/scopelet
+python3 bench/live.py --live --runs 3 --model haiku --baseline v4 \
+  --arm off --arm "v4=$B@4" --arm "v5g=$B@5:labels,header,tables" --arm "v5=$B@5" \
+  --transcripts /tmp/transcripts
 ```
 
 An arm is `off` or `NAME=BINARY@VERSION[:PARTS]`; `PARTS` is passed as
@@ -199,6 +220,13 @@ token and NAP reports stay until replaced on purpose. A report describes the
 binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
+
+`results/live-20261012-haiku.json` (Claude Code 2.1.296, Haiku, the first
+four tasks, three paired rounds, 36 sessions) compared Scopelet off, 0.7.2's
+compact-v3 and compact-v4: every task was done correctly in every arm, and no
+session saving rose above run-to-run noise. One extra turn cost about 20,000
+input tokens, the fixed context of a session about 37,000, and the paired
+median ratio of v4 to off was 1.01 (from 0.50 to 1.53).
 
 `results/live-20261016-v4-v5-haiku.json` pairs compact-v4 with compact-v5 (one
 binary, haiku, 3 rounds of the four tasks). Both arms answered 12 of 12
