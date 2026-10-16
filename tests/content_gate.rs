@@ -248,7 +248,12 @@ fn source_form(fact: &str) -> String {
 }
 
 /// Pending facts missing from the view, or an error when a gate fails.
-fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<String>, String> {
+fn check(
+    name: &str,
+    fixture: &Fixture,
+    cache: &std::path::Path,
+    version: Version,
+) -> Result<Vec<String>, String> {
     let (budget, small) = fixture.limits();
     // Hooks leave an output up to its profile's threshold untouched.
     let output = if fixture.bytes.len() <= small {
@@ -259,7 +264,7 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
             Some(cache.to_path_buf()),
             fixture.profile,
             None,
-            Version::default(),
+            version,
         )
         .map_err(|e| format!("{name}: {e:#}"))?
     };
@@ -290,7 +295,8 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
         ));
     }
     let text = std::str::from_utf8(&output).map_err(|e| format!("{name}: {e}"))?;
-    if !text.starts_with("[scopelet v4 ") && !text.starts_with("[scopelet compact-v") {
+    let short = text.starts_with("[scopelet v4 ") || text.starts_with("[scopelet v5 ");
+    if !short && !text.starts_with("[scopelet compact-v") {
         return Err(format!("{name}: missing compact header"));
     }
     if fixture.facts_visible {
@@ -304,12 +310,12 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
             "{name}: oversized line not marked text_truncated:\n{text}"
         ));
     }
-    // Compact-v4 shows 16 hex characters of the artifact; earlier versions
-    // the whole reference. Both resolve to the same stored artifact.
+    // Compact-v4 shows 16 hex characters of the artifact, v5 12; earlier
+    // versions the whole reference. All resolve to the same stored artifact.
     let reference = text
         .split_whitespace()
         .nth(2)
-        .filter(|id| text.starts_with("[scopelet v4 ") && id.len() == 16)
+        .filter(|id| short && matches!(id.len(), 12 | 16))
         .or_else(|| text.split_whitespace().find(|s| s.starts_with("artifact:")))
         .ok_or_else(|| format!("{name}: no artifact reference"))?;
     let store = Store::open(Some(cache.to_path_buf())).unwrap();
@@ -350,6 +356,16 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
 
 #[test]
 fn default_compression_meets_reduction_visibility_and_recovery_gates() {
+    gates(Version::default());
+}
+
+/// Compact-v5 writes v4's selection in fewer bytes: every gate still holds.
+#[test]
+fn compact_v5_meets_the_same_gates() {
+    gates(Version::V5);
+}
+
+fn gates(version: Version) {
     let dir = tempfile::tempdir().unwrap();
     let cache = dir.path().join("cache");
     let synthetic = fixtures();
@@ -360,7 +376,7 @@ fn default_compression_meets_reduction_visibility_and_recovery_gates() {
         .chain(files.iter().map(|(name, fixture)| (name.as_str(), fixture)));
     let (mut failures, mut pending) = (Vec::new(), Vec::new());
     for (name, fixture) in all {
-        match check(name, fixture, &cache) {
+        match check(name, fixture, &cache, version) {
             Ok(missing) => pending.extend(missing),
             Err(error) => failures.push(error),
         }

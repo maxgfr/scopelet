@@ -88,9 +88,9 @@ def recovery(binary, cache, output, original):
     Returns (exact, recovered): whether the original bytes came back exactly, and
     the bytes that were read. Raw artifact JSON is never compared with the source.
     """
-    # Compact-v4 headers show 16 hex characters of the artifact; earlier
-    # versions the whole reference. `expand` resolves both.
-    match = re.match(rb'\[scopelet v4 ([a-f0-9]{16})[ \]]', output) or re.search(rb'(artifact:[a-f0-9]{64})', output)
+    # Compact-v4 headers show 16 hex characters of the artifact, v5 12;
+    # earlier versions the whole reference. `expand` resolves all of them.
+    match = re.match(rb'\[scopelet v[45] ([a-f0-9]{12,16})[ \]]', output) or re.search(rb'(artifact:[a-f0-9]{64})', output)
     if not match:
         return output == original, None
     manifest = subprocess.run([str(binary), '--cache-dir', str(cache), 'expand', match[1].decode(), '--manifest'],

@@ -580,3 +580,52 @@ fields as `omitted_fields`), and as many rows as fit, rows carrying a diagnostic
 anchor first; the rows shown count as abridged and the others as omitted.
 Pretty-printed JSON keeps the line view, whose folding keeps rare values
 visible. No missing field becomes null and decimals stay exact.
+
+## Compact-v5
+
+`--compact-version 5` and `SCOPELET_COMPACT_VERSION=5` select compact-v5, which
+is opt-in: it costs 6.2% fewer view tokens than v4 on the benchmark fixtures,
+but a paired live campaign did not show a lower median session input, the
+condition set for making it the default (`bench/README.md`). It is
+compact-v4's selection written in fewer bytes: a v5 view shows exactly the units
+the v4 view of the same input shows, in the same order, with the same omitted
+and abridged counts and the same artifact. Every budget, reserve and refill pass
+is measured on the v4 form, so the bytes v5 saves are tokens saved, not room for
+more evidence. Each part below can be turned off alone with
+`SCOPELET_V5_GRAMMAR` (a comma-separated list of the parts to keep: `labels`,
+`header`, `tables`), which is how `bench/tokens.py` measures it. The cargo
+`totals` line keeps its explanation: dropping it saved 14 of 926 tokens on a
+twelve-binary run, and without it live sessions trusted their own partial sum
+of the results shown.
+
+**Header** (`header`). `[scopelet v5 ID complete]`, or `[scopelet v5 ID
+omitted=N abridged=M; gaps are not absence]`, with ` scan_complete=false` as in
+v4. `ID` is the first 12 hex characters of the artifact hash, resolved like any
+unique prefix; an ambiguous one fails, naming the count. The recovery syntax
+is not repeated in every view: the session guidance (`SessionStart`, again after
+a compaction, `SubagentStart`, OpenCode's system prompt) carries it. A repeat
+reference reads `[scopelet v5 ID repeat: identical to output already shown in
+this conversation (N lines)]`.
+
+**Labels** (`labels`). A view whose every record is the one `input` text labels
+units by line alone: `12 text`, `4-6 repeat=3 text`, `4 similar=480 last=492
+text`, `1-3` above a range block's indented lines, `1-9 file=src/a.rs more=2`
+for a search block and `9-95 file=Cargo.lock changed=+43/-3 omitted` for a
+collapsed diff. A label still starts every line that is not indented, so a
+line's own text never reads as a label. Multi-source views (repository
+queries) keep `source:` labels.
+
+**Tables** (`tables`). A table whose cells and constants are all scalars, and
+whose records' sources are `input` or follow from their index
+(`input#record=I`), is written `table COLUMNS rows=N` (complete) or `table
+COLUMNS rows=N/TOTAL indices=RANGES` (partial; `a-b` for three or more
+consecutive indices), then `constant KEY=VALUE,...` and one CSV row per record.
+Numbers, booleans and null are written as JSON writes them, so digits are exact;
+a string is bare unless it is empty, edged by whitespace, holds `,`, `"`, `=`,
+`\` or a control character, starts with `[` or `{`, or spells a number, a
+boolean or null, in which case it is a JSON string. A table with a nested cell,
+or with other record sources, keeps the v4 JSON form. A projection of large
+minified JSON writes `table COLUMNS rows=N/TOTAL`, its `constant` and
+`omitted_columns` lines and its rows the same way; an envelope table becomes
+`table=/POINTER COLUMNS rows=N`. Which rows a table shows is decided on its JSON
+form, which the CSV form never exceeds.

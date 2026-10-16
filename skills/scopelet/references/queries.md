@@ -133,7 +133,7 @@ capture is capped at 32 MiB per stream and truncation is explicitly reported.
 ## Compact output and shortcut operations
 
 `query` and `run` accept `--output compact`; their default JSON interface is
-unchanged. Compact output (v4 by default, `--compact-version` 1, 2 or 3 on
+unchanged. Compact output (v4 by default, `--compact-version` 1, 2, 3 or 5 on
 request) groups provenance behind an artifact reference and labels source
 lines, repetitions and omitted units. A unit is a whole JSON record
 or a run of identical text lines. `complete` (v4) and `display_complete`
@@ -215,6 +215,29 @@ envelope {...}  /  table=/items {...}                              a JSON object
 Lines that name a term of the prompt or of the command (a search pattern, a
 test filter) rank ahead of ordinary ones. Use `expand ID --find TEXT` to read
 any folded, omitted or abridged line in full.
+
+## Compact-v5 (opt-in)
+
+`--compact-version 5` or `SCOPELET_COMPACT_VERSION=5` shows exactly what v4
+shows, in about 6% fewer tokens. The header has a 12-character ID and no
+recovery hint (`[scopelet v5 ID omitted=N abridged=M; gaps are not absence]`);
+recover with `expand ID --find TEXT` as in v4. A view of one input labels lines
+by number alone:
+
+```
+42 text                                  line 42 (v4: input:42 text)
+4 similar=480 last=492 text              as in v4, without input:
+40-44                                    range block; indented lines follow
+40-44 file=src/a.rs more=7               search block of one file
+table id,status rows=31/1000 indices=0-28,643,999
+constant region=eu-west                  the same in every row
+643,failed                               one CSV row per record shown
+```
+
+A table cell is bare unless it would read as something else: a quoted cell is
+a JSON string (`"12"`, `"a,b"`, `" edge"`, `""`), a bare one a number, boolean
+or null as written, else text. Tables with nested values keep v4's JSON form.
+`totals` keeps its explanation.
 
 ## Compact-v3
 

@@ -377,7 +377,7 @@ fn command_args(command: &str, version: compress::Version) -> Option<(Vec<String
             }
             continue;
         }
-        let profile = crate::commands::profile_for(&first.argv, version == compress::Version::V4)?;
+        let profile = crate::commands::profile_for(&first.argv, version >= compress::Version::V4)?;
         if !first
             .env
             .iter()
@@ -568,7 +568,7 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
     // Compact-v4 replaces a field identical to one this context was already
     // shown (whole, as a view or raw) by a reference to it.
     let mut repeated = vec![false; fields.len()];
-    let context = context_key(event).filter(|_| version == compress::Version::V4);
+    let context = context_key(event).filter(|_| version >= compress::Version::V4);
     let mut state = context.as_deref().map(crate::session::load);
     if let Some(state) = &mut state {
         for (i, field) in fields.iter().enumerate() {
@@ -579,8 +579,14 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
             let hash = digest(raw.as_bytes());
             let hash = crate::session::short(&hash);
             if state.saw(hash)
-                && let Some(marker) =
-                    compress::repeat_recorded("claude", program, raw.as_bytes(), None, profile)
+                && let Some(marker) = compress::repeat_recorded(
+                    "claude",
+                    program,
+                    raw.as_bytes(),
+                    None,
+                    profile,
+                    version,
+                )
             {
                 output[*field] = json!(String::from_utf8(marker)?);
                 repeated[i] = true;
@@ -589,7 +595,7 @@ fn claude_result(event: &Value, version: compress::Version) -> Result<Value> {
             state.remember(hash);
         }
     }
-    let anchors = if version == compress::Version::V4 {
+    let anchors = if version >= compress::Version::V4 {
         let mut terms = anchors(event, state.as_ref(), command);
         terms.extend(extra);
         terms
@@ -733,7 +739,7 @@ fn subagent_guidance() -> String {
 /// output stays exact: the profile's in compact-v3, the default otherwise.
 fn limits(command: &str, version: compress::Version) -> (Option<Profile>, usize) {
     let profile = compress::effective_profile(
-        crate::commands::classify_lenient(command, version == compress::Version::V4),
+        crate::commands::classify_lenient(command, version >= compress::Version::V4),
         version,
     );
     (profile, profile.map_or(compress::SMALL, Profile::small))

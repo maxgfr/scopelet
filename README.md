@@ -359,6 +359,11 @@ keeps the first and last line, then the first occurrence of each distinct
 diagnostic, then repeats, warnings and the lines around a failure, filling
 from both ends so a final summary survives a flood of errors.
 `--compact-version 1|2|3` still produce the earlier formats byte for byte.
+`--compact-version 5` (or `SCOPELET_COMPACT_VERSION=5`) is opt-in: the same
+selection as v4 with a 12-character ID, labels without `input:` (`42 text`)
+and tables as CSV rows, 6.2% fewer view tokens on the benchmark fixtures; a
+paired live campaign did not show a session-level saving, so v4 stays the
+default ([bench/README.md](bench/README.md)).
 [Contracts and limits](docs/design.md).
 
 ## Response style

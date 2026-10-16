@@ -569,17 +569,17 @@ fn legacy_compact_versions_stay_byte_identical_and_unknown_versions_fail() {
         );
     }
     Command::new(assert_cmd::cargo::cargo_bin!("scopelet"))
-        .args(["--compact-version", "5", "compress"])
+        .args(["--compact-version", "6", "compress"])
         .write_stdin(repeated.as_bytes())
         .assert()
         .failure();
     let mut cmd = Command::new(assert_cmd::cargo::cargo_bin!("scopelet"));
     let out = cmd
         .args(["--cache-dir", dir.path().to_str().unwrap(), "compress"])
-        .env("SCOPELET_COMPACT_VERSION", "5")
+        .env("SCOPELET_COMPACT_VERSION", "6")
         .write_stdin(repeated.as_bytes())
         .output()
         .unwrap();
     assert!(!out.status.success());
-    assert!(String::from_utf8_lossy(&out.stderr).contains("must be 1, 2, 3 or 4"));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("must be 1, 2, 3, 4 or 5"));
 }

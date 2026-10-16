@@ -103,7 +103,9 @@ fn diagnostic(pattern: &regex::Regex, line: &str) -> bool {
     })
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, clap::ValueEnum)]
+/// Versions are ordered: every check of a version's feature is `>=` the
+/// version that introduced it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 pub enum Version {
     #[value(name = "1")]
     V1,
@@ -114,6 +116,9 @@ pub enum Version {
     #[default]
     #[value(name = "4")]
     V4,
+    /// Compact-v4's selection, written in fewer bytes (see `Grammar`).
+    #[value(name = "5")]
+    V5,
 }
 impl Version {
     /// The number `--compact-version` and `SCOPELET_COMPACT_VERSION` take.
@@ -123,6 +128,7 @@ impl Version {
             Self::V2 => 2,
             Self::V3 => 3,
             Self::V4 => 4,
+            Self::V5 => 5,
         }
     }
 
@@ -135,18 +141,59 @@ impl Version {
             Ok(v) if v == "2" => Ok(Self::V2),
             Ok(v) if v == "3" => Ok(Self::V3),
             Ok(v) if v == "4" => Ok(Self::V4),
+            Ok(v) if v == "5" => Ok(Self::V5),
             Err(std::env::VarError::NotPresent) => Ok(Self::default()),
-            _ => anyhow::bail!("SCOPELET_COMPACT_VERSION must be 1, 2, 3 or 4"),
+            _ => anyhow::bail!("SCOPELET_COMPACT_VERSION must be 1, 2, 3, 4 or 5"),
         }
     }
     /// Compact-v3 and later: command profiles, display copies, folding and
     /// tiered selection. V4 only changes the envelope around the same body.
     pub fn profiled(self) -> bool {
-        matches!(self, Self::V3 | Self::V4)
+        self >= Self::V3
     }
     /// Partial JSON tables with indices and provenance (everything after v1).
     fn tables(self) -> bool {
         self != Self::V1
+    }
+}
+
+/// How compact-v5 writes what compact-v4 selects. Each part can be turned off
+/// alone, so a probe can measure what it saves (`SCOPELET_V5_GRAMMAR`, a
+/// comma-separated list of the parts to keep; all of them when unset).
+/// Selection never depends on it: a v5 view shows exactly the units the v4
+/// view of the same input shows.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct Grammar {
+    /// `labels`: a view of one `input` text drops `input:` from its labels.
+    labels: bool,
+    /// `header`: a 12-character ID and no recovery syntax, which the session
+    /// guidance carries.
+    header: bool,
+    /// `tables`: a table of scalar cells as a header and CSV rows.
+    tables: bool,
+}
+
+static V5_GRAMMAR: LazyLock<Grammar> = LazyLock::new(|| {
+    let parts = std::env::var("SCOPELET_V5_GRAMMAR").ok();
+    let has = |part: &str| {
+        parts
+            .as_deref()
+            .is_none_or(|parts| parts.split(',').any(|p| p.trim() == part))
+    };
+    Grammar {
+        labels: has("labels"),
+        header: has("header"),
+        tables: has("tables"),
+    }
+});
+
+impl Grammar {
+    fn of(version: Version) -> Self {
+        if version >= Version::V5 {
+            *V5_GRAMMAR
+        } else {
+            Self::default()
+        }
     }
 }
 
@@ -303,7 +350,7 @@ pub fn effective_profile(
     // Install arrived with compact-v4: earlier versions keep the defaults
     // they gave an unrecognized command.
     profile.filter(|p| {
-        version.profiled() && (version == Version::V4 || *p != crate::commands::Profile::Install)
+        version.profiled() && (version >= Version::V4 || *p != crate::commands::Profile::Install)
     })
 }
 
@@ -419,7 +466,7 @@ pub fn automatic_journaled<'a>(
     anchors: &[String],
 ) -> Cow<'a, [u8]> {
     let shape = Shape::of(profile, budget, version);
-    let anchors = if version == Version::V4 { anchors } else { &[] };
+    let anchors = if version >= Version::V4 { anchors } else { &[] };
     let (output, decision) =
         automatic_with(bytes, shape, version, anchors, || Store::open(path.clone()))
             .unwrap_or_else(|_| (Cow::Borrowed(bytes), Decision::unchanged(Reason::Error)));
@@ -512,7 +559,7 @@ fn automatic_with<'a>(
     // longer one is left out rather than starving the view of the output it
     // describes.
     let mut action = String::new();
-    if version == Version::V4 && shape.profile == Some(crate::commands::Profile::Tests) {
+    if version >= Version::V4 && shape.profile == Some(crate::commands::Profile::Tests) {
         for line in [failure_line(text), totals_line(text)]
             .into_iter()
             .flatten()
@@ -607,9 +654,15 @@ fn store_original(store: &Store, bytes: &[u8], format: Format) -> Result<(String
 
 /// The compact-v4 reference that replaces an output already shown in the
 /// same context.
-fn repeat_marker(id: &str, lines: usize) -> String {
+fn repeat_marker(id: &str, lines: usize, version: Version) -> String {
+    let recover = if Grammar::of(version).header {
+        ""
+    } else {
+        "; expand ID"
+    };
     format!(
-        "{V4_PREFIX}{id} repeat: identical to output already shown in this conversation ({lines} lines); expand ID]\n"
+        "{}{id} repeat: identical to output already shown in this conversation ({lines} lines){recover}]\n",
+        prefix(version)
     )
 }
 
@@ -624,23 +677,29 @@ pub fn repeat_recorded(
     bytes: &[u8],
     path: Option<PathBuf>,
     profile: Option<crate::commands::Profile>,
+    version: Version,
 ) -> Option<Vec<u8>> {
     let text = std::str::from_utf8(bytes).ok()?;
     let format = Parsed::detected(text.to_owned()).format();
     let store = Store::open(path.clone()).ok()?;
     let (artifact, blob) = store_original(&store, bytes, format).ok()?;
     store.set_last(&artifact);
-    let marker = repeat_marker(short_id(&artifact), clean::line_count(text)).into_bytes();
+    let marker = repeat_marker(
+        short_id(&artifact, version),
+        clean::line_count(text),
+        version,
+    )
+    .into_bytes();
     crate::events::record(
         path,
         crate::events::Event {
             host: host.into(),
-            profile: effective_profile(profile, Version::V4).map(|p| p.name().into()),
+            profile: effective_profile(profile, version).map(|p| p.name().into()),
             program: program.map(str::to_owned),
             bytes_in: bytes.len(),
             bytes_out: marker.len(),
             reason: Some(Reason::Repeat),
-            version: Some(Version::V4.number()),
+            version: Some(version.number()),
             artifact: Some(crate::events::prefix(&artifact)),
             blob: Some(crate::events::prefix(&blob)),
             ..Default::default()
@@ -676,9 +735,10 @@ pub fn compact_version(
 /// Write the stored artifact's reference into a view's header. Only our
 /// header is substituted, never placeholder-looking text in original evidence.
 fn identify(text: &mut String, data: &Dataset, artifact: &str, version: Version) {
-    if version == Version::V4 {
+    if version >= Version::V4 {
         let at = V4_PREFIX.len();
-        text.replace_range(at..at + SHORT_ID, short_id(artifact));
+        let id = short_id(artifact, version);
+        text.replace_range(at..at + id.len(), id);
     } else {
         let end = text.find('\n').unwrap() + 1;
         text.replace_range(..end, &header(data, artifact, version));
@@ -700,20 +760,49 @@ fn header(data: &Dataset, artifact: &str, version: Version) -> String {
             "[scopelet compact-v3 {artifact} scan_complete={}; recover: scopelet expand ID --find TEXT (or --manifest)]\n",
             data.scan_complete
         ),
-        Version::V4 => header_v4(short_id(artifact), 0, 0, data.scan_complete),
+        Version::V4 | Version::V5 => header_v4(
+            short_id(artifact, version),
+            version,
+            0,
+            0,
+            data.scan_complete,
+        ),
     }
 }
 
 /// Hex characters of the artifact hash a compact-v4 header shows. `expand`
 /// resolves it like any unique prefix of 8 or more characters.
 const SHORT_ID: usize = 16;
+/// The same in a compact-v5 header: still unique in any local cache, and
+/// `expand` fails loudly rather than guess when it is not.
+const SHORT_ID_V5: usize = 12;
 const V4_PREFIX: &str = "[scopelet v4 ";
 const PLACEHOLDER_ID: &str = "0000000000000000";
 
-/// The first `SHORT_ID` hex characters of a reference, or the placeholder.
-fn short_id(reference: &str) -> &str {
+/// The prefix of a view's header: every compact-v4 and v5 header starts
+/// with `[scopelet vN ` and its ID.
+fn prefix(version: Version) -> &'static str {
+    if version >= Version::V5 {
+        "[scopelet v5 "
+    } else {
+        V4_PREFIX
+    }
+}
+
+fn id_len(version: Version) -> usize {
+    if Grammar::of(version).header {
+        SHORT_ID_V5
+    } else {
+        SHORT_ID
+    }
+}
+
+/// The first hex characters of a reference a header shows, or the
+/// placeholder.
+fn short_id(reference: &str, version: Version) -> &str {
+    let len = id_len(version);
     let hash = reference.split_once(':').map_or(reference, |(_, h)| h);
-    hash.get(..SHORT_ID).unwrap_or(PLACEHOLDER_ID)
+    hash.get(..len).unwrap_or(&PLACEHOLDER_ID[..len])
 }
 
 /// The single line that frames a compact-v4 view: its short artifact ID,
@@ -723,7 +812,21 @@ fn short_id(reference: &str) -> &str {
 /// `abridged` counts units shown only in part (a line cut behind
 /// `text_truncated`, a record shown without some of its fields): a view with
 /// any is not complete either.
-fn header_v4(id: &str, omitted: usize, abridged: usize, scan_complete: bool) -> String {
+/// Compact-v5 writes the same facts with a shorter ID, and without the
+/// recovery syntax the session guidance already gives.
+fn header_v4(
+    id: &str,
+    version: Version,
+    omitted: usize,
+    abridged: usize,
+    scan_complete: bool,
+) -> String {
+    let start = prefix(version);
+    let recover = if Grammar::of(version).header {
+        ""
+    } else {
+        "; expand ID --find TEXT"
+    };
     let scan = if scan_complete {
         ""
     } else {
@@ -735,11 +838,9 @@ fn header_v4(id: &str, omitted: usize, abridged: usize, scan_complete: bool) -> 
         String::new()
     };
     if omitted == 0 && abridged.is_empty() {
-        format!("{V4_PREFIX}{id}{scan} complete]\n")
+        format!("{start}{id}{scan} complete]\n")
     } else {
-        format!(
-            "{V4_PREFIX}{id}{scan} omitted={omitted}{abridged}; gaps are not absence; expand ID --find TEXT]\n"
-        )
+        format!("{start}{id}{scan} omitted={omitted}{abridged}; gaps are not absence{recover}]\n")
     }
 }
 fn footer(omitted: usize) -> String {
@@ -857,10 +958,12 @@ impl<'a> Unit<'a> {
             _ => None,
         }
     }
-    fn append(&self, output: &mut String) {
+    /// Render the unit; `bare` (compact-v5) drops its `source:`. Its size
+    /// stays what the labelled unit takes, which selection counts.
+    fn append(&self, output: &mut String, bare: bool) {
         if let Some(line) = &self.line {
             let start = output.len();
-            self.label.write(&self.record.source, output);
+            self.label.write(&self.record.source, bare, output);
             if self.truncated > 0 {
                 output.push_str(TRUNCATED_MARK);
                 output.push_str(&self.truncated.to_string());
@@ -872,7 +975,16 @@ impl<'a> Unit<'a> {
             if !line.ends_with('\n') {
                 output.push('\n');
             }
-            debug_assert_eq!(output.len() - start, self.size, "unit size drifted");
+            let dropped = if bare {
+                self.record.source.len() + 1
+            } else {
+                0
+            };
+            debug_assert_eq!(
+                output.len() - start + dropped,
+                self.size,
+                "unit size drifted"
+            );
         } else {
             output.push_str(&self.record.source);
             output.push_str(": ");
@@ -899,20 +1011,33 @@ impl Label {
                 }
             }
     }
-    fn write(&self, source: &str, output: &mut String) {
+    /// `bare` writes the label without its `source:` (a compact-v5 view of
+    /// one input); a prefix label then drops the same leading `source:`.
+    fn write(&self, source: &str, bare: bool, output: &mut String) {
         use std::fmt::Write;
         if let Self::Prefix(prefix) = self {
-            output.push_str(prefix);
+            let label = if bare {
+                prefix
+                    .strip_prefix(source)
+                    .and_then(|rest| rest.strip_prefix(':'))
+                    .unwrap_or(prefix)
+            } else {
+                prefix
+            };
+            output.push_str(label);
             return;
         }
-        output.push_str(source);
+        if !bare {
+            output.push_str(source);
+            output.push(':');
+        }
         // Writing into a String cannot fail.
         let _ = match *self {
             Self::Prefix(_) => unreachable!(),
-            Self::Line(a) => write!(output, ":{a}"),
-            Self::Run { a, b, n } => write!(output, ":{a}-{b} repeat={n}"),
-            Self::Repeat { a, n, b } => write!(output, ":{a} repeat={n} last={b}"),
-            Self::Similar { a, n, b } => write!(output, ":{a} similar={n} last={b}"),
+            Self::Line(a) => write!(output, "{a}"),
+            Self::Run { a, b, n } => write!(output, "{a}-{b} repeat={n}"),
+            Self::Repeat { a, n, b } => write!(output, "{a} repeat={n} last={b}"),
+            Self::Similar { a, n, b } => write!(output, "{a} similar={n} last={b}"),
         };
     }
 }
@@ -1587,6 +1712,9 @@ struct Kind {
     /// Compact-v4 test runs: cargo's per-binary `test result:` lines are
     /// shown before ordinary lines and never fold by template.
     tests: bool,
+    /// Compact-v5: a view whose every record is the one `input` text writes
+    /// its labels without `input:`.
+    bare: bool,
 }
 
 impl Kind {
@@ -1594,11 +1722,12 @@ impl Kind {
         use crate::commands::Profile;
         Self {
             file_read: profile == Some(Profile::FileRead),
-            search: version == Version::V4 && profile == Some(Profile::Search),
-            diff_files: version == Version::V4,
-            install: version == Version::V4 && profile == Some(Profile::Install),
-            similar_on_overflow: version == Version::V4,
-            tests: version == Version::V4 && profile == Some(Profile::Tests),
+            search: version >= Version::V4 && profile == Some(Profile::Search),
+            diff_files: version >= Version::V4,
+            install: version >= Version::V4 && profile == Some(Profile::Install),
+            similar_on_overflow: version >= Version::V4,
+            tests: version >= Version::V4 && profile == Some(Profile::Tests),
+            bare: Grammar::of(version).labels,
         }
     }
 }
@@ -1726,7 +1855,9 @@ fn extension(name: &str) -> &str {
 /// as everywhere else (`source:a`, or `source:a-b` range blocks). Returns
 /// (body, shown lines, omitted lines), or None when the text is not a
 /// listing or no directory folds.
-fn listing_view(record: &Record, available: usize) -> Option<(String, usize, usize)> {
+/// `bare` (compact-v5) writes the same lines without `source:`; where the
+/// budget cuts them is measured with it.
+fn listing_view(record: &Record, available: usize, bare: bool) -> Option<(String, usize, usize)> {
     use std::fmt::Write;
     let views: Vec<Cow<'_, str>> = record
         .text
@@ -1776,6 +1907,8 @@ fn listing_view(record: &Record, available: usize) -> Option<(String, usize, usi
     // travels with the entry it precedes.
     let base = record.start_line.unwrap_or(1);
     let mut body = String::new();
+    // What the labelled body takes: the budget cuts the bare one alike.
+    let mut measured = 0;
     let (mut shown, mut i) = (0, 0);
     let n = lines.len();
     while i < n {
@@ -1788,24 +1921,29 @@ fn listing_view(record: &Record, available: usize) -> Option<(String, usize, usi
             j += 1;
         }
         let text = |k: usize| views[k].trim_end_matches(['\n', '\r']);
-        let render = |end: usize| {
+        let render = |end: usize, bare: bool| {
             let mut part = summary.get(&i).cloned().unwrap_or_default();
+            let source = if bare {
+                String::new()
+            } else {
+                format!("{}:", record.source)
+            };
             if end + 1 - i >= BLOCK_MIN_LINES {
-                let _ = writeln!(part, "{}:{}-{}", record.source, base + i, base + end);
+                let _ = writeln!(part, "{source}{}-{}", base + i, base + end);
                 for k in i..=end {
                     let _ = writeln!(part, " {}", text(k));
                 }
             } else {
                 for k in i..=end {
-                    let _ = writeln!(part, "{}:{} {}", record.source, base + k, text(k));
+                    let _ = writeln!(part, "{source}{} {}", base + k, text(k));
                 }
             }
             part
         };
-        let mut part = render(j);
-        if body.len() + part.len() > available {
+        let mut part = render(j, false);
+        if measured + part.len() > available {
             // Keep the longest beginning of this run that fits, then stop.
-            let room = available - body.len();
+            let room = available - measured;
             let mut end = i;
             let mut size = summary.get(&i).map_or(0, String::len)
                 + record.source.len()
@@ -1818,15 +1956,16 @@ fn listing_view(record: &Record, available: usize) -> Option<(String, usize, usi
             if end == i {
                 break;
             }
-            part = render(end - 1);
-            if body.len() + part.len() > available {
+            part = render(end - 1, false);
+            if measured + part.len() > available {
                 break;
             }
-            body.push_str(&part);
+            body.push_str(&if bare { render(end - 1, true) } else { part });
             shown += end - i;
             break;
         }
-        body.push_str(&part);
+        measured += part.len();
+        body.push_str(&if bare { render(j, true) } else { part });
         shown += j + 1 - i;
         i = j + 1;
     }
@@ -2240,10 +2379,12 @@ fn consecutive(a: &Unit<'_>, b: &Unit<'_>) -> bool {
 /// file become `source:a-b file=PATH` and each line is shown without its
 /// `PATH:` or `PATH-` prefix; the file's first block counts the matches not
 /// shown (`more=N`).
+/// `bare` (compact-v5) writes every label without its `source:`.
 fn render_v3(
     units: &[Unit<'_>],
     selected: &[usize],
     totals: Option<&HashMap<String, usize>>,
+    bare: bool,
     output: &mut String,
 ) {
     use std::fmt::Write;
@@ -2274,10 +2415,12 @@ fn render_v3(
             }
             if j > i {
                 let (first, last) = (&units[selected[i]], &units[selected[j]]);
+                if !bare {
+                    let _ = write!(output, "{}:", first.record.source);
+                }
                 let _ = write!(
                     output,
-                    "{}:{}-{} file={path}",
-                    first.record.source,
+                    "{}-{} file={path}",
                     first.block().unwrap(),
                     last.block().unwrap()
                 );
@@ -2311,12 +2454,16 @@ fn render_v3(
         }
         if j + 1 - i >= BLOCK_MIN_LINES {
             let (first, last) = (&units[selected[i]], &units[selected[j]]);
-            output.push_str(&format!(
-                "{}:{}-{}\n",
-                first.record.source,
+            if !bare {
+                output.push_str(&first.record.source);
+                output.push(':');
+            }
+            let _ = writeln!(
+                output,
+                "{}-{}",
                 first.block().unwrap(),
                 last.block().unwrap()
-            ));
+            );
             for &k in &selected[i..=j] {
                 output.push(' ');
                 output.push_str(units[k].line.as_deref().unwrap());
@@ -2324,7 +2471,7 @@ fn render_v3(
             }
         } else {
             for &k in &selected[i..=j] {
-                units[k].append(output);
+                units[k].append(output, bare);
             }
         }
         i = j + 1;
@@ -2350,15 +2497,18 @@ fn select(units: &[Unit<'_>], available: usize) -> Vec<usize> {
 }
 
 /// Compact-v3 selection and rendering, spending what range blocks save.
+/// Selection measures labelled lines; `bare` (compact-v5) then writes the
+/// same selection without `source:`.
 fn fill_v3(
     units: &[Unit<'_>],
     available: usize,
     totals: Option<&HashMap<String, usize>>,
+    bare: bool,
 ) -> (String, Vec<usize>) {
     let plan = Tiers::new(units);
     let mut selected = select_v3(units, &plan, available, available);
     let mut body = String::new();
-    render_v3(units, &selected, totals, &mut body);
+    render_v3(units, &selected, totals, false, &mut body);
     // Range blocks cost less than the per-line labels selection counted.
     // Spend that slack on more evidence, re-measuring the rendered bytes
     // each time and keeping only a pass that still fits the budget.
@@ -2370,13 +2520,17 @@ fn fill_v3(
         }
         let more = select_v3(units, &plan, available + extra + slack, available);
         let mut extended = String::new();
-        render_v3(units, &more, totals, &mut extended);
+        render_v3(units, &more, totals, false, &mut extended);
         if more.len() <= selected.len() || extended.len() > available {
             break;
         }
         extra += slack;
         selected = more;
         body = extended;
+    }
+    if bare {
+        body.clear();
+        render_v3(units, &selected, totals, true, &mut body);
     }
     (body, selected)
 }
@@ -2623,7 +2777,7 @@ impl Frame {
         Self {
             version,
             scan_complete: data.scan_complete,
-            head: if version == Version::V4 {
+            head: if version >= Version::V4 {
                 String::new()
             } else {
                 header(data, artifact, version)
@@ -2635,7 +2789,15 @@ impl Frame {
     /// versions keep their fixed reserve so their bytes stay identical.
     fn reserve(&self, units: usize) -> usize {
         match self.version {
-            Version::V4 => header_v4(PLACEHOLDER_ID, units, units, self.scan_complete).len(),
+            // V5 reserves v4's header, so both select the same units.
+            Version::V4 | Version::V5 => header_v4(
+                PLACEHOLDER_ID,
+                Version::V4,
+                units,
+                units,
+                self.scan_complete,
+            )
+            .len(),
             Version::V3 => self.head.len() + footer(units).len(),
             Version::V1 | Version::V2 => self.head.len() + 160,
         }
@@ -2643,13 +2805,15 @@ impl Frame {
     /// Metadata of a complete table.
     fn complete_reserve(&self) -> usize {
         match self.version {
-            Version::V4 => header_v4(PLACEHOLDER_ID, 0, 0, self.scan_complete).len(),
+            Version::V4 | Version::V5 => {
+                header_v4(PLACEHOLDER_ID, Version::V4, 0, 0, self.scan_complete).len()
+            }
             _ => self.head.len() + TABLE_TAIL.len(),
         }
     }
     fn complete(&self, table: &str) -> String {
         match self.version {
-            Version::V4 => header_v4(PLACEHOLDER_ID, 0, 0, self.scan_complete) + table,
+            Version::V4 | Version::V5 => self.header(0, 0) + table,
             _ => format!("{}{table}{TABLE_TAIL}", self.head),
         }
     }
@@ -2660,9 +2824,14 @@ impl Frame {
     /// earlier versions do not count them.
     fn finish_abridged(&self, body: &str, omitted: usize, abridged: usize) -> String {
         match self.version {
-            Version::V4 => header_v4(PLACEHOLDER_ID, omitted, abridged, self.scan_complete) + body,
+            Version::V4 | Version::V5 => self.header(omitted, abridged) + body,
             _ => format!("{}{body}{}", self.head, footer(omitted)),
         }
+    }
+    /// A compact-v4 or v5 header with the placeholder ID.
+    fn header(&self, omitted: usize, abridged: usize) -> String {
+        let id = &PLACEHOLDER_ID[..id_len(self.version)];
+        header_v4(id, self.version, omitted, abridged, self.scan_complete)
     }
 }
 
@@ -2717,7 +2886,14 @@ fn view(
     let uniform = compact_table::uniform(data);
     // Compact-v4 tables name constant columns once; a complete one needs no
     // indices, its rows being every record in order.
-    let v4 = version == Version::V4;
+    let v4 = version >= Version::V4;
+    let csv = Grammar::of(version).tables;
+    // Compact-v5 labels a view of the one `input` text by line alone.
+    let bare = kind.bare
+        && data
+            .records
+            .iter()
+            .all(|r| r.value.is_none() && r.source == "input");
     if uniform {
         let indices: Vec<_> = (0..data.records.len()).collect();
         if let Some(table) = compact_table::encode_with(
@@ -2725,6 +2901,7 @@ fn view(
             &indices,
             version.tables() && !v4,
             v4,
+            csv,
             budget.saturating_sub(frame.complete_reserve()),
         ) {
             return Ok((frame.complete(&table), indices.len()));
@@ -2734,7 +2911,7 @@ fn view(
         && let [record] = data.records.as_slice()
         && let Some(value) = &record.value
         && let Some(table) =
-            compact_table::envelope(value, budget.saturating_sub(frame.complete_reserve()))
+            compact_table::envelope(value, budget.saturating_sub(frame.complete_reserve()), csv)
     {
         return Ok((frame.complete(&table), 1));
     }
@@ -2746,7 +2923,7 @@ fn view(
         && let [record] = data.records.as_slice()
         && record.value.is_none()
         && record.text.len() > available
-        && let Some((body, shown, omitted)) = listing_view(record, available)
+        && let Some((body, shown, omitted)) = listing_view(record, available, bare)
     {
         let output = frame.finish(&body, omitted);
         ensure!(output.len() <= budget, "compact metadata exceeds budget");
@@ -2768,7 +2945,7 @@ fn view(
                 .as_ref()
                 .is_some_and(|v| encoding::size(v, available / 4).is_none())
         })
-        && let Some(projection) = compact_table::projection(data, available, &important)
+        && let Some(projection) = compact_table::projection(data, available, &important, csv)
     {
         let omitted = projection.total - projection.shown;
         let output = frame.finish_abridged(&projection.text, omitted, projection.abridged);
@@ -2781,7 +2958,7 @@ fn view(
         // Exact row costs include positional provenance. Fixed schema/envelope costs
         // are counted by the same serializer as the final table.
         let (columns, _) = compact_table::columns(data, v4);
-        if let Some(empty) = compact_table::encode_with(data, &[], true, v4, available) {
+        if let Some(empty) = compact_table::encode_with(data, &[], true, v4, false, available) {
             let varying_sources = data
                 .records
                 .iter()
@@ -2799,7 +2976,8 @@ fn view(
             }
             let indices = select(&units, available.saturating_sub(empty.len()));
             if !indices.is_empty()
-                && let Some(table) = compact_table::encode_with(data, &indices, true, v4, available)
+                && let Some(table) =
+                    compact_table::encode_with(data, &indices, true, v4, csv, available)
             {
                 let output = frame.finish(&table, units.len() - indices.len());
                 return Ok((output, indices.len()));
@@ -2810,7 +2988,7 @@ fn view(
         units = self::units(data, available, version, kind, anchoring);
     }
     let (body, selected) = if version.profiled() {
-        let (body, selected) = fill_v3(&units, available, totals);
+        let (body, selected) = fill_v3(&units, available, totals, bare);
         if selected.is_empty()
             && let Some(text) = original
             && data.records.iter().any(|r| r.value.is_some())
@@ -2833,7 +3011,8 @@ fn view(
             let mut units = Vec::new();
             anchoring.reset(available);
             text_units_v3(&record, available, kind, &mut seen, anchoring, &mut units);
-            let (body, selected) = fill_v3(&units, available, totals);
+            // The document's own lines: the one `input` text.
+            let (body, selected) = fill_v3(&units, available, totals, kind.bare);
             let output =
                 frame.finish_abridged(&body, units.len() - selected.len(), cut(&units, &selected));
             ensure!(output.len() <= budget, "compact metadata exceeds budget");
@@ -2844,7 +3023,7 @@ fn view(
         let selected = select(&units, available);
         let mut body = String::new();
         for &i in &selected {
-            units[i].append(&mut body);
+            units[i].append(&mut body, false);
         }
         (body, selected)
     };

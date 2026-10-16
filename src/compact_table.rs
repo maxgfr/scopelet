@@ -89,12 +89,17 @@ pub(crate) fn columns(data: &Dataset, constants: bool) -> (Vec<&str>, Vec<&str>)
 }
 
 /// A `table` line of the records at `indices`; `v2` adds their indices and
-/// the total, `constants` moves constant columns to `constant`.
+/// the total, `constants` moves constant columns to `constant`. `csv`
+/// (compact-v5) writes the same table as a header and CSV rows when every
+/// cell is a scalar and its record sources follow from its indices (see
+/// `csv_table`). Whether the table fits is decided on its JSON form either
+/// way, so v4 and v5 show the same rows; the CSV form is never longer.
 pub(crate) fn encode_with(
     data: &Dataset,
     indices: &[usize],
     v2: bool,
     constants: bool,
+    csv: bool,
     limit: usize,
 ) -> Option<String> {
     let first = data.records.first()?;
@@ -124,7 +129,155 @@ pub(crate) fn encode_with(
         total_records: v2.then_some(data.records.len()),
     };
     encoding::size(&table, limit.saturating_sub(7))?;
+    if csv
+        && let Some(text) = csv_table(data, indices, v2, &columns, &fixed, "table")
+        && text.len() <= limit
+    {
+        return Some(text);
+    }
     Some(format!("table {}\n", serde_json::to_string(&table).ok()?))
+}
+
+/// Compact-v5 table: `LABEL COLUMNS rows=N`, or `rows=N/TOTAL
+/// indices=RANGES` when only some records are shown (`a-b` for three or more
+/// consecutive indices), then `constant KEY=VALUE,...` and one CSV row per
+/// record. None when a cell is an array or an object, or when a record's
+/// source is not `input` or `input#record=INDEX`: the JSON table says those.
+fn csv_table(
+    data: &Dataset,
+    indices: &[usize],
+    partial: bool,
+    columns: &[&str],
+    fixed: &[&str],
+    label: &str,
+) -> Option<String> {
+    let deduced = indices.iter().all(|&i| {
+        let source = &data.records[i].source;
+        source == "input" || *source == format!("input#record={i}")
+    });
+    if !deduced || (!partial && indices.len() != data.records.len()) {
+        return None;
+    }
+    fn value<'r>(record: &'r Record, key: &str) -> Option<&'r Value> {
+        record.value.as_ref()?.as_object()?.get(key)
+    }
+    let mut text = format!("{label} {}", names(columns)?);
+    if partial {
+        text.push_str(&format!(
+            " rows={}/{} indices={}",
+            indices.len(),
+            data.records.len(),
+            ranges(indices)
+        ));
+    } else {
+        text.push_str(&format!(" rows={}", indices.len()));
+    }
+    text.push('\n');
+    if let Some(first) = data.records.first() {
+        constants(fixed, |key| value(first, key), &mut text)?;
+    }
+    for &i in indices {
+        let record = &data.records[i];
+        let cells: Vec<&Value> = columns
+            .iter()
+            .map(|key| value(record, key))
+            .collect::<Option<_>>()?;
+        row(&cells, &mut text)?;
+    }
+    Some(text)
+}
+
+/// Column names as CSV cells.
+fn names(columns: &[&str]) -> Option<String> {
+    let mut text = String::new();
+    for (k, name) in columns.iter().enumerate() {
+        if k > 0 {
+            text.push(',');
+        }
+        cell(&Value::String((*name).to_owned()), &mut text)?;
+    }
+    Some(text)
+}
+
+/// `constant KEY=VALUE,...` for the keys whose value every row shares.
+fn constants<'v>(
+    fixed: &[&str],
+    value: impl Fn(&str) -> Option<&'v Value>,
+    text: &mut String,
+) -> Option<()> {
+    if fixed.is_empty() {
+        return Some(());
+    }
+    text.push_str("constant ");
+    for (k, key) in fixed.iter().enumerate() {
+        if k > 0 {
+            text.push(',');
+        }
+        cell(&Value::String((*key).to_owned()), text)?;
+        text.push('=');
+        cell(value(key)?, text)?;
+    }
+    text.push('\n');
+    Some(())
+}
+
+/// One CSV row and its newline.
+fn row(cells: &[&Value], text: &mut String) -> Option<()> {
+    for (k, value) in cells.iter().enumerate() {
+        if k > 0 {
+            text.push(',');
+        }
+        cell(value, text)?;
+    }
+    text.push('\n');
+    Some(())
+}
+
+/// Indices as `a-b` runs of three or more and single values.
+fn ranges(indices: &[usize]) -> String {
+    let mut parts = Vec::new();
+    let mut k = 0;
+    while k < indices.len() {
+        let mut end = k;
+        while end + 1 < indices.len() && indices[end + 1] == indices[end] + 1 {
+            end += 1;
+        }
+        if end - k >= 2 {
+            parts.push(format!("{}-{}", indices[k], indices[end]));
+        } else {
+            parts.extend(indices[k..=end].iter().map(usize::to_string));
+        }
+        k = end + 1;
+    }
+    parts.join(",")
+}
+
+/// A scalar as a compact-v5 cell: numbers, booleans and null as JSON
+/// writes them (exact digits kept), a string bare unless a reader could take
+/// it for something else, else as a JSON string. None for an array or an
+/// object.
+fn cell(value: &Value, text: &mut String) -> Option<()> {
+    match value {
+        Value::String(string) if !quoted(string) => text.push_str(string),
+        Value::Array(_) | Value::Object(_) => return None,
+        value => text.push_str(&serde_json::to_string(value).ok()?),
+    }
+    Some(())
+}
+
+/// Whether a string needs quotes to read back as itself: empty, edged by
+/// whitespace, holding a separator, a quote, a backslash or a control
+/// character, starting like JSON, or spelling a number, a boolean or null.
+fn quoted(string: &str) -> bool {
+    string.is_empty()
+        || string.trim() != string
+        || string
+            .chars()
+            .any(|c| matches!(c, ',' | '"' | '\\' | '=') || c.is_control())
+        || string.starts_with(['[', '{'])
+        || matches!(string, "true" | "false" | "null")
+        || string.parse::<f64>().is_ok()
+        || serde_json::from_str::<Value>(string).is_ok_and(|v| v.is_number())
 }
 
 pub(crate) fn row_size(record: &Record, columns: &[&str], limit: usize) -> Option<usize> {
@@ -167,10 +320,14 @@ pub(crate) struct Projection {
 /// invented.
 /// `important` marks the objects shown first (a diagnostic, an anchor); the
 /// others follow in order, and the table keeps source order.
+/// `csv` (compact-v5) writes the table as `LABEL COLUMNS rows=N/TOTAL`,
+/// `constant` and `omitted_columns` lines, then CSV rows; the rows chosen are
+/// those the JSON form fits.
 pub(crate) fn projection(
     data: &Dataset,
     limit: usize,
     important: &dyn Fn(&Value) -> bool,
+    csv: bool,
 ) -> Option<Projection> {
     let (envelope, pointer, items): (
         Option<serde_json::Map<String, Value>>,
@@ -311,7 +468,26 @@ pub(crate) fn projection(
         .iter()
         .map(|&i| columns.iter().map(|k| &objects[i][*k]).collect())
         .collect();
-    let text = format!("{head}{label}{}\n", serde_json::to_string(&table).ok()?);
+    let mut text = format!("{head}{label}{}\n", serde_json::to_string(&table).ok()?);
+    if csv {
+        let mut short = format!(
+            "{head}{}{} rows={}/{}\n",
+            label,
+            names(&columns)?,
+            table.rows.len(),
+            objects.len()
+        );
+        constants(&fixed, |key| objects[0].get(key), &mut short)?;
+        if !omitted.is_empty() {
+            short.push_str(&format!("omitted_columns {}\n", names(&omitted)?));
+        }
+        for cells in &table.rows {
+            row(cells, &mut short)?;
+        }
+        if short.len() <= text.len() {
+            text = short;
+        }
+    }
     (text.len() <= limit).then_some(Projection {
         shown: table.rows.len(),
         total: objects.len(),
@@ -325,7 +501,7 @@ pub(crate) fn projection(
 /// object on an `envelope` line, then the array as `table=/POINTER` with
 /// constant columns factored out. Only when every row fits `limit`: a
 /// partial table would hide what folding the source lines keeps visible.
-pub(crate) fn envelope(value: &Value, limit: usize) -> Option<String> {
+pub(crate) fn envelope(value: &Value, limit: usize, csv: bool) -> Option<String> {
     let object = value.as_object()?;
     let (key, items) = dominant(value)?;
     let first = items[0].as_object()?;
@@ -361,6 +537,7 @@ pub(crate) fn envelope(value: &Value, limit: usize) -> Option<String> {
         &indices,
         false,
         true,
+        csv,
         limit.checked_sub(envelope.len() + key.len() + 2)?,
     )?;
     let pointer = key.replace('~', "~0").replace('/', "~1");

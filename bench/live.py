@@ -226,7 +226,7 @@ def parse_arm(text):
         return {'name': 'off', 'binary': None, 'version': None}
     name, _, rest = text.partition('=')
     binary, _, version = rest.partition('@')
-    if not name or not binary or version not in ('1', '2', '3', '4'):
+    if not name or not binary or version not in ('1', '2', '3', '4', '5'):
         raise argparse.ArgumentTypeError('expected off or NAME=BINARY@VERSION')
     return {'name': name, 'binary': Path(binary).resolve(), 'version': version}
 

@@ -207,8 +207,9 @@ copies too; they can shadow the global skill.
 
 Compact-v4 is the default. Set `SCOPELET_COMPACT_VERSION=1`, `2` or `3` in the
 agent process environment to restore an earlier presentation for installed
-hooks; unset it or set `4` to use v4. Direct CLI calls can override it with
-`--compact-version 1|2|3|4`. V2 added partial JSON tables and broader
+hooks, `5` to try v5 (v4's selection in about 6% fewer tokens); unset it or set
+`4` to use v4. Direct CLI calls can override it with
+`--compact-version 1|2|3|4|5`. V2 added partial JSON tables and broader
 diagnostic coverage; v3 a leaner envelope and command profiles; v4 a one-line
 header with a 16-character ID, repeat references, relevance anchors, failure
 lines for tests, file-grouped search results, folded listings, collapsed
