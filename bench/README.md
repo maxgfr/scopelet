@@ -192,12 +192,17 @@ The last four force views: their prompts impose the command as written,
 without a pipe or redirection, and each output lies between 2 KB (above every
 exact-size threshold) and 30 KB (below the size at which Claude Code saves an
 output to a file and shows only a preview, which the hook leaves alone).
+`build_warnings_medium` exits 0: Claude Code hands a failed command's result
+to no hook that can replace it, so the first campaign's failing build showed
+no view in any arm.
 
 Each task is checked on the result, not on the wording: tests must pass with
 the test file identical to a fresh build (run with a private bytecode cache),
 an answer must contain the exact id, path, `path:line`, subject or count, and
 none of the near misses a check lists as `forbidden` (the lookalike file, the
-neighbouring line). `test_live.py` checks that each task has one right answer,
+neighbouring line). A `path:line only` answer (`first_line`) is judged on its
+first nonempty line, so an explanation that names a near miss to reject it
+does not fail a right answer, as it did once in the first campaign. `test_live.py` checks that each task has one right answer,
 which its check accepts and a near miss does not, and that the four
 view-forcing tasks print between 2 and 30 KB.
 

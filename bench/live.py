@@ -226,9 +226,9 @@ def build_json_api(root):
     (root / 'api/issues.json').write_text(json.dumps(json_api_issues(), separators=(',', ':')))
 
 
-def warnings_build(root, count, error_at):
+def warnings_build(root, count, error_at, status=1):
     """A rustc-like build that prints `count` warnings, each with its `-->`
-    location, and one error after warning `error_at`, and fails."""
+    location, and one error after warning `error_at`, then exits `status`."""
     (root / 'build.py').write_text(
         'import sys\n\n'
         'def word(i):\n    return "".join(chr(97 + int(c)) for c in str(i))\n\n'
@@ -240,7 +240,7 @@ def warnings_build(root, count, error_at):
         '        print("error[E0308]: mismatched types", file=sys.stderr)\n'
         '        print("  --> src/ledger/settle.rs:88:17", file=sys.stderr)\n'
         f'print("error: could not compile `ledger` (lib) due to 1 previous error; {count} warnings emitted", file=sys.stderr)\n'
-        'sys.exit(1)\n')
+        f'sys.exit({status})\n')
 
 
 def build_build_warnings(root):
@@ -249,8 +249,11 @@ def build_build_warnings(root):
 
 
 def build_build_warnings_medium(root):
-    """The same build with 300 warnings: about 18 KB, shown inline as a view."""
-    warnings_build(root, 300, 211)
+    """The same build with 300 warnings: about 18 KB, shown inline as a view.
+    It exits 0 like a build wrapper that only reports: Claude Code passes a
+    failed command's result to no hook that can replace it, so a failing
+    build would never show a view."""
+    warnings_build(root, 300, 211, status=0)
 
 
 def build_pytest_many(root):
@@ -488,7 +491,12 @@ def check(spec, answer, workdir, task=None):
     """
     kind = spec['type']
     if kind == 'answer_contains':
-        # `forbidden`: near misses the answer must not name.
+        # `first_line`: a `path:line only` answer is judged on its first
+        # nonempty line, so an explanation that names a rejected near miss
+        # does not count against it. `forbidden`: near misses that line, or
+        # the whole answer otherwise, must not name.
+        if answer and spec.get('first_line'):
+            answer = next((line for line in answer.splitlines() if line.strip()), '')
         return (bool(answer) and spec['expected'] in answer
                 and not any(wrong in answer for wrong in spec.get('forbidden', [])))
     if kind == 'answer_number':

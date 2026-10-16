@@ -152,6 +152,13 @@ class CheckTests(unittest.TestCase):
         near = {'type': 'answer_contains', 'expected': 'src/a.rs:8', 'forbidden': ['src/b.rs']}
         self.assertTrue(live.check(near, 'src/a.rs:8', Path('.')))
         self.assertFalse(live.check(near, 'src/a.rs:8 or src/b.rs:8', Path('.')))
+        # A `path:line only` answer is judged on its first nonempty line: an
+        # explanation that rejects the near miss does not fail it.
+        first = {**near, 'first_line': True}
+        explained = '\nsrc/a.rs:8\n\nThe other candidate, src/b.rs, is excluded.'
+        self.assertTrue(live.check(first, explained, Path('.')))
+        self.assertFalse(live.check(near, explained, Path('.')))
+        self.assertFalse(live.check(first, 'src/b.rs:8\nnot src/a.rs:8', Path('.')))
 
     def test_the_fixed_test_must_pass_with_its_tests_untouched(self):
         spec = live.load_tasks()['fix_test']['check']
@@ -301,7 +308,9 @@ class NewTaskTests(unittest.TestCase):
         temp, root = built('build_warnings_medium')
         with temp:
             build, text = self.output(root, ['python3', 'build.py'])
-            self.assertEqual(build.returncode, 1)
+            # Exit 0: Claude Code hands a failed command's result to no hook
+            # that can replace it, so only a successful one shows a view.
+            self.assertEqual(build.returncode, 0)
             self.assert_view_sized(text)
             lines = text.splitlines()
             self.assertEqual(sum(l.startswith('warning:') for l in lines), 300)
