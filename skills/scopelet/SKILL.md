@@ -4,7 +4,7 @@ description: Query files and repositories, recover compressed evidence, and conf
 license: MIT
 metadata:
   author: maxgfr
-  version: "0.11.1"
+  version: "1.0.0"
   opencode/autoinvoke: 'true'
 ---
 
