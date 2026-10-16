@@ -187,8 +187,11 @@ class NewTaskTests(unittest.TestCase):
         temp, root = built('search_symbol')
         with temp:
             self.assertEqual(len(list(root.rglob('*.py'))), 300)
-            found = subprocess.run(['rg', '-n', r'^def reconcile_ledger\(', '.'], cwd=root, capture_output=True, text=True).stdout
-            self.assertEqual(found.splitlines(), ['./src/pkg_g/mod_bih.py:15:def reconcile_ledger(batch, tag):'])
+            found = [f'{path.relative_to(root)}:{n}' for path in sorted(root.rglob('*.py'))
+                     for n, line in enumerate(path.read_text().splitlines(), 1) if line.startswith('def reconcile_ledger(')]
+            self.assertEqual(found, ['src/pkg_g/mod_bih.py:15'])
+            calls = sum(p.read_text().count('reconcile_ledger(') for p in root.rglob('*.py'))
+            self.assertGreater(calls, 1800)
         self.answer('search_symbol', './src/pkg_g/mod_bih.py:15', 'src/pkg_a/mod_ec.py:9')
 
     def test_git_log_find(self):
