@@ -24,7 +24,9 @@ fn rejected_compression_never_opens_a_store() {
     ] {
         let path = dir.path().join("must-not-exist");
         assert_eq!(
-            &*compress::automatic_lazy(&raw, Some(path.clone()), 4096).unwrap(),
+            &*compress::automatic_decision(&raw, Some(path.clone()), None, Some(4096))
+                .map(|(view, _)| view)
+                .unwrap(),
             raw
         );
         assert!(!path.exists());
@@ -73,7 +75,10 @@ fn distinct_late_diagnostics_survive_repeated_early_errors() {
         "start\n{}fatal error: rare root cause\nend\n",
         "error: retry failed\nworking\n".repeat(1000)
     );
-    let out = compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 1024).unwrap();
+    let out =
+        compress::automatic_decision(raw.as_bytes(), Some(dir.path().into()), None, Some(1024))
+            .map(|(view, _)| view)
+            .unwrap();
     assert!(
         std::str::from_utf8(&out)
             .unwrap()

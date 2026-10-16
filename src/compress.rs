@@ -253,14 +253,6 @@ struct Shape {
 }
 
 impl Shape {
-    fn plain(budget: usize) -> Self {
-        Self {
-            budget,
-            small: SMALL,
-            reading: false,
-            profile: None,
-        }
-    }
     /// A recognized command's shape; `budget` overrides its target.
     fn of(profile: Option<crate::commands::Profile>, budget: Option<usize>) -> Self {
         Self {
@@ -270,27 +262,6 @@ impl Shape {
             profile,
         }
     }
-}
-
-/// The store factory is not invoked for a rejected or ineligible substitution.
-pub fn automatic_lazy<'a>(
-    bytes: &'a [u8],
-    path: Option<PathBuf>,
-    budget: usize,
-) -> Result<Cow<'a, [u8]>> {
-    automatic_with(bytes, Shape::plain(budget), &[], || Store::open(path)).map(|(output, _)| output)
-}
-
-/// `automatic_lazy` for the output of a recognized command: its profile's
-/// budget unless `budget` is given and, for a file read, no diagnostic
-/// ranking (a word like `error` in source code is not an outcome).
-pub fn automatic_profile<'a>(
-    bytes: &'a [u8],
-    path: Option<PathBuf>,
-    profile: Option<crate::commands::Profile>,
-    budget: Option<usize>,
-) -> Result<Cow<'a, [u8]>> {
-    automatic_decision(bytes, path, profile, budget).map(|(output, _)| output)
 }
 
 /// `automatic_decision` that journals its decision in the local event
@@ -351,7 +322,11 @@ pub fn automatic_journaled<'a>(
     output
 }
 
-/// `automatic_profile`, with the decision it made.
+/// Automatic compression of `bytes`, with the decision it made and no
+/// journal entry: the profile's budget unless `budget` is given and, for a
+/// file read, no diagnostic ranking (a word like `error` in source code is
+/// not an outcome). The store is not opened for a rejected or ineligible
+/// substitution.
 pub fn automatic_decision<'a>(
     bytes: &'a [u8],
     path: Option<PathBuf>,

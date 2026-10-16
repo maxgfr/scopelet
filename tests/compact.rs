@@ -13,7 +13,9 @@ use serde_json::{Value, json};
 
 /// The automatic view of `raw` at `budget`, without a profile.
 fn compress(dir: &std::path::Path, raw: &[u8], budget: usize) -> String {
-    let output = compress::automatic_lazy(raw, Some(dir.to_path_buf()), budget).unwrap();
+    let output = compress::automatic_decision(raw, Some(dir.to_path_buf()), None, Some(budget))
+        .map(|(view, _)| view)
+        .unwrap();
     assert!(output.len() <= budget, "{} bytes over budget", output.len());
     String::from_utf8(output.into_owned()).unwrap()
 }
@@ -177,13 +179,19 @@ fn only_a_marker_at_a_line_start_means_already_compressed() {
     assert!(text.starts_with("[scopelet v5 "), "{text}");
     // A view, or a note, at the start of a line passes through.
     let view = format!("{text}{}", "more\n".repeat(1000));
-    let again = compress::automatic_lazy(view.as_bytes(), Some(dir.path().into()), 4096).unwrap();
+    let again =
+        compress::automatic_decision(view.as_bytes(), Some(dir.path().into()), None, Some(4096))
+            .map(|(view, _)| view)
+            .unwrap();
     assert_eq!(again.as_ref(), view.as_bytes());
     let note = format!(
         "{}[scopelet capture_complete=false exit_code=1; saved output may be partial]\n",
         "line\n".repeat(1000)
     );
-    let kept = compress::automatic_lazy(note.as_bytes(), Some(dir.path().into()), 4096).unwrap();
+    let kept =
+        compress::automatic_decision(note.as_bytes(), Some(dir.path().into()), None, Some(4096))
+            .map(|(view, _)| view)
+            .unwrap();
     assert_eq!(kept.as_ref(), note.as_bytes());
     // Views written before 1.0 are recognized alike.
     for old in [
@@ -191,8 +199,14 @@ fn only_a_marker_at_a_line_start_means_already_compressed() {
         "[scopelet compact-v3 artifact:0 x]\n",
     ] {
         let padded = format!("{old}{}", "padding line\n".repeat(400));
-        let again =
-            compress::automatic_lazy(padded.as_bytes(), Some(dir.path().into()), 4096).unwrap();
+        let again = compress::automatic_decision(
+            padded.as_bytes(),
+            Some(dir.path().into()),
+            None,
+            Some(4096),
+        )
+        .map(|(view, _)| view)
+        .unwrap();
         assert_eq!(again.as_ref(), padded.as_bytes());
     }
 }
@@ -357,7 +371,10 @@ fn automatic_compression_has_a_line_limit() {
     let text = compress(dir.path(), raw.as_bytes(), 4096);
     assert!(text.contains("error: late failure"), "{text}");
     let over: String = "ok\n".repeat(compress::AUTO_MAX_LINES + 1);
-    let output = compress::automatic_lazy(over.as_bytes(), Some(dir.path().into()), 4096).unwrap();
+    let output =
+        compress::automatic_decision(over.as_bytes(), Some(dir.path().into()), None, Some(4096))
+            .map(|(view, _)| view)
+            .unwrap();
     assert_eq!(output.as_ref(), over.as_bytes());
 }
 
@@ -600,12 +617,13 @@ fn an_error_keeps_its_location_among_a_flood_of_warnings() {
         raw.push_str(&format!(
             "error: could not compile `ledger` (lib) due to 1 previous error; {count} warnings emitted\n"
         ));
-        let output = compress::automatic_profile(
+        let output = compress::automatic_decision(
             raw.as_bytes(),
             Some(dir.path().into()),
             Some(Profile::Tests),
             Some(4096),
         )
+        .map(|(view, _)| view)
         .unwrap();
         let text = String::from_utf8(output.into_owned()).unwrap();
         assert!(text.len() <= 4096, "{}", text.len());
@@ -757,7 +775,9 @@ fn every_label_resolves_to_the_line_it_names() {
         }
         let dir = tempfile::tempdir().unwrap();
         let output =
-            compress::automatic_lazy(raw.as_bytes(), Some(dir.path().into()), 4096).unwrap();
+            compress::automatic_decision(raw.as_bytes(), Some(dir.path().into()), None, Some(4096))
+                .map(|(view, _)| view)
+                .unwrap();
         let text = std::str::from_utf8(&output).unwrap();
         if text == raw {
             continue; // Passthrough keeps the original bytes; nothing to check.
@@ -1288,12 +1308,13 @@ fn anchor_terms_come_from_the_prompt_and_the_command() {
 // Test runs.
 
 fn test_view(dir: &std::path::Path, raw: &str) -> String {
-    let output = compress::automatic_profile(
+    let output = compress::automatic_decision(
         raw.as_bytes(),
         Some(dir.to_path_buf()),
         Some(Profile::Tests),
         None,
     )
+    .map(|(view, _)| view)
     .unwrap();
     String::from_utf8(output.into_owned()).unwrap()
 }
@@ -1450,12 +1471,13 @@ fn failures_beyond_five_are_counted_and_unknown_formats_get_no_line() {
     let text = test_view(dir.path(), &unknown);
     assert_eq!(action_line(&text), None, "{text}");
 
-    let search = compress::automatic_profile(
+    let search = compress::automatic_decision(
         raw.as_bytes(),
         Some(dir.path().into()),
         Some(Profile::Search),
         None,
     )
+    .map(|(view, _)| view)
     .unwrap();
     assert!(!String::from_utf8_lossy(&search).contains("failed=8"));
 }
@@ -1498,12 +1520,13 @@ fn failures_never_starve_a_small_budget() {
         ));
     }
     raw.push_str("test result: FAILED. 594 passed; 6 failed\n");
-    let output = compress::automatic_profile(
+    let output = compress::automatic_decision(
         raw.as_bytes(),
         Some(dir.path().into()),
         Some(Profile::Tests),
         Some(1024),
     )
+    .map(|(view, _)| view)
     .unwrap();
     assert!(output.len() <= 1024, "{} bytes", output.len());
     assert!(output.starts_with(b"[scopelet v5 "));
@@ -1925,12 +1948,13 @@ fn install_views_keep_only_what_decides_the_outcome() {
         ));
     }
     raw.push_str("added 612 packages, and audited 613 packages in 9s\n");
-    let output = compress::automatic_profile(
+    let output = compress::automatic_decision(
         raw.as_bytes(),
         Some(dir.path().into()),
         Some(Profile::Install),
         None,
     )
+    .map(|(view, _)| view)
     .unwrap();
     let text = String::from_utf8(output.into_owned()).unwrap();
     assert!(text.len() <= 2048, "{}", text.len());
@@ -1966,12 +1990,13 @@ fn install_views_keep_the_installed_summary() {
     raw.push_str(
         "You should consider upgrading via the 'python3 -m pip install --upgrade pip' command.\n",
     );
-    let output = compress::automatic_profile(
+    let output = compress::automatic_decision(
         raw.as_bytes(),
         Some(dir.path().into()),
         Some(Profile::Install),
         None,
     )
+    .map(|(view, _)| view)
     .unwrap();
     let text = String::from_utf8(output.into_owned()).unwrap();
     assert!(

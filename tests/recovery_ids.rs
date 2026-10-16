@@ -19,7 +19,9 @@ fn json(output: &std::process::Output) -> Value {
 
 /// The view of `raw` and the 12 hex characters its header shows.
 fn view(cache: &std::path::Path, raw: &str) -> (String, String) {
-    let output = compress::automatic_lazy(raw.as_bytes(), Some(cache.into()), 4096).unwrap();
+    let output = compress::automatic_decision(raw.as_bytes(), Some(cache.into()), None, Some(4096))
+        .map(|(view, _)| view)
+        .unwrap();
     let text = String::from_utf8(output.into_owned()).unwrap();
     let id = text
         .strip_prefix("[scopelet v5 ")

@@ -16,7 +16,8 @@ fn cli(dir: &std::path::Path) -> Command {
 
 /// The automatic view of `raw` at `budget`, stored under `dir/cache`.
 fn automatic(raw: &[u8], dir: &std::path::Path, budget: usize) -> Vec<u8> {
-    compress::automatic_lazy(raw, Some(dir.join("cache")), budget)
+    compress::automatic_decision(raw, Some(dir.join("cache")), None, Some(budget))
+        .map(|(view, _)| view)
         .unwrap()
         .into_owned()
 }

@@ -23,7 +23,9 @@ fn artifact(dir: &std::path::Path, text: &str) -> String {
 
 /// The automatic view of `raw`, or None when it passes through.
 fn compressed(dir: &std::path::Path, raw: &[u8]) -> Option<String> {
-    let output = compress::automatic_lazy(raw, Some(dir.to_path_buf()), 4096).unwrap();
+    let output = compress::automatic_decision(raw, Some(dir.to_path_buf()), None, Some(4096))
+        .map(|(view, _)| view)
+        .unwrap();
     (output.as_ref() != raw).then(|| String::from_utf8(output.into_owned()).unwrap())
 }
 

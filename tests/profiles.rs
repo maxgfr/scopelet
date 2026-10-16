@@ -372,12 +372,13 @@ fn a_file_read_is_not_ranked_by_diagnostic_words() {
         source.len() / 2,
         "    let message = \"errors are reported here\";\n",
     );
-    let read = compress::automatic_profile(
+    let read = compress::automatic_decision(
         source.as_bytes(),
         Some(dir.path().into()),
         Some(Profile::FileRead),
         None,
     )
+    .map(|(view, _)| view)
     .unwrap();
     assert!(
         read.len() > 14_000 && read.len() <= 16_384,
@@ -385,8 +386,14 @@ fn a_file_read_is_not_ranked_by_diagnostic_words() {
         read.len()
     );
     // The same bytes and budget as a command's output stop at the evidence.
-    let output =
-        compress::automatic_lazy(source.as_bytes(), Some(dir.path().into()), 16_384).unwrap();
+    let output = compress::automatic_decision(
+        source.as_bytes(),
+        Some(dir.path().into()),
+        None,
+        Some(16_384),
+    )
+    .map(|(view, _)| view)
+    .unwrap();
     assert!(output.len() < 8_000, "{}", output.len());
 }
 
@@ -448,12 +455,13 @@ fn the_file_read_threshold_applies_wherever_the_profile_is_given() {
         .map(|i| format!("    let {} = {};\n", word(i), i))
         .collect();
     assert!(source.len() > 4096 && source.len() < 16_384);
-    let kept = compress::automatic_profile(
+    let kept = compress::automatic_decision(
         source.as_bytes(),
         Some(dir.path().into()),
         Some(Profile::FileRead),
         None,
     )
+    .map(|(view, _)| view)
     .unwrap();
     assert_eq!(kept.as_ref(), source.as_bytes());
     let file = dir.path().join("x.rs");
@@ -477,7 +485,8 @@ fn the_file_read_threshold_applies_wherever_the_profile_is_given() {
     assert_eq!(output.stdout, source.as_bytes());
     // Without the profile the same bytes are an ordinary output.
     let compressed =
-        compress::automatic_profile(source.as_bytes(), Some(dir.path().into()), None, None)
+        compress::automatic_decision(source.as_bytes(), Some(dir.path().into()), None, None)
+            .map(|(view, _)| view)
             .unwrap();
     assert!(compressed.len() < source.len());
 }

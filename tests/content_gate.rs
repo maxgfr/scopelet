@@ -248,12 +248,13 @@ fn check(name: &str, fixture: &Fixture, cache: &std::path::Path) -> Result<Vec<S
     let output = if fixture.bytes.len() <= small {
         std::borrow::Cow::Borrowed(fixture.bytes.as_slice())
     } else {
-        compress::automatic_profile(
+        compress::automatic_decision(
             &fixture.bytes,
             Some(cache.to_path_buf()),
             fixture.profile,
             None,
         )
+        .map(|(view, _)| view)
         .map_err(|e| format!("{name}: {e:#}"))?
     };
     let shown = String::from_utf8_lossy(&output);
