@@ -32,6 +32,10 @@ Scopelet off included; compact-v5 showed 6.1% fewer view tokens than v4 on the
 0.10.0 fixtures; every compressed view changed the next action on 5 of 8
 replayed steps. The details are below.
 
+The 1.0 campaign (`*-20261016-single*.json`) measured the single format
+(binary `ba3eb754e660…`) against the 0.11.1 release (`c4432301dec7…`, compact-v4
+by default); see [1.0: one format against 0.11.1](#10-one-format-against-0111).
+
 Earlier live-agent campaigns (Codex Luna, Claude Haiku and Fable pilots against
 Caveman, Ponytail, RTK and Headroom, on Scopelet 0.1.x–0.3.x with the manual
 skill) were removed once the engine, the default presentation and the
@@ -261,6 +265,65 @@ token and NAP reports stay until replaced on purpose. A report describes the
 binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
+
+### 1.0: one format against 0.11.1
+
+The rule was set before the runs: ship the single format unless, in haiku,
+the lower bound of its cost-per-success delta against `v4old` (the 0.11.1
+release) is above zero, it has fewer successes than `v4old`, or its mean NAP
+is more than 2 points under `v4old`'s.
+
+`results/tokens-20261016-single.json` counts 26 cases with the API's token
+counter: 521,703 tokens raw, 39,174 for 0.11.1's views and 38,471 for the
+single format's, 1.8% fewer for both models. Smaller than v5's 6.1%: budgets
+now reserve the short header's real size and measure labels as written, so
+the bytes the grammar saves are spent on more evidence; `git_log_p`,
+`listing`, `rust_large` and `tsc` show more and cost a little more.
+
+`results/live-20261016-single-haiku.json` runs the sixteen tasks three times
+with `off`, `v4old` and `single` (Claude Code 2.1.301, every session served by
+`claude-haiku-5-5`, every cost known). It triggered the rule: `single`
+answered 47 of 48. The one failure, on `grep_context`, answered
+`src/m_g.py:55`, right, then explained why `src/m_d.py:30` was excluded, and
+the check rejected any answer naming `m_d.py`. `build_warnings_medium` showed
+no view in any arm: its build failed, and Claude Code hands a failed command's
+result to no hook that can replace it. Both were the bench's, so the check now
+judges a `path:line only` answer on its first line, the build exits 0, and the
+campaign ran again in full. The first report stays as measured.
+
+`results/live-20261016-single-haiku-rerun.json`, the same campaign after that
+fix:
+
+| Arm | Correct | Cost | Cost per success | Delta vs v4old, 95% interval | Turns | Tool calls | Views shown |
+|---|---:|---:|---:|---|---:|---:|---:|
+| off | 48 | $0.1072 | $0.002234 | +$0.000007 [−0.000239, +0.000256] | 165 | 117 | 0 |
+| v4old | 48 | $0.1069 | $0.002227 | | 182 | 134 | 15 |
+| single | 48 | $0.0961 | $0.002003 | **−$0.000224 [−0.000446, −0.000046]** | 166 | 118 | 16 |
+
+The single format cost 10% less per successful task than 0.11.1, the interval
+entirely below zero, with 0.33 fewer turns per session [−0.63, −0.06]. Views
+reached the model on six tasks (`fix_test`, the four view-forcing tasks and
+`build_warnings` or `stack_trace`); on the others the model narrowed its
+commands itself or Claude Code saved the output to a file. On
+`build_warnings_medium` the single view shows `src/ledger/settle.rs:88:17`
+and the model answered in 2 turns every round; 0.11.1's view loses it among
+the warnings' locations and took 3.
+
+`results/nap-20261016-single-rerun.json` replays the rerun's `off` sessions
+(18 steps, 3 draws each, `claude-haiku-5-5`, no failed call):
+
+| Form | View bytes | Mean input tokens | NAP | Coarse NAP |
+|---|---:|---:|---:|---:|
+| raw | 294,984 | 11,086 | 0.91 | 0.96 |
+| 0.11.1 | 78,354 | 4,541 | 0.43 | 0.57 |
+| single | 77,657 | 4,602 | 0.54 | 0.67 |
+
+The gain is `build_warnings_medium` (0.89 against 0.00): with the error's
+location in view, the model answers instead of searching. `diff_medium` went
+the other way (0.33 against 0.56), and `grep_context` and `stack_trace` kept
+no next action in either view. `results/nap-20261016-single.json` replays the
+first run's sessions: 0.51 for both views. No condition of the rule holds, so
+1.0 ships the single format.
 
 The reports below measured binaries from before 1.0, when the compact
 version and v5's parts were still selectable; their arms name those versions.

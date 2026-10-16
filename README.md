@@ -243,18 +243,18 @@ stored original by address instead of reading and re-hashing it.
 
 > [!IMPORTANT]
 > **Bytes are not tokens, and none of the numbers above is a bill.** The
-> latest live campaign (`bench/live.py`, Claude Code 2.1.300, twelve synthetic
-> tasks, 144 Haiku and 48 Sonnet sessions in paired rounds) found every task
-> done correctly with Scopelet off, with compact-v4 and with compact-v5. It
-> found no billed cost per successful task that differs beyond run-to-run
-> noise: $0.00222 with Scopelet off and $0.00233 with v4 on Haiku, 95%
-> intervals overlapping zero. A session's cost follows its turns (each about
-> 19,500 input tokens, cache included), a compressed view sometimes costs one
-> more command, and the model narrows most commands itself; outputs over
-> about 30 KB are saved to a file by Claude Code, which shows its own
-> preview. The reports are in `bench/results/`. Whole-session cost depends on
-> your host, model and task. Measure your own setup before you tell anyone a
-> percentage.
+> latest live campaign (`bench/live.py`, Claude Code 2.1.301, sixteen synthetic
+> tasks, 144 Haiku sessions in paired rounds) found every task done correctly
+> with Scopelet off, with 0.11.1 and with 1.0. Per successful task, 1.0 cost
+> $0.00200, 10% less than 0.11.1's $0.00223 (95% interval of the difference
+> entirely below zero), mostly because a build's error now keeps its location
+> in the view; Scopelet off cost $0.00223, no different from 0.11.1. A
+> session's cost follows its turns (each about 19,500 input tokens, cache
+> included), the model narrows most commands itself, and outputs over about
+> 30 KB are saved to a file by Claude Code, which shows its own preview, so
+> views reached the model on six of the sixteen tasks. The reports are in
+> `bench/results/`. Whole-session cost depends on your host, model and task.
+> Measure your own setup before you tell anyone a percentage.
 > [What is verified](docs/verification.md) ·
 > [benchmark reproduction](bench/README.md).
 
