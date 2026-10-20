@@ -168,7 +168,7 @@ put a `scopelet` command on your PATH.
 
 Restart active agent sessions. In Codex, review and trust the new hooks through
 `/hooks` when prompted; `doctor` checks configuration, not interactive trust.
-OpenCode picks its plugin up at startup with no trust step. After activation,
+OpenCode 2 picks its plugin up at startup with no trust step. After activation,
 ordinary prompts use the hooks without `/scopelet` or `$scopelet`. Use
 `--agent claude`, `--agent codex` or `--agent opencode` to enable one host.
 
@@ -202,10 +202,9 @@ and both switches are yours.
   idle; `uninstall --agent all` removes them and leaves the skill.
 - **Hide the skill from the model.** The shipped skill is model-invocable, so an
   agent can reach the queries below on its own. To make it explicit-only, add
-  `disable-model-invocation: true` to `SKILL.md` for Claude Code, set
-  `allow_implicit_invocation: false` in `agents/openai.yaml` for Codex, and set
-  `metadata.opencode/autoinvoke: 'false'` for OpenCode. Reinstalling restores
-  the shipped default.
+  `disable-model-invocation: true` to `SKILL.md` for Claude Code and OpenCode,
+  and set `allow_implicit_invocation: false` in `agents/openai.yaml` for Codex.
+  Reinstalling restores the shipped default.
 
 [Full setup and host coverage](skills/scopelet/references/setup.md).
 
@@ -340,8 +339,8 @@ read-only filters. A wrapped command still goes through Codex's own approval.
 Claude Code hooks replace Bash output, and the text of a Grep in content mode,
 when the host supplies a supported result shape; a subagent starts with the
 recovery command and is asked for a final report of conclusions with
-`file:line` evidence. The OpenCode plugin replaces the `bash` tool's output from
-`tool.execute.after` under the same thresholds. Other tools (Read among them),
+`file:line` evidence. The OpenCode plugin (OpenCode 2) replaces the `shell`
+tool's output from `execute.after` under the same thresholds. Other tools (Read among them),
 MCP results, unsupported shell syntax, existing output wrappers and outputs the
 host has already persisted all pass through untouched.
 

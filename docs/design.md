@@ -202,9 +202,9 @@ the replaced text. Results carrying a nonempty `persistedOutputPath` or positive
 `persistedOutputSize` pass through before Claude renders its own preview, so the
 host cannot truncate an already compressed view again. Failure events without
 a replaceable result and unknown host/tool shapes pass through unchanged.
-OpenCode has no hook protocol; a generated plugin file mutates the `bash`
-tool's `output` string in place from `tool.execute.after`, under the same
-thresholds, by calling the pinned binary. When OpenCode 2 has already truncated
+OpenCode has no hook protocol; a generated OpenCode 2 plugin file mutates the
+`shell` tool's text result in place from the tool `execute.after` hook, under the same
+thresholds, by calling the pinned binary. When OpenCode has already truncated
 a shell result, the plugin compresses the whole output OpenCode saved, read
 only as a regular file inside OpenCode's own shell output directory for the
 project and within the input limit. Any plugin or binary failure leaves
@@ -497,8 +497,8 @@ A tool call adds the terms its command names: the literal pattern of `rg`,
 branches split), and the filter of `cargo test NAME`, `pytest -k`, `jest -t`
 or `go test -run`; a subagent also gets its session's prompt terms. Codex
 passes its context key to the wrapped run (`run --auto --session KEY`);
-OpenCode passes its session ID (it has no prompt hook, so only command terms
-apply there). A term found on more than half of an output's lines singles
+OpenCode passes its session ID (its plugin sends no prompt event, so only
+command terms apply there). A term found on more than half of an output's lines singles
 nothing out and is ignored for that output. A unit containing a remaining term
 ranks with first diagnostics while anchored units fit a third of the budget. A
 unit lifted by an anchor alone is relevant, not a diagnostic: it never caps

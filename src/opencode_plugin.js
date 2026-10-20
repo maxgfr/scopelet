@@ -1,8 +1,7 @@
 // ScopeletPlugin — written by `scopelet install --agent opencode`; remove it with
 // `scopelet uninstall --agent opencode`, not by hand. Every hook shells out to the
 // pinned Scopelet binary and leaves the native result untouched on any failure.
-// One default export serves both OpenCode generations: OpenCode 2 runs `setup`
-// (plugin API v2), OpenCode 1 (>= 1.18.29) runs `server` (legacy hook map).
+// OpenCode 2 plugin API: one default export whose `setup` registers the hooks.
 import { execFile } from "node:child_process";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -13,9 +12,7 @@ const CONFIG = __SCOPELET_CONFIG__;
 // Thresholds of the Rust binary, written at installation.
 const SMALL = __SCOPELET_SMALL__;
 const MAX_INPUT = __SCOPELET_MAX_INPUT__;
-// OpenCode 2 names its shell tool `shell`; OpenCode 1 named it `bash`.
-const SHELL_TOOLS = new Set(["shell", "bash"]);
-// OpenCode 2 keeps the tail of a long shell result and ends it with this notice.
+// OpenCode keeps the tail of a long shell result and ends it with this notice.
 const TRUNCATED = /\n+\[showing lines \d+-\d+ of \d+; full output saved to ([^\n\]]+)\]$/;
 
 // Asynchronous, so a compression never blocks OpenCode's event loop.
@@ -49,7 +46,7 @@ function hook(event) {
   });
 }
 
-// The whole output OpenCode 2 saved for a truncated shell result, or null. The
+// The whole output OpenCode saved for a truncated shell result, or null. The
 // path comes from model-visible text, so it is read only when it names a regular
 // file directly inside OpenCode's shell output directory for this project
 // (`<XDG data>/opencode/shell/<project id>`, derived the way OpenCode does),
@@ -78,7 +75,7 @@ async function savedOutput(text, project) {
 
 const ScopeletPlugin = {
   id: "scopelet",
-  // OpenCode 2: hooks are registered on the domain that owns the operation.
+  // Hooks are registered on the domain that owns the operation.
   async setup(ctx) {
     // The response-style preference (`scopelet mode`) rides the system prompt,
     // where Claude Code and Codex receive it as hook context.
@@ -93,7 +90,7 @@ const ScopeletPlugin = {
     // the model reads `result.content`: the text parts are what gets compressed.
     await ctx.tool.hook("execute.after", async (event) => {
       if (!event || event.status !== "completed") return;
-      if (!SHELL_TOOLS.has(String(event.tool ?? "").toLowerCase())) return;
+      if (String(event.tool ?? "").toLowerCase() !== "shell") return;
       const result = event.result;
       if (!result || !Array.isArray(result.content)) return;
       const texts = result.content.filter((part) => part?.type === "text" && typeof part.text === "string");
@@ -122,33 +119,6 @@ const ScopeletPlugin = {
         result.output.output = compressed.output;
       }
     });
-  },
-  // OpenCode 1: the legacy hook map. Hook output objects are mutated in place.
-  async server() {
-    return {
-      // The response-style preference (`scopelet mode`) rides the system prompt,
-      // where Claude Code and Codex receive it as hook context.
-      "experimental.chat.system.transform": async (input, output) => {
-        if (!output || !Array.isArray(output.system)) return;
-        const result = await hook({ hook_event_name: "SystemPrompt", session_id: input?.sessionID });
-        if (typeof result.system === "string" && result.system) output.system.push(result.system);
-      },
-      "tool.execute.after": async (input, output) => {
-        if (!output || typeof output.output !== "string") return;
-        if (String(input?.tool ?? "").toLowerCase() !== "bash") return;
-        const bytes = Buffer.byteLength(output.output);
-        if (bytes <= SMALL || bytes > MAX_INPUT) return;
-        const command = input?.args?.command;
-        const result = await hook({
-          hook_event_name: "ToolOutput",
-          session_id: typeof input?.sessionID === "string" ? input.sessionID : undefined,
-          tool_name: "Bash",
-          tool_input: { command: typeof command === "string" ? command : "" },
-          tool_response: { output: output.output },
-        });
-        if (typeof result.output === "string") output.output = result.output;
-      },
-    };
   },
 };
 

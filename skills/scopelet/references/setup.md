@@ -103,10 +103,11 @@ guidance names the pinned binary's absolute path for recovery, so `expand`
 works without `scopelet` on the PATH. Existing sessions need restarting; in
 Codex review the hooks with `/hooks` when prompted.
 
-OpenCode has no hooks file: install writes a self-contained plugin to
-`plugin/scopelet.js` under `OPENCODE_CONFIG_DIR`, otherwise
-`$XDG_CONFIG_HOME/opencode` (`~/.config/opencode`). The plugin calls the pinned
-binary asynchronously from `tool.execute.after` for the `bash` tool, with the
+OpenCode has no hooks file: install writes a self-contained OpenCode 2 plugin to
+`plugins/scopelet.js` under `OPENCODE_CONFIG_DIR`, otherwise
+`$XDG_CONFIG_HOME/opencode` (`~/.config/opencode`), and removes the copy earlier
+releases left in `plugin/`. OpenCode 1 is not supported. The plugin calls the pinned
+binary asynchronously from the tool `execute.after` hook for the `shell` tool, with the
 binary's own size thresholds written in at installation, and adds the mode text to
 the system prompt on every step, so a mode change applies immediately there.
 Install refuses to replace a plugin file it did not write, and uninstall removes
@@ -127,15 +128,15 @@ language. Required information or requested detail can exceed these targets;
 saved documents use normal prose. These are preferences, not output truncation
 or changes to the model's reasoning effort.
 
-OpenCode's plugin replaces the `bash` tool's `output` string in place when the
-same thresholds apply; other tools, MCP results and failures pass through, and
-any plugin or binary error leaves the native output untouched. OpenCode caps
-long output before the plugin sees it and saves the whole result. OpenCode 2
-saves it under `$XDG_DATA_HOME/opencode/shell/<project id>`; the plugin
-compresses that saved file instead (only a regular file in that directory,
-within the input limit), so `expand` recovers every line. Otherwise, and on
-OpenCode 1, the view keeps the "full output saved to" line, so `expand`
-recovers what OpenCode handed over and the file holds the rest.
+OpenCode's plugin replaces the text the model reads from the `shell` tool in
+place when the same thresholds apply; other tools, MCP results and failures pass
+through, and any plugin or binary error leaves the native output untouched.
+OpenCode caps long output before the plugin sees it and saves the whole result
+under `$XDG_DATA_HOME/opencode/shell/<project id>`; the plugin compresses that
+saved file instead (only a regular file in that directory, within the input
+limit), so `expand` recovers every line. Otherwise the view keeps the "full
+output saved to" line, so `expand` recovers what OpenCode handed over and the
+file holds the rest.
 Claude Code uses `PostToolUse.updatedToolOutput` (matcher `Bash|Grep`) for Bash
 results with known stdout/stderr fields and for the `content` text of a Grep in
 `content` mode, compressed as search results. Other fields survive unchanged;
