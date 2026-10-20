@@ -4,7 +4,7 @@ description: Query files and repositories, recover compressed evidence, and conf
 license: MIT
 metadata:
   author: maxgfr
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # Scopelet
