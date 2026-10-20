@@ -202,8 +202,7 @@ and both switches are yours.
   idle; `uninstall --agent all` removes them and leaves the skill.
 - **Hide the skill from the model.** The shipped skill is model-invocable, so an
   agent can reach the queries below on its own. To make it explicit-only, add
-  `disable-model-invocation: true` to `SKILL.md` for Claude Code and OpenCode,
-  and set `allow_implicit_invocation: false` in `agents/openai.yaml` for Codex.
+  `disable-model-invocation: true` to `SKILL.md` for Claude Code and OpenCode.
   Reinstalling restores the shipped default.
 
 [Full setup and host coverage](skills/scopelet/references/setup.md).
