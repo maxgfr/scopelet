@@ -21,7 +21,7 @@ pub enum Agent {
     All,
 }
 const HOSTS: [Agent; 3] = [Agent::Claude, Agent::Codex, Agent::Opencode];
-/// OpenCode loads every `plugin/*.js` under its config directory; this marker
+/// OpenCode loads every `plugins/*.js` under its config directory; this marker
 /// is how install and uninstall recognise the file as ours.
 const PLUGIN_MARKER: &str = "ScopeletPlugin";
 const PLUGIN_TEMPLATE: &str = include_str!("opencode_plugin.js");
@@ -104,7 +104,7 @@ fn host_file(agent: Agent) -> Result<PathBuf> {
                     .unwrap_or_else(|| home.join(".config"))
                     .join("opencode")
             })
-            .join("plugin")
+            .join("plugins")
             .join("scopelet.js"),
         Agent::All => anyhow::bail!("select one host"),
     })
@@ -190,6 +190,17 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                 "refusing to replace {}: not a Scopelet plugin",
                 path.display()
             );
+            // Earlier releases wrote `plugin/scopelet.js`, which OpenCode still
+            // loads: drop our copy so the hooks never run twice.
+            if let Some(legacy) = path.parent().and_then(Path::parent) {
+                let legacy = legacy.join("plugin").join("scopelet.js");
+                if let Ok(bytes) = fs::read(&legacy)
+                    && String::from_utf8_lossy(&bytes).contains(PLUGIN_MARKER)
+                {
+                    backup(&config, name, &bytes, "js")?;
+                    fs::remove_file(&legacy)?;
+                }
+            }
             let rendered = plugin_source(&config, &binary)?;
             if remove {
                 if let Some(bytes) = &old {
@@ -312,7 +323,7 @@ pub fn doctor() -> Value {
         };
         json!({"host":name,"config":path,"hooks_configured":configured,"config_exists":path.as_ref().is_some_and(|p|p.is_file())})
     }).collect();
-    let mut status = json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.as_ref().is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash and Grep (content mode) PostToolUse; Codex recognized Bash commands in a quoted shell subset, PreToolUse; OpenCode bash tool.execute.after plugin; hook trust and host versions must be verified"});
+    let mut status = json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.as_ref().is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash and Grep (content mode) PostToolUse; Codex recognized Bash commands in a quoted shell subset, PreToolUse; OpenCode 2 shell execute.after plugin; hook trust and host versions must be verified"});
     if let Some(binary) = binary.filter(|p| p.is_file()) {
         let (current, version) = pinned_binary(&binary);
         status["binary"] = json!(binary);

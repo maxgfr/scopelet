@@ -448,7 +448,7 @@ fn crowded_diagnostics_keep_first_and_final_evidence() {
 }
 
 fn opencode_plugin(dir: &std::path::Path) -> std::path::PathBuf {
-    dir.join("opencode/plugin/scopelet.js")
+    dir.join("opencode/plugins/scopelet.js")
 }
 #[test]
 fn opencode_install_is_idempotent_reversible_and_never_replaces_a_foreign_plugin() {
@@ -482,7 +482,31 @@ fn opencode_install_is_idempotent_reversible_and_never_replaces_a_foreign_plugin
         .assert()
         .success();
     assert!(!plugin.exists());
-    assert!(dir.path().join("opencode/plugin").is_dir());
+    assert!(dir.path().join("opencode/plugins").is_dir());
+    // A copy an earlier release left in the legacy `plugin/` directory goes on
+    // install and uninstall; a foreign file there stays.
+    let legacy = dir.path().join("opencode/plugin/scopelet.js");
+    fs::create_dir_all(legacy.parent().unwrap()).unwrap();
+    for args in [
+        ["install", "--agent", "opencode"],
+        ["uninstall", "--agent", "opencode"],
+    ] {
+        fs::write(&legacy, &installed).unwrap();
+        cli(dir.path()).args(args).assert().success();
+        assert!(!legacy.exists(), "{args:?}");
+    }
+    let other = "export default { id: \"other\", setup() {} };\n";
+    fs::write(&legacy, other).unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(&legacy).unwrap(), other);
+    cli(dir.path())
+        .args(["uninstall", "--agent", "opencode"])
+        .assert()
+        .success();
+    fs::remove_file(&legacy).unwrap();
     let foreign = "export const OtherPlugin = async () => ({});\n";
     fs::write(&plugin, foreign).unwrap();
     cli(dir.path())
@@ -579,16 +603,10 @@ fn opencode_plugin_file_drives_the_binary_from_node() {
     });
     let script = format!(
         r#"import plugin from {};
-// OpenCode 1: the legacy `server` entrypoint returns the hook map.
-const hooks = await plugin.server({{ directory: process.cwd() }});
-const output = {{ title: "npm test", output: "noise\n".repeat(2000), metadata: {{}} }};
-await hooks["tool.execute.after"]({{ tool: "bash", sessionID: "s1", callID: "c1", args: {{ command: "npm test" }} }}, output);
-const small = {{ title: "ls", output: "fine\n", metadata: {{}} }};
-await hooks["tool.execute.after"]({{ tool: "bash", sessionID: "s1", callID: "c2", args: {{ command: "ls" }} }}, small);
-const system = {{ system: ["base"] }};
-await hooks["experimental.chat.system.transform"]({{ sessionID: "s1" }}, system);
-// OpenCode 2: `setup` registers the same work on the owning domains; capture
-// the callbacks through a stub context and drive them like OpenCode would.
+// The legacy OpenCode 1 entrypoint is gone.
+if ("server" in plugin) throw new Error("unexpected OpenCode 1 entrypoint");
+// `setup` registers the hooks on the owning domains; capture the callbacks
+// through a stub context and drive them like OpenCode would.
 const registered = {{}};
 const ctx = {{
   location: {{ directory: process.cwd(), project: {{ id: "p1", directory: process.cwd() }} }},
@@ -605,7 +623,7 @@ const v2Bash = v2Event("bash", "npm test", "noise\n".repeat(2000));
 await registered["tool.execute.after"](v2Bash);
 const v2System = {{ system: [{{ type: "text", text: "base" }}] }};
 await registered["session.context"]({{ sessionID: "s1", system: v2System.system }});
-// The truncated shape observed from OpenCode 2.0.26 for `seq 1 3000`.
+// The truncated shape observed from OpenCode 2.0.26 and 2.1.0 for `seq 1 3000`.
 const texts = {};
 const truncated = {{}};
 for (const [name, text] of Object.entries(texts)) {{
@@ -615,7 +633,7 @@ for (const [name, text] of Object.entries(texts)) {{
   await registered["tool.execute.after"](event);
   truncated[name] = event.result;
 }}
-console.log(JSON.stringify({{ compressed: output.output, small: small.output, title: output.title, system, v2: {{ compressed: v2Output.result, small: v2Small.result, bash: v2Bash.result, system: v2System, truncated }} }}));
+console.log(JSON.stringify({{ v2: {{ compressed: v2Output.result, small: v2Small.result, bash: v2Bash.result, system: v2System, truncated }} }}));
 "#,
         serde_json::to_string(&plugin).unwrap(),
         texts
@@ -634,22 +652,7 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
         String::from_utf8_lossy(&out.stderr)
     );
     let result: Value = serde_json::from_slice(&out.stdout).unwrap();
-    assert!(
-        result["compressed"]
-            .as_str()
-            .unwrap()
-            .starts_with("[scopelet v5 ")
-    );
-    assert_eq!(result["small"], "fine\n");
-    assert_eq!(result["title"], "npm test");
-    assert_eq!(result["system"]["system"][0], "base");
-    assert!(
-        result["system"]["system"][1]
-            .as_str()
-            .unwrap()
-            .contains("Scopelet auto")
-    );
-    // The OpenCode 2 entrypoint compresses the text parts the model reads.
+    // The plugin compresses the text parts the model reads.
     let v2 = &result["v2"]["compressed"];
     assert!(
         v2["content"][0]["text"]
@@ -660,11 +663,10 @@ console.log(JSON.stringify({{ compressed: output.output, small: small.output, ti
     assert_eq!(v2["output"]["output"], v2["content"][0]["text"]);
     assert_eq!(result["v2"]["small"]["content"][0]["text"], "fine\n");
     assert_eq!(result["v2"]["small"]["output"]["output"], "fine\n");
-    assert!(
-        result["v2"]["bash"]["content"][0]["text"]
-            .as_str()
-            .unwrap()
-            .starts_with("[scopelet v5 ")
+    // OpenCode 2 has no `bash` tool: another tool's result stays native.
+    assert_eq!(
+        result["v2"]["bash"]["content"][0]["text"],
+        "noise\n".repeat(2000)
     );
     assert_eq!(result["v2"]["system"]["system"][0]["text"], "base");
     assert!(

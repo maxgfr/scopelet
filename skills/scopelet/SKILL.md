@@ -5,7 +5,6 @@ license: MIT
 metadata:
   author: maxgfr
   version: "1.0.1"
-  opencode/autoinvoke: 'true'
 ---
 
 # Scopelet
