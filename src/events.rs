@@ -61,6 +61,8 @@ pub enum Kind {
     Compress,
     /// A recovery with `expand`.
     Expand,
+    /// A loop note: the same failure recurred within one turn.
+    Loop,
 }
 
 /// The first characters of a reference's hash.
@@ -180,6 +182,20 @@ pub fn expanded(cache: Option<PathBuf>, reference: &str, how: &str) {
     );
 }
 
+/// Journal a loop note given to a host for a program's recurring failure.
+pub fn looped(host: &str, program: Option<&str>, profile: Option<crate::commands::Profile>) {
+    record(
+        None,
+        Event {
+            host: host.into(),
+            kind: Kind::Loop,
+            profile: profile.map(|p| p.name().into()),
+            program: program.map(str::to_owned),
+            ..Event::default()
+        },
+    );
+}
+
 /// Programs `stats` lists among compressions without a profile.
 const UNPROFILED_LISTED: usize = 10;
 
@@ -242,6 +258,10 @@ pub struct Stats {
     pub repeat_bytes_saved: u64,
     /// Compressions in which relevance anchors ranked lines up.
     pub anchored: usize,
+    /// Loop notes given (the same failure recurred within one turn), in all
+    /// and by program.
+    pub loop_notes: usize,
+    pub loop_notes_by_program: BTreeMap<String, usize>,
     /// The same figures per profile (`none` when unrecognized).
     pub profiles: BTreeMap<String, ProfileStats>,
     pub journal: PathBuf,
@@ -322,6 +342,13 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
                 *stats
                     .expands_by_kind
                     .entry(event.expand.clone().unwrap_or_else(|| "unknown".into()))
+                    .or_default() += 1;
+            }
+            (Kind::Loop, _) => {
+                stats.loop_notes += 1;
+                *stats
+                    .loop_notes_by_program
+                    .entry(program_of(event))
                     .or_default() += 1;
             }
             (Kind::Compress, None) => {}

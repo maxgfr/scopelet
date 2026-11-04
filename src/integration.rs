@@ -232,6 +232,7 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                 "SessionStart",
                 "UserPromptSubmit",
                 "PostToolUse",
+                "PostToolUseFailure",
                 "SubagentStart",
             ]
         };
@@ -262,7 +263,7 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                 if event == "PostToolUse" {
                     // Claude Code: Bash output, and Grep's text in content mode.
                     entry["matcher"] = json!("Bash|Grep");
-                } else if event.ends_with("ToolUse") {
+                } else if event.ends_with("ToolUse") || event == "PostToolUseFailure" {
                     entry["matcher"] = json!("Bash");
                 }
                 groups.push(entry);
@@ -316,12 +317,17 @@ pub fn doctor() -> Value {
             value.as_ref().zip(command.as_ref()).is_some_and(|(v,c)| {
                 let mut events = vec!["SessionStart", "UserPromptSubmit", event];
                 if agent == Agent::Claude {
-                    events.push("SubagentStart");
+                    events.extend(["PostToolUseFailure", "SubagentStart"]);
                 }
                 events.iter().all(|e| v["hooks"][e].as_array().is_some_and(|groups| groups.iter().any(|group| owned(group,c))))
             })
         };
-        json!({"host":name,"config":path,"hooks_configured":configured,"config_exists":path.as_ref().is_some_and(|p|p.is_file())})
+        let mut entry = json!({"host":name,"config":path,"hooks_configured":configured,"config_exists":path.as_ref().is_some_and(|p|p.is_file())});
+        // Only a host set up here is asked for its version.
+        if path.as_ref().is_some_and(|p| p.is_file()) {
+            host_version(name, &mut entry);
+        }
+        entry
     }).collect();
     let mut status = json!({"mode":preference().ok(),"hosts":files,"binary_installed":binary.as_ref().is_some_and(|p|p.is_file()),"automatic_coverage":"Claude Bash and Grep (content mode) PostToolUse; Codex recognized Bash commands in a quoted shell subset, PreToolUse; OpenCode 2 shell execute.after plugin; hook trust and host versions must be verified"});
     if let Some(binary) = binary.filter(|p| p.is_file()) {
@@ -335,8 +341,145 @@ pub fn doctor() -> Value {
                 "Hooks run an older copy than this scopelet; run `scopelet install --agent all` and restart sessions."
             );
         }
+        // The pinned copy can be run as doctor itself: compare it with the
+        // scopelet on the PATH, which a package manager upgrades.
+        if let Some(path) = path_binary(&binary) {
+            let path_version = version_of(&path, 5);
+            status["path_binary"] = json!(path);
+            status["path_binary_version"] = json!(path_version);
+            status["pinned_outdated"] = json!(
+                version
+                    .as_deref()
+                    .and_then(version_numbers)
+                    .zip(path_version.as_deref().and_then(version_numbers))
+                    .map(|(pinned, path)| pinned < path)
+            );
+        }
     }
     status
+}
+
+/// The host version on which each adapter's event shapes were last verified
+/// (design.md): a newer host may have changed them.
+const VERIFIED_HOSTS: [(&str, &str); 3] = [
+    ("claude", "2.1.296"),
+    ("codex", "0.160.0"),
+    ("opencode", "2.0.0"),
+];
+
+/// A host's installed version (`host_version`, null when it does not run)
+/// next to the one its adapter was verified on (`verified_with`), compared
+/// as `same`, `newer` or `older` (`version_check`). Informative only: a
+/// version never fails doctor.
+fn host_version(host: &str, entry: &mut Value) {
+    let Some((_, verified)) = VERIFIED_HOSTS.iter().find(|(name, _)| *name == host) else {
+        return;
+    };
+    let version = version_of(Path::new(host), 5).and_then(|line| {
+        line.split(|c: char| c.is_whitespace() || c == 'v')
+            .find(|word| version_numbers(word).is_some_and(|n| n.len() >= 2))
+            .map(str::to_owned)
+    });
+    let check = version
+        .as_deref()
+        .and_then(version_numbers)
+        .zip(version_numbers(verified))
+        .map(|(found, verified)| match found.cmp(&verified) {
+            std::cmp::Ordering::Equal => "same",
+            std::cmp::Ordering::Greater => "newer",
+            std::cmp::Ordering::Less => "older",
+        });
+    entry["host_version"] = json!(version);
+    entry["verified_with"] = json!(verified);
+    entry["version_check"] = json!(check);
+}
+
+/// A version's numbers, from `1.2.3` or a `scopelet 1.2.3` line; None for
+/// anything else (a pre-release suffix included).
+fn version_numbers(text: &str) -> Option<Vec<u64>> {
+    let text = text.trim();
+    let text = text.strip_prefix("scopelet ").unwrap_or(text);
+    text.split('.').map(|part| part.parse().ok()).collect()
+}
+
+/// The first line a program prints for `--version`, or None when it cannot
+/// run, fails or takes longer than `seconds`.
+fn version_of(program: &Path, seconds: u64) -> Option<String> {
+    crate::process::capture(
+        std::process::Command::new(program).arg("--version"),
+        std::time::Duration::from_secs(seconds),
+        4096,
+        std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+    )
+    .ok()
+    .filter(|result| crate::process::exit_code(result) == 0)
+    .and_then(|result| {
+        String::from_utf8_lossy(&result.stdout)
+            .lines()
+            .next()
+            .map(|line| line.trim().to_owned())
+    })
+}
+
+/// The first `scopelet` on the PATH, unless it is the pinned copy itself.
+fn path_binary(pinned: &Path) -> Option<PathBuf> {
+    let found = std::env::split_paths(&std::env::var_os("PATH")?)
+        .map(|dir| dir.join("scopelet"))
+        .find(|path| path.is_file())?;
+    (fs::canonicalize(&found).ok()? != fs::canonicalize(pinned).ok()?).then_some(found)
+}
+
+/// What a session start last learned about the scopelet on the PATH, so its
+/// version is asked again only when that file changes.
+#[derive(Deserialize, Serialize)]
+struct PathCheck {
+    path: PathBuf,
+    len: u64,
+    modified: u64,
+    version: Option<String>,
+}
+
+/// The version of the scopelet on the PATH when the pinned hook binary that
+/// is running is older: a package manager upgraded it and `install` was not
+/// run again. `--version` runs only when the PATH file changed since the
+/// last check, recorded in `<config>/path-binary.json`; any error is None.
+fn newer_on_path() -> Option<String> {
+    let config = root().ok()?;
+    let pinned = config.join("bin/scopelet");
+    let running = fs::canonicalize(std::env::current_exe().ok()?).ok()?;
+    if running != fs::canonicalize(&pinned).ok()? {
+        return None;
+    }
+    let path = path_binary(&pinned)?;
+    let meta = fs::metadata(&path).ok()?;
+    let modified = meta
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    let record = config.join("path-binary.json");
+    let cached = fs::read(&record)
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<PathCheck>(&bytes).ok())
+        .filter(|c| c.path == path && c.len == meta.len() && c.modified == modified);
+    let version = match cached {
+        Some(check) => check.version,
+        None => {
+            let version = version_of(&path, 2);
+            let check = PathCheck {
+                path,
+                len: meta.len(),
+                modified,
+                version: version.clone(),
+            };
+            if let Ok(bytes) = serde_json::to_vec(&check) {
+                let _ = write_atomic(&record, &bytes);
+            }
+            version
+        }
+    }?;
+    (version_numbers(&version)? > version_numbers(env!("CARGO_PKG_VERSION"))?).then_some(version)
 }
 
 /// Whether the pinned hook binary is byte for byte the running one (None
@@ -345,16 +488,7 @@ fn pinned_binary(binary: &Path) -> (Option<bool>, Option<String>) {
     let pinned = fs::read(binary).ok();
     let running = std::env::current_exe().ok().and_then(|p| fs::read(p).ok());
     let current = pinned.zip(running).map(|(a, b)| a == b);
-    let version = crate::process::capture(
-        std::process::Command::new(binary).arg("--version"),
-        std::time::Duration::from_secs(5),
-        4096,
-        std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
-    )
-    .ok()
-    .filter(|result| crate::process::exit_code(result) == 0)
-    .map(|result| String::from_utf8_lossy(&result.stdout).trim().to_owned());
-    (current, version)
+    (current, version_of(binary, 5))
 }
 
 /// The argv `run --auto` executes for a command the hook may wrap, or None to
@@ -679,6 +813,8 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
     if start && event["source"] == "clear" {
         state.anchors.clear();
     }
+    // A prompt, or a context started over, opens a new turn.
+    state.new_turn();
     // Prompt terms stay in this private state, never in the event journal.
     if name == "UserPromptSubmit"
         && let Some(prompt) = event["prompt"].as_str()
@@ -807,7 +943,19 @@ fn hook(agent: Agent, event: &Value) -> Result<Value> {
     }
     let name = event["hook_event_name"].as_str().unwrap_or("");
     if matches!(name, "SessionStart" | "UserPromptSubmit") {
-        return context(event, mode);
+        let mut out = context(event, mode)?;
+        // Claude Code shows `systemMessage` to the person, not the model.
+        if agent == Agent::Claude
+            && name == "SessionStart"
+            && mode != Preference::Off
+            && let Some(version) = newer_on_path()
+        {
+            out["systemMessage"] = json!(format!(
+                "Scopelet: hooks run the pinned scopelet {}, older than {version} on the PATH; run `scopelet install --agent all` and restart sessions.",
+                env!("CARGO_PKG_VERSION")
+            ));
+        }
+        return Ok(out);
     }
     if name == "SubagentStart" {
         if mode == Preference::Off {
@@ -852,7 +1000,82 @@ fn hook(agent: Agent, event: &Value) -> Result<Value> {
         );
     }
     if agent == Agent::Claude && name == "PostToolUse" {
-        return claude_result(event);
+        let mut out = claude_result(event)?;
+        loop_note(event, name, &mut out);
+        return Ok(out);
+    }
+    if agent == Agent::Claude && name == "PostToolUseFailure" {
+        let mut out = json!({});
+        loop_note(event, name, &mut out);
+        return Ok(out);
     }
     Ok(json!({}))
+}
+
+/// Occurrences of one failure within a turn that earn a loop note.
+pub const LOOP_REPEATS: u8 = 3;
+
+/// Whether loop notes are given: `SCOPELET_LOOPGUARD=0` turns them off.
+fn loop_guard() -> bool {
+    std::env::var_os("SCOPELET_LOOPGUARD").is_none_or(|v| v != "0")
+}
+
+/// Claude Code: when a Bash command reports the same failure (by
+/// `compress::failure_signature`) for the `LOOP_REPEATS`th time in one turn,
+/// add a note asking for another hypothesis, at most once per turn. A failed
+/// call (`PostToolUseFailure`, whose `error` carries the output) always
+/// counts; a call that exited 0 counts only for a build, test or check (its
+/// output piped through `tail`, say). The note mirrors what the agent did and
+/// never stops anything; the output itself is left as `out` already has it.
+fn loop_note(event: &Value, name: &str, out: &mut Value) {
+    if !loop_guard() || event["tool_name"] != "Bash" {
+        return;
+    }
+    let command = event["tool_input"]["command"].as_str().unwrap_or("");
+    if crate::commands::invokes_wrapper(command) {
+        return;
+    }
+    let profile = crate::commands::classify_lenient(command);
+    let failed = name == "PostToolUseFailure";
+    if !failed && profile != Some(Profile::Tests) {
+        return;
+    }
+    let output = &event["tool_response"];
+    let text = if failed {
+        event["error"].as_str().unwrap_or("").to_owned()
+    } else {
+        let stream = |field: &str| output[field].as_str().unwrap_or("");
+        format!("{}\n{}", stream("stdout"), stream("stderr"))
+    };
+    if text.len() > MAX_INPUT {
+        return;
+    }
+    let Some((signature, label)) = compress::failure_signature(&text) else {
+        return;
+    };
+    let Some(key) = context_key(event) else {
+        return;
+    };
+    let program = crate::commands::program(command);
+    let shown = program.as_deref().unwrap_or("command");
+    let signature = digest(format!("{shown}\n{signature}").as_bytes());
+    let mut state = crate::session::load(&key);
+    let count = state.failed(crate::session::short(&signature));
+    let note = count >= LOOP_REPEATS && !state.nudged;
+    state.nudged |= note;
+    // Best effort: a lost write only delays a note.
+    let _ = crate::session::save(&key, &state);
+    if !note {
+        return;
+    }
+    crate::events::looped("claude", program.as_deref(), profile);
+    let text = format!(
+        "Scopelet: the same failure ({shown}: {label}) appeared {count} times this turn. Re-running will not change it: re-read the failing expectation and test a different hypothesis before editing again."
+    );
+    match out.get_mut("hookSpecificOutput") {
+        Some(specific) => specific["additionalContext"] = json!(text),
+        None => {
+            *out = json!({"hookSpecificOutput":{"hookEventName":name,"additionalContext":text}})
+        }
+    }
 }

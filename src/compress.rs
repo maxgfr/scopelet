@@ -2384,6 +2384,65 @@ fn failure_line(text: &str) -> Option<String> {
     ))
 }
 
+/// Lines that report a failure in themselves, anchored where compilers,
+/// runtimes and test runners write them: `error: ` and `error[E0308]: `
+/// (rustc, cargo), `error TS2345:` (tsc), `FAIL`/`FAILED`/`--- FAIL:` (test
+/// runners), an exception type name opening a line (`TypeError: x`,
+/// Python's final traceback line, `java.lang.NullPointerException`, after
+/// Java's `Exception in thread "main" `), pytest's `E   ` detail and
+/// `npm ERR!`.
+/// A summary that counts no failure (`test result: ok. 9 passed; 0 failed`)
+/// matches none of them.
+static FAILURE_REPORT: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(concat!(
+        r"^(?:error(?:\[\w+\])?: |.*\berror TS[0-9]+: |\s*(?:FAIL|FAILED|--- FAIL:)(?:\s|$)",
+        r#"|(?:Exception in thread "[^"]*" )?(?:[A-Za-z_$][\w$]*\.)*(?:[A-Z]\w*)?(?:Error|Exception)(?::|$)"#,
+        r"|E {2,}\S|npm ERR! )"
+    ))
+    .unwrap()
+});
+/// Failure reports kept in a signature: enough to tell two failures apart.
+const SIGNATURE_LINES: usize = 64;
+/// Bytes of a failure label: what a loop note quotes back.
+const SIGNATURE_LABEL: usize = 80;
+
+/// What an output reports as failing, independent of timings, counters and
+/// addresses: a 16-hex-character hash of its recognized test failures and
+/// failure lines (each masked by its template, sorted, deduplicated), and
+/// the first of them as a short label. None when the output reports no
+/// failure: a passing run never has a signature.
+pub fn failure_signature(text: &str) -> Option<(String, String)> {
+    let mut reports: BTreeSet<String> = failures(text)
+        .into_iter()
+        .map(|f| format!("test {}", f.name))
+        .collect();
+    let mut label = reports.first().map(|r| r["test ".len()..].to_owned());
+    let mut key = String::new();
+    for line in text.lines() {
+        if reports.len() >= SIGNATURE_LINES {
+            break;
+        }
+        // Colored runners wrap `FAIL` in escapes: match the display copy.
+        let line = clean::line_view(line);
+        if !FAILURE_REPORT.is_match(&line) {
+            continue;
+        }
+        clean::template_into(&line, &mut key);
+        if label.is_none() {
+            label = Some(line.trim().to_owned());
+        }
+        reports.insert(std::mem::take(&mut key));
+    }
+    let label: String = label?.chars().filter(|c| !c.is_control()).collect();
+    let label = match label.char_indices().nth(SIGNATURE_LABEL) {
+        Some((cut, _)) => format!("{}…", &label[..cut]),
+        None => label,
+    };
+    let joined = reports.into_iter().collect::<Vec<_>>().join("\n");
+    let hash = crate::store::digest(joined.as_bytes());
+    Some((crate::session::short(&hash).to_owned(), label))
+}
+
 static CARGO_RESULT: LazyLock<regex::Regex> = LazyLock::new(|| {
     regex::Regex::new(r"^test result: (?:ok|FAILED)\. (\d+) passed; (\d+) failed; (\d+) ignored;")
         .unwrap()

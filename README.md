@@ -185,7 +185,8 @@ scopelet doctor
 ```
 
 `install` copies the binary to `~/.config/scopelet/bin/scopelet` and points the
-hooks at that copy, so re-run it after `brew upgrade scopelet`. The formula
+hooks at that copy, so re-run it after `brew upgrade scopelet` (a Claude Code
+session start reminds you when the copy is older). The formula
 carries the binary only: add the skill with the `npx skills add` line above if
 you also want `/scopelet` and `$scopelet`.
 

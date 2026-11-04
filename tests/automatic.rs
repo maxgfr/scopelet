@@ -860,6 +860,87 @@ fn doctor_reports_a_stale_pinned_binary() {
     );
 }
 
+/// When the pinned hook binary is older than the scopelet on the PATH (a
+/// package upgrade without `install`), a Claude session start tells the
+/// person once per start in `systemMessage`, and doctor says so; an older or
+/// equal PATH copy says nothing.
+#[cfg(unix)]
+#[test]
+fn an_upgrade_without_reinstall_is_reported() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    let bin = dir.path().join("path-bin");
+    fs::create_dir(&bin).unwrap();
+    let on_path = bin.join("scopelet");
+    let put = |version: &str| {
+        fs::write(&on_path, format!("#!/bin/sh\necho scopelet {version}\n")).unwrap();
+        fs::set_permissions(&on_path, fs::Permissions::from_mode(0o755)).unwrap();
+    };
+    let pinned = dir.path().join("config/bin/scopelet");
+    let start = || -> Value {
+        let out = std::process::Command::new(&pinned)
+            .env("SCOPELET_CONFIG_DIR", dir.path().join("config"))
+            .env("SCOPELET_CACHE_DIR", dir.path().join("cache"))
+            .env("PATH", &bin)
+            .args(["hook", "claude"])
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .and_then(|mut child| {
+                use std::io::Write;
+                child.stdin.take().unwrap().write_all(
+                    br#"{"hook_event_name":"SessionStart","session_id":"u1","source":"startup"}"#,
+                )?;
+                child.wait_with_output()
+            })
+            .unwrap();
+        assert!(out.status.success(), "{out:?}");
+        serde_json::from_slice(&out.stdout).unwrap()
+    };
+    put("99.0.0");
+    for _ in 0..2 {
+        let out = start();
+        let message = out["systemMessage"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{out}"));
+        assert!(message.contains("older than scopelet 99.0.0"), "{message}");
+        assert!(
+            message.contains("scopelet install --agent all"),
+            "{message}"
+        );
+        // The model still gets its guidance.
+        assert!(out["hookSpecificOutput"]["additionalContext"].is_string());
+    }
+    assert!(dir.path().join("config/path-binary.json").is_file());
+    let doctor = cli(dir.path())
+        .env("PATH", &bin)
+        .arg("doctor")
+        .output()
+        .unwrap();
+    let status: Value = serde_json::from_slice(&doctor.stdout).unwrap();
+    assert_eq!(
+        status["integration"]["path_binary_version"],
+        "scopelet 99.0.0"
+    );
+    assert_eq!(status["integration"]["pinned_outdated"], true);
+    // Rewriting the PATH file asks its version again.
+    put("0.1.0");
+    assert!(start().get("systemMessage").is_none());
+    // The running binary is only ever compared when it is the pinned one.
+    let direct = cli(dir.path())
+        .env("PATH", &bin)
+        .args(["hook", "claude"])
+        .write_stdin(r#"{"hook_event_name":"SessionStart","session_id":"u2","source":"startup"}"#)
+        .output()
+        .unwrap();
+    let direct: Value = serde_json::from_slice(&direct.stdout).unwrap();
+    assert!(direct.get("systemMessage").is_none(), "{direct}");
+}
+
 #[test]
 fn the_event_journal_records_decisions_and_can_be_turned_off() {
     let dir = tempfile::tempdir().unwrap();
@@ -1565,4 +1646,206 @@ fn codex_wraps_installs_listings_and_uv_runs_with_their_profile() {
         );
         assert!(!rewritten.contains("compact"), "{command}: {rewritten}");
     }
+}
+
+/// A cargo test failure whose timing varies between runs.
+fn cargo_failure(seconds: &str) -> String {
+    format!(
+        "running 3 tests\ntest parse::ok ... ok\ntest parse::fails ... FAILED\n\nfailures:\n\n---- parse::fails stdout ----\nthread 'parse::fails' panicked at src/parse.rs:42:9:\nassertion `left == right` failed\n  left: 1\n right: 2\n\nfailures:\n    parse::fails\n\ntest result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in {seconds}s\n"
+    )
+}
+
+fn failed_bash(session: &str, command: &str, output: &str) -> Value {
+    json!({"hook_event_name":"PostToolUseFailure","session_id":session,"tool_name":"Bash","tool_input":{"command":command},"error":format!("Exit code 101\n{output}"),"is_interrupt":false})
+}
+
+fn note(result: &Value) -> Option<&str> {
+    result["hookSpecificOutput"]["additionalContext"].as_str()
+}
+
+/// The third occurrence of one failure in a turn gets a single loop note,
+/// whatever its timings; a new prompt starts counting again; a changing
+/// failure, a passing run and a file read are not counted.
+#[test]
+fn a_failure_recurring_within_a_turn_gets_one_loop_note() {
+    let dir = tempfile::tempdir().unwrap();
+    let run = |seconds: &str| {
+        let event = failed_bash("l1", "cargo test", &cargo_failure(seconds));
+        hook(dir.path(), "claude", event)
+    };
+    assert_eq!(run("0.01"), json!({}));
+    assert_eq!(run("0.02"), json!({}));
+    let third = run("0.03");
+    let text = note(&third).expect("third occurrence");
+    assert_eq!(
+        third["hookSpecificOutput"]["hookEventName"],
+        "PostToolUseFailure"
+    );
+    assert!(
+        text.starts_with("Scopelet: the same failure (cargo: parse::fails) appeared 3 times"),
+        "{text}"
+    );
+    assert!(text.len() < 300, "{text}");
+    // Once per turn.
+    assert_eq!(run("0.04"), json!({}));
+    // A new prompt opens a new turn.
+    let prompt =
+        json!({"hook_event_name":"UserPromptSubmit","session_id":"l1","prompt":"try again"});
+    hook(dir.path(), "claude", prompt);
+    assert_eq!(run("0.05"), json!({}));
+    assert_eq!(run("0.06"), json!({}));
+    assert!(note(&run("0.07")).is_some());
+
+    // A failure that changes is progress, not a loop.
+    for name in ["a", "b", "c", "d"] {
+        let output = cargo_failure("0.1").replace("parse::fails", &format!("parse::{name}"));
+        let event = failed_bash("l2", "cargo test", &output);
+        assert_eq!(hook(dir.path(), "claude", event), json!({}));
+    }
+    // A passing run has no failure to count.
+    let pass = "running 9 tests\ntest result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s\n";
+    for _ in 0..4 {
+        let event = bash_result("l3", "cargo test", pass);
+        assert_eq!(hook(dir.path(), "claude", event), json!({}));
+    }
+    // Reading a log full of errors is not running a check.
+    for _ in 0..4 {
+        let event = bash_result(
+            "l4",
+            "cat app.log",
+            "TypeError: x is undefined\nerror: boom\n",
+        );
+        assert_eq!(hook(dir.path(), "claude", event), json!({}));
+    }
+    // A check that exits 0 (piped through tail) still counts.
+    let piped = || {
+        let event = bash_result("l5", "cargo test 2>&1 | tail -20", &cargo_failure("0.2"));
+        hook(dir.path(), "claude", event)
+    };
+    piped();
+    piped();
+    assert!(note(&piped()).is_some());
+
+    // The journal records the note's program, never its text.
+    let stats = cli(dir.path())
+        .args(["stats", "--days", "1"])
+        .output()
+        .unwrap();
+    let stats: Value = serde_json::from_slice(&stats.stdout).unwrap();
+    assert_eq!(stats["loop_notes"], 3, "{stats}");
+    assert_eq!(stats["loop_notes_by_program"]["cargo"], 3, "{stats}");
+    let journal: String = fs::read_dir(dir.path().join("cache/events"))
+        .unwrap()
+        .flatten()
+        .filter(|e| e.path().extension().is_some_and(|x| x == "jsonl"))
+        .map(|e| fs::read_to_string(e.path()).unwrap())
+        .collect();
+    assert!(!journal.contains("parse::fails"), "{journal}");
+}
+
+/// The note sits beside a replaced output without changing it, and neither
+/// `SCOPELET_LOOPGUARD=0` nor mode off gives one.
+#[test]
+fn a_loop_note_leaves_the_output_alone_and_can_be_turned_off() {
+    let dir = tempfile::tempdir().unwrap();
+    let noisy = format!(
+        "{}{}",
+        "Compiling crate v1.0.0\n".repeat(400),
+        cargo_failure("0.3")
+    );
+    let event = bash_result("n1", "cargo test 2>&1 | tail -500", &noisy);
+    let first = hook(dir.path(), "claude", event.clone());
+    assert!(note(&first).is_none());
+    // The view the second and third calls get is what they get without a note.
+    let mut last = json!({});
+    for _ in 0..2 {
+        last = hook(dir.path(), "claude", event.clone());
+    }
+    assert!(note(&last).is_some(), "{last}");
+    let text = shown(&event, &last, "stdout");
+    assert!(text.starts_with("[scopelet v5 "), "{text}");
+    let mut plain = last.clone();
+    plain["hookSpecificOutput"]
+        .as_object_mut()
+        .unwrap()
+        .remove("additionalContext");
+    let quiet = cli(dir.path())
+        .env("SCOPELET_LOOPGUARD", "0")
+        .args(["hook", "claude"])
+        .write_stdin(event.to_string())
+        .output()
+        .unwrap();
+    assert_eq!(
+        serde_json::from_slice::<Value>(&quiet.stdout).unwrap(),
+        plain
+    );
+
+    let repeated = |session: &str, env: Option<&str>| {
+        let mut last = json!({});
+        for _ in 0..3 {
+            let mut command = cli(dir.path());
+            if let Some(value) = env {
+                command.env("SCOPELET_LOOPGUARD", value);
+            }
+            let event = failed_bash(session, "cargo test", &cargo_failure("1"));
+            let out = command
+                .args(["hook", "claude"])
+                .write_stdin(event.to_string())
+                .output()
+                .unwrap();
+            assert!(out.status.success());
+            last = serde_json::from_slice(&out.stdout).unwrap();
+        }
+        last
+    };
+    assert_eq!(repeated("n2", Some("0")), json!({}));
+    cli(dir.path()).args(["mode", "off"]).assert().success();
+    assert_eq!(repeated("n3", None), json!({}));
+}
+
+/// A failed Bash call captured from Claude Code 2.1.318: the output is in
+/// `error`, after `Exit code N`. Replayed three times it gets the note a live
+/// session showed the model.
+#[test]
+fn the_captured_failure_event_gets_a_note_on_its_third_occurrence() {
+    let dir = tempfile::tempdir().unwrap();
+    let event: Value =
+        serde_json::from_str(include_str!("fixtures/claude_bash_failure.json")).unwrap();
+    assert_eq!(event["hook_event_name"], "PostToolUseFailure");
+    assert!(event.get("tool_response").is_none());
+    assert_eq!(hook(dir.path(), "claude", event.clone()), json!({}));
+    assert_eq!(hook(dir.path(), "claude", event.clone()), json!({}));
+    assert_eq!(
+        hook(dir.path(), "claude", event),
+        json!({"hookSpecificOutput":{"hookEventName":"PostToolUseFailure","additionalContext":"Scopelet: the same failure (python3: tests/test_a.py::test_x) appeared 3 times this turn. Re-running will not change it: re-read the failing expectation and test a different hypothesis before editing again."}})
+    );
+}
+
+/// Install adds PostToolUseFailure for Bash in Claude Code only, and doctor
+/// requires it.
+#[test]
+fn failure_hook_is_installed_for_claude_only() {
+    let dir = tempfile::tempdir().unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "all"])
+        .assert()
+        .success();
+    let path = dir.path().join("claude/settings.json");
+    let claude: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(claude["hooks"]["PostToolUseFailure"][0]["matcher"], "Bash");
+    let codex: Value =
+        serde_json::from_slice(&fs::read(dir.path().join("codex/hooks.json")).unwrap()).unwrap();
+    assert!(
+        codex["hooks"].get("PostToolUseFailure").is_none(),
+        "{codex}"
+    );
+    let mut older = claude.clone();
+    older["hooks"]
+        .as_object_mut()
+        .unwrap()
+        .remove("PostToolUseFailure");
+    fs::write(&path, serde_json::to_vec_pretty(&older).unwrap()).unwrap();
+    let out = cli(dir.path()).arg("doctor").output().unwrap();
+    let doctor: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(doctor["integration"]["hosts"][0]["hooks_configured"], false);
 }
