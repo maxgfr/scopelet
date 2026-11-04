@@ -243,12 +243,12 @@ and the fixtures are pinned by SHA-256 in `tests/content_gate.rs`.
 
 <!-- speed-table:start -->
 Median over 30 runs, cold application cache, macOS arm64, Scopelet
-1.1.3, measured by `bench/publish.py` on the binary that shipped.
+1.2.0, measured by `bench/publish.py` on the binary that shipped.
 
 | Operation | Median |
 | --- | ---: |
-| Compress a 136 KB log | **7 ms** |
-| Compress a 3 MB log | **25 ms** |
+| Compress a 136 KB log | **6 ms** |
+| Compress a 3 MB log | **24 ms** |
 | Repository query over 400 files | **10 ms** |
 | Compress a 32 MiB stream | **59 ms** |
 <!-- speed-table:end -->
@@ -317,7 +317,7 @@ scopelet run --auto -- npm test
 For a standalone `scopelet` command, install with **Rust 1.88+**:
 
 ```sh
-cargo install --git https://github.com/maxgfr/scopelet --tag v1.1.3 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v1.2.0 --locked
 ```
 
 Without Cargo, replace `scopelet` with
