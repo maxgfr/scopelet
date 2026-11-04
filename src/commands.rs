@@ -178,9 +178,28 @@ fn lenient_commands(command: &str) -> Vec<Vec<String>> {
     let end = |commands: &mut Vec<Vec<String>>, words: &mut Vec<String>| {
         let mut argv: Vec<String> = Vec::new();
         let mut skip = false;
+        let mut header = false;
         for word in words.drain(..) {
-            if std::mem::take(&mut skip) {
+            if std::mem::take(&mut skip) || header {
                 continue;
+            }
+            // Compound syntax: `for f in a b; do cat "$f"; done` runs `cat`.
+            // A reserved word leading a command is not its program; a loop
+            // or case header and a closing word run nothing themselves.
+            if argv.is_empty() {
+                if matches!(
+                    word.as_str(),
+                    "do" | "then" | "else" | "elif" | "if" | "while" | "until" | "!" | "{" | "time"
+                ) {
+                    continue;
+                }
+                if matches!(
+                    word.as_str(),
+                    "for" | "select" | "case" | "done" | "fi" | "esac" | "}"
+                ) {
+                    header = true;
+                    continue;
+                }
             }
             // `>`, `2>`, `>>`, `<` alone take the next word as their target;
             // `2>&1`, `>/dev/null` carry it.
@@ -460,6 +479,7 @@ pub fn profile(args: &[String]) -> Option<Profile> {
             }
         }
         "docker" | "kubectl" if second == "logs" && !follows(args) => Some(Profile::Logs),
+        "gh" => gh(args),
         "jq" if args.len() >= 3 => Some(Profile::Logs),
         "cat" | "nl" if args.len() == 2 && !second.starts_with('-') => Some(Profile::FileRead),
         "head" | "tail"
@@ -468,6 +488,46 @@ pub fn profile(args: &[String]) -> Option<Profile> {
             Some(Profile::FileRead)
         }
         "sed" if args.len() >= 4 && filter(args).is_some() => Some(Profile::FileRead),
+        _ => None,
+    }
+}
+
+/// GitHub CLI reads that finish on their own with stdin closed: a named
+/// run's log (`gh run view ID --log`, `--log-failed`, or with `--job ID`) and
+/// a pull request's diff. `gh run view` without a run opens a picker, and
+/// `--web` opens a browser.
+fn gh(args: &[String]) -> Option<Profile> {
+    /// Options of `gh run view` that take the next word as their value.
+    const VALUED: &[&str] = &[
+        "-R",
+        "--repo",
+        "-a",
+        "--attempt",
+        "-t",
+        "--template",
+        "-q",
+        "--jq",
+    ];
+    if args.iter().any(|a| a == "-w" || a == "--web") {
+        return None;
+    }
+    match (args.get(1)?.as_str(), args.get(2)?.as_str()) {
+        ("run", "view") => {
+            let log = args.iter().any(|a| a == "--log" || a == "--log-failed");
+            let mut named = false;
+            let mut i = 3;
+            while let Some(arg) = args.get(i) {
+                let job = arg == "-j" || arg == "--job";
+                named |= job || arg.starts_with("--job=") || !arg.starts_with('-');
+                i += if job || VALUED.contains(&arg.as_str()) {
+                    2
+                } else {
+                    1
+                };
+            }
+            (log && named).then_some(Profile::Logs)
+        }
+        ("pr", "diff") => Some(Profile::Git),
         _ => None,
     }
 }

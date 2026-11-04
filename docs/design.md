@@ -134,7 +134,19 @@ commands or raw output, since that report becomes its parent's input. These
 are preferences, never forced truncation or a reason to omit verification.
 Host settings are merged, original bytes backed up, and only exact Scopelet hook
 entries are removed. The resolved executable is copied during installation so
-hooks never trigger downloads. Host permission/trust mechanisms remain in force;
+hooks never trigger downloads. A package manager upgrades the `scopelet` on
+the PATH, not that copy: at a Claude Code session start, when the pinned copy
+running the hook is older than the first `scopelet` on the PATH, a
+`systemMessage` (shown to the person, not the model) asks for `scopelet
+install --agent all`. The PATH file's version is asked (`--version`, 2 s)
+only when its path, size or modification time changed since the last check,
+recorded in `<config>/path-binary.json`; the copy is never replaced
+automatically. `doctor` reports `path_binary`, `path_binary_version` and
+`pinned_outdated`, and for each host whose configuration exists its
+`host_version`, the `verified_with` version its event shapes were last
+verified on (Claude Code 2.1.296, Codex 0.160.0, OpenCode 2.0.0) and
+`version_check` (`same`, `newer`, `older`, null when the host does not run);
+a version never fails doctor. Host permission/trust mechanisms remain in force;
 Codex's input-rewrite protocol requires an explicit hook `allow` decision, but
 Scopelet never changes permission rules, mode, sandbox or escalation parameters.
 In Codex 0.160 that decision only carries `updatedInput`: the rewritten call
@@ -264,7 +276,8 @@ expanded later, expansions by kind, repeats and the bytes they saved, anchored
 views, compressions by program with the ten programs most often compressed
 without a profile (`unprofiled_programs`), and, per profile, the same figures with
 `budget_probably_tight` when more than 25% of at least four compressions were
-expanded. Stats report; nothing is tuned automatically. Accepted
+expanded, and loop notes in all and by program (see Loop notes). Stats
+report; nothing is tuned automatically. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact JSON
 serialization. Automatic compression stores a schema-2 artifact that names
@@ -318,8 +331,11 @@ ls-files`); Git `diff`, `log` (with
 `-p`), `show`, `status`, `blame` and `grep` with no option before the
 subcommand other than `--no-pager` or `-C DIR` (`-c` can name a program) and
 none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
-`--textconv`, `--output`, `grep -O`); logs (`docker
-logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
+`--textconv`, `--output`, `grep -O`); `gh pr diff` with the Git profile;
+logs (`docker
+logs`/`kubectl logs` without `-f`, `jq` on a file, `gh run view` of a named
+run or job with `--log` or `--log-failed`; without a run it opens a picker,
+and `--web` is never recognized); and file reads (`cat`,
 `nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
 `rtk` are recognized by the program they run, not by a substring.
 Each recognized command has a profile that sets its byte target: 4 KiB for
@@ -330,8 +346,11 @@ the profile from the parsed command (Codex passes `run --auto --profile`;
 Claude Code and OpenCode classify the command after the fact). Classifying
 after the fact chooses a profile only, so it also reads lines the execution
 grammar rejects: it splits them on `;`, `&&`, `||`, `|` and newlines outside
-quotes, drops redirections and leading assignments, and takes the first
-recognized command, where `cat` of several files or with `-n`/`-b`/`-s`/`-v`
+quotes, drops redirections, leading assignments and the reserved words that
+open a compound command (`do`, `then`, `else`, `elif`, `if`, `while`,
+`until`, `!`, `{`, `time`), skips loop and case headers and closing words
+(`for …`, `select …`, `case …`, `done`, `fi`, `esac`, `}`), and takes the
+first recognized command (`for f in a b; do cat "$f"; done` reads files), where `cat` of several files or with `-n`/`-b`/`-s`/`-v`
 and `nl` with its numbering options also read files (`sed -n 1,80p a; sed -n
 1,80p b`, `cat a b`, `nl -ba f | sed -n 40,90p`). Codex's grammar and what it
 wraps are unchanged. The shell grammar and permission envelope remain in
@@ -485,6 +504,36 @@ identity counts: two runs that differ in a timing or a thread id are two
 outputs. Codex and OpenCode, which signal no compaction, get no repeat
 references. A repeat is journaled with the bytes it saved. An earlier
 bare-mode marker is read as that mode.
+
+**Loop notes (Claude Code).** A turn runs from one prompt to the next; a
+`SessionStart` also starts one. When a Bash command reports the same failure
+for the third time in a turn, the hook adds one `additionalContext` note,
+at most once per turn: `Scopelet: the same failure (PROGRAM: LABEL) appeared N
+times this turn. Re-running will not change it: re-read the failing
+expectation and test a different hypothesis before editing again.` It
+mirrors what the agent did, never stops or blocks anything, and leaves the
+tool output exactly as it would be without it. A failure is what the output
+reports: the cargo, pytest, jest, vitest and go test failures the test views
+name, plus lines that report one where compilers and runners write them
+(`error: `, `error[E0308]: `, `error TS2345:`, `FAIL`, `FAILED`, `--- FAIL:`,
+an exception type opening a line, pytest's `E   `, `npm ERR!`), read on the
+display copy and masked by template, so timings, counters and addresses do
+not make a new failure while a different failing test or message does. A
+passing run, whose summaries count `0 failed`, has no failure. Failures are
+keyed by program and counted in the context's private state (at most 32 per
+turn). Claude Code reports a Bash call that exits non-zero as
+`PostToolUseFailure`, whose `error` text carries the output after `Exit code
+N` and allows no replacement, so that event is installed (matcher `Bash`) to
+count and note only: such an output is not compressed. The shape was captured
+from Claude Code 2.1.318 (`tests/fixtures/claude_bash_failure.json`); a live
+run confirmed the model receives the note on the third failure. A call that exits 0 counts only for a
+build, test or check, such as one piped through `tail`; a file read, search or
+log is never counted. The journal records the note's program and profile
+(`kind: loop`), never its text; `stats` reports `loop_notes` and
+`loop_notes_by_program`. `SCOPELET_LOOPGUARD=0` and mode off disable it.
+This is the deterministic part of a failure-loop guard: no model judges the
+turn. Codex and OpenCode have no channel for context within a turn, so they
+get no note.
 
 **Relevance anchors.** On `UserPromptSubmit`, the prompt's quoted text, paths
 and file names, snake_case and CamelCase identifiers and error codes (3 to 64

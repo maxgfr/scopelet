@@ -79,6 +79,12 @@ fn safe_families_are_recognized_with_their_profile() {
         ("brew install ripgrep", Profile::Install),
         ("brew upgrade", Profile::Install),
         ("bundle install", Profile::Install),
+        ("gh run view 123 --log", Profile::Logs),
+        ("gh run view --log-failed 123", Profile::Logs),
+        ("gh run view -R o/r 123 --log", Profile::Logs),
+        ("gh run view --job 456 --log", Profile::Logs),
+        ("gh pr diff", Profile::Git),
+        ("gh pr diff 12", Profile::Git),
     ] {
         assert_eq!(profile(&args(command)), Some(expected), "{command}");
     }
@@ -125,6 +131,15 @@ fn writing_waiting_or_unknown_commands_are_not_recognized() {
         "/usr/local/bin/rtk cargo test",
         "node /x/skills/scopelet/scripts/scopelet.mjs expand last",
         "npm test -- --watch",
+        // A picker without a run, a browser, a run that never ends.
+        "gh run view --log",
+        "gh run view -R o/r --log",
+        "gh run view 123",
+        "gh run view 123 --log --web",
+        "gh run watch 123",
+        "gh pr diff 12 -w",
+        "gh pr view 12",
+        "gh api repos/o/r",
     ] {
         assert_eq!(profile(&args(command)), None, "{command}");
     }
@@ -176,6 +191,17 @@ fn hosts_that_compress_afterwards_classify_composed_reads_leniently() {
             "{command}"
         );
     }
+    // Loop and conditional bodies are read like any other command.
+    for (command, expected) in [
+        ("for f in a b; do cat \"$f\"; done", Profile::FileRead),
+        (
+            "for d in a b; do (cd $d && cargo test); done",
+            Profile::Tests,
+        ),
+        ("if [ -d x ]; then rg foo x; fi", Profile::Search),
+    ] {
+        assert_eq!(classify_lenient(command), Some(expected), "{command}");
+    }
     // Strictly parsed lines keep their profile; the lenient reading only
     // fills in what the strict grammar rejects.
     assert_eq!(
@@ -208,6 +234,13 @@ fn the_journaled_program_is_a_bare_name() {
         ("FOO=1 /usr/bin/python3 x.py; echo ok", Some("python3")),
         ("echo start; nl -ba f | sed -n 1,9p", Some("nl")),
         ("cd sub", None),
+        // Compound syntax: the reserved words are not programs.
+        ("for f in a b; do cat \"$f\"; done", Some("cat")),
+        ("for i in 1 2; do echo $i; done", Some("echo")),
+        ("while read l; do grep x f; done < list", Some("grep")),
+        ("if test -f x; then cargo test; fi", Some("cargo")),
+        ("time cargo build", Some("cargo")),
+        ("done", None),
         ("make deploy", Some("make")),
         ("./scripts/do\\ it.sh --token=abc", Some("other")),
         ("", None),

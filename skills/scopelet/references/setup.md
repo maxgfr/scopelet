@@ -148,7 +148,11 @@ clear; each subagent keeps its own memory. Prompt terms and the command's
 search pattern or test filter rank matching lines into the view; they stay in
 a private per-session file under the config directory, never in the journal. A
 `SubagentStart` hook gives each subagent the recovery command and asks its
-final report for conclusions with `file:line` evidence. MCP tool results
+final report for conclusions with `file:line` evidence. When a Bash command
+reports the same failure (timings and counters aside) for the third time in a
+turn, `PostToolUse` or `PostToolUseFailure` adds one note per turn asking for a
+different hypothesis; it never changes the output or stops the turn, and
+`SCOPELET_LOOPGUARD=0` turns it off. MCP tool results
 pass through too: Claude Code's hook documentation does not say how a
 PostToolUse replacement applies to an MCP result's content, and Scopelet does
 not rely on unverified behavior. Codex uses

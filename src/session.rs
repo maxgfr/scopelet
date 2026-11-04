@@ -14,6 +14,8 @@ pub const MAX_SEEN: usize = 512;
 pub const PREFIX: usize = 16;
 /// Prompt terms remembered per context; the newest replace the oldest.
 pub const MAX_ANCHORS: usize = 32;
+/// Failure signatures counted per turn; the oldest are forgotten first.
+pub const MAX_FAILURES: usize = 32;
 /// Byte length of a term worth matching: shorter ones match everywhere.
 pub const ANCHOR_BYTES: std::ops::RangeInclusive<usize> = 3..=64;
 
@@ -28,6 +30,13 @@ pub struct State {
     /// Terms of recent prompts, oldest first.
     #[serde(default)]
     pub anchors: Vec<String>,
+    /// Failure signatures seen in this turn (since the last prompt) and how
+    /// often each recurred, oldest first.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub failures: Vec<(String, u8)>,
+    /// Whether this turn already received a loop note.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub nudged: bool,
 }
 
 impl State {
@@ -42,6 +51,29 @@ impl State {
         self.seen.push(hash.to_owned());
         let excess = self.seen.len().saturating_sub(MAX_SEEN);
         self.seen.drain(..excess);
+    }
+    /// Count one more occurrence of a failure signature in this turn and
+    /// return how many there were, forgetting the oldest signature beyond
+    /// `MAX_FAILURES`.
+    pub fn failed(&mut self, signature: &str) -> u8 {
+        let count = match self.failures.iter_mut().find(|(s, _)| s == signature) {
+            Some((_, n)) => {
+                *n = n.saturating_add(1);
+                *n
+            }
+            None => {
+                self.failures.push((signature.to_owned(), 1));
+                1
+            }
+        };
+        let excess = self.failures.len().saturating_sub(MAX_FAILURES);
+        self.failures.drain(..excess);
+        count
+    }
+    /// A new prompt starts a new turn: its failures are counted afresh.
+    pub fn new_turn(&mut self) {
+        self.failures.clear();
+        self.nudged = false;
     }
     /// Add a prompt's terms, newest last, forgetting the oldest beyond
     /// `MAX_ANCHORS`.
@@ -247,6 +279,32 @@ mod tests {
             state.anchors[MAX_ANCHORS - 3..],
             ["old_0", "new_a", "new_b"]
         );
+    }
+
+    #[test]
+    fn failures_are_counted_per_turn_and_bounded() {
+        let mut state = State::default();
+        assert_eq!(state.failed("a"), 1);
+        assert_eq!(state.failed("b"), 1);
+        assert_eq!(state.failed("a"), 2);
+        for i in 0..MAX_FAILURES {
+            state.failed(&format!("x{i}"));
+        }
+        assert_eq!(state.failures.len(), MAX_FAILURES);
+        assert_eq!(state.failed("a"), 1, "the oldest signature was forgotten");
+        state.nudged = true;
+        state.new_turn();
+        assert!(state.failures.is_empty() && !state.nudged);
+    }
+
+    #[test]
+    fn states_written_before_loop_counting_still_read() {
+        let old = br#"{"mode":"default","seen":["00112233445566ff"],"anchors":["x_y"]}"#;
+        let state: State = serde_json::from_slice(old).unwrap();
+        assert_eq!(state.anchors, ["x_y"]);
+        assert!(state.failures.is_empty() && !state.nudged);
+        // An unused counter adds nothing to the file.
+        assert_eq!(serde_json::to_vec(&state).unwrap(), old);
     }
 
     #[test]
