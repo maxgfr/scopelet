@@ -266,6 +266,32 @@ binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
 
+### 1.2.0 against 1.1.3 (November 2026)
+
+`results/live-20261104-120-haiku.json` runs the sixteen tasks three times with
+`off`, `base` (1.1.3, `051fb0ab2901…`) and `new` (the 1.2.0 release binary,
+`5fc6dbb2109c…`): Claude Code 2.1.318, every session served by
+`claude-haiku-5-5`, every cost known. 1.2.0 adds failure-loop notes, which
+need the same failure three times in a turn; no session of these tasks met
+one, so the campaign checks for regressions and measures the compression
+against no Scopelet.
+
+| Arm | Correct | Cost | Cost per success | Delta vs base, 95% interval | Turns | Tool calls | Views shown |
+|---|---:|---:|---:|---|---:|---:|---:|
+| off | 47 | $0.1160 | $0.002469 | +$0.000193 [−0.000017, +0.000410] | 183 | 135 | 0 |
+| base | 47 | $0.1070 | $0.002276 | | 189 | 141 | 21 |
+| new | 47 | $0.1037 | $0.002206 | −$0.000070 [−0.000232, +0.000089] | 186 | 138 | 19 |
+
+Each arm failed one session: `git_log_find` (base), `grep_context` (off and
+new). The paired mean cost per session without Scopelet was higher than with
+1.1.3, +$0.000189 [+0.000031, +0.000364], about 9%. 1.2.0 against 1.1.3 is
+within noise either way, with as many successes: no regression, and no gain
+these tasks can show. In this environment the tool results of every arm,
+`off` included, had `charge_card` and `refund` replaced by `n` before the
+model read them (the transcripts show `n(o, t)` where the files say
+`charge_card(o, t)`), which is what made `grep_context` fail. Something
+outside Scopelet rewrites tool output there, the same way for all arms.
+
 ### 1.0: one format against 0.11.1
 
 The rule was set before the runs: ship the single format unless, in haiku,
