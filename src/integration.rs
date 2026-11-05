@@ -934,6 +934,11 @@ pub fn hook_stdin(agent: Agent) -> Result<Value> {
         .read_to_end(&mut bytes)?;
     ensure!(bytes.len() <= MAX_INPUT * 3, "hook input too large");
     let event: Value = serde_json::from_slice(&bytes)?;
+    // Lets the tests check that a panic still leaves the host's output alone.
+    #[cfg(debug_assertions)]
+    if std::env::var_os("SCOPELET_TEST_HOOK_PANIC").is_some() {
+        panic!("test panic");
+    }
     hook(agent, &event)
 }
 fn hook(agent: Agent, event: &Value) -> Result<Value> {

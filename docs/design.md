@@ -132,7 +132,11 @@ Code a `SubagentStart` hook gives each subagent the recovery line and asks its
 final report for conclusions with `file:line` evidence, without restating
 commands or raw output, since that report becomes its parent's input. These
 are preferences, never forced truncation or a reason to omit verification.
-Host settings are merged, original bytes backed up, and only exact Scopelet hook
+A hook never blocks or breaks its host: a malformed or oversized event, an
+unwritable store or state, a panic (release builds abort on one) or an
+unwritable stdout all answer `{}` with status 0, so the host keeps its native
+output; each Claude Code hook also carries a 5-second timeout, about thirty
+times the slowest measured call (a 30 MB output). Host settings are merged, original bytes backed up, and only exact Scopelet hook
 entries are removed. The resolved executable is copied during installation so
 hooks never trigger downloads. A package manager upgrades the `scopelet` on
 the PATH, not that copy: at a Claude Code session start, when the pinned copy

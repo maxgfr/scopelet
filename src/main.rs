@@ -333,9 +333,15 @@ fn execute(cli: Cli) -> Result<i32> {
             return Ok(0);
         }
         Cmd::Hook { agent } => {
-            // Hook failures must not prevent the host from executing the native call.
+            // A hook never blocks or breaks its host: an error, a panic (a
+            // release build aborts on one) or an unwritable stdout all answer
+            // `{}` with status 0, and the host keeps its native output.
+            std::panic::set_hook(Box::new(|_| {
+                let _ = writeln!(std::io::stdout(), "{{}}");
+                std::process::exit(0);
+            }));
             let result = integration::hook_stdin(*agent).unwrap_or_else(|_| json!({}));
-            print(&result)?;
+            let _ = print(&result);
             return Ok(0);
         }
         _ => {}

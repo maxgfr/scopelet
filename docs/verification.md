@@ -59,6 +59,10 @@ The replacement shape follows the
 Codex and OpenCode adapters have equivalent contract tests under
 `tests/automatic.rs`.
 
+A hook fails open: `tests/automatic.rs` sends every host malformed events, a
+cache that cannot be written and a forced panic, and each answers with status
+0 and JSON, `{}` on a failure, so the host keeps its native output.
+
 The installer is exercised in temporary configurations for every host: hook
 installation, idempotent reinstall, mode changes, preservation of unrelated
 hooks, and uninstall. `scripts/check_install.py` covers the published launcher.

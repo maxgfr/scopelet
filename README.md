@@ -124,7 +124,9 @@ need to.
 
 What it is not: it does not call another model to summarize, it does not
 intercept API traffic, it does not rewrite your conversation history, and it
-does not touch small outputs at all.
+does not touch small outputs at all. If anything goes wrong inside Scopelet, a
+corrupt cache, a full disk, a bug, the hook steps aside and your agent gets
+the output exactly as printed.
 
 ## How it works
 
