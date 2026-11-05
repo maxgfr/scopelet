@@ -399,6 +399,22 @@ class SessionTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 live.session(live.parse_arm('off'), 'find_receipt', spec, 'haiku', 60, False, path)
 
+    def test_sessions_search_like_a_default_claude_code_session(self):
+        # Naming a search tool would hand Bash `grep` and `find` to the
+        # user's shell aliases instead of Claude Code's embedded ones.
+        captured = []
+
+        def fake(args, **kwargs):
+            if args[0] == 'claude':
+                captured.append(args)
+                return subprocess.CompletedProcess(args, 0, STREAM, '')
+            return subprocess.run(args, **kwargs)
+        spec = live.load_tasks()['find_receipt']
+        with patch.object(live.subprocess, 'run', side_effect=fake):
+            live.session(live.parse_arm('off'), 'find_receipt', spec, 'haiku', 60, False)
+        tools = next(a for a in captured[0] if a.startswith('--allowedTools='))
+        self.assertEqual(tools, '--allowedTools=Bash,Read,Edit,Write')
+
     def test_an_arm_installs_its_binary_with_no_inherited_scopelet_setting(self):
         calls = []
         with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {'SCOPELET_EVENTS': '0'}), \

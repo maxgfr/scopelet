@@ -289,8 +289,14 @@ within noise either way, with as many successes: no regression, and no gain
 these tasks can show. In this environment the tool results of every arm,
 `off` included, had `charge_card` and `refund` replaced by `n` before the
 model read them (the transcripts show `n(o, t)` where the files say
-`charge_card(o, t)`), which is what made `grep_context` fail. Something
-outside Scopelet rewrites tool output there, the same way for all arms.
+`charge_card(o, t)`), which is what made `grep_context` fail. The cause was
+the harness, not Scopelet: `--allowedTools` named `Grep` and `Glob`, which
+makes Claude Code 2.1.318 keep the user's shell aliases for `grep` and `find`
+instead of its embedded ugrep and bfs, and the machine aliased `grep` to `rg`,
+for which `grep -rn X` means "replace every match with `n`". Only Bash `grep`
+calls were affected; the Grep tool and Read were not. Sessions now allow
+`Bash,Read,Edit,Write`, as a default session searches; a probe session on the
+same task then read `3:    charge_card(o, t)`.
 
 ### 1.0: one format against 0.11.1
 
