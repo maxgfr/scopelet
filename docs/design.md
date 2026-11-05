@@ -144,7 +144,7 @@ recorded in `<config>/path-binary.json`; the copy is never replaced
 automatically. `doctor` reports `path_binary`, `path_binary_version` and
 `pinned_outdated`, and for each host whose configuration exists its
 `host_version`, the `verified_with` version its event shapes were last
-verified on (Claude Code 2.1.296, Codex 0.160.0, OpenCode 2.0.0) and
+verified on (Claude Code 2.1.318, Codex 0.160.0, OpenCode 2.0.0) and
 `version_check` (`same`, `newer`, `older`, null when the host does not run);
 a version never fails doctor. Host permission/trust mechanisms remain in force;
 Codex's input-rewrite protocol requires an explicit hook `allow` decision, but

@@ -20,7 +20,8 @@
   <a href="#nothing-is-lost">Recovery</a> ·
   <a href="#exact-queries">Queries</a> ·
   <a href="#what-gets-compressed">Scope</a> ·
-  <a href="docs/design.md">Contracts</a>
+  <a href="docs/design.md">Contracts</a> ·
+  <a href="https://maxgfr.github.io/scopelet/">Website</a>
 </p>
 
 ---
@@ -163,7 +164,9 @@ node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" doctor
 The first command installs the skill. The second downloads its pinned release,
 checks SHA-256, and installs the automatic hooks for Claude Code, Codex and
 OpenCode with **default mode enabled**. The third reports the installed binary
-and `hooks_configured` for all three hosts. The skill installer does **not**
+(and whether a newer `scopelet` is on your PATH), `hooks_configured` for all
+three hosts, and each installed host's version against the one Scopelet was
+verified with. The skill installer does **not**
 put a `scopelet` command on your PATH.
 
 Restart active agent sessions. In Codex, review and trust the new hooks through
@@ -266,13 +269,13 @@ stored original by address instead of reading and re-hashing it.
 
 > [!IMPORTANT]
 > **Bytes are not tokens, and none of the numbers above is a bill.** The
-> latest live campaign (`bench/live.py`, Claude Code 2.1.301, sixteen synthetic
-> tasks, 144 Haiku sessions in paired rounds) found every task done correctly
-> with Scopelet off, with 0.11.1 and with 1.0. Per successful task, 1.0 cost
-> $0.00200, 10% less than 0.11.1's $0.00223 (95% interval of the difference
-> entirely below zero), mostly because a build's error now keeps its location
-> in the view; Scopelet off cost $0.00223, no different from 0.11.1. A
-> session's cost follows its turns (each about 19,500 input tokens, cache
+> latest live campaign (`bench/live.py`, Claude Code 2.1.318, sixteen synthetic
+> tasks, 96 Haiku sessions in paired rounds, searching as a default session
+> does) put 1.2.1 against no Scopelet. A session with Scopelet cost $0.00194
+> on average against $0.00213 without, about 9% less, with the 95% interval of
+> the paired difference entirely below zero; 47 of 48 tasks were right with
+> Scopelet and 48 without, the one miss on an output no view touched. A
+> session's cost follows its turns (each about 18,000 input tokens, cache
 > included), the model narrows most commands itself, and outputs over about
 > 30 KB are saved to a file by Claude Code, which shows its own preview, so
 > views reached the model on six of the sixteen tasks. The reports are in
@@ -349,14 +352,18 @@ shown becomes a one-line reference to it, until the conversation is compacted
 or cleared; a subagent keeps its own memory of what it was shown. Terms of your
 prompt (identifiers, paths, quoted text, error codes) and of the command (a
 search pattern, a test filter) rank the lines that contain them into the view.
-They stay in a private per-session file, never in the journal.
+They stay in a private per-session file, never in the journal. When the same
+failure (the same failing tests or error lines, timings and numbers aside)
+comes back a third time within one prompt, Claude Code's agent gets one short
+note to test a different hypothesis instead of re-running; the output itself
+is left alone, and `SCOPELET_LOOPGUARD=0` turns the note off.
 
 Each recognized command gets a budget that fits what its output is for: 2 KiB
 for package installs, 4 KiB for tests, 8 KiB for searches, Git and logs, 16 KiB
 for file reads, which stay whole up to 16 KiB so an ordinary source file is read
 as written. Small automatic outputs never open the cache store. A local
 journal, never transmitted, records each decision; `scopelet stats` shows
-compressions, bytes saved, why outputs passed through, repeats, which programs
+compressions, bytes saved, why outputs passed through, repeats, loop notes, which programs
 were compressed without a profile, and per profile how often a view was
 expanded and how, flagging a profile whose views are expanded too often
 (`SCOPELET_EVENTS=0` turns it off). It names a program by its bare name only,

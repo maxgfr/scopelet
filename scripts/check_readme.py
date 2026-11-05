@@ -4,7 +4,9 @@
 Every figure in that table is a byte count, and a byte count is easy to write
 down as a character count by accident: the views contain multi-byte characters,
 so `len(text)` and `len(bytes)` disagree by a few. This rebuilds each fixture,
-runs the compressor, and compares the numbers the README claims. No model calls.
+runs the compressor, and compares the numbers the README claims. The website
+(`site/index.html`) quotes some of the same rows; each must match the README.
+No model calls.
 """
 from __future__ import annotations
 
@@ -97,10 +99,32 @@ def claimed(readme: str) -> dict[str, tuple[int, int, str]]:
     return claims
 
 
+def site_rows(html: str) -> dict[str, tuple[int, int, str]]:
+    """The website's copy of the reduction rows, parsed like the README's."""
+    rows = {}
+    for row in re.findall(r"<tr>(.*?)</tr>", html, re.S):
+        cells = [re.sub(r"<[^>]+>", "", cell).strip() for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)]
+        if len(cells) >= 4:
+            rows.update(claimed("| " + " | ".join(cells) + " |"))
+    return rows
+
+
+def site_failures(claims: dict[str, tuple[int, int, str]], site: Path) -> list[str]:
+    """Every row the website quotes must be a README row with the same figures."""
+    if not site.exists():
+        return []
+    return [
+        f"{label}: {site} says {figures}, README says {claims.get(label)}"
+        for label, figures in site_rows(site.read_text()).items()
+        if claims.get(label) != figures
+    ]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--readme", type=Path, default=Path("README.md"))
+    parser.add_argument("--site", type=Path, default=Path("site/index.html"))
     options = parser.parse_args()
 
     claims = claimed(options.readme.read_text())
@@ -135,6 +159,7 @@ def main() -> int:
             else:
                 print(f"  ok  {label}: {actual_in} -> {actual_out} ({kept})")
 
+    failures += site_failures(claims, options.site)
     for failure in failures:
         print(f"  BAD {failure}", file=sys.stderr)
     if failures:

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Measure one binary and publish its figures: the only numbers the repository keeps.
+"""Measure one binary and publish its offline figures.
 
 Runs the content probe and the performance probe on the given binary, replaces
-everything under bench/results/ with the two fresh reports, and rewrites the
-speed table in the README between its markers. Older figures are not kept:
-a benchmark describes the version that ships, nothing else.
+bench/results/content.json and bench/results/performance.json with the two
+fresh reports, and rewrites the speed table in the README between its markers.
+Older offline figures are not kept: they describe the version that ships,
+nothing else. The live, token and next-action reports beside them name the
+binary they measured and are left alone.
 """
 from __future__ import annotations
 import argparse
@@ -76,6 +78,13 @@ def rewrite(readme, block):
     return pattern.sub(lambda _: block, readme, count=1)
 
 
+def install_reports(runs, results):
+    """Replace the two offline reports in `results`; every other report stays."""
+    results.mkdir(parents=True, exist_ok=True)
+    for probe in ('content', 'performance'):
+        shutil.copy2(runs / probe / 'report.json', results / f'{probe}.json')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--scopelet', type=Path, required=True, help='the release binary to measure and publish')
@@ -100,10 +109,7 @@ def main():
                 cell['summary']['failures'] for case in performance_report['cases'].values() for cell in case.values()):
             print('FAIL performance probe reported failures', file=sys.stderr)
             return 1
-        shutil.rmtree(RESULTS, ignore_errors=True)
-        RESULTS.mkdir(parents=True)
-        shutil.copy2(runs / 'content' / 'report.json', RESULTS / 'content.json')
-        shutil.copy2(runs / 'performance' / 'report.json', RESULTS / 'performance.json')
+        install_reports(runs, RESULTS)
     values = medians(content_report, performance_report)
     block = table(values, version, machine(), options.repetitions)
     options.readme.write_text(rewrite(options.readme.read_text(), block))

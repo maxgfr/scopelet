@@ -32,6 +32,12 @@ Scopelet off included; compact-v5 showed 6.1% fewer view tokens than v4 on the
 0.10.0 fixtures; every compressed view changed the next action on 5 of 8
 replayed steps. The details are below.
 
+The current live campaign is `live-20261105-121-haiku.json`: 1.2.1 against
+no Scopelet, in sessions that search like a default Claude Code session. A
+session with Scopelet cost about 9% less on average, the 95% interval below
+zero, with 47 of 48 tasks right against 48; see
+[1.2.1 against no Scopelet](#121-against-no-scopelet-november-2026).
+
 The 1.0 campaign (`*-20261016-single*.json`) measured the single format
 (binary `ba3eb754e660…`) against the 0.11.1 release (`c4432301dec7…`, compact-v4
 by default); see [1.0: one format against 0.11.1](#10-one-format-against-0111).
@@ -99,11 +105,12 @@ python3 bench/performance.py --binary released=/path/to/scopelet-0.5.0 \
 
 ## Publishing a release's figures
 
-`publish.py` runs both probes on one binary, replaces everything under
-`bench/results/` with the two fresh reports (`content.json`,
-`performance.json`) and rewrites the README speed table between its
-`speed-table` markers. Only the shipped version's numbers are kept: an older
-version's figures are deleted, not archived.
+`publish.py` runs both probes on one binary, replaces the two offline reports
+under `bench/results/` (`content.json`, `performance.json`) with fresh ones and
+rewrites the README speed table between its `speed-table` markers. Only the
+shipped version's offline numbers are kept: an older version's are replaced,
+not archived. The live, token and next-action reports beside them name the
+binary they measured and are left in place.
 
 The release workflow runs it on the macOS arm64 runner against the versioned
 release binary, and the release commit carries the two reports and the README
@@ -218,13 +225,16 @@ binary's own default format. Repetitions are paired: every round runs
 every arm on every task, and the arm order rotates between rounds. `HOME` is
 kept, because Claude Code's OAuth credentials live in the login keychain;
 `--isolate-home` also replaces it when an API key is configured instead.
+Sessions allow `Bash,Read,Edit,Write`, the tools a default session searches
+with: naming `Grep` or `Glob` would make Claude Code leave Bash `grep` and
+`find` to the user's shell aliases instead of its embedded ugrep and bfs.
 
 ```sh
 cargo build --release --locked
-cp target/release/scopelet /tmp/scopelet-single   # frozen for the campaign
-python3 bench/live.py --live --runs 3 --model haiku --baseline v4old \
-  --arm off --arm v4old=/path/to/scopelet-0.11.1 --arm single=/tmp/scopelet-single \
-  --transcripts /tmp/transcripts --out bench/results/live-<date>-single-haiku.json
+cp target/release/scopelet /tmp/scopelet-new   # frozen for the campaign
+python3 bench/live.py --live --runs 3 --model haiku --baseline off \
+  --arm off --arm base=/path/to/scopelet-1.2.1 --arm new=/tmp/scopelet-new \
+  --transcripts /tmp/transcripts --out bench/results/live-<date>-haiku.json
 ```
 
 An arm is `off` or `NAME=BINARY`. Flags: `--live` (required), `--arm`
@@ -260,11 +270,36 @@ cache is most of the bill and tool outputs a few percent, so a turn more
 costs more than a smaller view saves.
 
 A release commit takes only `content.json` and `performance.json` from
-`publish.py` (which, run locally, empties `bench/results/` first); live,
-token and NAP reports stay until replaced on purpose. A report describes the
+`publish.py`, which replaces nothing else; live, token and NAP reports stay
+until replaced on purpose. A report describes the
 binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
+
+### 1.2.1 against no Scopelet (November 2026)
+
+`results/live-20261105-121-haiku.json` is the first campaign whose sessions
+search the way a default Claude Code session does (`--allowedTools
+Bash,Read,Edit,Write`; see the end of the next section for why that matters).
+It runs the sixteen tasks three times with `off` and `new` (the 1.2.1 release
+binary, `198a725e1f10…`): Claude Code 2.1.318, every session served by
+`claude-haiku-5-5`, every cost known.
+
+| Arm | Correct | Cost | Cost per success | Delta vs off, 95% interval | Turns | Tool calls | Views shown |
+|---|---:|---:|---:|---|---:|---:|---:|
+| off | 48 | $0.1024 | $0.002134 | | 160 | 112 | 0 |
+| new | 47 | $0.0930 | $0.001978 | −$0.000156 [−0.000386, +0.000047] | 168 | 120 | 17 |
+
+A session with 1.2.1 cost $0.001937 on average against $0.002134 without
+Scopelet: a paired mean delta of −$0.000197 [−0.000413, −0.000015], about 9%
+less, with the whole interval below zero. Cost per success, which also charges
+the one failure, is 7% lower, its interval just reaching zero. Views reached
+the model on six tasks (`fix_test`, `stack_trace` and the four view-forcing
+tasks); `grep_context`, which every arm failed in the previous campaign, was
+answered in all six sessions. The one failure is `git_log_find` in `new`, round
+2: the model piped `git log -p` through `grep -B3 … | head -100`, which cut
+the commit line from the hunk it needed, and named the wrong commit. That
+output was 2.7 KB and reached the model unchanged; no view was involved.
 
 ### 1.2.0 against 1.1.3 (November 2026)
 

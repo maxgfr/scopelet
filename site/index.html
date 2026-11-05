@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scopelet: send your agent the one thing, not the 17 KB log</title>
+<meta name="description" content="Scopelet compresses large command outputs into bounded views before your coding agent reads them, keeps the exact original bytes on disk, and never calls another model. For Claude Code, Codex and OpenCode.">
+<meta property="og:title" content="Scopelet">
+<meta property="og:description" content="Your agent reads a 17 KB test log to learn one thing. Send it the one thing.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23163b36'/%3E%3Cpath d='M8 11h16M8 16h9M8 21h13' stroke='%23e8f3ef' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="#">Scopelet</a>
+    <nav aria-label="Sections">
+      <a href="#see-it">See it</a>
+      <a href="#how">How it works</a>
+      <a href="#numbers">Numbers</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/maxgfr/scopelet">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">For Claude Code, Codex and OpenCode</p>
+    <h1>Your agent reads a 17&nbsp;KB test log to learn one thing.<br><span>Send it the one thing.</span></h1>
+    <p class="lede">Scopelet sits on the hook your coding agent already has. When a command prints
+      something large, the model reads a bounded view instead: failures, diagnostics and their
+      locations first, repeats counted, every gap declared. The exact original bytes stay on your
+      disk, one command away. No second model, no API key, no proxy.</p>
+    <div class="cta">
+      <a class="button" href="#install">Install</a>
+      <a class="button ghost" href="https://github.com/maxgfr/scopelet">Source on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<section id="see-it">
+  <div class="wrap">
+    <h2>See it</h2>
+    <p>A Jest run prints 481 results. One of them matters.</p>
+    <div class="compare">
+      <figure>
+        <figcaption><span>Without Scopelet</span><b>17,549 bytes</b></figcaption>
+<pre><code>&gt; app@1.4.2 test
+&gt; jest --runInBand
+
+PASS  src/modules/module0.test.js
+PASS  src/modules/module1.test.js
+PASS  src/modules/module2.test.js
+        ... 237 more PASS lines ...
+FAIL  src/auth/session.test.js
+  ● session › refreshes an expiring token
+
+    expect(received).toBe(expected)
+
+    Expected: 1735689600
+    Received: 1735689599
+
+      at Object.&lt;anonymous&gt; (src/auth/session.test.js:42:31)
+PASS  src/modules/module240.test.js
+        ... 239 more PASS lines ...
+
+Test Suites: 1 failed, 480 passed, 481 total
+Tests:       1 failed, 1327 passed, 1328 total
+Time:        84.113 s</code></pre>
+      </figure>
+      <figure class="after">
+        <figcaption><span>With Scopelet</span><b>542 bytes</b></figcaption>
+<pre><code><mark>[scopelet v5 47487d02d1c0 omitted=0 abridged=1;
+ gaps are not absence]</mark>
+1-3
+ &gt; app@1.4.2 test
+ &gt; jest --runInBand
+
+<mark>4 similar=480 last=492</mark> PASS  src/modules/module0.test.js
+244-252
+ FAIL  src/auth/session.test.js
+   ● session › refreshes an expiring token
+
+     expect(received).toBe(expected)
+
+     Expected: 1735689600
+     Received: 1735689599
+
+       at Object.&lt;anonymous&gt; (src/auth/session.test.js:42:31)
+493-496
+
+ Test Suites: 1 failed, 480 passed, 481 total
+ Tests:       1 failed, 1327 passed, 1328 total
+ Time:        84.113 s</code></pre>
+      </figure>
+    </div>
+    <p class="note">The failure keeps its expected value, its received value and its stack frame.
+      The 480 passes become one line that still says how many there were and where the last one
+      was. The header says what the view cost: <code>omitted=0</code> means every line is shown or
+      folded into a counted group, and the ID names the original, still on disk byte for byte.</p>
+  </div>
+</section>
+
+<section id="how" class="alt">
+  <div class="wrap">
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li>
+        <h3>A command finishes</h3>
+        <p>Claude Code and OpenCode hand its output to Scopelet's hook. Codex runs recognized
+          commands through <code>scopelet run --auto</code>, after its own approval.</p>
+      </li>
+      <li>
+        <h3>Small outputs pass untouched</h3>
+        <p>Up to 2&nbsp;KiB, or 16&nbsp;KiB for a file read, the model reads exactly what was printed.
+          Most outputs end here.</p>
+      </li>
+      <li>
+        <h3>The command picks a profile</h3>
+        <p>Tests, search, Git, logs, file reads and installs each get a budget that fits what
+          their output is for, from 2&nbsp;KiB for an install to 16&nbsp;KiB for a file.</p>
+      </li>
+      <li>
+        <h3>A bounded view is built</h3>
+        <p>Terminal noise is dropped, repeats are counted, the first occurrence of each
+          diagnostic is kept with its location, and the first and last lines always survive.</p>
+      </li>
+      <li>
+        <h3>Only if it pays</h3>
+        <p>The view replaces the output only when it saves at least 20% and 512 bytes, its own
+          metadata included. Otherwise the original goes through as printed.</p>
+      </li>
+      <li>
+        <h3>The original is kept</h3>
+        <p>The exact bytes go to a local content-addressed store. Any line is one
+          <code>expand</code> away, and recovery is byte-exact or it fails loudly.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section id="principles">
+  <div class="wrap">
+    <h2>What it promises, and what it does not</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Nothing leaves the machine</h3>
+        <p>No other model summarizes anything, no API traffic is intercepted, and the decision
+          journal records program names and sizes only, never content or arguments.</p>
+      </div>
+      <div class="card">
+        <h3>Every gap is declared</h3>
+        <p>A view counts what it left out in its first line. <em>Gaps are not absence</em>: a
+          partial view never claims an exhaustive search or an exact count.</p>
+      </div>
+      <div class="card">
+        <h3>Deterministic</h3>
+        <p>The same output gives the same view. Content fixtures are pinned by SHA-256, and a
+          change that drops a diagnostic fails the build.</p>
+      </div>
+      <div class="card">
+        <h3>Out of the way</h3>
+        <p>Small outputs, other tools, MCP results and outputs the host already saved to a file
+          pass through. <code>scopelet mode off</code> idles the hooks in one command.</p>
+      </div>
+      <div class="card">
+        <h3>Repeats and loops</h3>
+        <p>In Claude Code, an output the conversation has already seen becomes a one-line
+          reference. When the same failure comes back three times in one turn, the agent gets a
+          single note to rethink instead of re-running.</p>
+      </div>
+      <div class="card">
+        <h3>Honest about cost</h3>
+        <p>Bytes are not tokens and no figure here is a bill. Whole-session cost depends on the
+          host, the model and the task; the benchmarks say how they were measured.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="numbers" class="alt">
+  <div class="wrap">
+    <h2>The numbers</h2>
+    <p>Each row is a real command output hiding one fact an agent needs. <b>Printed</b> is what
+      the command wrote; <b>read</b> is what reaches the model instead. Every figure is rebuilt
+      and checked against the shipped binary on every change.</p>
+    <div class="table">
+      <table>
+        <thead><tr><th>What the command printed</th><th>What the agent reads instead</th><th class="n">Printed</th><th class="n">Read</th><th class="n">Removed</th></tr></thead>
+        <tbody>
+          <tr><td>480 passing tests, one failure</td><td>The failing test with expected value, received value and stack frame; the passes as one counted line</td><td class="n">17,549</td><td class="n">542</td><td class="n"><b>96.9%</b></td></tr>
+          <tr><td>A retry loop hiding one fatal error</td><td>The retry line once, marked <code>repeat=1000</code>, then the fatal line with its line number</td><td class="n">28,039</td><td class="n">163</td><td class="n"><b>99.4%</b></td></tr>
+          <tr><td>1000 progress lines, then two diagnostics</td><td>Both diagnostics word for word; the progress as one counted line</td><td class="n">136,063</td><td class="n">304</td><td class="n"><b>99.8%</b></td></tr>
+          <tr><td>A receipt buried in the middle of a log</td><td>The receipt line at line 501, amount and currency exact</td><td class="n">136,193</td><td class="n">428</td><td class="n"><b>99.7%</b></td></tr>
+          <tr><td>A 1000-row JSON array</td><td>A CSV table of the first rows, the failed one and the last; constant columns named once</td><td class="n">171,834</td><td class="n">3,209</td><td class="n"><b>98.1%</b></td></tr>
+          <tr><td>A 32-byte command output</td><td>The 32 bytes exactly as printed</td><td class="n">32</td><td class="n">32</td><td class="n">untouched</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="live">
+      <h3>In real sessions</h3>
+      <p>Live A/B campaigns run real, billed Claude Code sessions on sixteen synthetic tasks in
+        paired rounds, with and without Scopelet, and judge each arm by what it was billed.</p>
+      <div class="stats">
+        <div><b>−9%</b><span>average billed cost per session, 95% interval below zero</span></div>
+        <div><b>47 / 48</b><span>tasks right with Scopelet, against 48 / 48 without; the miss involved no view</span></div>
+        <div><b>0</b><span>extra model calls, API keys or proxies</span></div>
+      </div>
+      <p class="fine">Scopelet 1.2.1 against no Scopelet, Claude Code 2.1.318 with Haiku, 96 sessions,
+        November 2026. Whole-session cost depends on your host, model and task: measure your own
+        setup before quoting a percentage. Every campaign, its intervals and everything that went
+        wrong are in the
+        <a href="https://github.com/maxgfr/scopelet/blob/main/bench/README.md">benchmark report</a>.</p>
+      <p class="fine">Compression time is in milliseconds: a 3&nbsp;MB log in a few tens of them on
+        an Apple Silicon laptop. The current figures are in the
+        <a href="https://github.com/maxgfr/scopelet#faster">README</a>, measured on every release.</p>
+    </div>
+  </div>
+</section>
+
+<section id="recover">
+  <div class="wrap two">
+    <div>
+      <h2>Nothing is lost</h2>
+      <p>Every view names the artifact that holds the original. Reading it back does not involve
+        the model, and a partial view tells the agent to recover the exact bytes before editing
+        something it only saw a summary of.</p>
+    </div>
+<pre class="term"><code><span class="p">$</span> scopelet expand last --find 'Received:' --context 3
+<span class="p">$</span> scopelet expand 3f9c2d1e --find 'panick(ed)? at' --regex
+<span class="p">$</span> scopelet expand blob:HASH --start 240 --end 260
+<span class="p">$</span> scopelet expand blob:HASH --raw &gt; original.log</code></pre>
+  </div>
+</section>
+
+<section id="install" class="alt">
+  <div class="wrap">
+    <h2>Install</h2>
+    <div class="two">
+      <div>
+        <h3>With the skill (Node.js 22.20+)</h3>
+<pre class="term"><code><span class="p">$</span> npx skills add maxgfr/scopelet --skill scopelet \
+    --global -a codex claude-code opencode -y
+<span class="p">$</span> node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" install --agent all
+<span class="p">$</span> node "$HOME/.agents/skills/scopelet/scripts/scopelet.mjs" doctor</code></pre>
+      </div>
+      <div>
+        <h3>With Homebrew</h3>
+<pre class="term"><code><span class="p">$</span> brew install maxgfr/tap/scopelet
+<span class="p">$</span> scopelet install --agent all
+<span class="p">$</span> scopelet doctor</code></pre>
+      </div>
+    </div>
+    <p>Then restart your agent sessions. In Codex, trust the new hooks through
+      <code>/hooks</code>. Compression is automatic from the next prompt; <code>scopelet mode off</code>
+      idles it and <code>scopelet uninstall --agent all</code> removes it. Binaries cover macOS and
+      Linux on Intel and ARM.</p>
+    <p class="links">
+      <a href="https://github.com/maxgfr/scopelet#readme">README</a>
+      <a href="https://github.com/maxgfr/scopelet/blob/main/skills/scopelet/references/setup.md">Setup and host coverage</a>
+      <a href="https://github.com/maxgfr/scopelet/blob/main/docs/design.md">Contracts and limits</a>
+      <a href="https://github.com/maxgfr/scopelet/blob/main/docs/verification.md">What is verified</a>
+      <a href="https://github.com/maxgfr/scopelet/blob/main/bench/README.md">Benchmarks</a>
+    </p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap bar">
+    <span>Scopelet · MIT license</span>
+    <a href="https://github.com/maxgfr/scopelet/issues">Issues and support</a>
+  </div>
+</footer>
+</body>
+</html>
