@@ -362,7 +362,7 @@ pub fn doctor() -> Value {
 /// The host version on which each adapter's event shapes were last verified
 /// (design.md): a newer host may have changed them.
 const VERIFIED_HOSTS: [(&str, &str); 3] = [
-    ("claude", "2.1.296"),
+    ("claude", "2.1.318"),
     ("codex", "0.160.0"),
     ("opencode", "2.0.0"),
 ];

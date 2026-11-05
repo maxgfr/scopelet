@@ -41,7 +41,12 @@ import time
 
 HERE = Path(__file__).resolve().parent
 FIXTURES = HERE / 'fixtures' / 'live'
-TOOLS = 'Bash,Read,Edit,Write,Grep,Glob'
+# The tools a default Claude Code session searches with. Naming `Grep` or
+# `Glob` here opts into those tools and stops Claude Code from shadowing the
+# shell's `grep` and `find` with its embedded ugrep and bfs, so Bash `grep`
+# becomes whatever the user's shell aliases it to (`alias grep=rg` turned
+# `grep -rn X` into `rg -r n X`, which prints `n` for every match).
+TOOLS = 'Bash,Read,Edit,Write'
 # Bootstrap draws and seed: fixed, so a report is reproducible from its records.
 DRAWS = 10_000
 SEED = 7139

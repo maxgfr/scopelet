@@ -22,7 +22,7 @@ Ubuntu 24.04 and macOS 14 for every pull request and pre-release push:
 - Real codeindex and webindex adapter checks against pinned published versions.
 - A release build, then `scripts/check_readme.py`, which rebuilds every fixture
   in the README reduction table, runs the binary and fails if any figure
-  drifts by a byte.
+  drifts by a byte, or if the website (`site/`) quotes a row differently.
 - Rust 1.88 minimum, checked with `cargo check` on a pinned toolchain.
 
 ## On the shipped binary
@@ -50,7 +50,10 @@ report, so the fixtures cannot drift from the numbers without failing the build.
 The Claude Code adapter skips outputs the host has already persisted to disk:
 Claude supplies `persistedOutputPath` and `persistedOutputSize` before rendering
 its own preview, and recompressing that stdout made the host truncate the
-compact view and hide its final lines. Failure events keep native output.
+compact view and hide its final lines. Failure events keep native output;
+the only thing added to one is a loop note, as context, when the same
+failure recurs a third time in a turn (`tests/fixtures/claude_bash_failure.json`
+is a failure event captured from Claude Code 2.1.318).
 The replacement shape follows the
 [Claude Code hook contract](https://code.claude.com/docs/en/hooks#posttooluse-decision-control).
 Codex and OpenCode adapters have equivalent contract tests under
@@ -67,10 +70,12 @@ campaigns on Scopelet 0.1.x–0.3.x found no functional regression, but their
 run-to-run spread was wider than every token difference they measured, and they
 ran against binaries and a skill design that no longer ship. They were removed
 rather than kept as stale evidence. The current campaign (`bench/live.py`,
-sixteen tasks, Claude Code 2.1.301 with Haiku) found every task done in every
-arm, and 1.0's cost per successful task 10% under 0.11.1's, its 95% interval
-below zero; Scopelet off was no different from 0.11.1. A first run of that
-campaign failed one right answer on a check too strict and is kept beside
-it. The reports name the binaries they measured (`bench/README.md`).
+sixteen tasks, Claude Code 2.1.318 with Haiku, 96 sessions searching as a
+default session does) found a session with 1.2.1 about 9% cheaper on average
+than one without Scopelet, the 95% interval of the paired difference below
+zero, with 47 of 48 tasks right against 48; the miss was on an output no view
+touched. Earlier campaigns, and the harness flaw that made one task fail in
+every arm of the 1.2.0 campaign, are kept and explained beside it. The reports
+name the binaries they measured (`bench/README.md`).
 Whole-session cost depends on the host, the model and the task. Measure your
 own setup before quoting a percentage.

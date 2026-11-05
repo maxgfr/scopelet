@@ -1,4 +1,7 @@
+from pathlib import Path
+import tempfile
 import unittest
+
 import publish
 
 
@@ -33,6 +36,20 @@ class PublishTests(unittest.TestCase):
                          f'before\n{publish.START}\nnew\n{publish.END}\nafter\n')
         with self.assertRaises(ValueError):
             publish.rewrite('no markers', 'block')
+
+    def test_publishing_replaces_only_the_offline_reports(self):
+        with tempfile.TemporaryDirectory() as temp:
+            runs, results = Path(temp) / 'runs', Path(temp) / 'results'
+            for probe in ('content', 'performance'):
+                (runs / probe).mkdir(parents=True)
+                (runs / probe / 'report.json').write_text(f'new {probe}')
+            results.mkdir()
+            (results / 'content.json').write_text('old content')
+            (results / 'live-20261104-120-haiku.json').write_text('live')
+            publish.install_reports(runs, results)
+            self.assertEqual((results / 'content.json').read_text(), 'new content')
+            self.assertEqual((results / 'performance.json').read_text(), 'new performance')
+            self.assertEqual((results / 'live-20261104-120-haiku.json').read_text(), 'live')
 
     def test_machine_reads_as_a_platform_name(self):
         name = publish.machine()

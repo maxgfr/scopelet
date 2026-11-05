@@ -141,7 +141,11 @@ Claude Code uses `PostToolUse.updatedToolOutput` (matcher `Bash|Grep`) for Bash
 results with known stdout/stderr fields and for the `content` text of a Grep in
 `content` mode, compressed as search results. Other fields survive unchanged;
 Grep's `files_with_matches` and `count` modes, Read, failure events without a
-replaceable output, images and unknown envelopes pass through. An output
+replaceable output, images and unknown envelopes pass through. A default
+Claude Code 2.1.318 session has no Grep tool: Bash `grep` and `find` run its
+embedded ugrep and bfs, and their output is compressed as any Bash output.
+Launching it with Grep or Glob in `--allowedTools` brings the tools back and
+leaves Bash `grep` to the shell's own aliases. An output
 identical to one the same conversation was already shown becomes a
 one-line repeat reference (recoverable like any view) until a compaction or a
 clear; each subagent keeps its own memory. Prompt terms and the command's
