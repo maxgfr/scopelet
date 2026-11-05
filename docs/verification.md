@@ -74,11 +74,10 @@ campaigns on Scopelet 0.1.x–0.3.x found no functional regression, but their
 run-to-run spread was wider than every token difference they measured, and they
 ran against binaries and a skill design that no longer ship. They were removed
 rather than kept as stale evidence. The current campaign (`bench/live.py`,
-sixteen tasks, Claude Code 2.1.318 with Haiku, 96 sessions searching as a
-default session does) found a session with 1.2.1 about 9% cheaper on average
-than one without Scopelet, the 95% interval of the paired difference below
-zero, with 47 of 48 tasks right against 48; the miss was on an output no view
-touched. Earlier campaigns, and the harness flaw that made one task fail in
+sixteen tasks, six paired rounds, Claude Code 2.1.318 with Haiku, 192 sessions
+searching as a default session does) found every session of both arms right,
+and a session with 1.2.4 9.2% cheaper on average than one without Scopelet,
+the 95% interval of the paired difference below zero. Earlier campaigns, and the harness flaw that made one task fail in
 every arm of the 1.2.0 campaign, are kept and explained beside it. The reports
 name the binaries they measured (`bench/README.md`).
 Whole-session cost depends on the host, the model and the task. Measure your

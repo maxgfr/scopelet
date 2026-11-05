@@ -1,0 +1,4652 @@
+{
+  "kind": "next-action preservation; tokens from the API usage, not estimates",
+  "model": "claude-haiku-5-5",
+  "draws": 3,
+  "conditions": [
+    {
+      "name": "raw",
+      "binary_sha256": null
+    },
+    {
+      "name": "single",
+      "binary_sha256": "4a5d2280b2b03a0bf012d3c08404f349897a69dc68af73a9fce0e0c1a8c56175"
+    }
+  ],
+  "steps": [
+    {
+      "transcript": "0-build_warnings_medium-off.jsonl.gz",
+      "round": 0,
+      "task": "build_warnings_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 build.py",
+      "view_bytes": {
+        "raw": 17584,
+        "single": 4077
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 1131,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 140,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 145,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 117,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 283,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 315,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 245,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "0-diff_medium-off.jsonl.gz",
+      "round": 0,
+      "task": "diff_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "git diff",
+      "view_bytes": {
+        "raw": 15650,
+        "single": 8071
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.3333333333333333
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.3333333333333333
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 1125,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 134,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 137,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 151,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 456,
+            "input_total": 5112,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "src/quota.py"
+              ],
+              "pattern": "used <= limit",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 456,
+            "input_total": 5112,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 611,
+            "input_total": 5112,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git diff",
+              "paths": [
+                "src/quota.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "0-fix_test-off.jsonl.gz",
+      "round": 0,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"---\"; cat inventory.py",
+      "view_bytes": {
+        "raw": 21854,
+        "single": 1418
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Edit"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9769,
+            "cache_creation_input_tokens": 1164,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 236,
+            "input_total": 10933,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9769,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 240,
+            "input_total": 10933,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9769,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 256,
+            "input_total": 10933,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 616,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 371,
+            "input_total": 1780,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 616,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 340,
+            "input_total": 1780,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 616,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 337,
+            "input_total": 1780,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "0-grep_context-off.jsonl.gz",
+      "round": 0,
+      "task": "grep_context",
+      "step": 0,
+      "tool": "Bash",
+      "command": "grep -rn -C2 charge_card src",
+      "view_bytes": {
+        "raw": 23157,
+        "single": 8175
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 1162,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 109,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 130,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 142,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 5177,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 525,
+            "input_total": 6339,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": null,
+              "range": "52+6"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5177,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 678,
+            "input_total": 6339,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": null,
+              "range": "52+6"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5177,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 507,
+            "input_total": 6339,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": null,
+              "range": "52+6"
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "0-stack_trace-off.jsonl.gz",
+      "round": 0,
+      "task": "stack_trace",
+      "step": 0,
+      "tool": "Bash",
+      "command": "grep -n -i \"settlement\\|Caused by\\|Exception\" logs/service.log | head -100",
+      "view_bytes": {
+        "raw": 9456,
+        "single": 3938
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "logs/service.log"
+        ],
+        "pattern": "\"error\\",
+        "program": "grep",
+        "range": "head:100",
+        "tool": "Bash"
+      },
+      "nap": {
+        "raw": 0.3333333333333333,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 5163,
+            "cache_creation_input_tokens": 1162,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 141,
+            "input_total": 6325,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"error\\",
+              "range": "head:100"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5163,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 144,
+            "input_total": 6325,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "settled batch",
+              "range": "head:100"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5163,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 142,
+            "input_total": 6325,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"error\\",
+              "range": "head:60"
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2161,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 195,
+            "input_total": 3323,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"Caused",
+              "range": "head:100"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2161,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 201,
+            "input_total": 3323,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"Caused",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2161,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 187,
+            "input_total": 3323,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"ERROR",
+              "range": "head:200"
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "0-test_report_medium-off.jsonl.gz",
+      "round": 0,
+      "task": "test_report_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_shipping",
+      "view_bytes": {
+        "raw": 10449,
+        "single": 274
+      },
+      "raw_action": {
+        "correct": null,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 7741,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 116,
+            "input_total": 13026,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7741,
+            "output_tokens": 93,
+            "input_total": 13026,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7741,
+            "output_tokens": 110,
+            "input_total": 13026,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7741,
+            "output_tokens": 129,
+            "input_total": 7871,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7741,
+            "output_tokens": 122,
+            "input_total": 7871,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7741,
+            "output_tokens": 107,
+            "input_total": 7871,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-build_warnings_medium-off.jsonl.gz",
+      "round": 1,
+      "task": "build_warnings_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 build.py",
+      "view_bytes": {
+        "raw": 17584,
+        "single": 4077
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 98,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 124,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 150,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 226,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 261,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 288,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-diff_medium-off.jsonl.gz",
+      "round": 1,
+      "task": "diff_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "git diff",
+      "view_bytes": {
+        "raw": 15650,
+        "single": 8071
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.3333333333333333
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.3333333333333333
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 123,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 139,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 145,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 431,
+            "input_total": 5112,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/quota.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 329,
+            "input_total": 5112,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 552,
+            "input_total": 5112,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/quota.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-fix_test-off.jsonl.gz",
+      "round": 1,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"---\"; cat inventory.py; echo \"---\"; cat test_inventory.py",
+      "view_bytes": {
+        "raw": 22461,
+        "single": 2114
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Edit"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 1182,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 265,
+            "input_total": 11201,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 294,
+            "input_total": 11201,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10019,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 276,
+            "input_total": 11201,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 923,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 340,
+            "input_total": 2105,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 923,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 336,
+            "input_total": 2105,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 923,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1182,
+            "output_tokens": 347,
+            "input_total": 2105,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-grep_context-off.jsonl.gz",
+      "round": 1,
+      "task": "grep_context",
+      "step": 0,
+      "tool": "Bash",
+      "command": "grep -rn -C2 charge_card src",
+      "view_bytes": {
+        "raw": 23157,
+        "single": 7806
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 118,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 119,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 114,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 4949,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 295,
+            "input_total": 6111,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4949,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 336,
+            "input_total": 6111,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 4949,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 283,
+            "input_total": 6111,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-stack_trace-off.jsonl.gz",
+      "round": 1,
+      "task": "stack_trace",
+      "step": 0,
+      "tool": "Bash",
+      "command": "wc -l logs/service.log && grep -n -i \"settlement\\|Caused by\\|Exception\\|Error\" logs/service.log | head -100",
+      "view_bytes": {
+        "raw": 9482,
+        "single": 3968
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "logs/service.log"
+        ],
+        "pattern": "settled batch",
+        "program": "grep",
+        "range": "head:150",
+        "tool": "Bash"
+      },
+      "nap": {
+        "raw": 0.6666666666666666,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 5174,
+            "cache_creation_input_tokens": 1179,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 139,
+            "input_total": 6353,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"Caused",
+              "range": "head:60"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5174,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 97,
+            "input_total": 6353,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "settled batch",
+              "range": "head:150"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5174,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 120,
+            "input_total": 6353,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "settled batch",
+              "range": "head:150"
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2172,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 187,
+            "input_total": 3351,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"caused",
+              "range": "head:50"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2172,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 196,
+            "input_total": 3351,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"Caused",
+              "range": "head:50"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2172,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1179,
+            "output_tokens": 175,
+            "input_total": 3351,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"Caused",
+              "range": "head:100"
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "1-test_report_medium-off.jsonl.gz",
+      "round": 1,
+      "task": "test_report_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_shipping",
+      "view_bytes": {
+        "raw": 10449,
+        "single": 274
+      },
+      "raw_action": {
+        "correct": null,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 7752,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 108,
+            "input_total": 13037,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7752,
+            "output_tokens": 112,
+            "input_total": 13037,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7752,
+            "output_tokens": 92,
+            "input_total": 13037,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7752,
+            "output_tokens": 120,
+            "input_total": 7882,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7752,
+            "output_tokens": 107,
+            "input_total": 7882,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7752,
+            "output_tokens": 98,
+            "input_total": 7882,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-build_warnings-off.jsonl.gz",
+      "round": 2,
+      "task": "build_warnings",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 build.py 2>&1 | tail -n 200",
+      "view_bytes": {
+        "raw": 6040,
+        "single": 4047
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "/tmp/build.log",
+          "build.py"
+        ],
+        "pattern": "^error",
+        "program": "python3",
+        "range": "head:60",
+        "tool": "Bash"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 3349,
+            "cache_creation_input_tokens": 1133,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 178,
+            "input_total": 4482,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "^error",
+              "range": "head:60"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3349,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 185,
+            "input_total": 4482,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "^error",
+              "range": "head:60"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3349,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 186,
+            "input_total": 4482,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "^error",
+              "range": "head:60"
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2056,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 255,
+            "input_total": 3189,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "\"^(error",
+              "range": "head:50"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2056,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 258,
+            "input_total": 3189,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "'^(error",
+              "range": "head:20"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2056,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1133,
+            "output_tokens": 242,
+            "input_total": 3189,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build_out.txt",
+                "build.py"
+              ],
+              "pattern": "^error",
+              "range": "head:80"
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-build_warnings_medium-off.jsonl.gz",
+      "round": 2,
+      "task": "build_warnings_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 build.py",
+      "view_bytes": {
+        "raw": 17584,
+        "single": 4077
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 1164,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 91,
+            "input_total": 10801,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 79,
+            "input_total": 10801,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 121,
+            "input_total": 10801,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 261,
+            "input_total": 3171,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 248,
+            "input_total": 3171,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 281,
+            "input_total": 3171,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-diff_medium-off.jsonl.gz",
+      "round": 2,
+      "task": "diff_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "git diff",
+      "view_bytes": {
+        "raw": 15650,
+        "single": 8071
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 143,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 104,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 128,
+            "input_total": 8902,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 598,
+            "input_total": 5112,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 585,
+            "input_total": 5112,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1125,
+            "output_tokens": 321,
+            "input_total": 5112,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "src/quota.py"
+              ],
+              "pattern": "used",
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-fix_test-off.jsonl.gz",
+      "round": 2,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"EXIT=$?\"",
+      "view_bytes": {
+        "raw": 21579,
+        "single": 1091
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Read"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9679,
+            "cache_creation_input_tokens": 1161,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 52,
+            "input_total": 10840,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9679,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 52,
+            "input_total": 10840,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9679,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 52,
+            "input_total": 10840,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 494,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 256,
+            "input_total": 1655,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "cat",
+              "paths": [
+                "inventory.py",
+                "test_inventory.py"
+              ],
+              "pattern": null,
+              "range": "head:20"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 494,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 228,
+            "input_total": 1655,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 494,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 133,
+            "input_total": 1655,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-grep_context-off.jsonl.gz",
+      "round": 2,
+      "task": "grep_context",
+      "step": 0,
+      "tool": "Bash",
+      "command": "grep -rn -C2 charge_card src",
+      "view_bytes": {
+        "raw": 23157,
+        "single": 8175
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 119,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 93,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 101,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 5175,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 755,
+            "input_total": 6337,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": "pay_bdd",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5175,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 523,
+            "input_total": 6337,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": null,
+              "range": "52+6"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5175,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 619,
+            "input_total": 6337,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": "charge_card",
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-stack_trace-off.jsonl.gz",
+      "round": 2,
+      "task": "stack_trace",
+      "step": 0,
+      "tool": "Bash",
+      "command": "cat logs/service.log | head -c 20000 && echo && wc -l logs/service.log",
+      "view_bytes": {
+        "raw": 20026,
+        "single": 4916
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "logs/service.log"
+        ],
+        "pattern": "ERROR|Caused by|settlement|FAILED|Exception",
+        "program": null,
+        "range": null,
+        "tool": "Grep"
+      },
+      "nap": {
+        "raw": 0.3333333333333333,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 10877,
+            "cache_creation_input_tokens": 1154,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 166,
+            "input_total": 12031,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "ERROR|Caused by|settlement|FAILED|Exception",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10877,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1154,
+            "output_tokens": 166,
+            "input_total": 12031,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "Caused by|ERROR|FAIL|settlement failed|Exception",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 10877,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1154,
+            "output_tokens": 168,
+            "input_total": 12031,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "ERROR|Exception|Caused by|settlement|FAILED|Failed",
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2681,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1154,
+            "output_tokens": 197,
+            "input_total": 3835,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"ERROR",
+              "range": "head:100"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2681,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1154,
+            "output_tokens": 209,
+            "input_total": 3835,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "service.log"
+              ],
+              "pattern": "\"ERROR",
+              "range": "head:100"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2681,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1154,
+            "output_tokens": 175,
+            "input_total": 3835,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "logs/service.log"
+              ],
+              "pattern": "\"ERROR",
+              "range": "head:100"
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "2-test_report_medium-off.jsonl.gz",
+      "round": 2,
+      "task": "test_report_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_shipping",
+      "view_bytes": {
+        "raw": 10449,
+        "single": 274
+      },
+      "raw_action": {
+        "correct": null,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 7783,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 94,
+            "input_total": 13068,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7783,
+            "output_tokens": 90,
+            "input_total": 13068,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7783,
+            "output_tokens": 89,
+            "input_total": 13068,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7783,
+            "output_tokens": 107,
+            "input_total": 7913,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7783,
+            "output_tokens": 98,
+            "input_total": 7913,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 130,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7783,
+            "output_tokens": 99,
+            "input_total": 7913,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "3-build_warnings-off.jsonl.gz",
+      "round": 3,
+      "task": "build_warnings",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 build.py 2>&1 | tail -n 200",
+      "view_bytes": {
+        "raw": 6040,
+        "single": 4047
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "/tmp/build.log",
+          "build.py"
+        ],
+        "pattern": "^error",
+        "program": "python3",
+        "range": "head:60",
+        "tool": "Bash"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 3349,
+            "cache_creation_input_tokens": 1131,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 192,
+            "input_total": 4480,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "^error",
+              "range": "head:60"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3349,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 172,
+            "input_total": 4480,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "^error",
+              "range": "head:60"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3349,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 180,
+            "input_total": 4480,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "^error",
+              "range": "head:60"
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2056,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 236,
+            "input_total": 3187,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "\"^(error",
+              "range": "head:20"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2056,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 234,
+            "input_total": 3187,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build_out.txt",
+                "build.py"
+              ],
+              "pattern": "^error",
+              "range": "head:80"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2056,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 239,
+            "input_total": 3187,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "python3",
+              "paths": [
+                "/tmp/build.log",
+                "build.py"
+              ],
+              "pattern": "\"^(error",
+              "range": "head:20"
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "3-build_warnings_medium-off.jsonl.gz",
+      "round": 3,
+      "task": "build_warnings_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 build.py",
+      "view_bytes": {
+        "raw": 17584,
+        "single": 4077
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 160,
+            "input_total": 10801,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 124,
+            "input_total": 10801,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 150,
+            "input_total": 10801,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 216,
+            "input_total": 3171,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 326,
+            "input_total": 3171,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 297,
+            "input_total": 3171,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "3-diff_medium-off.jsonl.gz",
+      "round": 3,
+      "task": "diff_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "git diff",
+      "view_bytes": {
+        "raw": 15650,
+        "single": 8071
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 1129,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 141,
+            "input_total": 8906,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 139,
+            "input_total": 8906,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 124,
+            "input_total": 8906,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 483,
+            "input_total": 5116,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 858,
+            "input_total": 5116,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 385,
+            "input_total": 5116,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "src/quota.py"
+              ],
+              "pattern": "return used <= limit",
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "3-fix_test-off.jsonl.gz",
+      "round": 3,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"---\"; cat inventory.py",
+      "view_bytes": {
+        "raw": 21854,
+        "single": 1418
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Edit"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9771,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 240,
+            "input_total": 10935,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9771,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 236,
+            "input_total": 10935,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9771,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 236,
+            "input_total": 10935,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 616,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 301,
+            "input_total": 1780,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 616,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 315,
+            "input_total": 1780,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 616,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1164,
+            "output_tokens": 353,
+            "input_total": 1780,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "3-grep_context-off.jsonl.gz",
+      "round": 3,
+      "task": "grep_context",
+      "step": 0,
+      "tool": "Bash",
+      "command": "grep -rn -C2 charge_card src",
+      "view_bytes": {
+        "raw": 23157,
+        "single": 8175
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 141,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 128,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 97,
+            "input_total": 16380,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 5185,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 243,
+            "input_total": 6347,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5185,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 398,
+            "input_total": 6347,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "src"
+              ],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5185,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1162,
+            "output_tokens": 328,
+            "input_total": 6347,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Grep",
+              "program": null,
+              "paths": [
+                "src"
+              ],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "3-test_report_medium-off.jsonl.gz",
+      "round": 3,
+      "task": "test_report_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_shipping",
+      "view_bytes": {
+        "raw": 10449,
+        "single": 274
+      },
+      "raw_action": {
+        "correct": null,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 7730,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 92,
+            "input_total": 13015,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7730,
+            "output_tokens": 139,
+            "input_total": 13015,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7730,
+            "output_tokens": 127,
+            "input_total": 13015,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7730,
+            "output_tokens": 111,
+            "input_total": 7861,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7730,
+            "output_tokens": 111,
+            "input_total": 7861,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7730,
+            "output_tokens": 114,
+            "input_total": 7861,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "4-build_warnings_medium-off.jsonl.gz",
+      "round": 4,
+      "task": "build_warnings_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 build.py",
+      "view_bytes": {
+        "raw": 17584,
+        "single": 4077
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 138,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 110,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 119,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 272,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 223,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 204,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "4-diff_medium-off.jsonl.gz",
+      "round": 4,
+      "task": "diff_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "git diff",
+      "view_bytes": {
+        "raw": 15650,
+        "single": 8071
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.3333333333333333
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.3333333333333333
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 1130,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 105,
+            "input_total": 8907,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1130,
+            "output_tokens": 134,
+            "input_total": 8907,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1130,
+            "output_tokens": 136,
+            "input_total": 8907,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1130,
+            "output_tokens": 525,
+            "input_total": 5117,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1130,
+            "output_tokens": 353,
+            "input_total": 5117,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/quota.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1130,
+            "output_tokens": 609,
+            "input_total": 5117,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git diff",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "4-fix_test-off.jsonl.gz",
+      "round": 4,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"EXIT=$?\"; ls -la",
+      "view_bytes": {
+        "raw": 21579,
+        "single": 1091
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Read"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.6666666666666666
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9678,
+            "cache_creation_input_tokens": 1165,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 52,
+            "input_total": 10843,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9678,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 52,
+            "input_total": 10843,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9678,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 52,
+            "input_total": 10843,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 496,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 227,
+            "input_total": 1661,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "ls",
+              "paths": [
+                "inventory.py",
+                "test_inventory.py"
+              ],
+              "pattern": null,
+              "range": "head:30"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 496,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 207,
+            "input_total": 1661,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 496,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 267,
+            "input_total": 1661,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "4-grep_context-off.jsonl.gz",
+      "round": 4,
+      "task": "grep_context",
+      "step": 0,
+      "tool": "Bash",
+      "command": "grep -rn -C2 charge_card src",
+      "view_bytes": {
+        "raw": 23157,
+        "single": 8154
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 1161,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 109,
+            "input_total": 16379,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 107,
+            "input_total": 16379,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 109,
+            "input_total": 16379,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 5165,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 1000,
+            "input_total": 6326,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": null,
+              "range": "52+5"
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5165,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 1139,
+            "input_total": 6326,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": "charge_card",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5165,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1161,
+            "output_tokens": 776,
+            "input_total": 6326,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Read",
+              "program": null,
+              "paths": [
+                "src/m_g.py"
+              ],
+              "pattern": null,
+              "range": "52+6"
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "4-test_report_medium-off.jsonl.gz",
+      "round": 4,
+      "task": "test_report_medium",
+      "step": 1,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_shipping",
+      "view_bytes": {
+        "raw": 10449,
+        "single": 274
+      },
+      "raw_action": {
+        "correct": null,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 7566,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 105,
+            "input_total": 12851,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7566,
+            "output_tokens": 51,
+            "input_total": 12851,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7566,
+            "output_tokens": 85,
+            "input_total": 12851,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7566,
+            "output_tokens": 84,
+            "input_total": 7697,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7566,
+            "output_tokens": 296,
+            "input_total": 7697,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7566,
+            "output_tokens": 110,
+            "input_total": 7697,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "5-build_warnings_medium-off.jsonl.gz",
+      "round": 5,
+      "task": "build_warnings_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 build.py",
+      "view_bytes": {
+        "raw": 17584,
+        "single": 4077
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 143,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 127,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9637,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 168,
+            "input_total": 10768,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 301,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 258,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 2007,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1131,
+            "output_tokens": 295,
+            "input_total": 3138,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "5-diff_medium-off.jsonl.gz",
+      "round": 5,
+      "task": "diff_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "git diff",
+      "view_bytes": {
+        "raw": 15650,
+        "single": 8071
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.3333333333333333
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.3333333333333333
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 154,
+            "input_total": 8906,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 124,
+            "input_total": 8906,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 7777,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 135,
+            "input_total": 8906,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 476,
+            "input_total": 5116,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "git diff",
+              "paths": [],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 766,
+            "input_total": 5116,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 3987,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1129,
+            "output_tokens": 289,
+            "input_total": 5116,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [
+                "src/quota.py"
+              ],
+              "pattern": "used <= limit",
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "5-fix_test-off.jsonl.gz",
+      "round": 5,
+      "task": "fix_test",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_inventory 2>&1; echo \"---\"; cat inventory.py",
+      "view_bytes": {
+        "raw": 21854,
+        "single": 1418
+      },
+      "raw_action": {
+        "kind": "tool",
+        "paths": [
+          "inventory.py"
+        ],
+        "pattern": null,
+        "program": null,
+        "range": null,
+        "tool": "Edit"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 9769,
+            "cache_creation_input_tokens": 1165,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 313,
+            "input_total": 10934,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9769,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 240,
+            "input_total": 10934,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 9769,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 265,
+            "input_total": 10934,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 619,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 362,
+            "input_total": 1784,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 619,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 345,
+            "input_total": 1784,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 619,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1165,
+            "output_tokens": 295,
+            "input_total": 1784,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Edit",
+              "program": null,
+              "paths": [
+                "inventory.py"
+              ],
+              "pattern": null,
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "5-grep_context-off.jsonl.gz",
+      "round": 5,
+      "task": "grep_context",
+      "step": 0,
+      "tool": "Bash",
+      "command": "grep -rn -C2 charge_card src",
+      "view_bytes": {
+        "raw": 23157,
+        "single": 8169
+      },
+      "raw_action": {
+        "correct": true,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 0.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 1163,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 109,
+            "input_total": 16381,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1163,
+            "output_tokens": 104,
+            "input_total": 16381,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 15218,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1163,
+            "output_tokens": 126,
+            "input_total": 16381,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": true
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 5179,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1163,
+            "output_tokens": 306,
+            "input_total": 6342,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5179,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1163,
+            "output_tokens": 395,
+            "input_total": 6342,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5179,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 1163,
+            "output_tokens": 295,
+            "input_total": 6342,
+            "stop_reason": "tool_use",
+            "action": {
+              "kind": "tool",
+              "tool": "Bash",
+              "program": "grep",
+              "paths": [],
+              "pattern": "refund",
+              "range": null
+            },
+            "error": null
+          }
+        ]
+      }
+    },
+    {
+      "transcript": "5-test_report_medium-off.jsonl.gz",
+      "round": 5,
+      "task": "test_report_medium",
+      "step": 0,
+      "tool": "Bash",
+      "command": "python3 -m unittest -v test_shipping",
+      "view_bytes": {
+        "raw": 10449,
+        "single": 274
+      },
+      "raw_action": {
+        "correct": null,
+        "kind": "final"
+      },
+      "nap": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "nap_coarse": {
+        "raw": 1.0,
+        "single": 1.0
+      },
+      "draws": {
+        "raw": [
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 7735,
+            "cache_read_input_tokens": 0,
+            "output_tokens": 90,
+            "input_total": 13020,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7735,
+            "output_tokens": 107,
+            "input_total": 13020,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 5285,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7735,
+            "output_tokens": 94,
+            "input_total": 13020,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ],
+        "single": [
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7735,
+            "output_tokens": 113,
+            "input_total": 7866,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7735,
+            "output_tokens": 97,
+            "input_total": 7866,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          },
+          {
+            "input_tokens": 131,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 7735,
+            "output_tokens": 110,
+            "input_total": 7866,
+            "stop_reason": "end_turn",
+            "action": {
+              "kind": "final",
+              "correct": null
+            },
+            "error": null
+          }
+        ]
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "transcript": "0-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "0-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "0-search_symbol-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "1-listing_artifacts-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "1-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "1-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "1-search_symbol-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "2-listing_artifacts-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "2-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "2-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "2-search_symbol-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "3-listing_artifacts-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "3-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "3-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "3-search_symbol-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "4-listing_artifacts-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "4-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "4-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "4-search_symbol-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "5-listing_artifacts-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "5-pytest_many-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "5-review_diff-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    },
+    {
+      "transcript": "5-search_symbol-off.jsonl.gz",
+      "step": 0,
+      "tool": "Bash",
+      "reason": "persisted by the host: every arm shows its preview"
+    }
+  ],
+  "summary": {
+    "steps": 35,
+    "steps_scored": 35,
+    "conditions": {
+      "raw": {
+        "mean_nap": 0.9523809523809524,
+        "mean_nap_coarse": 1.0,
+        "view_bytes": 583265,
+        "mean_input_total": 11250.085714285715,
+        "draws": 105,
+        "errors": 0
+      },
+      "single": {
+        "mean_nap": 0.5714285714285714,
+        "mean_nap_coarse": 0.6666666666666666,
+        "view_bytes": 152652,
+        "mean_input_total": 4632.028571428571,
+        "draws": 105,
+        "errors": 0
+      }
+    },
+    "by_task": {
+      "build_warnings": {
+        "steps": 2,
+        "raw": 1.0,
+        "single": 0.0,
+        "coarse": {
+          "raw": 1.0,
+          "single": 0.6666666666666666
+        }
+      },
+      "build_warnings_medium": {
+        "steps": 6,
+        "raw": 1.0,
+        "single": 1.0,
+        "coarse": {
+          "raw": 1.0,
+          "single": 1.0
+        }
+      },
+      "diff_medium": {
+        "steps": 6,
+        "raw": 1.0,
+        "single": 0.4444444444444444,
+        "coarse": {
+          "raw": 1.0,
+          "single": 0.4444444444444444
+        }
+      },
+      "fix_test": {
+        "steps": 6,
+        "raw": 1.0,
+        "single": 0.8888888888888888,
+        "coarse": {
+          "raw": 1.0,
+          "single": 0.8888888888888888
+        }
+      },
+      "grep_context": {
+        "steps": 6,
+        "raw": 1.0,
+        "single": 0.0,
+        "coarse": {
+          "raw": 1.0,
+          "single": 0.0
+        }
+      },
+      "stack_trace": {
+        "steps": 3,
+        "raw": 0.4444444444444444,
+        "single": 0.0,
+        "coarse": {
+          "raw": 1.0,
+          "single": 0.6666666666666666
+        }
+      },
+      "test_report_medium": {
+        "steps": 6,
+        "raw": 1.0,
+        "single": 1.0,
+        "coarse": {
+          "raw": 1.0,
+          "single": 1.0
+        }
+      }
+    }
+  }
+}

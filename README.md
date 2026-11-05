@@ -272,18 +272,17 @@ stored original by address instead of reading and re-hashing it.
 > [!IMPORTANT]
 > **Bytes are not tokens, and none of the numbers above is a bill.** The
 > latest live campaign (`bench/live.py`, Claude Code 2.1.318, sixteen synthetic
-> tasks, 96 Haiku sessions in paired rounds, searching as a default session
-> does) put 1.2.1 against no Scopelet. A session with Scopelet cost $0.00194
-> on average against $0.00213 without, about 9% less, with the 95% interval of
-> the paired difference entirely below zero; 47 of 48 tasks were right with
-> Scopelet and 48 without, the one miss on an output no view touched. A
-> session's cost follows its turns (each about 18,000 input tokens, cache
-> included), the model narrows most commands itself, and outputs over about
-> 30 KB are saved to a file by Claude Code, which shows its own preview, so
-> views reached the model on six of the sixteen tasks. Counted by the API's
-> tokenizer, the views of the 26 benchmark outputs take 92.6% fewer tokens
-> than the raw outputs; replayed steps show the agent sometimes makes one
-> verifying call where a view leaves the answer out. The reports are in
+> tasks, six paired rounds, 192 Haiku sessions searching as a default session
+> does) put 1.2.4 against no Scopelet. Every session of both arms was right,
+> and a session with Scopelet cost $0.00194 on average against $0.00213
+> without, 9.2% less, with the 95% interval of the paired difference entirely
+> below zero. A session's cost follows its turns (each about 18,000 input
+> tokens, cache included), the model narrows most commands itself, and outputs
+> over about 30 KB are saved to a file by Claude Code, which shows its own
+> preview, so views reached the model on six of the sixteen tasks. Counted by
+> the API's tokenizer, the views of the 26 benchmark outputs take 92.6% fewer
+> tokens than the raw outputs; replayed steps show the agent sometimes makes
+> one verifying call where a view leaves the answer out. The reports are in
 > `bench/results/`. Whole-session cost depends on your host, model and task.
 > Measure your own setup before you tell anyone a percentage.
 > [What is verified](docs/verification.md) ·
