@@ -32,16 +32,17 @@ Scopelet off included; compact-v5 showed 6.1% fewer view tokens than v4 on the
 0.10.0 fixtures; every compressed view changed the next action on 5 of 8
 replayed steps. The details are below.
 
-The current live campaign is `live-20261105-121-haiku.json`: 1.2.1 against
-no Scopelet, in sessions that search like a default Claude Code session. A
-session with Scopelet cost about 9% less on average, the 95% interval below
-zero, with 47 of 48 tasks right against 48; see
-[1.2.1 against no Scopelet](#121-against-no-scopelet-november-2026). The
-current token count (`tokens-20261105-122.json`, the 1.2.2 release) finds
+The current live campaign is `live-20261105-124-haiku.json`: 1.2.4 against
+no Scopelet over six rounds, in sessions that search like a default Claude
+Code session. Every one of the 192 sessions was right, and a session with
+Scopelet cost 9.2% less on average, the 95% interval below zero; see
+[1.2.4 against no Scopelet](#124-against-no-scopelet-six-rounds-november-2026).
+The current token count (`tokens-20261105-124.json`, the 1.2.4 release) finds
 views 92.6% smaller in tokens than the raw outputs on 26 cases, exactly as in
-1.0, and the current replay (`nap-20261105-122.json`) finds the view keeps the
-agent's next action on 59% of draws, against 92% for raw output: where a view
-leaves the answer out, the agent makes one verifying call first.
+1.0, and the current replay (`nap-20261105-124.json`) finds the view keeps the
+agent's exact next action on 57% of draws, against 95% for raw output: where a
+view leaves the answer out, the agent makes one verifying call first, or the
+same call with a different pattern.
 
 The 1.0 campaign (`*-20261016-single*.json`) measured the single format
 (binary `ba3eb754e660…`) against the 0.11.1 release (`c4432301dec7…`, compact-v4
@@ -162,12 +163,13 @@ Flags: `--live` (required), `--scopelet BINARY` (default
 default `claude-opus-5-5` and `claude-haiku-5-5`), `--out PATH` (default
 `bench/results/tokens.json`, which must not exist).
 
-The current report, `results/tokens-20261105-122.json`, counts the 1.2.2
-release binary (`59d26d8cee4a…`) on the 26 cases for `claude-opus-5-5` and
+The current report, `results/tokens-20261105-124.json`, counts the 1.2.4
+release binary (`4a5d2280b2b0…`) on the 26 cases for `claude-opus-5-5` and
 `claude-haiku-5-5`: 521,703 tokens raw, 38,471 in views, 92.6% fewer, and no
 case costs more than its raw output (`rust_small`, under the file-read
 threshold, passes through at 1,239). Every case counts exactly what 1.0 did:
-the views of these outputs have not changed since. `giant_unicode_line`'s
+the views of these outputs have not changed since, and
+`tokens-20261105-122.json` counted the same for 1.2.2. `giant_unicode_line`'s
 fact lies past the 1.1 KB prefix the view keeps of that one line: recoverable
 with `expand`, not visible, as in the 1.0 report.
 
@@ -289,6 +291,29 @@ until replaced on purpose. A report describes the
 binaries it names, recorded by hash.
 `test_live.py` checks the parsing, the checks, the fixtures and the `--live`
 guard from recorded transcripts, without calling a model.
+
+### 1.2.4 against no Scopelet, six rounds (November 2026)
+
+`results/live-20261105-124-haiku.json` runs the sixteen tasks six times with
+`off` and `new` (the 1.2.4 release binary, `4a5d2280b2b0…`), searching as a
+default session does: Claude Code 2.1.318, every session served by
+`claude-haiku-5-5`, every cost known. Six rounds, not three, so that one
+unlucky session weighs half as much as in the campaign below.
+
+| Arm | Correct | Cost | Cost per success | Delta vs off, 95% interval | Turns | Tool calls | Views shown |
+|---|---:|---:|---:|---|---:|---:|---:|
+| off | 96 | $0.2047 | $0.002132 | | 320 | 224 | 0 |
+| new | 96 | $0.1858 | $0.001936 | −$0.000196 [−0.000378, −0.000043] | 332 | 236 | 34 |
+
+Every session of both arms was right. A session with 1.2.4 cost 9.2% less on
+average than one without Scopelet, and with no failure the cost per success
+is the same figure, its whole interval below zero. Views reached the model on
+the same six tasks as before (`fix_test`, `stack_trace` and the four
+view-forcing tasks), and took 0.125 more turns per session [−0.021, +0.323]:
+where a view leaves the answer out, the agent sometimes checks once more, and
+that check costs less than reading the whole output. 1.2.1 to 1.2.4 changed
+no view: the difference from the three-round campaign below is sampling, the
+`git_log_find` miss there included.
 
 ### 1.2.1 against no Scopelet (November 2026)
 
@@ -516,7 +541,29 @@ BINARY` (default `target/release/scopelet`), `--baseline BINARY`, `--arm NAME`
 `--out DIR` (required, must not exist). The report names each condition's
 binary by hash.
 
-`results/nap-20261105-122.json` is the current replay: the 48 `off` sessions
+`results/nap-20261105-124.json` is the current replay: the 96 `off` sessions
+of the six-round campaign (`live-20261105-124-haiku.json`), with raw output
+and the 1.2.4 release binary's view (`single`, `4a5d2280b2b0…`),
+`claude-haiku-5-5`, 3 draws each. Of their large results, 23 were saved by
+Claude Code (persisted; every arm shows the same preview); 35 steps remain, no
+failed call:
+
+| Form | View bytes | Mean input tokens | NAP | Coarse NAP |
+|---|---:|---:|---:|---:|
+| raw | 583,265 | 11,250 | 0.95 | 1.00 |
+| single | 152,652 | 4,632 | 0.57 | 0.67 |
+
+It confirms the replay below on twice the steps. The view kept the next
+action on every step of `build_warnings_medium` and `test_report_medium`, and
+on 16 of 18 draws of `fix_test` (the other two looked at the same files
+through Bash, with `cat` and `ls`). On `build_warnings` and `stack_trace` the agent made the same kind of
+call on the same file with a different search pattern (`Caused` rather than
+`error`), which the strict NAP counts as a different action. On `grep_context`
+(6 steps) and `diff_medium` (6, kept on 8 of 18 draws) it made one verifying
+call before answering, as below. In the live sessions these changes cost 0.125
+turns per session and still left every session right and 9.2% cheaper.
+
+`results/nap-20261105-122.json` replayed the three-round campaign: the 48 `off` sessions
 of the 1.2.1 campaign (`live-20261105-121-haiku.json`), with raw output and
 the 1.2.2 release binary's view (`single`, `59d26d8cee4a…`), `claude-haiku-5-5`,
 3 draws each. Of their large results, 13 were saved by Claude Code (persisted;
