@@ -278,7 +278,10 @@ stored original by address instead of reading and re-hashing it.
 > session's cost follows its turns (each about 18,000 input tokens, cache
 > included), the model narrows most commands itself, and outputs over about
 > 30 KB are saved to a file by Claude Code, which shows its own preview, so
-> views reached the model on six of the sixteen tasks. The reports are in
+> views reached the model on six of the sixteen tasks. Counted by the API's
+> tokenizer, the views of the 26 benchmark outputs take 92.6% fewer tokens
+> than the raw outputs; replayed steps show the agent sometimes makes one
+> verifying call where a view leaves the answer out. The reports are in
 > `bench/results/`. Whole-session cost depends on your host, model and task.
 > Measure your own setup before you tell anyone a percentage.
 > [What is verified](docs/verification.md) ·

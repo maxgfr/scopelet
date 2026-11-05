@@ -36,7 +36,12 @@ The current live campaign is `live-20261105-121-haiku.json`: 1.2.1 against
 no Scopelet, in sessions that search like a default Claude Code session. A
 session with Scopelet cost about 9% less on average, the 95% interval below
 zero, with 47 of 48 tasks right against 48; see
-[1.2.1 against no Scopelet](#121-against-no-scopelet-november-2026).
+[1.2.1 against no Scopelet](#121-against-no-scopelet-november-2026). The
+current token count (`tokens-20261105-122.json`, the 1.2.2 release) finds
+views 92.6% smaller in tokens than the raw outputs on 26 cases, exactly as in
+1.0, and the current replay (`nap-20261105-122.json`) finds the view keeps the
+agent's next action on 59% of draws, against 92% for raw output: where a view
+leaves the answer out, the agent makes one verifying call first.
 
 The 1.0 campaign (`*-20261016-single*.json`) measured the single format
 (binary `ba3eb754e660…`) against the 0.11.1 release (`c4432301dec7…`, compact-v4
@@ -156,6 +161,15 @@ Flags: `--live` (required), `--scopelet BINARY` (default
 `target/release/scopelet`), `--baseline BINARY`, `--model MODEL` (repeatable;
 default `claude-opus-5-5` and `claude-haiku-5-5`), `--out PATH` (default
 `bench/results/tokens.json`, which must not exist).
+
+The current report, `results/tokens-20261105-122.json`, counts the 1.2.2
+release binary (`59d26d8cee4a…`) on the 26 cases for `claude-opus-5-5` and
+`claude-haiku-5-5`: 521,703 tokens raw, 38,471 in views, 92.6% fewer, and no
+case costs more than its raw output (`rust_small`, under the file-read
+threshold, passes through at 1,239). Every case counts exactly what 1.0 did:
+the views of these outputs have not changed since. `giant_unicode_line`'s
+fact lies past the 1.1 KB prefix the view keeps of that one line: recoverable
+with `expand`, not visible, as in the 1.0 report.
 
 The kept `results/tokens.json` measured the 0.10.0 grammar parts, before the
 format was unified: on its 26 cases compact-v5 cost 11.8% fewer view tokens
@@ -501,6 +515,30 @@ BINARY` (default `target/release/scopelet`), `--baseline BINARY`, `--arm NAME`
 `claude-haiku-5-5`), `--draws N` (default 3), `--workers N` (default 4) and
 `--out DIR` (required, must not exist). The report names each condition's
 binary by hash.
+
+`results/nap-20261105-122.json` is the current replay: the 48 `off` sessions
+of the 1.2.1 campaign (`live-20261105-121-haiku.json`), with raw output and
+the 1.2.2 release binary's view (`single`, `59d26d8cee4a…`), `claude-haiku-5-5`,
+3 draws each. Of their large results, 13 were saved by Claude Code (persisted;
+every arm shows the same preview); 17 steps remain, no failed call:
+
+| Form | View bytes | Mean input tokens | NAP | Coarse NAP |
+|---|---:|---:|---:|---:|
+| raw | 281,361 | 11,202 | 0.92 | 1.00 |
+| single | 73,774 | 4,637 | 0.59 | 0.63 |
+
+The view kept the next action on every step of `fix_test`,
+`build_warnings_medium` and `test_report_medium` (9 steps), where the failure
+or the error's location is in the view. On `grep_context` (3 steps) the raw
+output let the model answer at once; with the view, which says
+`gaps are not absence`, it ran one more search for `refund` first. The prompt
+names that word, but prompt anchors are specific terms only (identifiers,
+paths, quoted text, error codes), so the two `refund` lines among 200 calls
+were not ranked in. On `diff_medium` (3 steps) it read `quota.py` or diffed it
+again before answering on six of nine draws. The other two steps
+(`build_warnings`, `stack_trace`) are noise: raw's own NAP there is 0.33. A view
+costs a verifying call where it leaves the answer out, and the live campaign
+shows that call is cheaper than reading everything.
 
 `results/nap-20261016.json` (before 1.0: four forms, raw, compact-v4, v5 with
 its grammar only and v5 whole) replays the 36 `off` sessions of the haiku
