@@ -1132,6 +1132,63 @@ fn shown(event: &Value, result: &Value, stream: &str) -> String {
         .to_owned()
 }
 
+/// A hook never blocks or breaks its host. Malformed events, a cache that
+/// cannot be written and even a panic answer with status 0 and JSON, and a
+/// failure answers `{}`, so the host keeps its native output.
+#[test]
+fn a_hook_fails_open_whatever_goes_wrong() {
+    let dir = tempfile::tempdir().unwrap();
+    let log: String = (0..3000)
+        .map(|i| format!("line {i} of the build, error E{}\n", i % 7))
+        .collect();
+    let good = bash_result("f", "npm test", &log).to_string();
+    let inputs: Vec<Vec<u8>> = vec![
+        Vec::new(),
+        b"\xff\xfe not json".to_vec(),
+        b"[1,2]".to_vec(),
+        b"null".to_vec(),
+        json!({"hook_event_name":"PostToolUse","tool_name":"Bash","tool_response":{"stdout":42}})
+            .to_string()
+            .into_bytes(),
+        json!({"hook_event_name":"PostToolUseFailure","tool_name":"Bash","tool_input":{"command":"cargo test"},"error":7})
+            .to_string()
+            .into_bytes(),
+        json!({"hook_event_name":"PostToolUse","session_id":"../../x","tool_name":"Bash","tool_input":{"command":{"a":1}},"tool_response":{"stdout":log}})
+            .to_string()
+            .into_bytes(),
+    ];
+    let answer = |out: &std::process::Output| -> Value {
+        assert!(out.status.success(), "{out:?}");
+        serde_json::from_slice(&out.stdout).unwrap()
+    };
+    for agent in ["claude", "codex", "opencode"] {
+        for input in &inputs {
+            let out = cli(dir.path())
+                .args(["hook", agent])
+                .write_stdin(input.clone())
+                .output()
+                .unwrap();
+            answer(&out);
+        }
+    }
+    let file = dir.path().join("file");
+    fs::write(&file, "").unwrap();
+    let out = cli(dir.path())
+        .env("SCOPELET_CACHE_DIR", &file)
+        .args(["hook", "claude"])
+        .write_stdin(good.clone())
+        .output()
+        .unwrap();
+    assert_eq!(answer(&out), json!({}));
+    let out = cli(dir.path())
+        .env("SCOPELET_TEST_HOOK_PANIC", "1")
+        .args(["hook", "claude"])
+        .write_stdin(good)
+        .output()
+        .unwrap();
+    assert_eq!(answer(&out), json!({}));
+}
+
 fn bash_result(session: &str, command: &str, stdout: &str) -> Value {
     json!({"hook_event_name":"PostToolUse","session_id":session,"tool_name":"Bash","tool_input":{"command":command},"tool_response":{"stdout":stdout,"stderr":"","interrupted":false,"isImage":false}})
 }
