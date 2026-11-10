@@ -365,15 +365,23 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
     unprofiled.sort_by_key(|(_, n)| std::cmp::Reverse(*n));
     unprofiled.truncate(UNPROFILED_LISTED);
     stats.unprofiled_programs = unprofiled;
-    // An expansion counts for a compression it follows and names.
+    // An expansion counts for a compression it follows and names. The latest
+    // expansion of each reference is found once, so each compression is one
+    // lookup instead of a pass over the whole journal.
+    let mut latest: BTreeMap<&str, &str> = BTreeMap::new();
+    for event in events.iter().filter(|e| e.kind == Kind::Expand) {
+        if let Some(reference) = event.artifact.as_deref() {
+            let at = latest.entry(reference).or_insert(event.ts.as_str());
+            if event.ts.as_str() > *at {
+                *at = event.ts.as_str();
+            }
+        }
+    }
     let expanded = |c: &&&Event| {
-        events.iter().any(|e| {
-            e.kind == Kind::Expand
-                && e.ts >= c.ts
-                && e.artifact
-                    .as_ref()
-                    .is_some_and(|x| Some(x) == c.artifact.as_ref() || Some(x) == c.blob.as_ref())
-        })
+        [c.artifact.as_deref(), c.blob.as_deref()]
+            .into_iter()
+            .flatten()
+            .any(|reference| latest.get(reference).is_some_and(|at| *at >= c.ts.as_str()))
     };
     for event in compressed.iter().filter(expanded) {
         stats.expanded_after_compression += 1;
