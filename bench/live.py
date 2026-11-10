@@ -669,7 +669,10 @@ def paired(records, arm, baseline, tasks, draws=DRAWS):
         'baseline': baseline, 'pairs': len(pairs), 'tasks': len(groups),
         'correct': {arm: sum(bool(a.get('correct')) for _, a, _ in pairs),
                     baseline: sum(bool(b.get('correct')) for _, _, b in pairs)},
-        'cost_per_success_delta': {'value': cps_delta(groups)},
+        # Pairs with an unknown cost leave this comparison: counted, like the
+        # unknown pairs of each mean delta, so dropped failures stay visible.
+        'cost_per_success_delta': {'value': cps_delta(groups), 'pairs_known': len(deltas(groups, 'cost_usd')),
+                                   'pairs_unknown': len(pairs) - len(deltas(groups, 'cost_usd'))},
         'mean_delta': {},
         'detail': [{'task': a['task'], 'round': round_,
                     **{key: (a[key] - b[key] if a.get(key) is not None and b.get(key) is not None else None)

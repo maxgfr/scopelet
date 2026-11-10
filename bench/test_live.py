@@ -119,7 +119,17 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(paired['mean_delta']['input_total']['pairs_unknown'], 1)
         self.assertAlmostEqual(paired['cost_per_success_delta']['value'], (0.14 - 0.20) / 2)
         self.assertEqual(paired['correct'], {'v5': 2, 'v4': 2})
+        self.assertEqual(paired['cost_per_success_delta']['pairs_known'], 2)
+        self.assertEqual(paired['cost_per_success_delta']['pairs_unknown'], 0)
         self.assertNotIn('paired', live.summarize(records, ['v4', 'v5'], ['t1'], baseline='v3'))
+        # A pair with an unknown cost (a timed-out arm) leaves the cost
+        # comparison, and the report says how many did.
+        records += [run('v4', 't1', 1, correct=False, cost=None), run('v5', 't1', 1, cost=0.08)]
+        paired = live.summarize(records, ['v4', 'v5'], ['t1', 't2'], baseline='v4')['paired']['v5']
+        self.assertEqual(paired['pairs'], 3)
+        self.assertAlmostEqual(paired['cost_per_success_delta']['value'], (0.14 - 0.20) / 2)
+        self.assertEqual(paired['cost_per_success_delta']['pairs_known'], 2)
+        self.assertEqual(paired['cost_per_success_delta']['pairs_unknown'], 1)
 
     def test_the_bootstrap_resamples_tasks_with_a_fixed_seed(self):
         # Every task gains 1: the interval is that point.
