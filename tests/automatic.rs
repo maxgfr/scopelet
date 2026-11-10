@@ -1088,6 +1088,29 @@ fn stats_count_compressions_pass_throughs_and_later_expansions() {
         stats["bytes_saved"].as_u64().unwrap(),
         (big.len() - view.len()) as u64
     );
+    assert_eq!(stats["unread_lines"], 0, "{stats}");
+    // A line this version cannot read (a later version's event, a torn
+    // write) is counted, not dropped in silence; one outside the window is
+    // not, and nothing else moves.
+    let journal = fs::read_dir(dir.path().join("cache/events"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .find(|path| path.extension().is_some_and(|x| x == "jsonl"))
+        .unwrap();
+    let mut lines = fs::read_to_string(&journal).unwrap();
+    lines.push_str("{\"ts\":\"2999-01-01T00:00:00Z\",\"kind\":\"teleport\",\"host\":\"claude\"}\n");
+    lines.push_str("{\"ts\":\"1999-01-01T00:00:00Z\",\"kind\":\"teleport\",\"host\":\"claude\"}\n");
+    lines.push_str("{\"ts\":\"2999-01-01T00:00:00Z\",\"kin\n\n");
+    fs::write(&journal, lines).unwrap();
+    let out = cli(dir.path())
+        .args(["stats", "--days", "1"])
+        .output()
+        .unwrap();
+    let odd: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(odd["unread_lines"], 2, "{odd}");
+    assert_eq!(odd["events"], stats["events"], "{odd}");
+    assert_eq!(odd["compressions"], 1, "{odd}");
+    let stats = odd;
     // A window longer than the clock can express is the whole journal, not
     // an arithmetic overflow.
     for days in ["18446744073709551615", "300000000000000"] {

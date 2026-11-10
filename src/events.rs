@@ -264,6 +264,9 @@ pub struct Stats {
     pub loop_notes_by_program: BTreeMap<String, usize>,
     /// The same figures per profile (`none` when unrecognized).
     pub profiles: BTreeMap<String, ProfileStats>,
+    /// Journal lines of the window this version could not read (an event of
+    /// a later version, a torn write): in none of the counts above.
+    pub unread_lines: usize,
     pub journal: PathBuf,
 }
 
@@ -277,6 +280,7 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
             .unwrap_or(UNIX_EPOCH),
     );
     let mut events: Vec<Event> = Vec::new();
+    let mut unread = 0;
     if let Ok(entries) = std::fs::read_dir(&journal) {
         let mut files: Vec<PathBuf> = entries
             .flatten()
@@ -291,17 +295,27 @@ pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
             let Ok(text) = std::fs::read_to_string(&file) else {
                 continue;
             };
-            events.extend(
-                text.lines()
-                    .filter_map(|line| serde_json::from_str::<Event>(line).ok())
-                    .filter(|e| e.ts >= cutoff),
-            );
+            for line in text.lines().filter(|line| !line.trim().is_empty()) {
+                match serde_json::from_str::<Event>(line) {
+                    Ok(event) if event.ts >= cutoff => events.push(event),
+                    Ok(_) => {}
+                    // Counted rather than dropped in silence, when it is in
+                    // the window or carries no time to tell.
+                    Err(_) => {
+                        let at = serde_json::from_str::<serde_json::Value>(line)
+                            .ok()
+                            .and_then(|v| v["ts"].as_str().map(str::to_owned));
+                        unread += usize::from(at.is_none_or(|ts| ts >= cutoff));
+                    }
+                }
+            }
         }
     }
     let mut stats = Stats {
         days,
         journal_enabled: enabled(),
         events: events.len(),
+        unread_lines: unread,
         journal,
         ..Stats::default()
     };

@@ -282,7 +282,9 @@ expanded later, expansions by kind, repeats and the bytes they saved, anchored
 views, compressions by program with the ten programs most often compressed
 without a profile (`unprofiled_programs`), and, per profile, the same figures with
 `budget_probably_tight` when more than 25% of at least four compressions were
-expanded, and loop notes in all and by program (see Loop notes). Stats
+expanded, loop notes in all and by program (see Loop notes), and
+`unread_lines`, the journal lines of the window it could not read (a later
+version's event, a torn write), which are in no other count. Stats
 report; nothing is tuned automatically. Accepted
 views save original bytes and serialize the same dataset through a bounded,
 buffered hashing writer; artifact identities remain SHA-256 of the exact JSON
