@@ -165,10 +165,25 @@ pub fn capture(
     }
     let overflow = Arc::new(AtomicBool::new(false));
     let stop = Arc::new(AtomicBool::new(false));
-    let (flag, halt) = (overflow.clone(), stop.clone());
-    let out = thread::spawn(move || drain(stdout, limit, flag, halt));
-    let (flag, halt) = (overflow.clone(), stop.clone());
-    let err = thread::spawn(move || drain(stderr, limit, flag, halt));
+    // Each reader says when its stream ends, which is when a command finishes:
+    // the loop below wakes for it instead of finding out up to POLL later.
+    let (ended_tx, ended_rx) = std::sync::mpsc::channel::<()>();
+    let (flag, halt, ended) = (overflow.clone(), stop.clone(), ended_tx.clone());
+    let out = thread::spawn(move || {
+        let drained = drain(stdout, limit, flag, halt);
+        let _ = ended.send(());
+        drained
+    });
+    let (flag, halt, ended) = (overflow.clone(), stop.clone(), ended_tx);
+    let err = thread::spawn(move || {
+        let drained = drain(stderr, limit, flag, halt);
+        let _ = ended.send(());
+        drained
+    });
+    // Streams known to have ended, and the wait once both have while the
+    // command still runs (it closed its outputs): short, then up to POLL.
+    let mut streams_ended = 0;
+    let mut idle = Duration::from_millis(1);
     let start = Instant::now();
     let mut interrupted = false;
     let mut timed_out = false;
@@ -196,7 +211,7 @@ pub fn capture(
         }
         if shutdown_at.is_none() {
             if let Some(exited) = exited_at {
-                if out.is_finished() && err.is_finished() {
+                if streams_ended == 2 || (out.is_finished() && err.is_finished()) {
                     break;
                 }
                 // Do not turn an already completed command into a timeout because
@@ -230,7 +245,17 @@ pub fn capture(
                 break;
             }
         }
-        thread::sleep(POLL);
+        // At most POLL, so a timeout or an interruption stays responsive; less
+        // when a stream ends, so a command of a millisecond does not cost ten.
+        match ended_rx.recv_timeout(POLL) {
+            Ok(()) => streams_ended += 1,
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                streams_ended = 2;
+                thread::sleep(idle);
+                idle = (idle * 2).min(POLL);
+            }
+        }
     }
     let stdout = out
         .join()
