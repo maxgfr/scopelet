@@ -19,22 +19,27 @@ pub fn search(
     source: Option<&str>,
 ) -> Result<Dataset> {
     let search = Search::new(patterns, false, regex, ignore_case, context)?;
+    // A blob searched by its own reference is read and verified once: the
+    // bytes that gave its length are the ones searched below.
+    let mut read = None;
     let mut data = if id.starts_with("artifact:") {
         // Only the snapshots are searched: records are not parsed again.
         let data = store.dataset_head(id)?;
         store.touch(id);
         data
     } else {
+        ensure!(source.is_none(), "--source requires an artifact reference");
         let bytes = store.get(id)?;
         store.touch(id);
-        ensure!(source.is_none(), "--source requires an artifact reference");
+        let snapshot = Snapshot {
+            source: id.into(),
+            blob: id.into(),
+            bytes: bytes.len(),
+            local_path: None,
+        };
+        read = Some(bytes);
         Dataset {
-            snapshots: vec![Snapshot {
-                source: id.into(),
-                blob: id.into(),
-                bytes: bytes.len(),
-                local_path: None,
-            }],
+            snapshots: vec![snapshot],
             ..Dataset::default()
         }
     };
@@ -51,7 +56,9 @@ pub fn search(
         if !seen.insert((&snapshot.source, &snapshot.blob)) {
             continue;
         }
-        let raw = if store.contains(&snapshot.blob) {
+        let raw = if let Some(raw) = read.take() {
+            raw
+        } else if store.contains(&snapshot.blob) {
             let raw = store.get(&snapshot.blob)?;
             store.touch(&snapshot.blob);
             raw
@@ -149,22 +156,48 @@ pub fn page(store: &Store, id: &str, start: usize, end: usize, budget: usize) ->
         }
         (serde_json::to_vec(&view).ok()?.len() < budget).then_some(view)
     };
-    if data.records.is_empty() || measure(&data, None).is_some() {
+    // A view holds its text: lines longer than the budget cannot fit, and are
+    // not rendered to find that out.
+    let whole_fits =
+        |data: &Dataset| data.records[0].text.len() <= budget && measure(data, None).is_some();
+    if data.records.is_empty() || whole_fits(&data) {
         return render(&data, store, budget, 0);
     }
     let record = &data.records[0];
-    let lines: Vec<&str> = record.text.split_inclusive('\n').collect();
+    // Where each line ends: a prefix of whole lines is a slice of the text.
+    let ends: Vec<usize> = record
+        .text
+        .split_inclusive('\n')
+        .scan(0, |end, line| {
+            *end += line.len();
+            Some(*end)
+        })
+        .collect();
     let first = record.start_line.unwrap_or(start);
+    // A candidate copies its own lines only, never the whole selection.
     let take = |count: usize| Dataset {
+        schema_version: data.schema_version,
+        scan_complete: data.scan_complete,
+        examined: data.examined,
+        skipped: data.skipped.clone(),
+        notes: data.notes.clone(),
+        snapshots: data.snapshots.clone(),
         records: vec![Record {
-            text: lines[..count].concat(),
+            source: record.source.clone(),
+            blob: record.blob.clone(),
+            start_line: record.start_line,
             end_line: Some(first + count - 1),
-            ..record.clone()
+            text: record.text[..ends[count - 1]].to_owned(),
+            value: None,
+            omitted_lines: record.omitted_lines,
+            text_truncated: record.text_truncated,
         }],
-        ..data.clone()
     };
-    // The largest prefix of whole lines that fits, by bisection.
-    let (mut fits, mut over) = (0, lines.len());
+    // The largest prefix of whole lines that fits, by bisection. A prefix
+    // longer than the budget cannot fit, which bounds the search from above
+    // without rendering it.
+    let beyond = ends.partition_point(|&end| end <= budget) + 1;
+    let (mut fits, mut over) = (0, beyond.min(ends.len()));
     while over - fits > 1 {
         let mid = (fits + over) / 2;
         if measure(&take(mid), Some(first + mid)).is_some() {
