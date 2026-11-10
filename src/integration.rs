@@ -725,7 +725,9 @@ fn claude_result(event: &Value) -> Result<Value> {
             }
             let hash = digest(raw.as_bytes());
             let hash = crate::session::short(&hash);
-            if state.saw(hash)
+            // Seen before this result: its other stream holding the same
+            // bytes is as new to the conversation as this one.
+            if loaded.as_ref().is_some_and(|before| before.saw(hash))
                 && let Some(marker) =
                     compress::repeat_recorded("claude", program, raw.as_bytes(), None, profile)
             {

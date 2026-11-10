@@ -1357,6 +1357,26 @@ fn repeat_outputs_become_a_reference_to_what_was_shown() {
     assert!(again.contains(" repeat: identical"), "{again}");
     assert_eq!(recovered(dir.path(), &again), source.as_bytes());
 
+    // Two streams of one result with the same bytes are both new to the
+    // conversation: neither is "already shown", each is a view. The next
+    // result with those bytes is a repeat in both streams.
+    let twin: String = (0..400)
+        .map(|i| format!("step {i} wrote the same line to both streams\n"))
+        .collect();
+    let mut both = bash_result("r1", "make build", &twin);
+    both["tool_response"]["stderr"] = json!(twin);
+    let result = hook(dir.path(), "claude", both.clone());
+    for stream in ["stdout", "stderr"] {
+        let text = shown(&both, &result, stream);
+        assert!(text.starts_with("[scopelet v5 "), "{stream}: {text}");
+        assert!(!text.contains("repeat:"), "{stream}: {text}");
+    }
+    let result = hook(dir.path(), "claude", both.clone());
+    for stream in ["stdout", "stderr"] {
+        let text = shown(&both, &result, stream);
+        assert!(text.contains(" repeat: identical"), "{stream}: {text}");
+    }
+
     // Small outputs are never referenced: they cost less than the marker.
     let small = bash_result("r1", "git status", "On branch main\n");
     assert_eq!(hook(dir.path(), "claude", small.clone()), json!({}));
