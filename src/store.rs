@@ -8,7 +8,7 @@ use std::time::{Duration, SystemTime};
 
 pub const MAX_INPUT: usize = 32 * 1024 * 1024;
 pub const MAX_STORE_FILE: usize = 256 * 1024 * 1024;
-const TEMP_PREFIX: &str = ".scopelet-write-";
+pub(crate) const TEMP_PREFIX: &str = ".scopelet-write-";
 
 struct HashWriter<W> {
     inner: W,

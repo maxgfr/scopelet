@@ -850,8 +850,8 @@ impl Bits {
 /// so the working set stays near the units themselves on a large input.
 ///
 /// `kind.file_read`: a file read ranks no line as a diagnostic; anchors still
-/// apply. `kind.search`: a file's matches beyond `SEARCH_MATCHES` are never
-/// shown (see `search_capped`). `kind.similar_on_overflow`: a text that fits
+/// apply. `kind.search`: a file's matches beyond `SEARCH_MATCHES` are shown
+/// only with budget to spare (see `search_ranks`). `kind.similar_on_overflow`: a text that fits
 /// `limit` with its labels folds identical lines only, since the numbers that
 /// tell similar lines apart (counts, ids, statuses) are often the evidence.
 /// `kind.bare`: labels leave out `source:`, and sizes are measured so.

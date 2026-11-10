@@ -110,7 +110,7 @@ pub(crate) fn slice(
                 offsets: index.clone(),
             };
             let mut temp = tempfile::Builder::new()
-                .prefix(".scopelet-write-")
+                .prefix(crate::store::TEMP_PREFIX)
                 .rand_bytes(12)
                 .tempfile_in(&folder)?;
             {

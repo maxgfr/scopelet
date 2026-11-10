@@ -441,9 +441,7 @@ pub fn profile(args: &[String]) -> Option<Profile> {
         }
         "node"
             if second == "--test"
-                && !args
-                    .iter()
-                    .any(|a| a.starts_with("--inspect") || a == "-i" || a == "--watch-path") =>
+                && !args.iter().any(|a| a.starts_with("--inspect") || a == "-i") =>
         {
             tests
         }
