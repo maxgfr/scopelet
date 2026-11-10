@@ -273,6 +273,25 @@ pub fn invokes_wrapper(command: &str) -> bool {
     }
 }
 
+/// The host a hook command written by `install` serves:
+/// `SCOPELET_CONFIG_DIR=... .../scopelet hook HOST`, whatever the directory
+/// and the binary's path. None for any other command, one that merely runs a
+/// program named scopelet included.
+pub(crate) fn installed_hook(command: &str) -> Option<String> {
+    if !command.starts_with("SCOPELET_CONFIG_DIR=") {
+        return None;
+    }
+    match lenient_commands(command).as_slice() {
+        [argv] => match argv.as_slice() {
+            [program, hook, host] if name(program) == "scopelet" && hook == "hook" => {
+                Some(host.clone())
+            }
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
 /// Tools run through `npx`, `bunx`, `pnpm exec` or `uv run` that are known
 /// to finish on their own and report an outcome.
 fn known_tool(args: &[String]) -> bool {

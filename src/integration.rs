@@ -150,6 +150,22 @@ fn owned(group: &Value, command: &str) -> bool {
             hooks.len() == 1 && hooks[0].get("command").and_then(Value::as_str) == Some(command)
         })
 }
+/// A hook group written by an install of Scopelet for this host, under any
+/// configuration directory or binary path.
+fn installed(group: &Value, host: &str) -> bool {
+    group
+        .get("hooks")
+        .and_then(Value::as_array)
+        .is_some_and(|hooks| {
+            hooks.len() == 1
+                && hooks[0]
+                    .get("command")
+                    .and_then(Value::as_str)
+                    .and_then(crate::commands::installed_hook)
+                    .as_deref()
+                    == Some(host)
+        })
+}
 pub fn install(agent: Agent, remove: bool) -> Result<Value> {
     let config = root()?;
     let binary = config.join("bin/scopelet");
@@ -256,7 +272,9 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                 .or_insert(json!([]))
                 .as_array_mut()
                 .context("hook event must be an array")?;
-            groups.retain(|group| !owned(group, &command));
+            // Ours, whatever configuration directory or binary path an
+            // earlier install wrote: a second set would run every hook twice.
+            groups.retain(|group| !owned(group, &command) && !installed(group, name));
             if !remove {
                 let mut entry =
                     json!({"hooks":[{"type":"command", "command":command,"timeout":5}]});

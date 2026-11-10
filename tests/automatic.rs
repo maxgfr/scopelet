@@ -247,6 +247,57 @@ fn install_keeps_the_order_of_the_keys_it_did_not_write() {
     assert_eq!(fs::read_to_string(&path).unwrap(), original);
 }
 
+/// A reinstall under another configuration directory or binary path replaces
+/// the hook entries the earlier install wrote instead of adding a second set,
+/// and uninstall removes them all. A hook that merely runs something named
+/// scopelet stays.
+#[test]
+fn reinstalling_elsewhere_replaces_the_earlier_scopelet_hooks() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir(dir.path().join("claude")).unwrap();
+    let path = dir.path().join("claude/settings.json");
+    let mine = json!({"hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"/opt/tools/scopelet hook claude"}]}]}});
+    fs::write(&path, serde_json::to_vec(&mine).unwrap()).unwrap();
+    let elsewhere = dir.path().join("config two");
+    let groups = |event: &str| -> Vec<String> {
+        let value: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        value["hooks"][event]
+            .as_array()
+            .map(|groups| {
+                groups
+                    .iter()
+                    .map(|g| g["hooks"][0]["command"].as_str().unwrap().to_owned())
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    cli(dir.path())
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    assert_eq!(groups("SessionStart").len(), 1);
+    cli(dir.path())
+        .env("SCOPELET_CONFIG_DIR", &elsewhere)
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    for event in ["SessionStart", "UserPromptSubmit", "SubagentStart"] {
+        let commands = groups(event);
+        assert_eq!(commands.len(), 1, "{event}: {commands:?}");
+        assert!(commands[0].contains("config two"), "{event}: {commands:?}");
+    }
+    let post = groups("PostToolUse");
+    assert_eq!(post.len(), 2, "{post:?}");
+    assert_eq!(post[0], "/opt/tools/scopelet hook claude");
+    // The first directory's uninstall removes the second's entries too.
+    cli(dir.path())
+        .args(["uninstall", "--agent", "claude"])
+        .assert()
+        .success();
+    let value: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(value, mine);
+}
+
 #[test]
 fn uninstall_reports_its_own_note_for_every_host() {
     let dir = tempfile::tempdir().unwrap();
