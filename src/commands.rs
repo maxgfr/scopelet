@@ -261,14 +261,15 @@ fn lenient_commands(command: &str) -> Vec<Vec<String>> {
 }
 
 /// Whether a command line runs Scopelet or another output wrapper, whose
-/// output is already shaped. A line outside the parsed subset is checked
-/// word by word.
+/// output is already shaped. A line outside the parsed subset is split
+/// leniently into its commands: a wrapper is the program one of them runs,
+/// never a word among its arguments (`rg rtk src/*.rs` runs `rg`).
 pub fn invokes_wrapper(command: &str) -> bool {
     match crate::shell::parse(command) {
         Some(script) => script.commands().any(|simple| is_wrapper(&simple.argv)),
-        None => command
-            .split_whitespace()
-            .any(|word| wrapper_program(word) || wrapper_launcher(word)),
+        None => lenient_commands(command)
+            .iter()
+            .any(|argv| is_wrapper(argv)),
     }
 }
 

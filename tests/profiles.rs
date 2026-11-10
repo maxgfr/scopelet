@@ -171,6 +171,17 @@ fn command_lines_are_classified_and_wrappers_found_by_words() {
     assert!(invokes_wrapper("FOO=$X scopelet doctor"));
     assert!(!invokes_wrapper("cat ~/notes/scopelet-ideas.md"));
     assert!(!invokes_wrapper("rg rtk src"));
+    // Outside the strict grammar (globs, `$`, `;`) a wrapper is still the
+    // program a command runs, never a word among its arguments.
+    assert!(!invokes_wrapper("rg rtk src/*.rs"));
+    assert!(!invokes_wrapper("grep -rn scopelet *.md"));
+    assert!(!invokes_wrapper("ls $HOME/.config/scopelet"));
+    assert!(invokes_wrapper("$HOME/.config/scopelet/bin/scopelet stats"));
+    assert!(invokes_wrapper("cd $DIR; rtk cargo test"));
+    assert!(invokes_wrapper(
+        "for f in *.log; do scopelet compress --file $f; done"
+    ));
+    assert!(invokes_wrapper("node $SKILL/scripts/scopelet.mjs doctor"));
 }
 
 #[test]
