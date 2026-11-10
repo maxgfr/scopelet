@@ -8,6 +8,66 @@ use std::{
 fn cancel() -> Arc<AtomicBool> {
     Arc::new(AtomicBool::new(false))
 }
+/// `go test` with `t.Parallel()` prints every `=== RUN` first and the
+/// failures last. Locating each failure once read most of the output per
+/// failure: 4,000 tests took over a second in a release build, and a larger
+/// run outlived the hook's 5-second timeout. Two sizes must cost about the
+/// same per test; the bound is loose enough for a loaded machine and far
+/// below what a quadratic pass shows (4x the work per test at twice the size).
+#[test]
+fn parallel_go_failures_are_located_in_linear_time() {
+    let output = |tests: usize| -> String {
+        let mut text = String::new();
+        for i in 0..tests {
+            text.push_str(&format!("=== RUN   TestCase{i}\n=== PAUSE TestCase{i}\n"));
+        }
+        for i in 0..tests {
+            text.push_str(&format!("=== CONT  TestCase{i}\n"));
+        }
+        for i in 0..tests {
+            if i % 3 == 0 {
+                text.push_str(&format!(
+                    "    case_{i}_test.go:{}: got {i}, want 1\n--- FAIL: TestCase{i} (0.00s)\n",
+                    10 + i % 90
+                ));
+            } else {
+                text.push_str(&format!("--- PASS: TestCase{i} (0.00s)\n"));
+            }
+        }
+        text.push_str("FAIL\nFAIL\texample.com/pkg\t1.234s\nFAIL\n");
+        text
+    };
+    let dir = tempfile::tempdir().unwrap();
+    let timed = |tests: usize| {
+        let raw = output(tests);
+        let started = std::time::Instant::now();
+        let view = compress::automatic_decision(
+            raw.as_bytes(),
+            Some(dir.path().join("cache")),
+            Some(scopelet::commands::Profile::Tests),
+            None,
+        )
+        .map(|(view, _)| view)
+        .unwrap()
+        .into_owned();
+        let elapsed = started.elapsed();
+        let view = String::from_utf8(view).unwrap();
+        let failed = tests.div_ceil(3);
+        assert!(
+            view.contains(&format!("\nfailed={failed}: TestCase0")),
+            "{view}"
+        );
+        elapsed
+    };
+    // Warm the lazily compiled patterns before timing anything.
+    timed(300);
+    let (small, large) = (timed(3_000), timed(12_000));
+    assert!(
+        large < small * 12 + std::time::Duration::from_millis(250),
+        "4x the tests took {large:?} against {small:?}: more than linear"
+    );
+}
+
 #[test]
 fn rejected_compression_never_opens_a_store() {
     let dir = tempfile::tempdir().unwrap();

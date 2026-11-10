@@ -2235,8 +2235,11 @@ struct Failure {
 fn failures(text: &str) -> Vec<Failure> {
     let lines: Vec<&str> = text.lines().map(|l| l.trim_end_matches('\r')).collect();
     let mut found: Vec<Failure> = Vec::new();
+    // Each name once, in order of first appearance: a run of thousands of
+    // failures is not compared against every failure before it.
+    let mut named: HashSet<String> = HashSet::default();
     let mut add = |name: &str, location: Option<String>| {
-        if !found.iter().any(|f| f.name == name) {
+        if named.insert(name.to_owned()) {
             found.push(Failure {
                 name: name.to_owned(),
                 location,
@@ -2272,11 +2275,13 @@ fn failures(text: &str) -> Vec<Failure> {
         };
         let id = &summary[1];
         let test = id.rsplit("::").next().unwrap_or(id);
+        // Built once per summary line, not once per section it is tried on.
+        let method = format!(".{test}");
         let location = sections
             .iter()
             .position(|(_, title)| {
                 *title == test
-                    || title.ends_with(&format!(".{test}"))
+                    || title.ends_with(&method)
                     || title.strip_prefix("ERROR collecting ") == Some(id)
             })
             .and_then(|k| {
@@ -2316,34 +2321,58 @@ fn failures(text: &str) -> Vec<Failure> {
     // go test
     // Where a Go test failed: its log line (`file_test.go:N:`) or, after a
     // panic, the deepest frame outside the Go toolchain (the crash site).
-    let toolchain = |l: &&str| l.contains("/src/runtime/") || l.contains("/src/testing/");
-    let go_location = |name: &str, at: usize| {
-        let run = lines[..at]
-            .iter()
-            .rposition(|l| GO_RUN.captures(l).is_some_and(|c| &c[1] == name))
-            .map_or(at, |r| r + 1);
-        let after = lines[at + 1..]
-            .iter()
-            .take_while(|l| !l.starts_with("=== ") && !l.trim_start().starts_with("--- "));
-        lines[run..at]
-            .iter()
-            .chain(after)
-            .filter(|l| !toolchain(l))
-            .find_map(|l| GO_LOCATION.captures(l))
+    let located = |l: &str| {
+        (!l.contains("/src/runtime/") && !l.contains("/src/testing/"))
+            .then(|| GO_LOCATION.captures(l))
+            .flatten()
             .map(|c| format!("{}:{}", &c[1], &c[2]))
     };
+    // For each line, the first line at or after it that gives a location.
+    // Parallel tests print every `=== RUN` first, so searching from a test's
+    // RUN line to its failure, and back for that RUN line, read most of the
+    // output once per failure: both are lookups now. Built on the first Go
+    // failure only, so other runners never pay for it.
+    let following: std::cell::OnceCell<Vec<usize>> = std::cell::OnceCell::new();
+    let following = || {
+        following.get_or_init(|| {
+            let mut next = vec![lines.len(); lines.len() + 1];
+            for i in (0..lines.len()).rev() {
+                next[i] = if located(lines[i]).is_some() {
+                    i
+                } else {
+                    next[i + 1]
+                };
+            }
+            next
+        })
+    };
+    // `run` is the test's latest `=== RUN` line above `at`, kept in `runs`
+    // as the lines go by. Its own lines first, then those after the failure.
+    let go_location = |run: Option<usize>, at: usize| {
+        let first = following()[run.map_or(at, |r| r + 1)];
+        if first < at {
+            return located(lines[first]);
+        }
+        lines[at + 1..]
+            .iter()
+            .take_while(|l| !l.starts_with("=== ") && !l.trim_start().starts_with("--- "))
+            .find_map(|l| located(l))
+    };
+    let mut runs: HashMap<&str, usize> = HashMap::default();
     for (i, line) in lines.iter().enumerate() {
         if let Some(fail) = GO_FAIL.captures(line) {
-            add(&fail[1], go_location(&fail[1], i));
+            let name = fail.get(1).unwrap().as_str();
+            add(name, go_location(runs.get(name).copied(), i));
         } else if let Some(run) = GO_RUN.captures(line) {
             // A test that panicked may have no `--- FAIL` line.
-            let name = &run[1];
+            let name = run.get(1).unwrap().as_str();
             let next = lines[i + 1..].iter().find(|l| {
                 l.starts_with("=== ") || l.starts_with("--- ") || l.starts_with("panic: ")
             });
             if next.is_some_and(|l| l.starts_with("panic: ")) {
-                add(name, go_location(name, i));
+                add(name, go_location(runs.get(name).copied(), i));
             }
+            runs.insert(name, i);
         }
     }
     found
