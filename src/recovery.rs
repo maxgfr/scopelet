@@ -235,7 +235,7 @@ pub fn page(store: &Store, id: &str, start: usize, end: usize, budget: usize) ->
     Ok(view)
 }
 
-/// Range recovery uses a disposable offset index after verifying the full blob.
+/// Lines `start..=end` of a blob, read from its verified bytes.
 pub fn range(store: &Store, id: &str, start: usize, end: usize) -> Result<Dataset> {
     ensure!(
         start >= 1 && end >= start,
@@ -249,7 +249,7 @@ pub fn range(store: &Store, id: &str, start: usize, end: usize) -> Result<Datase
     store.touch(id);
     let text =
         String::from_utf8(bytes).context("saved source is not UTF-8; expand --raw instead")?;
-    let (selected, count) = crate::line_index::slice(store, id, &text, start, end);
+    let (selected, count) = crate::line_index::slice(&text, start, end);
     let records = if count == 0 {
         vec![]
     } else {

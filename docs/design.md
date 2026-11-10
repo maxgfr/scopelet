@@ -83,8 +83,7 @@ is intact but unreadable (a newer schema, a permission) is kept, and no
 original is removed in that pass because the originals it names are unknown.
 `--max-size` then evicts least recently modified items until the cache fits,
 never one modified within the last hour, and removes an original only once no
-surviving artifact names it; disposable offset indexes count and evict like
-originals. Cleanup also removes per-context hook states (`<config>/sessions/`)
+surviving artifact names it. Cleanup also removes per-context hook states (`<config>/sessions/`)
 older than the age limit. Only content-hash-named files are
 cache items: cleanup leaves anything else in the directory alone, apart from its
 aged temporaries in the reserved `.scopelet-write-` namespace (12 alphanumeric
@@ -322,12 +321,11 @@ larger than the budget remains a `blocked_record`. `--offset` pages records
 and conflicts with a line range instead of being ignored. Marking an item as
 used is best effort, so a read-only cache stays readable.
 
-Blob range recovery optionally caches offsets for at most 100000 lines in
-`line-index-v1/`. These disposable indexes have local ignore markers and bind
-offsets to a blob hash. Recovery verifies original bytes and all index line
-boundaries; missing, invalid or unwritable indexes fall back to reconstruction.
-Larger sources use bounded sequential range selection. Cleanup removes aged
-indexes and indexes whose original blob is gone, preserving foreign files.
+Blob range recovery verifies the original's bytes, then finds the lines asked
+for in one pass over its newlines. Versions up to 1.2.6 cached every line's
+offset under `line-index-v1/`; validating a cached index read every newline
+anyway, so it cost more than it saved. Those files are no longer read or
+written, and cleanup removes them, preserving foreign files.
 
 The shared command classifier recognizes builds, tests and checks (`cargo test|check|clippy|build|nextest|doc`,
 `cargo fmt --check`, `pytest`, `python -m pytest|unittest|mypy`, Python scripts,

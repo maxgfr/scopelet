@@ -246,7 +246,6 @@ permits wrapping; it does not guarantee compression. Outputs are replaced only
 when the complete view clears the existing savings gate. Rejected compression
 now avoids opening the cache as well as leaving the output unchanged.
 
-Range expansion can create disposable `line-index-v1` cache files. They carry
-local ignore markers and are cleaned with their originals or when old. Index
-failures do not prevent recovery; original blob hashes and source-line
-boundaries are verified before an index is used.
+Range expansion reads lines straight from the verified original. The
+`line-index-v1` files earlier versions cached are no longer used; `clean`
+removes them.

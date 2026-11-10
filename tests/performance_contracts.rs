@@ -276,7 +276,7 @@ fn recovery_searches_originals_after_source_changes() {
 }
 
 #[test]
-fn disposable_line_index_recovers_exact_bytes_and_survives_corruption() {
+fn range_recovery_reads_exact_lines_and_caches_no_index() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(Some(dir.path().into())).unwrap();
     let raw = "a\r\nbé\r\nc\n".as_bytes();
@@ -284,26 +284,21 @@ fn disposable_line_index_recovers_exact_bytes_and_survives_corruption() {
     for _ in 0..2 {
         let data = recovery::range(&store, &id, 2, 2).unwrap();
         assert_eq!(data.records[0].text, "bé\r\n");
-        let path = dir
-            .path()
-            .join("line-index-v1")
-            .join(id.split_once(':').unwrap().1);
-        assert!(path.is_file());
-        fs::write(path, b"broken").unwrap();
+        assert_eq!(data.records[0].start_line, Some(2));
+        assert_eq!(data.records[0].end_line, Some(2));
     }
+    let all = recovery::range(&store, &id, 1, usize::MAX).unwrap();
+    assert_eq!(all.records[0].text.as_bytes(), raw);
+    assert_eq!(all.records[0].end_line, Some(3));
     assert!(
         recovery::range(&store, &id, 10, 12)
             .unwrap()
             .records
             .is_empty()
     );
-    store.clean(0).unwrap();
-    assert_eq!(
-        fs::read_dir(dir.path().join("line-index-v1"))
-            .unwrap()
-            .count(),
-        2
-    );
+    // Earlier versions cached every line's offset here, and validating the
+    // cache cost more than finding the lines.
+    assert!(!dir.path().join("line-index-v1").exists());
 }
 
 #[test]
@@ -344,7 +339,8 @@ fn forged_index_cannot_relabel_source_lines() {
     let store = Store::open(Some(dir.path().into())).unwrap();
     let raw = b"first\nsecond\nthird\n";
     let id = store.put("blob", raw).unwrap();
-    recovery::range(&store, &id, 2, 2).unwrap();
+    // An index as an earlier version cached it, forged to shift the lines.
+    fs::create_dir(dir.path().join("line-index-v1")).unwrap();
     let path = dir
         .path()
         .join("line-index-v1")
@@ -360,6 +356,10 @@ fn forged_index_cannot_relabel_source_lines() {
         recovery::range(&store, &id, 2, 2).unwrap().records[0].text,
         "second\n"
     );
+    // Indexes are no longer read at all, and cleanup removes them.
+    assert!(path.is_file());
+    store.clean(3650).unwrap();
+    assert!(!path.exists());
 }
 
 #[test]
@@ -457,6 +457,7 @@ fn range_recovery_validates_reference_and_cleanup_preserves_foreign_index_files(
     let blob = store.put("blob", b"a\nb\n").unwrap();
     recovery::range(&store, &blob, 1, 1).unwrap();
     let folder = dir.path().join("line-index-v1");
+    fs::create_dir(&folder).unwrap();
     fs::write(folder.join(".scopelet-write-AbCd12345678"), b"ours").unwrap();
     fs::write(folder.join(".tmp-foreign"), b"foreign").unwrap();
     store.clean(0).unwrap();

@@ -1,166 +1,45 @@
-//! Disposable indexes bind byte offsets to a verified immutable blob.
-use crate::store::{Store, digest, read_bounded};
-use serde::{Deserialize, Serialize};
-use std::{
-    fs,
-    io::{BufWriter, Write},
-    path::Path,
-    time::{Duration, SystemTime},
-};
+//! Line ranges of a verified original, and the removal of the offset
+//! indexes earlier versions cached for them.
+//!
+//! Until 1.2.6 a range recovery saved the byte offset of every line under
+//! `line-index-v1/` and loaded it back on the next one. Loading validated
+//! each offset against the original, which reads every newline of it: the
+//! same pass that finds the lines without an index, plus a file to read,
+//! parse and checksum. The lines are now found directly, and cleanup removes
+//! the indexes left in existing caches.
+use std::{fs, path::Path, time::Duration, time::SystemTime};
 
-const MAX_LINES: usize = 100_000;
 const DIRECTORY: &str = "line-index-v1";
-#[derive(Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Index {
-    blob: String,
-    offsets: Vec<usize>,
-    checksum: String,
-}
 
-fn offsets(text: &str) -> Option<Vec<usize>> {
-    let mut result = vec![0];
-    for (i, byte) in text.bytes().enumerate() {
-        if byte == b'\n' && i + 1 < text.len() {
-            result.push(i + 1);
+/// Lines `start..=end` (1-based) of `text`, with their terminators, and how
+/// many there are: fewer than asked when the text ends first, none when it
+/// ends before `start`. One pass over the newlines, up to the last line
+/// asked for.
+pub(crate) fn slice(text: &str, start: usize, end: usize) -> (String, usize) {
+    let bytes = text.as_bytes();
+    // `line` is the number of the line that begins at `at`.
+    let (mut line, mut at, mut from) = (1, 0, None);
+    while at < bytes.len() && line <= end {
+        if line == start {
+            from = Some(at);
         }
-        if result.len() > MAX_LINES {
-            return None;
-        }
+        at = memchr::memchr(b'\n', &bytes[at..]).map_or(bytes.len(), |i| at + i + 1);
+        line += 1;
     }
-    result.push(text.len());
-    Some(result)
-}
-fn checksum(blob: &str, offsets: &[usize]) -> String {
-    digest(&serde_json::to_vec(&(blob, offsets)).unwrap())
-}
-fn load(path: &Path, blob: &str, text: &str) -> Option<Vec<usize>> {
-    if fs::symlink_metadata(path).ok()?.file_type().is_symlink() {
-        return None;
+    match from {
+        Some(from) => (text[from..at].to_owned(), line - start),
+        None => (String::new(), 0),
     }
-    let index: Index = serde_json::from_slice(&read_bounded(path, 2 * 1024 * 1024).ok()?).ok()?;
-    if index.blob != blob
-        || index.offsets.len() < 2
-        || index.offsets.len() > MAX_LINES + 1
-        || index.offsets.first() != Some(&0)
-        || index.offsets.last() != Some(&text.len())
-        || index.checksum != checksum(blob, &index.offsets)
-        || index.offsets.windows(2).any(|w| w[0] > w[1])
-        || index.offsets[1..index.offsets.len() - 1]
-            .iter()
-            .any(|&i| i == 0 || i >= text.len() || text.as_bytes()[i - 1] != b'\n')
-    {
-        return None;
-    }
-    // A checksum stored beside offsets is not an authority for line numbers.
-    // Validate every boundary against the verified original, including missing lines.
-    let expected = std::iter::once(0)
-        .chain(
-            text.bytes()
-                .enumerate()
-                .filter_map(|(i, b)| (b == b'\n' && i + 1 < text.len()).then_some(i + 1)),
-        )
-        .chain(std::iter::once(text.len()));
-    if !expected.eq(index.offsets.iter().copied()) {
-        return None;
-    }
-    Some(index.offsets)
 }
 
-/// Caller supplies bytes returned by Store::get, which has checked their hash.
-pub(crate) fn slice(
-    store: &Store,
-    blob: &str,
-    text: &str,
-    start: usize,
-    end: usize,
-) -> (String, usize) {
-    let folder = store.root.join(DIRECTORY);
-    let path = blob.strip_prefix("blob:").map(|hash| folder.join(hash));
-    let safe_folder =
-        fs::symlink_metadata(&folder).is_ok_and(|m| m.is_dir() && !m.file_type().is_symlink());
-    let cached = if safe_folder {
-        path.as_ref().and_then(|p| load(p, blob, text))
-    } else {
-        None
-    };
-    let index = cached.or_else(|| {
-        let index = offsets(text)?;
-        // Index storage is optional. It must never make recovery fail.
-        let save = || -> anyhow::Result<()> {
-            if !safe_folder {
-                if fs::symlink_metadata(&folder).is_ok() {
-                    return Ok(());
-                }
-                let mut builder = fs::DirBuilder::new();
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::DirBuilderExt;
-                    builder.mode(0o700);
-                }
-                builder.create(&folder)?;
-            }
-            crate::store::ignore_cached_evidence(&folder)?;
-            let Some(path) = &path else {
-                return Ok(());
-            };
-            let value = Index {
-                blob: blob.into(),
-                checksum: checksum(blob, &index),
-                offsets: index.clone(),
-            };
-            let mut temp = tempfile::Builder::new()
-                .prefix(crate::store::TEMP_PREFIX)
-                .rand_bytes(12)
-                .tempfile_in(&folder)?;
-            {
-                let mut buffer = BufWriter::with_capacity(65536, &mut temp);
-                serde_json::to_writer(&mut buffer, &value)?;
-                buffer.flush()?;
-            }
-            temp.persist(path)?;
-            Ok(())
-        };
-        let _ = save();
-        Some(index)
-    });
-    if let Some(index) = index {
-        let n = if text.is_empty() { 0 } else { index.len() - 1 };
-        let lo = start.saturating_sub(1).min(n);
-        let hi = end.min(n);
-        if lo < hi {
-            return (text[index[lo]..index[hi]].into(), hi - lo);
-        }
-        return (String::new(), 0);
-    }
-    let mut selected = String::new();
-    let mut count = 0;
-    for line in text
-        .split_inclusive('\n')
-        .skip(start.saturating_sub(1))
-        .take(end.saturating_sub(start).saturating_add(1))
-    {
-        selected.push_str(line);
-        count += 1;
-    }
-    (selected, count)
-}
-
-/// Path, modification time and size of an index left in place.
-pub(crate) type KeptIndex = (std::path::PathBuf, SystemTime, u64);
-
-/// Remove aged indexes and indexes whose original blob is gone; the items
-/// and bytes removed, and the path, modification time and size of each
-/// index kept.
-pub(crate) fn clean(
-    root: &Path,
-    now: SystemTime,
-    age: Duration,
-) -> anyhow::Result<(usize, u64, Vec<KeptIndex>)> {
+/// Remove the offset indexes of earlier versions, and aged temporaries of
+/// their writes; the items and bytes removed. Anything else in the directory
+/// is someone else's and stays.
+pub(crate) fn clean(root: &Path, now: SystemTime, age: Duration) -> anyhow::Result<(usize, u64)> {
     let folder = root.join(DIRECTORY);
-    let (mut items, mut bytes, mut kept) = (0, 0, Vec::new());
+    let (mut items, mut bytes) = (0, 0);
     if !fs::symlink_metadata(&folder).is_ok_and(|m| m.is_dir() && !m.file_type().is_symlink()) {
-        return Ok((items, bytes, kept));
+        return Ok((items, bytes));
     }
     for entry in fs::read_dir(folder)? {
         let entry = entry?;
@@ -171,24 +50,35 @@ pub(crate) fn clean(
         if !entry.file_type()?.is_file() {
             continue;
         }
-        let metadata = entry.metadata()?;
-        if !crate::store::content_hash_name(name) {
-            if let Some(reaped) = crate::store::reap_temporary(&entry, name, now, age)? {
-                items += 1;
-                bytes += reaped;
-            }
-            continue;
-        }
-        let modified = metadata.modified()?;
-        if !root.join("blobs").join(name).exists()
-            || now.duration_since(modified).unwrap_or_default() >= age
-        {
+        if crate::store::content_hash_name(name) {
+            let size = entry.metadata()?.len();
             fs::remove_file(entry.path())?;
             items += 1;
-            bytes += metadata.len();
-        } else {
-            kept.push((entry.path(), modified, metadata.len()));
+            bytes += size;
+        } else if let Some(reaped) = crate::store::reap_temporary(&entry, name, now, age)? {
+            items += 1;
+            bytes += reaped;
         }
     }
-    Ok((items, bytes, kept))
+    Ok((items, bytes))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::slice;
+
+    #[test]
+    fn ranges_are_exact_with_and_without_a_final_newline() {
+        let text = "a\r\nbé\r\nc\n";
+        assert_eq!(slice(text, 1, 1), ("a\r\n".into(), 1));
+        assert_eq!(slice(text, 2, 2), ("bé\r\n".into(), 1));
+        assert_eq!(slice(text, 2, 3), ("bé\r\nc\n".into(), 2));
+        assert_eq!(slice(text, 1, usize::MAX), (text.into(), 3));
+        assert_eq!(slice(text, 3, 9), ("c\n".into(), 1));
+        assert_eq!(slice(text, 4, 9), (String::new(), 0));
+        assert_eq!(slice("x\ny", 2, 2), ("y".into(), 1));
+        assert_eq!(slice("x\ny", 1, 5), ("x\ny".into(), 2));
+        assert_eq!(slice("\n\n", 2, 2), ("\n".into(), 1));
+        assert_eq!(slice("", 1, 1), (String::new(), 0));
+    }
 }

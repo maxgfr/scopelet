@@ -646,16 +646,10 @@ impl Store {
                 report.reaped(reap_temporary(&item, &name, now, age)?);
             }
         }
-        let (items, bytes, indexes) = crate::line_index::clean(&self.root, now, age)?;
+        // The offset indexes earlier versions cached are no longer read.
+        let (items, bytes) = crate::line_index::clean(&self.root, now, age)?;
         report.removed_items += items;
         report.removed_bytes += bytes;
-        // Offset indexes are disposable: evicted like unreferenced originals.
-        kept.extend(indexes.into_iter().map(|(path, modified, bytes)| Kept {
-            path,
-            modified,
-            bytes,
-            blobs: Vec::new(),
-        }));
         // Items that cannot be evicted (unreadable artifacts and the originals
         // they may name) still count against the limit.
         let mut total: u64 = report.kept_bytes + kept.iter().map(|k| k.bytes).sum::<u64>();
