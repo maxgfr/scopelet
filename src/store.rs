@@ -185,12 +185,16 @@ pub(crate) fn reap_temporary(
 }
 
 pub fn read_bounded(path: &Path, limit: usize) -> Result<Vec<u8>> {
+    // Checked before opening: opening a FIFO blocks until something writes
+    // to it, and nothing short of SIGKILL interrupts that. The opened file is
+    // checked again, since the path can be replaced in between.
+    let regular = |metadata: fs::Metadata| -> Result<()> {
+        ensure!(metadata.is_file(), "not a regular file: {}", path.display());
+        Ok(())
+    };
+    regular(fs::metadata(path).with_context(|| format!("read {}", path.display()))?)?;
     let file = fs::File::open(path).with_context(|| format!("read {}", path.display()))?;
-    ensure!(
-        file.metadata()?.is_file(),
-        "not a regular file: {}",
-        path.display()
-    );
+    regular(file.metadata()?)?;
     let mut bytes = Vec::new();
     file.take(limit as u64 + 1).read_to_end(&mut bytes)?;
     ensure!(

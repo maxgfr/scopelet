@@ -204,6 +204,38 @@ fn empty_results_are_complete_with_a_saved_artifact() {
     assert!(v["artifact"].as_str().unwrap().starts_with("artifact:"));
 }
 
+/// Opening a FIFO for reading blocks until something writes to it, and the
+/// termination handlers restart the call: a source that is not a regular
+/// file must be refused before it is opened, not after.
+#[cfg(unix)]
+#[test]
+fn a_fifo_source_is_refused_instead_of_blocking() {
+    let dir = tempfile::tempdir().unwrap();
+    let fifo = dir.path().join("pipe");
+    let made = std::process::Command::new("mkfifo")
+        .arg(&fifo)
+        .status()
+        .unwrap();
+    assert!(made.success());
+    for extra in [&["--format", "jsonl", "--count"][..], &[][..]] {
+        let output = cli()
+            .args([
+                "--cache-dir",
+                dir.path().join("cache").to_str().unwrap(),
+                "query",
+                "--file",
+                fifo.to_str().unwrap(),
+            ])
+            .args(extra)
+            .timeout(std::time::Duration::from_secs(10))
+            .output()
+            .unwrap();
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(2), "{extra:?}: {output:?}");
+        assert!(stderr.contains("not a regular file"), "{extra:?}: {stderr}");
+    }
+}
+
 #[test]
 fn unknown_request_fields_fail_instead_of_being_ignored() {
     let dir = tempfile::tempdir().unwrap();
