@@ -490,6 +490,10 @@ fn options_that_write_run_or_wait_are_never_recognized() {
         "tail --ret build.log",
         "rg --hostname-bin=/tmp/evil needle",
         "rg --hostname-bin /tmp/evil needle",
+        // ripgrep starts a decompressor for each compressed file.
+        "rg -z needle logs",
+        "rg -iz needle logs",
+        "rg --search-zip needle logs",
     ] {
         assert_eq!(profile(&args(command)), None, "{command}");
     }
@@ -504,6 +508,7 @@ fn options_that_write_run_or_wait_are_never_recognized() {
         "sort --compress-prog=/tmp/evil",
         "tail --fol",
         "rg --hostname-bin=/tmp/evil needle",
+        "rg -z needle",
     ] {
         assert_eq!(
             scopelet::commands::filter(&args(command)),
@@ -512,6 +517,10 @@ fn options_that_write_run_or_wait_are_never_recognized() {
         );
     }
     assert!(!scopelet::commands::safe_env("PYTHONWARNINGS"));
+    // A foreign target makes `go test` run `go_$GOOS_$GOARCH_exec`.
+    assert!(!scopelet::commands::safe_env("GOOS"));
+    assert!(!scopelet::commands::safe_env("GOARCH"));
+    assert!(scopelet::commands::safe_env("CGO_ENABLED"));
     // Still recognized: the ordinary forms.
     for command in [
         "git -C repo log -p",
@@ -523,6 +532,8 @@ fn options_that_write_run_or_wait_are_never_recognized() {
         "git diff --output-indicator-new=+",
         "git log -p --oneline",
         "rg --pretty needle",
+        // For grep, `-z` is a line terminator, not a decompressor.
+        "grep -z needle file",
     ] {
         assert!(profile(&args(command)).is_some(), "{command}");
     }

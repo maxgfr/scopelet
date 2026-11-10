@@ -243,7 +243,8 @@ only read-only filters are allowed (`grep`, `rg`, `sort` without `-o`, `uniq`,
 `cut`, `tr`, `nl`, `cat`, `jq`, `sed -n` with a print-only script, `head`,
 `tail` without `-f`, `wc`), and a pipeline that already ends in `head`, `tail`,
 `wc` or `grep -c`/`-l`/`-q` is left alone. Prefixes are limited to display,
-locale and test variables, never one that loads or runs a program. A single
+locale and test variables, never one that loads or runs a program (`GOOS`
+and `GOARCH` do: a foreign target runs `go_$GOOS_$GOARCH_exec`). A single
 command is executed from its argv; an AND-list of at most eight plain commands
 is rebuilt from quoted argv in `/bin/sh`; anything else runs as the original
 string through `/bin/sh -c`, so short-circuiting, pipes and the exit status
@@ -338,8 +339,8 @@ subcommand other than `--no-pager` or `-C DIR` (`-c` can name a program) and
 none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
 `--textconv`, `--output`, `grep -O`; an abbreviated long option, such as
 `--out=F` or `tail --fol`, counts as every option it could shorten, and
-`rg --pre`/`--hostname-bin` run a program too); `gh pr diff` with the Git
-profile;
+`rg --pre`/`--hostname-bin`/`-z` run a program too); `gh pr diff` with the
+Git profile;
 logs (`docker
 logs`/`kubectl logs` without `-f`, `jq` on a file, `gh run view` of a named
 run or job with `--log` or `--log-failed`; without a run it opens a picker,

@@ -734,14 +734,17 @@ fn long_option(arg: &str, names: &[&str]) -> bool {
 }
 
 /// ripgrep options that run another program: a preprocessor for each file,
-/// or a command asked for the host name of hyperlinks.
+/// a command asked for the host name of hyperlinks, or the decompressors
+/// `-z`/`--search-zip` starts (`gzip`, `xz`, ... from the PATH). For `grep`,
+/// `-z` only changes the line terminator.
 fn rg_runs_program(args: &[String]) -> bool {
     args.iter().any(|a| {
         ["--pre", "--hostname-bin"].iter().any(|option| {
             a.strip_prefix(option)
                 .is_some_and(|rest| rest.is_empty() || rest.starts_with('='))
         })
-    })
+    }) || (args.first().is_some_and(|program| name(program) == "rg")
+        && has_flag(args, &['z'], &["search-zip"]))
 }
 
 /// Whether a short-flag cluster (`-il`) or a long flag names one of these.
@@ -837,6 +840,8 @@ pub fn filter(args: &[String]) -> Option<Filter> {
 /// display, locale and test knobs. Variables that can load or run another
 /// program (`LD_PRELOAD`, `GIT_EXTERNAL_DIFF`, `PAGER`, `RUSTC_WRAPPER`,
 /// `NODE_OPTIONS`, `PYTEST_ADDOPTS`, `GOFLAGS`, ...) leave the command native.
+/// `GOOS` and `GOARCH` are among them: for a foreign target `go test` and
+/// `go run` execute `go_$GOOS_$GOARCH_exec` from the PATH.
 pub fn safe_env(name: &str) -> bool {
     matches!(
         name,
@@ -857,8 +862,6 @@ pub fn safe_env(name: &str) -> bool {
             | "PYTHONDONTWRITEBYTECODE"
             | "PYTHONHASHSEED"
             | "NODE_ENV"
-            | "GOOS"
-            | "GOARCH"
             | "CGO_ENABLED"
     ) || name.starts_with("LC_")
 }
