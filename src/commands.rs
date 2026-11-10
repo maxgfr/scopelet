@@ -277,8 +277,12 @@ pub fn invokes_wrapper(command: &str) -> bool {
 /// to finish on their own and report an outcome.
 fn known_tool(args: &[String]) -> bool {
     let second = args.get(1).map(String::as_str).unwrap_or("");
+    let has = |flag: &str| args.iter().any(|a| a == flag);
     match args.first().map(|a| name(a)) {
-        Some("jest" | "tsc" | "eslint" | "pytest" | "mypy" | "ruff") => true,
+        Some("jest" | "eslint" | "mypy" | "ruff") => true,
+        // `-w` watches (for jest it is a worker count).
+        Some("tsc") => !has("-w"),
+        Some("pytest") => !pytest_loops(args),
         // `uv run python -m pytest`: the module, as for a bare `python`.
         Some("python" | "python3") => {
             second == "-m"
@@ -286,12 +290,29 @@ fn known_tool(args: &[String]) -> bool {
                     args.get(2).map(String::as_str),
                     Some("pytest" | "unittest" | "mypy")
                 )
+                && !pytest_loops(args)
         }
         Some("vitest") => second == "run",
-        Some("prettier") => args.iter().any(|a| a == "--check"),
-        Some("playwright") => second == "test",
+        Some("prettier") => has("--check"),
+        // `--ui` and `--debug` open a window and wait for it.
+        Some("playwright") => second == "test" && !has("--ui") && !has("--debug"),
         _ => false,
     }
+}
+
+/// pytest's `-f` (`--looponfail`) reruns failing tests until interrupted.
+fn pytest_loops(args: &[String]) -> bool {
+    args.iter().any(|a| a == "-f")
+}
+
+/// A watch or loop mode under any of its spellings: `--watch`, `--watch=…`,
+/// `--watchAll`, `--watch-path`, Gradle's `--continuous`, pytest's
+/// `--looponfail`. The command never ends on its own.
+fn watches(arg: &str) -> bool {
+    matches!(arg, "--watch" | "--continuous" | "--looponfail")
+        || ["--watch=", "--watchAll", "--watch-path"]
+            .iter()
+            .any(|prefix| arg.starts_with(prefix))
 }
 
 /// The command `uv run` runs: its arguments after uv's own options
@@ -336,9 +357,9 @@ pub fn profile(args: &[String]) -> Option<Profile> {
     let second = args.get(1).map(String::as_str).unwrap_or("");
     let has = |flag: &str| args.iter().any(|a| a == flag);
     if is_wrapper(args)
-        || args.iter().any(|a| {
-            matches!(a.as_str(), "--watch" | "--pdb" | "--interactive") || a.starts_with("--watch=")
-        })
+        || args
+            .iter()
+            .any(|a| matches!(a.as_str(), "--pdb" | "--interactive") || watches(a))
     {
         return None;
     }
@@ -366,15 +387,16 @@ pub fn profile(args: &[String]) -> Option<Profile> {
                     .is_some_and(|a| a == "install")
                     .then_some(Profile::Install)
             } else if second == "-m" {
-                matches!(
+                (matches!(
                     args.get(2).map(String::as_str),
                     Some("pytest" | "unittest" | "mypy")
-                )
+                ) && !pytest_loops(args))
                 .then_some(Profile::Tests)
             } else {
                 second.ends_with(".py").then_some(Profile::Tests)
             }
         }
+        "pytest" if pytest_loops(args) => None,
         "pytest" | "mypy" => tests,
         "ruff" if matches!(second, "check" | "format") && (second == "check" || has("--check")) => {
             tests
@@ -407,6 +429,9 @@ pub fn profile(args: &[String]) -> Option<Profile> {
         "bun" if matches!(second, "install" | "i" | "add") => install,
         "make" if matches!(second, "test" | "check" | "build" | "lint") => tests,
         "go" if matches!(second, "test" | "build" | "vet") => tests,
+        // Gradle's `-t` is `--continuous`; `dotnet watch` reruns on changes.
+        "gradle" | "gradlew" if has("-t") => None,
+        "dotnet" if second == "watch" => None,
         "gradle" | "gradlew" | "mvn" | "mvnw" | "dotnet"
             if args[1..]
                 .iter()

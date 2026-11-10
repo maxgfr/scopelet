@@ -361,7 +361,10 @@ first recognized command (`for f in a b; do cat "$f"; done` reads files), where 
 and `nl` with its numbering options also read files (`sed -n 1,80p a; sed -n
 1,80p b`, `cat a b`, `nl -ba f | sed -n 40,90p`). Codex's grammar and what it
 wraps are unchanged. The shell grammar and permission envelope remain in
-force. Watch/debug/interactive forms and unrecognized syntax stay
+force. Watch/debug/interactive forms (`--watch`, `--watchAll`, `--watch-path`,
+`tsc -w`, Gradle's `--continuous`/`-t`, pytest's `-f`/`--looponfail`, `dotnet
+watch`, `playwright test --ui`/`--debug`, `--pdb`, `--interactive`) and
+unrecognized syntax stay
 native. Every eligible command executes once; stdout/stderr and process status
 remain independent of presentation.
 
