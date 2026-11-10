@@ -941,6 +941,69 @@ fn an_upgrade_without_reinstall_is_reported() {
     assert!(direct.get("systemMessage").is_none(), "{direct}");
 }
 
+/// A relative PATH entry (`.`, an empty one) resolves against the hook's
+/// working directory, which is the project: a `scopelet` file a repository
+/// ships must never be run to ask its version.
+#[cfg(unix)]
+#[test]
+fn a_relative_path_entry_never_runs_a_project_binary() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    let project = dir.path().join("project");
+    fs::create_dir(&project).unwrap();
+    let marker = dir.path().join("ran");
+    let planted = project.join("scopelet");
+    fs::write(
+        &planted,
+        format!(
+            "#!/bin/sh\n/usr/bin/touch '{}'\necho scopelet 99.0.0\n",
+            marker.display()
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(&planted, fs::Permissions::from_mode(0o755)).unwrap();
+    let pinned = dir.path().join("config/bin/scopelet");
+    for path in [".", "", ":", "bin:."] {
+        let out = std::process::Command::new(&pinned)
+            .current_dir(&project)
+            .env("SCOPELET_CONFIG_DIR", dir.path().join("config"))
+            .env("SCOPELET_CACHE_DIR", dir.path().join("cache"))
+            .env("PATH", path)
+            .args(["hook", "claude"])
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .and_then(|mut child| {
+                use std::io::Write;
+                child.stdin.take().unwrap().write_all(
+                    br#"{"hook_event_name":"SessionStart","session_id":"r1","source":"startup"}"#,
+                )?;
+                child.wait_with_output()
+            })
+            .unwrap();
+        assert!(out.status.success(), "{out:?}");
+        let out: Value = serde_json::from_slice(&out.stdout).unwrap();
+        assert!(out.get("systemMessage").is_none(), "PATH={path:?}: {out}");
+        assert!(!marker.exists(), "PATH={path:?} ran the project's file");
+        let doctor = cli(dir.path())
+            .current_dir(&project)
+            .env("PATH", path)
+            .arg("doctor")
+            .output()
+            .unwrap();
+        let status: Value = serde_json::from_slice(&doctor.stdout).unwrap();
+        assert!(
+            status["integration"]["path_binary"].is_null(),
+            "PATH={path:?}: {status}"
+        );
+        assert!(!marker.exists(), "PATH={path:?}: doctor ran the file");
+    }
+}
+
 #[test]
 fn the_event_journal_records_decisions_and_can_be_turned_off() {
     let dir = tempfile::tempdir().unwrap();

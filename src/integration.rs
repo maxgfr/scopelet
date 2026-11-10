@@ -422,8 +422,11 @@ fn version_of(program: &Path, seconds: u64) -> Option<String> {
 }
 
 /// The first `scopelet` on the PATH, unless it is the pinned copy itself.
+/// Relative entries (`.`, an empty one) are skipped: they resolve against the
+/// working directory, a project whose files are never run to ask a version.
 fn path_binary(pinned: &Path) -> Option<PathBuf> {
     let found = std::env::split_paths(&std::env::var_os("PATH")?)
+        .filter(|dir| dir.is_absolute())
         .map(|dir| dir.join("scopelet"))
         .find(|path| path.is_file())?;
     (fs::canonicalize(&found).ok()? != fs::canonicalize(pinned).ok()?).then_some(found)
