@@ -328,7 +328,15 @@ fn clean_tolerates_foreign_files_and_reaps_stale_temporaries() {
 #[test]
 fn clean_preserves_unrecognized_temporary_names_in_both_directories() {
     let (_dir, store) = test_store();
-    let names = [".tmp-user-notes", ".tmpABCDEF", ".scopelet-write-notes"];
+    // The last one has the length of a content hash but not its lowercase
+    // spelling: the store never wrote it, so it is not a cache item either.
+    let capitals = "A".repeat(64);
+    let names = [
+        ".tmp-user-notes",
+        ".tmpABCDEF",
+        ".scopelet-write-notes",
+        capitals.as_str(),
+    ];
     for kind in ["blobs", "artifacts"] {
         for name in names {
             std::fs::write(store.root.join(kind).join(name), b"foreign data").unwrap();

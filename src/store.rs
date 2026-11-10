@@ -159,9 +159,10 @@ pub fn digest(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 
-/// Cache items are named by their content hash; anything else is not ours to read.
-fn content_hash_name(name: &str) -> bool {
-    name.len() == 64 && name.bytes().all(|c| c.is_ascii_hexdigit())
+/// Cache items are named by their content hash, in the lowercase hex
+/// `digest` writes; anything else is not ours to read or remove.
+pub(crate) fn content_hash_name(name: &str) -> bool {
+    name.len() == 64 && name.bytes().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
 }
 
 /// Discard an aged leftover from a write that was killed before it persisted;

@@ -172,7 +172,7 @@ pub(crate) fn clean(
             continue;
         }
         let metadata = entry.metadata()?;
-        if name.len() != 64 || !name.bytes().all(|c| c.is_ascii_hexdigit()) {
+        if !crate::store::content_hash_name(name) {
             if let Some(reaped) = crate::store::reap_temporary(&entry, name, now, age)? {
                 items += 1;
                 bytes += reaped;

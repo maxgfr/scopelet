@@ -65,6 +65,19 @@ fn references_resolve_from_hashes_prefixes_and_last() {
         artifact
     );
     assert_eq!(store.resolve(" last\n").unwrap(), artifact);
+    // Capitals name the same item, in a full reference as in a prefix: the
+    // store is addressed in lowercase whatever was typed.
+    let capitals = hash.to_ascii_uppercase();
+    assert_eq!(store.resolve(&capitals).unwrap(), artifact);
+    assert_eq!(
+        store.resolve(&format!("artifact:{capitals}")).unwrap(),
+        artifact
+    );
+    let manifest = cli(
+        dir.path(),
+        &["expand", &format!("artifact:{capitals}"), "--manifest"],
+    );
+    assert!(manifest.status.success(), "{manifest:?}");
 
     // A full hash names one item even when a blob has the same bytes.
     let twin = store.put("blob", &store.get(&artifact).unwrap()).unwrap();
