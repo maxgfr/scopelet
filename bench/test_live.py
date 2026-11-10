@@ -1,9 +1,11 @@
 import gzip
+import io
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -384,8 +386,11 @@ class FixtureTests(unittest.TestCase):
 
 class SessionTests(unittest.TestCase):
     def test_a_session_keeps_its_raw_transcript_and_never_overwrites_it(self):
+        billed = []
+
         def fake(args, **kwargs):
             if args[0] == 'claude':
+                billed.append(args)
                 return subprocess.CompletedProcess(args, 0, STREAM, '')
             return subprocess.run(args, **kwargs)
         spec = live.load_tasks()['find_receipt']
@@ -398,6 +403,19 @@ class SessionTests(unittest.TestCase):
                 self.assertEqual(f.read(), STREAM)
             with self.assertRaises(FileExistsError):
                 live.session(live.parse_arm('off'), 'find_receipt', spec, 'haiku', 60, False, path)
+            # The refusal comes before the billed session, not after it.
+            self.assertEqual(len(billed), 1)
+
+    def test_a_campaign_refuses_existing_transcripts_before_any_session(self):
+        with tempfile.TemporaryDirectory() as temp:
+            taken = live.transcript_path(Path(temp), 1, 'find_receipt', 'off')
+            taken.write_bytes(b'')
+            with patch.object(live.subprocess, 'run', side_effect=AssertionError('a session ran')), \
+                    patch.object(sys, 'stderr', io.StringIO()) as stderr, self.assertRaises(SystemExit):
+                live.main(['--live', '--arm', 'off', '--task', 'find_receipt', '--runs', '2',
+                           '--transcripts', temp, '--out', str(Path(temp) / 'report.json')])
+            self.assertIn(taken.name, stderr.getvalue())
+            self.assertFalse((Path(temp) / 'report.json').exists())
 
     def test_a_timed_out_session_keeps_what_its_stream_showed(self):
         # The stream stops before its result: usage and cost are unknown, but

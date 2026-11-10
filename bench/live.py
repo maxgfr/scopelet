@@ -541,7 +541,13 @@ def transcript_path(directory, round_, task, arm):
 
 
 def session(arm, task, spec, model, timeout, isolate_home, transcript=None):
-    """One session; its raw stream-json goes gzipped to `transcript` if given."""
+    """One session; its raw stream-json goes gzipped to `transcript` if given.
+
+    A transcript is never overwritten, and that is refused before the session
+    is billed, not when its stream is written.
+    """
+    if transcript is not None and transcript.exists():
+        raise FileExistsError(transcript)
     with tempfile.TemporaryDirectory(prefix=f'scopelet-live-{arm["name"]}-') as temp:
         scratch = Path(temp)
         workdir = scratch / 'repo'
@@ -743,6 +749,13 @@ def main(argv=None):
     if out.exists():
         p.error(f'{out} exists; completed evidence is never overwritten')
     if args.transcripts:
+        # Every transcript this campaign will write, checked before round 0: a
+        # name already taken would otherwise stop it after sessions were paid.
+        taken = [path.name for round_ in range(args.runs) for task in selected for name in names
+                 if (path := transcript_path(args.transcripts, round_, task, name)).exists()]
+        if taken:
+            p.error(f'{args.transcripts} already holds {", ".join(taken[:3])}'
+                    f'{" and others" if len(taken) > 3 else ""}; transcripts are never overwritten')
         args.transcripts.mkdir(parents=True, exist_ok=True)
     report = {'kind': 'live Claude Code sessions; tokens and cost from the session result, not estimates',
               'model': args.model, 'runs': args.runs, 'tasks': selected, 'baseline': args.baseline,
