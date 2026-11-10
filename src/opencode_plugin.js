@@ -79,12 +79,20 @@ const ScopeletPlugin = {
   async setup(ctx) {
     // The response-style preference (`scopelet mode`) rides the system prompt,
     // where Claude Code and Codex receive it as hook context.
+    // This hook runs at every model step and its text only depends on the
+    // mode file: the binary is asked again when that file changes, not each
+    // time. A failed call is not kept, so the next step asks again.
+    let guidance = { mode: null, system: "" };
     await ctx.session.hook("context", async (event) => {
       if (!event || !Array.isArray(event.system)) return;
-      const result = await hook({ hook_event_name: "SystemPrompt", session_id: event.sessionID });
-      if (typeof result.system === "string" && result.system) {
-        event.system.push({ type: "text", text: result.system });
+      const mode = await readFile(join(CONFIG, "mode.json"), "utf8").catch(() => "");
+      if (mode.trim() === '"off"') return;
+      if (guidance.mode !== mode) {
+        const result = await hook({ hook_event_name: "SystemPrompt", session_id: event.sessionID });
+        if (typeof result.system !== "string" || !result.system) return;
+        guidance = { mode, system: result.system };
       }
+      event.system.push({ type: "text", text: guidance.system });
     });
     // The shell tool is `shell`, its `result.output` is a structured object, and
     // the model reads `result.content`: the text parts are what gets compressed.

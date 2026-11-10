@@ -230,7 +230,9 @@ a shell result, the plugin compresses the whole output OpenCode saved, read
 only as a regular file inside OpenCode's own shell output directory for the
 project and within the input limit. Any plugin or binary failure leaves
 the native output untouched, and the mode text reaches the model through the
-system prompt on every step rather than through per-session hook context.
+system prompt on every step rather than through per-session hook context;
+the plugin asks the binary for it when the mode file changes, not at each
+step.
 
 A Codex command is parsed in a small POSIX subset (`src/shell.rs`) that reads
 the same in `sh`, `bash` and `zsh`: words may be single quoted, double quoted

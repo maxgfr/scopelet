@@ -852,7 +852,27 @@ for (const [name, text] of Object.entries(texts)) {{
   await registered["tool.execute.after"](event);
   truncated[name] = event.result;
 }}
-console.log(JSON.stringify({{ v2: {{ compressed: v2Output.result, small: v2Small.result, bash: v2Bash.result, system: v2System, truncated }} }}));
+// The guidance only depends on the mode file. A second step gets it without
+// the binary being asked, which is moved away to prove it; a changed mode
+// asks again, a failed call is not kept, and mode off adds nothing.
+const {{ renameSync, writeFileSync }} = await import("node:fs");
+const binary = process.env.SMOKE_CONFIG + "/bin/scopelet";
+const modeFile = process.env.SMOKE_CONFIG + "/mode.json";
+const step = async () => {{
+  const system = [];
+  await registered["session.context"]({{ sessionID: "s1", system }});
+  return system;
+}};
+renameSync(binary, binary + ".away");
+const steps = {{ cached: await step() }};
+writeFileSync(modeFile, '"caveman"');
+steps.unreachable = await step();
+renameSync(binary + ".away", binary);
+steps.changed = await step();
+writeFileSync(modeFile, '"off"');
+steps.off = await step();
+writeFileSync(modeFile, '"default"');
+console.log(JSON.stringify({{ v2: {{ compressed: v2Output.result, small: v2Small.result, bash: v2Bash.result, system: v2System, truncated, steps }} }}));
 "#,
         serde_json::to_string(&plugin).unwrap(),
         texts
@@ -863,6 +883,7 @@ console.log(JSON.stringify({{ v2: {{ compressed: v2Output.result, small: v2Small
         .arg(&entry)
         .env("SCOPELET_CACHE_DIR", dir.path().join("cache"))
         .env("XDG_DATA_HOME", dir.path().join("data"))
+        .env("SMOKE_CONFIG", dir.path().join("config"))
         .output()
         .unwrap();
     assert!(
@@ -871,6 +892,16 @@ console.log(JSON.stringify({{ v2: {{ compressed: v2Output.result, small: v2Small
         String::from_utf8_lossy(&out.stderr)
     );
     let result: Value = serde_json::from_slice(&out.stdout).unwrap();
+    let steps = &result["v2"]["steps"];
+    assert_eq!(
+        steps["cached"][0]["text"], result["v2"]["system"]["system"][1]["text"],
+        "{steps}"
+    );
+    assert_eq!(steps["unreachable"], json!([]), "{steps}");
+    let changed = steps["changed"][0]["text"].as_str().unwrap();
+    assert_ne!(changed, steps["cached"][0]["text"], "{steps}");
+    assert!(changed.contains("Scopelet"), "{steps}");
+    assert_eq!(steps["off"], json!([]), "{steps}");
     // The plugin compresses the text parts the model reads.
     let v2 = &result["v2"]["compressed"];
     assert!(
