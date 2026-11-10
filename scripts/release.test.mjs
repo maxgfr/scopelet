@@ -58,7 +58,37 @@ test('version synchronization changes release files without touching dependency 
     const after=readFileSync(join(root,'Cargo.lock'),'utf8');
     assert.equal(after.replace(/(name = "scopelet"\nversion = ")[^"]+/, '$1OLD'),before.replace(/(name = "scopelet"\nversion = ")[^"]+/, '$1OLD'));
     assert.match(readFileSync(join(root,'skills/scopelet/scripts/scopelet.mjs'),'utf8'),/const version = '9.8.7'/);
+    const setup=readFileSync(join(root,'skills/scopelet/references/setup.md'),'utf8');
+    assert.match(setup,/installs Scopelet \*\*9\.8\.7\*\*/);
+    assert.match(setup,/--tag v9\.8\.7 /);
+    assert.match(readFileSync(join(root,'README.md'),'utf8'),/--tag v9\.8\.7 /);
+    // Running it again for the same version changes nothing and still passes.
+    execFileSync('python3',[join(root,'scripts/prepare_release.py'),'9.8.7']);
   } finally { rmSync(root,{recursive:true,force:true}); }
+});
+test('version synchronization fails when a documented version would be left behind', async () => {
+  const { writeFileSync } = await import('node:fs');
+  const drifted=[
+    ['README.md', text=>text.replace('--tag v','--tag=v')],
+    ['skills/scopelet/references/setup.md', text=>text.replace(/installs Scopelet \*\*([^*]+)\*\*/,'installs Scopelet $1')],
+    ['skills/scopelet/references/setup.md', text=>text.replace('--tag v','--branch v')],
+  ];
+  for (const [name,drift] of drifted) {
+    const root=mkdtempSync(join(tmpdir(),'scopelet-release-'));
+    try {
+      for (const path of ['Cargo.toml','Cargo.lock','README.md','skills','scripts']) cpSync(path,join(root,path),{recursive:true});
+      const original=readFileSync(join(root,name),'utf8');
+      const changed=drift(original);
+      assert.notEqual(changed,original,`${name}: the drift must apply`);
+      writeFileSync(join(root,name),changed);
+      const cargo=readFileSync(join(root,'Cargo.toml'),'utf8');
+      assert.throws(()=>execFileSync('python3',[join(root,'scripts/prepare_release.py'),'9.8.7'],{stdio:'pipe'}),
+        error=>error.stderr.toString().includes(name),`${name}: a stale version must fail the release`);
+      // Nothing is half-written: every file keeps the version it had.
+      assert.equal(readFileSync(join(root,'Cargo.toml'),'utf8'),cargo);
+      assert.equal(readFileSync(join(root,name),'utf8'),changed);
+    } finally { rmSync(root,{recursive:true,force:true}); }
+  }
 });
 
 test('release assets reject missing or mismatched matrix versions', async () => {

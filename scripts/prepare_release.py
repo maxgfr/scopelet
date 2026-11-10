@@ -19,9 +19,18 @@ def prepare(root, version):
         text=path.read_text()
         if text.count(before)!=1:raise ValueError(f'ambiguous version in {path}')
         updates[path]=text.replace(before,after,1)
-    for name in ('README.md','skills/scopelet/references/setup.md'):
-        path=root/name;text=path.read_text().replace(f'--tag v{old}',f'--tag v{version}')
+    # The documented versions are prose, so their wording can drift: what is
+    # checked is that each file names the new version afterwards. The README
+    # may already carry it (the publish job takes the one the build bumped).
+    documented={
+        'README.md':(f'--tag v{version} ',),
+        'skills/scopelet/references/setup.md':(f'--tag v{version} ',f'installs Scopelet **{version}**'),
+    }
+    for name,expected in documented.items():
+        path=root/name;text=path.read_text().replace(f'--tag v{old} ',f'--tag v{version} ')
         text=text.replace(f'installs Scopelet **{old}**',f'installs Scopelet **{version}**')
+        for wanted in expected:
+            if wanted not in text:raise ValueError(f'{name} does not document {wanted.strip()!r}; it would keep an old version')
         updates[path]=text
     for path,text in updates.items():path.write_text(text)
 
