@@ -3,8 +3,10 @@
 Scope: the whole repository at `a4c0ccc` (release 1.2.5): the Rust core and
 CLI (`src/`, 13,000 lines), its 20 integration test files, the Node launcher,
 the release scripts and the benchmark tooling. 30 commits follow it on `main`,
-one topic each. Nothing in `.github/workflows/`, `.releaserc.cjs`,
-`package.json`, the lockfiles or `bench/results/` was changed.
+one topic each. Nothing in `.releaserc.cjs`, `package.json`, the lockfiles or
+`bench/results/` was changed. The workflows were left alone by the audit
+itself; one line in each was changed afterwards, on the maintainer's decision
+(see "Release pipeline").
 
 ## Summary
 
@@ -42,6 +44,23 @@ At the tip the same commands pass with 252 Rust tests, 88 Python tests and 14
 Node tests, as do `scripts/check_install.py`, `scripts/check_adapters.py`
 (codeindex 2.31.16 and webindex 1.37.0, newer than the versions CI pins) and
 the content probe that the release job runs.
+
+## Release pipeline
+
+Pushing the audit showed that no release could be published any more, whatever
+the commit: GitHub retired the `macos-14` runner image in November 2026
+([actions/runner-images#13518](https://github.com/actions/runner-images/issues/13518)).
+The `test (macos-14)` job of the Release run was cancelled within a second,
+before any step, with "The configuration 'macos-14-arm64-us-default' is not
+supported", and the version, build and publish jobs were skipped. The Ubuntu
+job, which runs the whole suite, and the MSRV job passed on the audit's
+commits.
+
+`ci.yml` and `release.yml` asked for `macos-14` (the test matrix, and the
+`aarch64-apple-darwin` build that also measures the README speed table). Both
+now ask for `macos-15`, next to the `macos-15-intel` leg that was already
+there. The published speed figures will come from that image from the next
+release on.
 
 ## Bugs fixed
 
