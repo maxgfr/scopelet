@@ -109,6 +109,40 @@ fn optimized_queries_equal_materialized_datasets() {
             serde_json::to_vec(&new).unwrap()
         );
     }
+    // A key that is itself spelled like a pointer resolves as a literal key
+    // on both paths: the streamed aggregate must not fail, or count nothing,
+    // where the materialized pipeline answers.
+    let literal = dir.path().join("literal.jsonl");
+    fs::write(
+        &literal,
+        "{\"/state\":\"bad\"}\n{\"/state\":\"ok\"}\n{\"/state\":\"bad\"}\n",
+    )
+    .unwrap();
+    for (operations, expected) in [
+        (
+            json!([{"op":"group","pointer":"/state"}]),
+            json!([{"key":"bad","count":2},{"key":"ok","count":1}]),
+        ),
+        (
+            json!([{"op":"filter","pointer":"/state","equals":"bad"},{"op":"count"}]),
+            json!([{"count":2}]),
+        ),
+    ] {
+        let request: Request = serde_json::from_value(json!({"version":1,"source":{"type":"file","path":literal,"format":"jsonl"},"operations":operations})).unwrap();
+        let mut old = sources::load(&request.source, &store, cancel()).unwrap();
+        pipeline::apply(&mut old, &request.operations).unwrap();
+        let new = query::execute(&request, &store, cancel()).unwrap();
+        assert_eq!(
+            serde_json::to_vec(&old).unwrap(),
+            serde_json::to_vec(&new).unwrap()
+        );
+        let values: Vec<_> = new
+            .records
+            .iter()
+            .map(|r| r.value.clone().unwrap())
+            .collect();
+        assert_eq!(json!(values), expected);
+    }
 }
 
 #[test]

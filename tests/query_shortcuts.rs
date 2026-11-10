@@ -145,6 +145,35 @@ fn project_then_group_uses_the_projected_key() {
     assert_eq!(keys(&view)[0], ("b".to_owned(), 3));
 }
 
+/// After `project`, records are keyed by the pointers themselves: a filter
+/// on a projected pointer must find that key, as `group` does, instead of
+/// silently matching nothing.
+#[test]
+fn project_then_filter_uses_the_projected_key() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = events(dir.path());
+    let spec = dir.path().join("spec.json");
+    let count = |equals: Value| -> Value {
+        let request = json!({"version": 1,
+            "source": {"type": "file", "path": file, "format": "jsonl"},
+            "operations": [
+                {"op": "project", "pointers": ["/suite"]},
+                {"op": "filter", "pointer": "/suite", "equals": equals},
+                {"op": "count"}]});
+        std::fs::write(&spec, request.to_string()).unwrap();
+        ok(cli(
+            dir.path(),
+            &["query", "--spec", spec.to_str().unwrap()],
+        ))["records"][0]["value"]["count"]
+            .clone()
+    };
+    assert_eq!(count(json!("b")), 3);
+    assert_eq!(count(json!("a")), 1);
+    assert_eq!(count(json!("absent")), 0);
+    // A missing key still differs from an explicit null.
+    assert_eq!(count(Value::Null), 0);
+}
+
 #[test]
 fn unique_include_exclude_regex_and_ignore_case_shortcuts() {
     let dir = tempfile::tempdir().unwrap();

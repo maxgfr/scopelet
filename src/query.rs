@@ -79,14 +79,16 @@ fn aggregate(path: &str, operations: &[Operation], store: &Store) -> Result<Data
             )
         })?;
         if !filters.iter().all(|op| match op {
-            Operation::Filter { pointer, equals } => value.pointer(pointer) == Some(equals),
+            Operation::Filter { pointer, equals } => {
+                pipeline::resolve(&value, pointer) == Some(equals)
+            }
             _ => unreachable!(),
         }) {
             continue;
         }
         count += 1;
         if let Operation::Group { pointer, .. } = last {
-            if let Some(v) = value.pointer(pointer) {
+            if let Some(v) = pipeline::resolve(&value, pointer) {
                 let key = v.to_string();
                 if let Some((_, count)) = groups.get_mut(&key) {
                     *count += 1;

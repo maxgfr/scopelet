@@ -11,18 +11,23 @@ pub fn apply(data: &mut Dataset, operations: &[Operation]) -> Result<()> {
     Ok(())
 }
 
+/// What `path` names in `value`. After `project`, a record's keys are the
+/// pointers themselves (`{"/status": ...}`): a pointer that resolves nowhere
+/// falls back to the literal key, so `--project /status --group /status`
+/// works, and a filter on a projected pointer finds it.
+pub(crate) fn resolve<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
+    value.pointer(path).or_else(|| value.get(path))
+}
+
 fn pointer<'a>(record: &'a Record, path: &str) -> Result<&'a Value> {
     ensure!(
         path.is_empty() || path.starts_with('/'),
         "use a JSON Pointer, e.g. /status"
     );
-    // After `project`, a record's keys are the pointers themselves
-    // (`{"/status": ...}`): a pointer that resolves nowhere falls back to the
-    // literal key, so `--project /status --group /status` works.
     record
         .value
         .as_ref()
-        .and_then(|v| v.pointer(path).or_else(|| v.get(path)))
+        .and_then(|v| resolve(v, path))
         .ok_or_else(|| anyhow::anyhow!("missing JSON pointer {path:?} in {}", record.source))
 }
 
@@ -53,7 +58,7 @@ fn transform(records: Vec<Record>, op: &Operation) -> Result<Vec<Record>> {
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("filter requires JSON records"))?;
                 // Missing differs from explicit null, as in RFC 6901.
-                if value.pointer(path) == Some(equals) {
+                if resolve(value, path) == Some(equals) {
                     out.push(record);
                 }
             }
