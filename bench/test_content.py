@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 import content
@@ -78,6 +79,30 @@ class ContentTests(unittest.TestCase):
         problems = content.failures(report)
         self.assertEqual([p.split(':')[0] for p in problems], ['hidden/cold', 'broken/warm', 'broken/warm', 'broken/warm'])
         self.assertIn('non-zero exit', problems[1])
+
+    def test_a_hung_binary_is_a_failed_run_kept_in_the_report(self):
+        real = subprocess.run
+
+        def fake(command, **kwargs):
+            if '--version' in command:
+                return subprocess.CompletedProcess(command, 0, 'scopelet 0.0.0\n', '')
+            if 'compress' in command or 'expand' in command:
+                raise subprocess.TimeoutExpired(command, kwargs['timeout'], output=b'partial')
+            return real(command, **kwargs)  # `platform` asks `uname`
+        with tempfile.TemporaryDirectory() as temp, patch('builtins.print'), \
+                patch.object(content, 'fixtures', return_value={'tiny': (b'x' * 64, ['x'])}), \
+                patch.object(content.subprocess, 'run', side_effect=fake):
+            binary = Path(temp) / 'binary'
+            binary.write_bytes(b'frozen')
+            report = content.measure(binary, Path(temp) / 'out', 0, 2)
+            self.assertTrue((Path(temp) / 'out' / 'report.json').exists())
+        for state in ('cold', 'warm'):
+            self.assertEqual(report['cases']['tiny']['states'][state]['failures'], 2)
+        self.assertIn('tiny/cold: 2 non-zero exit(s)', content.failures(report))
+        # A recovery that hangs cannot claim a round trip either.
+        with patch.object(content.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['x'], 30)):
+            exact, recovered = content.recovery(Path('/bin/scopelet'), Path('/cache'), ('artifact:' + 'a' * 64).encode(), b'o')
+        self.assertFalse(exact)
 
     def test_summary_keeps_exit_failures(self):
         value = content.summarize([{'seconds': .5, 'exit_code': 7}, {'seconds': .1, 'exit_code': 0}])

@@ -1,6 +1,7 @@
 from argparse import Namespace
 import argparse
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -83,6 +84,15 @@ class RunTests(unittest.TestCase):
                 patch.object(performance, 'run', return_value={'output_mismatches': [{'case': 'small'}], 'cases': {}}):
             with self.assertRaises(SystemExit) as error: performance.main()
             self.assertEqual(error.exception.code, 1)
+
+    def test_a_hung_binary_is_a_failed_sample_not_an_aborted_probe(self):
+        hung = subprocess.TimeoutExpired(['scopelet'], 120, output=b'partial', stderr=b'')
+        with tempfile.TemporaryDirectory() as temp, patch.object(performance.subprocess, 'run', side_effect=hung):
+            taken, stdout = performance.measure(Path('/bin/echo'), ['compress'], None, Path(temp))
+        self.assertEqual(taken['exit_code'], 124)
+        self.assertIsNone(taken['rss_bytes'])
+        self.assertEqual(stdout, b'partial')
+        self.assertEqual(performance.summarize([taken])['failures'], 1)
 
     def test_duplicate_arm_names_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:

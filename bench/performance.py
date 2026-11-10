@@ -24,6 +24,8 @@ import subprocess
 import tempfile
 import time
 
+import content
+
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
@@ -77,7 +79,8 @@ def measure(binary, args, stdin, cache):
     timer=['/usr/bin/time','-l'] if platform.system()=='Darwin' else ['/usr/bin/time','-v']
     start=time.perf_counter()
     with open(stdin or os.devnull,'rb') as source:
-        result=subprocess.run(timer+command,stdin=source,capture_output=True,env=env,timeout=120)
+        # A hang is a failed sample (exit 124), kept in the report like a crash.
+        result=content.bounded(timer+command,120,stdin=source,env=env)
     elapsed=time.perf_counter()-start
     stderr=result.stderr.decode(errors='replace')
     pattern=r'(\d+)\s+maximum resident set size' if platform.system()=='Darwin' else r'Maximum resident set size \(kbytes\):\s*(\d+)'

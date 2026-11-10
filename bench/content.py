@@ -93,16 +93,24 @@ def recovery(binary, cache, output, original):
     match = re.match(rb'\[scopelet v[45] ([a-f0-9]{12,16})[ \]]', output) or re.search(rb'(artifact:[a-f0-9]{64})', output)
     if not match:
         return output == original, None
-    manifest = subprocess.run([str(binary), '--cache-dir', str(cache), 'expand', match[1].decode(), '--manifest'],
-                             capture_output=True, timeout=30)
+    manifest = bounded([str(binary), '--cache-dir', str(cache), 'expand', match[1].decode(), '--manifest'], 30)
     if manifest.returncode != 0:
         return False, None
     snapshots = json.loads(manifest.stdout)['snapshots']
     if len(snapshots) != 1:
         return False, None
-    result = subprocess.run([str(binary), '--cache-dir', str(cache), 'expand', snapshots[0]['blob'], '--raw'],
-                            capture_output=True, timeout=30)
+    result = bounded([str(binary), '--cache-dir', str(cache), 'expand', snapshots[0]['blob'], '--raw'], 30)
     return result.returncode == 0 and result.stdout == original, result.stdout
+
+
+def bounded(command, timeout, **kwargs):
+    """`subprocess.run` with captured output whose timeout is a result, exit
+    124, not an exception: a binary that hangs is a failed run kept in the
+    report, as one that crashes is, instead of the end of the probe."""
+    try:
+        return subprocess.run(command, capture_output=True, timeout=timeout, **kwargs)
+    except subprocess.TimeoutExpired as expired:
+        return subprocess.CompletedProcess(command, 124, expired.stdout or b'', expired.stderr or b'')
 
 
 def summarize(samples):
@@ -138,8 +146,8 @@ def measure(binary, out, warmups, repetitions):
                         shutil.rmtree(cache, ignore_errors=True)
                     cache.mkdir(exist_ok=True)
                     started = time.perf_counter()
-                    result = subprocess.run([str(binary), '--cache-dir', str(cache), 'compress', *profile_args(name)], input=original,
-                                            capture_output=True, timeout=120)
+                    result = bounded([str(binary), '--cache-dir', str(cache), 'compress', *profile_args(name)], 120,
+                                     input=original)
                     elapsed = time.perf_counter() - started
                     output = result.stdout
                     if rep >= 0:
