@@ -85,13 +85,19 @@ def install_reports(runs, results):
         shutil.copy2(runs / probe / 'report.json', results / f'{probe}.json')
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--scopelet', type=Path, required=True, help='the release binary to measure and publish')
     parser.add_argument('--repetitions', type=int, default=30)
     parser.add_argument('--warmups', type=int, default=5)
     parser.add_argument('--readme', type=Path, default=ROOT / 'README.md')
-    options = parser.parse_args()
+    options = parser.parse_args(argv)
+    if options.repetitions < 1 or options.warmups < 0:
+        parser.error('positive repetitions and nonnegative warmups required')
+    # Before measuring anything: a README without its markers would otherwise
+    # be found after both probes ran and the new reports were installed,
+    # leaving them beside the old table.
+    rewrite(options.readme.read_text(), '')
     binary = options.scopelet.resolve()
     version = performance.binary_version(binary).split()[-1]
     with tempfile.TemporaryDirectory(prefix='scopelet-publish-') as tmp:

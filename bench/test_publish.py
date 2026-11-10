@@ -1,6 +1,9 @@
+import io
 from pathlib import Path
+import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import publish
 
@@ -50,6 +53,26 @@ class PublishTests(unittest.TestCase):
             self.assertEqual((results / 'content.json').read_text(), 'new content')
             self.assertEqual((results / 'performance.json').read_text(), 'new performance')
             self.assertEqual((results / 'live-20261104-120-haiku.json').read_text(), 'live')
+
+    def test_a_readme_without_markers_stops_before_anything_is_measured_or_installed(self):
+        measured = AssertionError('a probe ran before the README was checked')
+        with tempfile.TemporaryDirectory() as temp:
+            readme = Path(temp) / 'README.md'
+            readme.write_text('no speed table here\n')
+            results = Path(temp) / 'results'
+            with patch.object(publish, 'RESULTS', results), \
+                    patch.object(publish.performance, 'binary_version', side_effect=measured), \
+                    patch.object(publish.content, 'measure', side_effect=measured), \
+                    patch.object(publish.performance, 'run', side_effect=measured), \
+                    self.assertRaises(ValueError):
+                publish.main(['--scopelet', '/bin/echo', '--readme', str(readme)])
+            self.assertFalse(results.exists())
+            self.assertEqual(readme.read_text(), 'no speed table here\n')
+
+    def test_zero_repetitions_are_refused_like_the_probes_do(self):
+        with patch.object(publish.content, 'measure', side_effect=AssertionError('measured')), \
+                patch.object(sys, 'stderr', io.StringIO()), self.assertRaises(SystemExit):
+            publish.main(['--scopelet', '/bin/echo', '--repetitions', '0'])
 
     def test_machine_reads_as_a_platform_name(self):
         name = publish.machine()
