@@ -483,6 +483,48 @@ class SessionTests(unittest.TestCase):
             self.assertFalse(any(k.startswith('SCOPELET_') for k in env))
 
 
+class ReportTests(unittest.TestCase):
+    def test_a_report_is_replaced_whole_or_not_at_all(self):
+        def torn(path, text, *args, **kwargs):
+            with open(path, 'w') as f:
+                f.write(text[:7])
+            raise OSError('disk full')
+        with tempfile.TemporaryDirectory() as temp:
+            report = Path(temp) / 'report.json'
+            live.write_report(report, {'records': [1]})
+            with patch.object(Path, 'write_text', torn), self.assertRaises(OSError):
+                live.write_report(report, {'records': [1, 2]})
+            self.assertEqual(json.loads(report.read_text()), {'records': [1]})
+            self.assertEqual([p.name for p in Path(temp).iterdir()], ['report.json'])
+
+    def test_a_campaign_interrupted_mid_write_keeps_its_last_whole_report(self):
+        writes = []
+        real = Path.write_text
+
+        def torn(path, text, *args, **kwargs):
+            # Only the report: the session's synthetic repository is written
+            # through the same method.
+            if 'report.json' not in path.name:
+                return real(path, text, *args, **kwargs)
+            writes.append(path)
+            if len(writes) == 1:
+                return real(path, text, *args, **kwargs)
+            with open(path, 'w') as f:
+                f.write(text[:7])
+            raise KeyboardInterrupt
+
+        def fake(args, **kwargs):
+            if args[0] == 'claude':
+                return subprocess.CompletedProcess(args, 0, STREAM if '-p' in args else 'claude 0\n', '')
+            return subprocess.run(args, **kwargs)
+        with tempfile.TemporaryDirectory() as temp:
+            out = Path(temp) / 'report.json'
+            with patch.object(live.subprocess, 'run', side_effect=fake), patch.object(Path, 'write_text', torn), \
+                    patch('builtins.print'), self.assertRaises(KeyboardInterrupt):
+                live.main(['--live', '--arm', 'off', '--task', 'find_receipt', '--runs', '2', '--out', str(out)])
+            self.assertEqual(len(json.loads(out.read_text())['records']), 1)
+
+
 class LiveGuardTests(unittest.TestCase):
     def test_nothing_runs_without_live(self):
         with patch.object(live.subprocess, 'run', side_effect=AssertionError('called')):

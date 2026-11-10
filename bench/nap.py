@@ -457,9 +457,9 @@ def run(binary, transcripts, client, out, arm='off', draws=DRAWS, workers=4, bas
             print(f"{row['transcript']} step {row['step']} {row['tool']}: " +
                   ' '.join(f'{n}={row["nap"][n]}' for n in names), flush=True)
             report['summary'] = summarize(report['steps'], names)
-            (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+            live.write_report(out / 'report.json', report)
     report['summary'] = summarize(report['steps'], names)
-    (out / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
+    live.write_report(out / 'report.json', report)
     return report
 
 

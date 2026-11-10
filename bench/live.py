@@ -56,6 +56,22 @@ def load_tasks():
     return json.loads((FIXTURES / 'tasks.json').read_text())
 
 
+def write_report(path, report):
+    """Replace `path` with `report` as JSON: whole, or not at all.
+
+    A campaign rewrites its growing report after every billed session. Written
+    in place, an interrupt or a full disk left truncated JSON and lost every
+    record so far; a temporary renamed into place cannot.
+    """
+    text = json.dumps(report, indent=2) + '\n'
+    temporary = path.with_name(f'.{path.name}.{os.getpid()}.tmp')
+    try:
+        temporary.write_text(text)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 # --- synthetic repositories -------------------------------------------------
 
 def word(i):
@@ -781,9 +797,9 @@ def main(argv=None):
                       f"views={record['views_shown']}",
                       flush=True)
                 report['summary'] = summarize(report['records'], names, selected, args.baseline, draws=0)
-                out.write_text(json.dumps(report, indent=2) + '\n')
+                write_report(out, report)
     report['summary'] = summarize(report['records'], names, selected, args.baseline)
-    out.write_text(json.dumps(report, indent=2) + '\n')
+    write_report(out, report)
     print(json.dumps({'all': report['summary']['all'],
                       'paired': {k: {kk: vv for kk, vv in v.items() if kk != 'detail'}
                                  for k, v in report['summary'].get('paired', {}).items()}}, indent=2))
