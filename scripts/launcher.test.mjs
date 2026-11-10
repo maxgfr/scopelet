@@ -26,6 +26,36 @@ test('explicit wrong-version binary fails without fetching a replacement', () =>
   assert.match(result.stderr, /SCOPELET_BIN must point/);
 });
 
+test('a temporary left by a killed install does not block the next one', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'scopelet-stale-'));
+  try {
+    const cache = join(dir, 'scopelet', 'bin', version);
+    mkdirSync(cache, { recursive: true });
+    const content = '#!/bin/sh\necho "fresh release"\n';
+    const expected = createHash('sha256').update(content).digest('hex');
+    const targets = { 'darwin-arm64': 'aarch64-apple-darwin', 'darwin-x64': 'x86_64-apple-darwin',
+      'linux-x64': 'x86_64-unknown-linux-gnu', 'linux-arm64': 'aarch64-unknown-linux-gnu' };
+    const target = targets[`${process.platform}-${process.arch}`];
+    assert.ok(target, 'fixture requires a supported release platform');
+    // Process ids repeat, in a container often at once: the killed run and
+    // this one are given the same id.
+    writeFileSync(join(cache, 'scopelet.4242.tmp'), 'partial download');
+    writeFileSync(join(cache, 'scopelet.4242.tmp.sha256'), 'partial');
+    const prelude = join(dir, 'release.mjs');
+    writeFileSync(prelude, `
+      Object.defineProperty(process, 'pid', { value: 4242 });
+      globalThis.fetch = async url => new Response(String(url).endsWith('/SHA256SUMS')
+        ? ${JSON.stringify(expected + '  scopelet-' + target + '\n')} : ${JSON.stringify(content)});
+    `);
+    const env = { ...process.env, XDG_CACHE_HOME: dir, PATH: dir };
+    delete env.SCOPELET_BIN;
+    const result = spawnSync(process.execPath, ['--import', prelude, launcher, 'doctor'], { encoding: 'utf8', env, timeout: 5000 });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, 'fresh release\n');
+    assert.equal(readFileSync(join(cache, 'scopelet.sha256'), 'utf8'), expected);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('verified cached release runs offline', () => {
   const dir = mkdtempSync(join(tmpdir(), 'scopelet-cached-'));
   try {

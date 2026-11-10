@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync, spawn } from 'node:child_process';
 import { mkdir, readFile, writeFile, rename, chmod, rm } from 'node:fs/promises';
 import { homedir, constants } from 'node:os';
@@ -23,8 +23,11 @@ async function bytes(url, limit) {
   return Buffer.concat(chunks);
 }
 
+// Temporaries are named at random: a process id repeats (at once in a
+// container), and one left by a killed install would fail the exclusive
+// create of every later run that drew the same id.
 async function saveChecksum(path, expected) {
-  const temporary = `${path}.${process.pid}.tmp.sha256`;
+  const temporary = `${path}.${randomUUID()}.tmp.sha256`;
   try {
     await writeFile(temporary, expected, { flag: 'wx', mode: 0o600 });
     await rename(temporary, `${path}.sha256`);
@@ -62,7 +65,7 @@ async function binary() {
   process.stderr.write(`Installing Scopelet ${version} (${target}) in user cache...\n`);
   const content = await bytes(`${base}/${name}`, 32 * 1024 * 1024);
   if (hash(content) !== expected) throw new Error('Release checksum mismatch');
-  const temporary = `${path}.${process.pid}.tmp`;
+  const temporary = `${path}.${randomUUID()}.tmp`;
   try {
     await writeFile(temporary, content, { flag: 'wx', mode: 0o700 });
     await chmod(temporary, 0o700);
