@@ -716,6 +716,7 @@ fn claude_result(event: &Value) -> Result<Value> {
     let mut repeated = vec![false; fields.len()];
     let context = context_key(event);
     let mut state = context.as_deref().map(crate::session::load);
+    let loaded = state.clone();
     if let Some(state) = &mut state {
         for (i, field) in fields.iter().enumerate() {
             let raw = output[*field].as_str().unwrap();
@@ -735,10 +736,12 @@ fn claude_result(event: &Value) -> Result<Value> {
             state.remember(hash);
         }
     }
-    let mut anchors = anchors(event, state.as_ref(), command);
-    anchors.extend(extra);
     let remembered = || {
-        if let (Some(key), Some(state)) = (&context, &state) {
+        // Written only when it changed: most results are small and remember
+        // nothing, and a hook runs on every tool call.
+        if state != loaded
+            && let (Some(key), Some(state)) = (&context, &state)
+        {
             // Best effort: a lost write only misses a later repeat.
             let _ = crate::session::save(key, state);
         }
@@ -754,6 +757,9 @@ fn claude_result(event: &Value) -> Result<Value> {
         remembered();
         return Ok(json!({}));
     }
+    // Only a result that may be compressed needs its anchors.
+    let mut anchors = anchors(event, state.as_ref(), command);
+    anchors.extend(extra);
     for (i, field) in fields.iter().enumerate() {
         if repeated[i] {
             continue;
