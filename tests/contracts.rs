@@ -54,6 +54,25 @@ fn invalid_run_budget_does_not_execute_command() {
     assert!(!marker.exists());
 }
 
+/// A command that cannot start is named. The error once told the reader to
+/// check doctor for missing adapters, whatever the command was.
+#[test]
+fn a_command_that_cannot_start_is_named() {
+    let dir = tempfile::tempdir().unwrap();
+    for mode in [&["run"][..], &["run", "--auto"][..]] {
+        let output = cli()
+            .args(["--cache-dir", dir.path().to_str().unwrap()])
+            .args(mode)
+            .args(["--", "no-such-command-xyz", "argument"])
+            .output()
+            .unwrap();
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(2), "{mode:?}: {output:?}");
+        assert!(stderr.contains("start no-such-command-xyz"), "{stderr}");
+        assert!(!stderr.contains("adapters"), "{stderr}");
+    }
+}
+
 #[test]
 fn run_envelope_fits_budget_and_keeps_late_error() {
     let dir = tempfile::tempdir().unwrap();

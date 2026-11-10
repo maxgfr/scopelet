@@ -152,9 +152,12 @@ pub fn capture(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .process_group(0);
+    // Any command comes through here, a user's own as well as an adapter's:
+    // the error names what could not start; callers add their own advice.
+    let program = command.get_program().to_string_lossy().into_owned();
     let mut child = command
         .spawn()
-        .context("start command (check doctor for missing adapters)")?;
+        .with_context(|| format!("start {program}"))?;
     let pid = child.id();
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
