@@ -26,6 +26,40 @@ test('explicit wrong-version binary fails without fetching a replacement', () =>
   assert.match(result.stderr, /SCOPELET_BIN must point/);
 });
 
+test('explicit binary errors say what was found', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'scopelet-launcher-'));
+  try {
+    const run = binary => spawnSync(process.execPath, [launcher, 'doctor'], { encoding: 'utf8', env: { ...process.env, SCOPELET_BIN: binary } });
+    const missing = run(join(dir, 'absent'));
+    assert.equal(missing.status, 2);
+    assert.match(missing.stderr, /SCOPELET_BIN must point to scopelet .*ENOENT/);
+    const other = join(dir, 'scopelet');
+    writeFileSync(other, '#!/bin/sh\necho "scopelet 0.0.1"\n', { mode: 0o700 });
+    const wrong = run(other);
+    assert.equal(wrong.status, 2);
+    assert.match(wrong.stderr, /SCOPELET_BIN must point to scopelet .*reports "scopelet 0\.0\.1"/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('a failed download names the address and the cause', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'scopelet-offline-'));
+  try {
+    // Node's fetch says only "fetch failed" and keeps the reason in `cause`.
+    const prelude = join(dir, 'offline.mjs');
+    writeFileSync(prelude, `globalThis.fetch = async () => {
+      throw Object.assign(new TypeError('fetch failed'),
+        { cause: Object.assign(new Error('getaddrinfo ENOTFOUND github.com'), { code: 'ENOTFOUND' }) });
+    };`);
+    const env = { ...process.env, XDG_CACHE_HOME: dir, PATH: dir };
+    delete env.SCOPELET_BIN;
+    const result = spawnSync(process.execPath, ['--import', prelude, launcher, 'doctor'], { encoding: 'utf8', env, timeout: 5000 });
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /^scopelet setup: /);
+    assert.match(result.stderr, /getaddrinfo ENOTFOUND github\.com/);
+    assert.match(result.stderr, new RegExp(`releases/download/v${version.replaceAll('.', '\\.')}/SHA256SUMS`));
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('a temporary left by a killed install does not block the next one', () => {
   const dir = mkdtempSync(join(tmpdir(), 'scopelet-stale-'));
   try {

@@ -12,7 +12,15 @@ const target = targets[`${process.platform}-${process.arch}`];
 const root = join(process.env.XDG_CACHE_HOME || join(homedir(), '.cache'), 'scopelet', 'bin', version);
 
 async function bytes(url, limit) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+  let response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+  } catch (error) {
+    // fetch says only "fetch failed": the reason (an unresolved host, a
+    // refused connection, a proxy or TLS error) is in its cause.
+    const reason = error.cause?.message || error.cause?.code || error.message;
+    throw new Error(`Download failed: ${reason} (${url})`);
+  }
   if (!response.ok) throw new Error(`Download failed: HTTP ${response.status} (${url})`);
   const chunks = []; let length = 0;
   for await (const chunk of response.body) {
@@ -40,7 +48,13 @@ async function binary() {
   const candidate = override || 'scopelet';
   const check = spawnSync(candidate, ['--version'], { encoding: 'utf8', timeout: 5000 });
   if (check.status === 0 && check.stdout.trim() === `scopelet ${version}`) return candidate;
-  if (override) throw new Error(`SCOPELET_BIN must point to scopelet ${version}`);
+  if (override) {
+    // A missing file, a hung binary and another version are different fixes.
+    const found = check.error ? check.error.message
+      : check.stdout.trim() ? `it reports "${check.stdout.trim().split('\n')[0]}"`
+      : `--version exited with ${check.status ?? check.signal}`;
+    throw new Error(`SCOPELET_BIN must point to scopelet ${version} (${override}: ${found})`);
+  }
   if (!target) throw new Error('No release for this platform; install with Cargo and rerun.');
   await mkdir(root, { recursive: true, mode: 0o700 });
   const path = join(root, 'scopelet');
@@ -48,7 +62,11 @@ async function binary() {
   try {
     const cached = (await readFile(`${path}.sha256`, 'utf8')).trim();
     if (/^[a-f0-9]{64}$/.test(cached) && hash(await readFile(path)) === cached) return path;
-  } catch {}
+  } catch (error) {
+    // Nothing cached yet is the ordinary first run; any other error is said,
+    // so a failed download after it does not hide the local cause.
+    if (error.code !== 'ENOENT') process.stderr.write(`scopelet setup: cached release unreadable (${error.message})\n`);
+  }
   const name = `scopelet-${target}`;
   const base = `https://github.com/maxgfr/scopelet/releases/download/v${version}`;
   const manifest = (await bytes(`${base}/SHA256SUMS`, 16384)).toString('utf8');
