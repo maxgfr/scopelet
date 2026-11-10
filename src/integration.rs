@@ -109,6 +109,30 @@ fn host_file(agent: Agent) -> Result<PathBuf> {
         Agent::All => anyhow::bail!("select one host"),
     })
 }
+/// The file a host's configuration path leads to. A settings file, or the
+/// directory holding it, kept in a dotfiles repository is a link: the file
+/// it points at is the one to edit, and the link stays a link. The deepest
+/// part of the path that exists is resolved; a dangling link resolves to
+/// itself and is then refused like any other link.
+fn resolved(path: &Path) -> PathBuf {
+    let mut missing = Vec::new();
+    let mut existing = path;
+    loop {
+        if let Ok(real) = fs::canonicalize(existing) {
+            return missing
+                .iter()
+                .rev()
+                .fold(real, |real, name| real.join(name));
+        }
+        match (existing.parent(), existing.file_name()) {
+            (Some(parent), Some(name)) => {
+                missing.push(name);
+                existing = parent;
+            }
+            _ => return path.to_owned(),
+        }
+    }
+}
 fn host_name(agent: Agent) -> &'static str {
     match agent {
         Agent::Claude => "claude",
@@ -190,7 +214,9 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
     };
     let mut paths = Vec::new();
     for agent in agents {
-        let path = host_file(agent)?;
+        // Reported as the host names it, edited where it really is.
+        let named = host_file(agent)?;
+        let path = resolved(&named);
         let old = match fs::read(&path) {
             Ok(b) => Some(b),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
@@ -229,7 +255,7 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                 }
                 write_atomic(&path, rendered.as_bytes())?;
             }
-            paths.push(path);
+            paths.push(named);
             continue;
         }
         let mut value: Value = match &old {
@@ -309,7 +335,7 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                 write_atomic(&path, &updated)?;
             }
         }
-        paths.push(path);
+        paths.push(named);
     }
     let note = if remove {
         "Restart active sessions so they stop running the removed hooks. The pinned binary, mode and backups stay in the Scopelet config directory."

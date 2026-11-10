@@ -298,6 +298,68 @@ fn reinstalling_elsewhere_replaces_the_earlier_scopelet_hooks() {
     assert_eq!(value, mine);
 }
 
+/// A settings file, or the directory holding it, kept in a dotfiles
+/// repository is a link. Installing edits the file it leads to and leaves
+/// the link in place; it once refused with "directory is a symlink".
+#[cfg(unix)]
+#[test]
+fn install_follows_a_linked_settings_file_or_directory() {
+    use std::os::unix::fs::symlink;
+    let original = "{\n  \"theme\": \"dark\"\n}\n";
+    for linked_directory in [true, false] {
+        let dir = tempfile::tempdir().unwrap();
+        let dotfiles = dir.path().join("dotfiles/claude");
+        fs::create_dir_all(&dotfiles).unwrap();
+        fs::write(dotfiles.join("settings.json"), original).unwrap();
+        let named = dir.path().join("claude");
+        if linked_directory {
+            symlink(&dotfiles, &named).unwrap();
+        } else {
+            fs::create_dir(&named).unwrap();
+            symlink(dotfiles.join("settings.json"), named.join("settings.json")).unwrap();
+        }
+        let out = cli(dir.path())
+            .args(["install", "--agent", "claude"])
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{linked_directory}: {out:?}");
+        let report: Value = serde_json::from_slice(&out.stdout).unwrap();
+        assert_eq!(
+            report["files"][0].as_str().unwrap(),
+            named.join("settings.json").to_str().unwrap()
+        );
+        let written: Value =
+            serde_json::from_slice(&fs::read(dotfiles.join("settings.json")).unwrap()).unwrap();
+        assert!(written["hooks"]["PostToolUse"].is_array(), "{written}");
+        assert_eq!(written["theme"], "dark");
+        let link = if linked_directory {
+            named.clone()
+        } else {
+            named.join("settings.json")
+        };
+        assert!(
+            fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+        let doctor = cli(dir.path()).arg("doctor").output().unwrap();
+        let status: Value = serde_json::from_slice(&doctor.stdout).unwrap();
+        assert_eq!(
+            status["integration"]["hosts"][0]["hooks_configured"], true,
+            "{status}"
+        );
+        cli(dir.path())
+            .args(["uninstall", "--agent", "claude"])
+            .assert()
+            .success();
+        assert_eq!(
+            fs::read_to_string(dotfiles.join("settings.json")).unwrap(),
+            original
+        );
+    }
+}
+
 #[test]
 fn uninstall_reports_its_own_note_for_every_host() {
     let dir = tempfile::tempdir().unwrap();
