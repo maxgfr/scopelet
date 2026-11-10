@@ -565,7 +565,9 @@ def session(arm, task, spec, model, timeout, isolate_home, transcript=None):
                 record['stderr'] = run.stderr[-2000:]
         except subprocess.TimeoutExpired as expired:
             stdout = expired.stdout.decode(errors='replace') if isinstance(expired.stdout, bytes) else (expired.stdout or '')
-            record = parse_stream('')
+            # Unknown usage stays unknown; what the partial stream did show
+            # (tools, views, models) is counted, not reported as zero.
+            record = parse_stream(stdout)
             record['exit_code'] = None
             record['timed_out'] = True
         record['seconds'] = round(time.monotonic() - started, 1)

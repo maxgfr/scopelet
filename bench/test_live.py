@@ -399,6 +399,32 @@ class SessionTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 live.session(live.parse_arm('off'), 'find_receipt', spec, 'haiku', 60, False, path)
 
+    def test_a_timed_out_session_keeps_what_its_stream_showed(self):
+        # The stream stops before its result: usage and cost are unknown, but
+        # the tool calls and views it did show are not zero.
+        partial = '\n'.join(STREAM.split('\n')[:4] + [json.dumps({'type': 'user', 'message': {'content': [
+            {'type': 'tool_result', 'tool_use_id': 't',
+             'content': '[scopelet v5 0123456789ab omitted=3; gaps are not absence]\n1-4\n x\n'}]}})])
+
+        def fake(args, **kwargs):
+            if args[0] == 'claude':
+                raise subprocess.TimeoutExpired(args, kwargs['timeout'], output=partial.encode())
+            return subprocess.run(args, **kwargs)
+        spec = live.load_tasks()['find_receipt']
+        with tempfile.TemporaryDirectory() as temp, patch.object(live.subprocess, 'run', side_effect=fake):
+            path = live.transcript_path(Path(temp), 0, 'find_receipt', 'off')
+            record = live.session(live.parse_arm('off'), 'find_receipt', spec, 'haiku', 60, False, path)
+            with gzip.open(path, 'rt') as f:
+                self.assertEqual(f.read(), partial)
+        self.assertTrue(record['timed_out'])
+        self.assertIsNone(record['exit_code'])
+        self.assertFalse(record['correct'])
+        self.assertEqual(record['tools'], {'Bash': 1, 'Read': 1})
+        self.assertEqual(record['views_shown'], 1)
+        self.assertEqual(record['models_served'], ['claude-haiku-5-5'])
+        for key in ('cost_usd', 'input_total', 'turns', 'tool_calls'):
+            self.assertIsNone(record[key], key)
+
     def test_sessions_search_like_a_default_claude_code_session(self):
         # Naming a search tool would hand Bash `grep` and `find` to the
         # user's shell aliases instead of Claude Code's embedded ones.
