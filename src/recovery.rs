@@ -52,6 +52,7 @@ pub fn search(
     }
     let mut seen = BTreeSet::new();
     let mut not_retained = 0;
+    let mut not_text = 0;
     for snapshot in &data.snapshots {
         if !seen.insert((&snapshot.source, &snapshot.blob)) {
             continue;
@@ -78,8 +79,20 @@ pub fn search(
                 }
             }
         };
-        let text =
-            String::from_utf8(raw).context("saved source is not UTF-8; expand --raw instead")?;
+        let text = match String::from_utf8(raw) {
+            Ok(text) => text,
+            // An artifact can hold an original that is not text beside the
+            // text extracted from it (a PDF and its extraction share one
+            // label): the search covers the text and counts the other,
+            // instead of failing on it. A blob searched by itself still fails.
+            Err(_) if id.starts_with("artifact:") => {
+                not_text += 1;
+                continue;
+            }
+            Err(error) => {
+                return Err(error).context("saved source is not UTF-8; expand --raw instead");
+            }
+        };
         let record = Record {
             source: snapshot.source.clone(),
             blob: Some(snapshot.blob.clone()),
@@ -91,6 +104,12 @@ pub fn search(
             text_truncated: false,
         };
         data.records.extend(search.apply(vec![record]));
+    }
+    if not_text > 0 {
+        for _ in 0..not_text {
+            data.skip("original_not_text");
+        }
+        data.notes.push("An original that is not UTF-8 text (a document's own bytes) was not searched: its extracted text was. Read it with expand BLOB --raw.".into());
     }
     if not_retained > 0 {
         for _ in 0..not_retained {

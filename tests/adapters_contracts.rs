@@ -301,6 +301,60 @@ fn extracted_local_document_artifact_rejects_changed_original() {
     );
 }
 
+/// A document artifact holds the document's own bytes beside the text
+/// extracted from it, under one label. Searching it covers the text and
+/// counts the original it cannot read as text; it once failed on the first
+/// snapshot with "saved source is not UTF-8", for any PDF.
+#[test]
+fn a_document_artifact_is_searched_through_its_extracted_text() {
+    let f = Fixture::new();
+    let document = f.root.join("document.pdf");
+    fs::write(&document, b"%PDF-1.7\n\xff\xfe\x00 binary body").unwrap();
+    f.adapter(
+        "webindex",
+        &json!({"text":"first page\nthe needle is on line two\nlast page\n"}).to_string(),
+    );
+    let view = success(f.query(json!({"type":"document","path":document})));
+    let id = view["artifact"].as_str().unwrap();
+    let found = f
+        .cli()
+        .args(["expand", id, "--find", "needle"])
+        .output()
+        .unwrap();
+    let found = success(found);
+    // The extracted text, and the extraction envelope that quotes it.
+    let records = found["records"].as_array().unwrap();
+    assert_eq!(records.len(), 2, "{found}");
+    let text = records
+        .iter()
+        .find(|r| r["source"] == document.to_str().unwrap())
+        .unwrap_or_else(|| panic!("{found}"));
+    assert_eq!(
+        text["text"], "first page\nthe needle is on line two\nlast page\n",
+        "{found}"
+    );
+    let manifest = success(
+        f.cli()
+            .args(["expand", found["artifact"].as_str().unwrap(), "--manifest"])
+            .output()
+            .unwrap(),
+    );
+    assert_eq!(manifest["skipped"]["original_not_text"], 1, "{manifest}");
+    // The original alone is still not searchable as text, and says how to
+    // read it.
+    let blob = Store::open(Some(f.cache.clone()))
+        .unwrap()
+        .put("blob", &fs::read(&document).unwrap())
+        .unwrap();
+    rejected(
+        f.cli()
+            .args(["expand", &blob, "--find", "needle"])
+            .output()
+            .unwrap(),
+        "expand --raw",
+    );
+}
+
 #[test]
 fn invalid_adapter_arguments_fail_before_missing_executable() {
     let f = Fixture::new();
