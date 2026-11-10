@@ -6,7 +6,7 @@ what is deliberately not claimed.
 ## On every change
 
 [CI](https://github.com/maxgfr/scopelet/actions/workflows/ci.yml) runs on
-Ubuntu 24.04 and macOS 14 for every pull request and pre-release push:
+Ubuntu 24.04 and macOS 15 for every pull request and pre-release push:
 
 - `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, and the
   Rust integration tests: queries, exact byte recovery, freshness, malformed
