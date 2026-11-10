@@ -429,6 +429,9 @@ impl Parsed {
             text_truncated: false,
         };
         match self {
+            // An empty text is still a record (the file exists and counts),
+            // but it has no lines: no range, rather than lines 1 to 0.
+            Self::Text(text) if text.is_empty() => vec![base],
             Self::Text(text) => vec![Record {
                 end_line: Some(crate::clean::line_count(&text)),
                 start_line: Some(1),

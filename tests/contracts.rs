@@ -260,6 +260,59 @@ fn empty_results_are_complete_with_a_saved_artifact() {
     assert!(v["artifact"].as_str().unwrap().starts_with("artifact:"));
 }
 
+/// An empty file is a record, so it is counted, but it has no lines: it once
+/// claimed lines 1 to 0.
+#[test]
+fn an_empty_file_is_a_record_without_a_line_range() {
+    let dir = tempfile::tempdir().unwrap();
+    let repo = dir.path().join("repo");
+    fs::create_dir(&repo).unwrap();
+    fs::write(repo.join("empty.txt"), "").unwrap();
+    fs::write(repo.join("one.txt"), "hi\n").unwrap();
+    let query = |args: &[&str]| -> Value {
+        let output = cli()
+            .args(["--cache-dir", dir.path().join("cache").to_str().unwrap()])
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        serde_json::from_slice(&output.stdout).unwrap()
+    };
+    let file = repo.join("empty.txt");
+    let view = query(&["query", "--file", file.to_str().unwrap()]);
+    assert_eq!(view["total_records"], 1, "{view}");
+    let record = view["records"][0].as_object().unwrap();
+    assert!(record["blob"].as_str().unwrap().starts_with("blob:"));
+    for absent in ["start_line", "end_line", "text"] {
+        assert!(!record.contains_key(absent), "{absent} in {view}");
+    }
+    let scan = query(&["query", "--repo", repo.to_str().unwrap()]);
+    assert_eq!(scan["records"][0]["source"], "empty.txt", "{scan}");
+    assert!(scan["records"][0].get("end_line").is_none(), "{scan}");
+    assert_eq!(scan["records"][1]["end_line"], 1, "{scan}");
+    let count = query(&["query", "--repo", repo.to_str().unwrap(), "--count"]);
+    assert_eq!(count["records"][0]["value"]["count"], 2, "{count}");
+    // Its original is recovered like any other, and is empty.
+    let raw = cli()
+        .args(["--cache-dir", dir.path().join("cache").to_str().unwrap()])
+        .args(["expand", record["blob"].as_str().unwrap(), "--raw"])
+        .output()
+        .unwrap();
+    assert!(raw.status.success() && raw.stdout.is_empty(), "{raw:?}");
+    let compact = cli()
+        .args(["--cache-dir", dir.path().join("cache").to_str().unwrap()])
+        .args([
+            "query",
+            "--file",
+            file.to_str().unwrap(),
+            "--output",
+            "compact",
+        ])
+        .output()
+        .unwrap();
+    assert!(compact.status.success(), "{compact:?}");
+}
+
 /// Opening a FIFO for reading blocks until something writes to it, and the
 /// termination handlers restart the call: a source that is not a regular
 /// file must be refused before it is opened, not after.
