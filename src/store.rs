@@ -637,6 +637,15 @@ impl Store {
                 report.kept_bytes += metadata.len();
             }
         }
+        // `last` is published through a temporary in the root itself: one
+        // left by a killed write is reaped here, everything else stays.
+        for item in fs::read_dir(&self.root)? {
+            let item = item?;
+            if item.file_type()?.is_file() {
+                let name = item.file_name().to_string_lossy().into_owned();
+                report.reaped(reap_temporary(&item, &name, now, age)?);
+            }
+        }
         let (items, bytes, indexes) = crate::line_index::clean(&self.root, now, age)?;
         report.removed_items += items;
         report.removed_bytes += bytes;

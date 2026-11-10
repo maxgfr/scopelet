@@ -311,12 +311,23 @@ fn clean_tolerates_foreign_files_and_reaps_stale_temporaries() {
         b"partial",
     )
     .expect("temporary");
+    // `last` is written through a temporary in the cache root itself.
+    let root_temporary = store.root.join(".scopelet-write-abcdef123456");
+    std::fs::write(&root_temporary, b"artifact:partial").expect("root temporary");
+    std::fs::write(store.root.join("notes.txt"), b"mine").expect("root foreign file");
+    store.set_last("artifact:kept");
 
     let removed = store
         .clean(0)
         .expect("clean must not fail on foreign names");
 
-    assert_eq!(removed, 2, "the orphan blob and the stale temporary");
+    assert_eq!(
+        removed, 3,
+        "the orphan blob and the stale temporaries, the root's included"
+    );
+    assert!(!root_temporary.exists(), "a killed `last` write is reaped");
+    assert!(store.root.join("notes.txt").exists());
+    assert!(store.root.join("last").exists());
     assert!(
         artifacts.join(".DS_Store").exists(),
         "files that are not cache items are left alone"
