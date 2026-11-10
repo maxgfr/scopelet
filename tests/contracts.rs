@@ -59,18 +59,55 @@ fn invalid_run_budget_does_not_execute_command() {
 #[test]
 fn a_command_that_cannot_start_is_named() {
     let dir = tempfile::tempdir().unwrap();
-    for mode in [&["run"][..], &["run", "--auto"][..]] {
-        let output = cli()
+    let run = |mode: &[&str], program: &str| {
+        cli()
             .args(["--cache-dir", dir.path().to_str().unwrap()])
             .args(mode)
-            .args(["--", "no-such-command-xyz", "argument"])
+            .args(["--", program, "argument"])
             .output()
-            .unwrap();
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        assert_eq!(output.status.code(), Some(2), "{mode:?}: {output:?}");
-        assert!(stderr.contains("start no-such-command-xyz"), "{stderr}");
-        assert!(!stderr.contains("adapters"), "{stderr}");
-    }
+            .unwrap()
+    };
+    let output = run(&["run"], "no-such-command-xyz");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(2), "{output:?}");
+    assert!(stderr.contains("start no-such-command-xyz"), "{stderr}");
+    assert!(!stderr.contains("adapters"), "{stderr}");
+}
+
+/// `run --auto` stands in for the command a host would have run natively: a
+/// program that cannot start answers as a shell does, 127 or 126 and one
+/// line on stderr, not exit 2 with a JSON error an agent has never seen.
+#[cfg(unix)]
+#[test]
+fn an_automatic_run_answers_like_a_shell_when_its_program_cannot_start() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let run = |program: &str| {
+        cli()
+            .args(["--cache-dir", dir.path().join("cache").to_str().unwrap()])
+            .args(["run", "--auto", "--", program, "argument"])
+            .output()
+            .unwrap()
+    };
+    let missing = run("no-such-command-xyz");
+    assert_eq!(missing.status.code(), Some(127), "{missing:?}");
+    assert_eq!(
+        String::from_utf8_lossy(&missing.stderr),
+        "scopelet: no-such-command-xyz: command not found\n"
+    );
+    assert!(missing.stdout.is_empty());
+
+    let script = dir.path().join("not-executable");
+    fs::write(&script, "#!/bin/sh\necho ran\n").unwrap();
+    fs::set_permissions(&script, fs::Permissions::from_mode(0o644)).unwrap();
+    let denied = run(script.to_str().unwrap());
+    assert_eq!(denied.status.code(), Some(126), "{denied:?}");
+    assert!(
+        String::from_utf8_lossy(&denied.stderr).ends_with(": permission denied\n"),
+        "{denied:?}"
+    );
+    // Nothing was stored for a command that never ran.
+    assert!(!dir.path().join("cache").join("blobs").exists());
 }
 
 #[test]

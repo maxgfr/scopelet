@@ -384,12 +384,30 @@ fn execute(cli: Cli) -> Result<i32> {
             *timeout > 0 && *timeout <= 3600,
             "timeout must be 1..3600 seconds"
         );
-        let result = process::capture(
+        let result = match process::capture(
             Command::new(&command[0]).args(&command[1..]),
             Duration::from_secs(*timeout),
             MAX_INPUT,
             cancel.clone(),
-        )?;
+        ) {
+            Ok(result) => result,
+            Err(error) => {
+                // This run stands in for the native command: a program that
+                // cannot start answers as a shell does, on stderr, with 127
+                // (not found) or 126 (not executable), not a JSON error.
+                let reason = match error
+                    .root_cause()
+                    .downcast_ref::<std::io::Error>()
+                    .map(std::io::Error::kind)
+                {
+                    Some(std::io::ErrorKind::NotFound) => (127, "command not found"),
+                    Some(std::io::ErrorKind::PermissionDenied) => (126, "permission denied"),
+                    _ => return Err(error),
+                };
+                eprintln!("scopelet: {}: {}", command[0], reason.1);
+                return Ok(reason.0);
+            }
+        };
         let code = process::exit_code(&result);
         // The hook context's prompt anchors, then the terms the command names.
         let mut anchors: Vec<String> = session

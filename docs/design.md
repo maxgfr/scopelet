@@ -205,7 +205,8 @@ the native command still reads the current file and enforces host permissions.
 A file growing after the check stays correct, though that read may miss savings.
 
 `run --auto` executes once and returns stdout/stderr independently, preserving
-exit status. Failed storage/compression returns captured native bytes; the
+exit status. A program that cannot start answers as a shell does: 127 (not
+found) or 126 (not executable) and one line on stderr. Failed storage/compression returns captured native bytes; the
 command is never rerun. Its stdin remains closed, so only noninteractive commands
 belong in this path. The Codex adapter only wraps the shell subset described
 below and skips recognized interactive flags. Claude's adapter
