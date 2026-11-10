@@ -27,7 +27,7 @@ fn parallel_go_failures_are_located_in_linear_time() {
         for i in 0..tests {
             if i % 3 == 0 {
                 text.push_str(&format!(
-                    "    case_{i}_test.go:{}: got {i}, want 1\n--- FAIL: TestCase{i} (0.00s)\n",
+                    "=== NAME  TestCase{i}\n    case_{i}_test.go:{}: got {i}, want 1\n--- FAIL: TestCase{i} (0.00s)\n",
                     10 + i % 90
                 ));
             } else {
@@ -54,7 +54,9 @@ fn parallel_go_failures_are_located_in_linear_time() {
         let view = String::from_utf8(view).unwrap();
         let failed = tests.div_ceil(3);
         assert!(
-            view.contains(&format!("\nfailed={failed}: TestCase0")),
+            view.contains(&format!(
+                "\nfailed={failed}: TestCase0 (case_0_test.go:10), TestCase3 (case_3_test.go:13), "
+            )),
             "{view}"
         );
         elapsed

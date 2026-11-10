@@ -571,7 +571,10 @@ failures gets a metadata line below the header: `failed=N: name (file:line),
 deepest `file.py:N:` of their section), jest and vitest (`●` or `FAIL file >
 name` titles and their first frame outside `node_modules`) and go test (`---
 FAIL:`, or a test that panicked, with its log line or the deepest frame
-outside the Go toolchain). An unrecognized format gets no line. A cargo run
+outside the Go toolchain; under `-v` a log line belongs to the test named by
+the `=== RUN`, `=== CONT` or `=== NAME` line above it and to the tests that
+one is nested in, since parallel tests interleave, and without `-v` to the
+`--- FAIL` line above it). An unrecognized format gets no line. A cargo run
 over two or more test binaries also gets `totals runs=N passed=P failed=F
 ignored=I (every test result line, omitted ones included)`, summed from every
 `test result:` line, since a view rarely has room for all of them and summing

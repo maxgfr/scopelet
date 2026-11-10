@@ -2214,8 +2214,8 @@ static JS_LOCATION: LazyLock<regex::Regex> =
     LazyLock::new(|| regex::Regex::new(r"(?:\(|at |❯ )([^()\s]+?):(\d+):\d+\)?\s*$").unwrap());
 static GO_FAIL: LazyLock<regex::Regex> =
     LazyLock::new(|| regex::Regex::new(r"^\s*--- FAIL: (\S+) \(").unwrap());
-static GO_RUN: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"^=== RUN\s+(\S+)$").unwrap());
+static GO_MARKER: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^=== (RUN|PAUSE|CONT|NAME)\s+(\S+)$").unwrap());
 static GO_LOCATION: LazyLock<regex::Regex> =
     LazyLock::new(|| regex::Regex::new(r"^\s+(\S+\.go):(\d+)(?::| \+0x|\s*$)").unwrap());
 
@@ -2327,52 +2327,51 @@ fn failures(text: &str) -> Vec<Failure> {
             .flatten()
             .map(|c| format!("{}:{}", &c[1], &c[2]))
     };
-    // For each line, the first line at or after it that gives a location.
-    // Parallel tests print every `=== RUN` first, so searching from a test's
-    // RUN line to its failure, and back for that RUN line, read most of the
-    // output once per failure: both are lookups now. Built on the first Go
-    // failure only, so other runners never pay for it.
-    let following: std::cell::OnceCell<Vec<usize>> = std::cell::OnceCell::new();
-    let following = || {
-        following.get_or_init(|| {
-            let mut next = vec![lines.len(); lines.len() + 1];
-            for i in (0..lines.len()).rev() {
-                next[i] = if located(lines[i]).is_some() {
-                    i
-                } else {
-                    next[i + 1]
-                };
-            }
-            next
-        })
-    };
-    // `run` is the test's latest `=== RUN` line above `at`, kept in `runs`
-    // as the lines go by. Its own lines first, then those after the failure.
-    let go_location = |run: Option<usize>, at: usize| {
-        let first = following()[run.map_or(at, |r| r + 1)];
-        if first < at {
-            return located(lines[first]);
-        }
+    // The lines below a failure, up to the next test's: where a run without
+    // `-v` logs it, and where a panic leaves its trace.
+    let below = |at: usize| {
         lines[at + 1..]
             .iter()
             .take_while(|l| !l.starts_with("=== ") && !l.trim_start().starts_with("--- "))
             .find_map(|l| located(l))
     };
-    let mut runs: HashMap<&str, usize> = HashMap::default();
+    // With `-v`, a test's output is streamed under the `=== RUN`, `=== CONT`
+    // or `=== NAME` line that names it, and parallel tests interleave: every
+    // `=== RUN` comes first, the logs later. A location therefore belongs to
+    // the test named last, and to the tests it is nested in, never to
+    // whichever test happened to start above it. One pass, so a run of
+    // thousands of tests is not read again for each failure.
+    let mut streaming: Option<&str> = None;
+    let mut first: HashMap<&str, String> = HashMap::default();
     for (i, line) in lines.iter().enumerate() {
         if let Some(fail) = GO_FAIL.captures(line) {
             let name = fail.get(1).unwrap().as_str();
-            add(name, go_location(runs.get(name).copied(), i));
-        } else if let Some(run) = GO_RUN.captures(line) {
-            // A test that panicked may have no `--- FAIL` line.
-            let name = run.get(1).unwrap().as_str();
-            let next = lines[i + 1..].iter().find(|l| {
-                l.starts_with("=== ") || l.starts_with("--- ") || l.starts_with("panic: ")
-            });
-            if next.is_some_and(|l| l.starts_with("panic: ")) {
-                add(name, go_location(runs.get(name).copied(), i));
+            add(name, first.get(name).cloned().or_else(|| below(i)));
+        } else if let Some(marker) = GO_MARKER.captures(line) {
+            let name = marker.get(2).unwrap().as_str();
+            streaming = (&marker[1] != "PAUSE").then_some(name);
+            if &marker[1] == "RUN" {
+                // A test that panicked may have no `--- FAIL` line.
+                let next = lines[i + 1..].iter().find(|l| {
+                    l.starts_with("=== ") || l.starts_with("--- ") || l.starts_with("panic: ")
+                });
+                if next.is_some_and(|l| l.starts_with("panic: ")) {
+                    add(name, first.get(name).cloned().or_else(|| below(i)));
+                }
+                // A rerun (`-count`) is located by its own lines.
+                first.remove(name);
             }
-            runs.insert(name, i);
+        } else if let Some(test) = streaming
+            && let Some(location) = located(line)
+        {
+            let mut name = test;
+            loop {
+                first.entry(name).or_insert_with(|| location.clone());
+                match name.rsplit_once('/') {
+                    Some((parent, _)) => name = parent,
+                    None => break,
+                }
+            }
         }
     }
     found

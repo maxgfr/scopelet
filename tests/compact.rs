@@ -1499,6 +1499,44 @@ fn failures_of_a_go_panic_point_outside_the_toolchain() {
     );
 }
 
+/// Captured from `go test -v` (Go 1.27) on tests that call `t.Parallel()`:
+/// every `=== RUN` comes first, and each test's log is streamed later under
+/// the `=== CONT` or `=== NAME` line that names it. A failure's location is
+/// its own log line, not the first one printed after its `=== RUN`, which
+/// sent `TestAlpha` and `TestBeta` to another test's line 28.
+#[test]
+fn failures_of_parallel_go_tests_point_at_their_own_log_line() {
+    let dir = tempfile::tempdir().unwrap();
+    let verbose = "=== RUN   TestAlpha\n=== PAUSE TestAlpha\n=== RUN   TestBeta\n=== PAUSE TestBeta\n=== RUN   TestGamma\n=== PAUSE TestGamma\n=== RUN   TestGroup\n=== RUN   TestGroup/inner\n    par_test.go:28: inner got 5\n--- FAIL: TestGroup (0.00s)\n    --- FAIL: TestGroup/inner (0.00s)\n=== RUN   TestSerial\n    par_test.go:33: serial got 6\n--- FAIL: TestSerial (0.00s)\n=== CONT  TestAlpha\n=== CONT  TestGamma\n    par_test.go:23: gamma is fine\n--- PASS: TestGamma (0.00s)\n=== CONT  TestBeta\n    par_test.go:16: beta starts\n    par_test.go:18: beta got 3, want 4\n--- FAIL: TestBeta (0.01s)\n=== NAME  TestAlpha\n    par_test.go:11: alpha got 1, want 2\n--- FAIL: TestAlpha (0.03s)\nFAIL\nFAIL\texample.com/gopar\t0.040s\nFAIL\n";
+    let text = test_view(dir.path(), &format!("{}{verbose}", passes(600)));
+    assert_eq!(
+        action_line(&text),
+        Some(
+            "failed=5: TestGroup (par_test.go:28), TestGroup/inner (par_test.go:28), TestSerial (par_test.go:33), TestBeta (par_test.go:16), TestAlpha (par_test.go:11)"
+        ),
+        "{text}"
+    );
+    // Without `-v` the same run logs each failure below its own line.
+    let quiet = "--- FAIL: TestGroup (0.00s)\n    --- FAIL: TestGroup/inner (0.00s)\n        par_test.go:28: inner got 5\n--- FAIL: TestSerial (0.00s)\n    par_test.go:33: serial got 6\n--- FAIL: TestBeta (0.01s)\n    par_test.go:16: beta starts\n    par_test.go:18: beta got 3, want 4\n--- FAIL: TestAlpha (0.03s)\n    par_test.go:11: alpha got 1, want 2\nFAIL\nFAIL\texample.com/gopar\t0.040s\nFAIL\n";
+    let text = test_view(dir.path(), &format!("{}{quiet}", passes(600)));
+    assert_eq!(
+        action_line(&text),
+        Some(
+            "failed=5: TestGroup, TestGroup/inner (par_test.go:28), TestSerial (par_test.go:33), TestBeta (par_test.go:16), TestAlpha (par_test.go:11)"
+        ),
+        "{text}"
+    );
+    // A rerun (`-count=2`) is located by the lines of its latest run, and a
+    // failure that logged nothing gets no location rather than a neighbour's.
+    let rerun = "=== RUN   TestFlaky\n    flaky_test.go:9: first try\n--- PASS: TestFlaky (0.00s)\n=== RUN   TestOther\n    other_test.go:3: fine\n--- PASS: TestOther (0.00s)\n=== RUN   TestSteady\n--- FAIL: TestSteady (0.00s)\n=== RUN   TestFlaky\n    flaky_test.go:14: second try\n--- FAIL: TestFlaky (0.00s)\nFAIL\n";
+    let text = test_view(dir.path(), &format!("{}{rerun}", passes(600)));
+    assert_eq!(
+        action_line(&text),
+        Some("failed=2: TestSteady, TestFlaky (flaky_test.go:14)"),
+        "{text}"
+    );
+}
+
 /// Audit finding: a failure line too long for a small budget is left out
 /// instead of making the view fail back to the raw output.
 #[test]
