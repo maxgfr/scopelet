@@ -1088,6 +1088,18 @@ fn stats_count_compressions_pass_throughs_and_later_expansions() {
         stats["bytes_saved"].as_u64().unwrap(),
         (big.len() - view.len()) as u64
     );
+    // A window longer than the clock can express is the whole journal, not
+    // an arithmetic overflow.
+    for days in ["18446744073709551615", "300000000000000"] {
+        let out = cli(dir.path())
+            .args(["stats", "--days", days])
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "--days {days}: {out:?}");
+        let all: Value = serde_json::from_slice(&out.stdout).unwrap();
+        assert_eq!(all["compressions"], 1, "{all}");
+        assert_eq!(all["events"], stats["events"], "{all}");
+    }
 }
 
 fn session_state(dir: &std::path::Path, session: &str, agent: Option<&str>) -> Option<Value> {

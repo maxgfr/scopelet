@@ -270,7 +270,12 @@ pub struct Stats {
 /// Summarize the journal over the last `days` days.
 pub fn stats(cache: Option<PathBuf>, days: u64) -> Stats {
     let journal = folder(cache);
-    let cutoff = timestamp(SystemTime::now() - Duration::from_secs(days.saturating_mul(86_400)));
+    // A window reaching before what the clock can express is the whole journal.
+    let cutoff = timestamp(
+        SystemTime::now()
+            .checked_sub(Duration::from_secs(days.saturating_mul(86_400)))
+            .unwrap_or(UNIX_EPOCH),
+    );
     let mut events: Vec<Event> = Vec::new();
     if let Ok(entries) = std::fs::read_dir(&journal) {
         let mut files: Vec<PathBuf> = entries
