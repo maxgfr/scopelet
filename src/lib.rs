@@ -7,6 +7,7 @@ pub mod compress;
 mod encoding;
 pub mod events;
 pub mod integration;
+mod json_order;
 mod line_index;
 pub mod model;
 pub mod pipeline;

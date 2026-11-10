@@ -141,6 +141,112 @@ fn install_preserves_other_hooks_is_idempotent_and_uninstall_removes_only_ours()
     let value: Value = serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
     assert_eq!(value, other);
 }
+/// Installing edits the user's own settings file: its keys stay in the order
+/// they were written, at every depth, and a round trip gives the file back
+/// byte for byte. They were once all sorted alphabetically.
+#[test]
+fn install_keeps_the_order_of_the_keys_it_did_not_write() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir(dir.path().join("claude")).unwrap();
+    let path = dir.path().join("claude/settings.json");
+    let original = r#"{
+  "theme": "dark",
+  "permissions": {
+    "deny": [
+      "Bash(rm:*)"
+    ],
+    "allow": [
+      "Bash(ls:*)"
+    ],
+    "additionalDirectories": []
+  },
+  "env": {
+    "ZED": "1",
+    "ALPHA": "2"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-done",
+            "timeout": 3
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "audit-log"
+          }
+        ],
+        "matcher": "Write"
+      }
+    ]
+  },
+  "model": "opus",
+  "cleanupPeriodDays": 30.0,
+  "statusLine": {}
+}
+"#;
+    fs::write(&path, original).unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "claude"])
+        .assert()
+        .success();
+    let installed = fs::read_to_string(&path).unwrap();
+    let ordered = |needles: &[&str]| {
+        let at: Vec<usize> = needles
+            .iter()
+            .map(|needle| {
+                installed
+                    .find(needle)
+                    .unwrap_or_else(|| panic!("{needle} in {installed}"))
+            })
+            .collect();
+        assert!(
+            at.windows(2).all(|w| w[0] < w[1]),
+            "{needles:?}: {installed}"
+        );
+    };
+    ordered(&[
+        "\n  \"theme\":",
+        "\n  \"permissions\":",
+        "\n  \"env\":",
+        "\n  \"hooks\":",
+        "\n  \"model\":",
+        "\n  \"cleanupPeriodDays\":",
+        "\n  \"statusLine\":",
+    ]);
+    ordered(&["\"deny\":", "\"allow\":", "\"additionalDirectories\":"]);
+    ordered(&["\"ZED\":", "\"ALPHA\":"]);
+    // The user's events first, then the ones this install added.
+    ordered(&["\"Stop\":", "\"PostToolUse\":", "\"SessionStart\":"]);
+    ordered(&[
+        "\"matcher\": \"\"",
+        "\"type\": \"command\",\n            \"command\": \"notify-done\",\n            \"timeout\": 3",
+        "\"command\": \"audit-log\"",
+        "\"matcher\": \"Write\"",
+    ]);
+    assert!(
+        installed.contains("\"cleanupPeriodDays\": 30.0"),
+        "{installed}"
+    );
+    assert!(installed.ends_with("}\n"), "{installed:?}");
+    let value: Value = serde_json::from_str(&installed).unwrap();
+    assert_eq!(value["hooks"]["PostToolUse"].as_array().unwrap().len(), 2);
+    cli(dir.path())
+        .args(["uninstall", "--agent", "claude"])
+        .assert()
+        .success();
+    assert_eq!(fs::read_to_string(&path).unwrap(), original);
+}
+
 #[test]
 fn uninstall_reports_its_own_note_for_every_host() {
     let dir = tempfile::tempdir().unwrap();

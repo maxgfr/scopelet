@@ -275,7 +275,8 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
         if hooks.is_empty() {
             object.remove("hooks");
         }
-        let updated = serde_json::to_vec_pretty(&value)?;
+        // The user's file: its keys keep the order they were written in.
+        let updated = crate::json_order::pretty_like(&value, old.as_deref());
         // Compare semantic values, so reinstalling does not churn files/backups.
         if old
             .as_ref()

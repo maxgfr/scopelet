@@ -137,7 +137,8 @@ unwritable store or state, a panic (release builds abort on one) or an
 unwritable stdout all answer `{}` with status 0, so the host keeps its native
 output; each Claude Code hook also carries a 5-second timeout, about thirty
 times the slowest measured call (a 30 MB output). Host settings are merged, original bytes backed up, and only exact Scopelet hook
-entries are removed. The resolved executable is copied during installation so
+entries are removed. The file is rewritten with its keys in the order they
+had, at every depth, new keys after them, and with its final newline. The resolved executable is copied during installation so
 hooks never trigger downloads. A package manager upgrades the `scopelet` on
 the PATH, not that copy: at a Claude Code session start, when the pinned copy
 running the hook is older than the first `scopelet` on the PATH, a
