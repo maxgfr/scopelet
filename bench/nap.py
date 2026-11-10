@@ -233,9 +233,54 @@ def relative(path, cwd):
     return path.removeprefix('./') or '.'
 
 
+def commands(line):
+    """The commands of a shell line: split on `|`, `||`, `&&` and `;` outside
+    quotes, so an alternation in a quoted pattern is not read as a pipe."""
+    segments, current, quote, i = [], [], None, 0
+    while i < len(line):
+        c = line[i]
+        if quote:
+            quote = None if c == quote else quote
+        elif c in '\'"':
+            quote = c
+        elif c == '\\' and i + 1 < len(line):
+            current.append(c)
+            i += 1
+            c = line[i]
+        elif c in '|;' or line.startswith('&&', i):
+            segments.append(''.join(current))
+            current = []
+            i += 2 if line.startswith(('||', '&&'), i) else 1
+            continue
+        current.append(c)
+        i += 1
+    segments.append(''.join(current))
+    return [s.strip() for s in segments if s.strip()]
+
+
+# Search options whose value is a separate word, which is not the pattern.
+VALUED = {'-A', '-B', '-C', '-m', '-g', '-t', '-T', '-j', '-f', '-d', '-D', '--context', '--after-context',
+          '--before-context', '--max-count', '--glob', '--iglob', '--type', '--type-not', '--file', '--include',
+          '--exclude', '--exclude-dir', '--max-depth', '--color', '--colour', '--sort', '--threads'}
+
+
+def search_pattern(tokens):
+    """The pattern a searcher was given: the value of `-e`, the word after
+    `--`, else its first word that is neither an option nor an option's value."""
+    rest = iter(tokens[1:])
+    for token in rest:
+        if token in ('-e', '--regexp', '--'):
+            return next(rest, None)
+        if token in VALUED:
+            next(rest, None)
+        elif not token.startswith('-'):
+            return token
+    return None
+
+
 def bash_action(command, cwd=None):
     """Program, paths, pattern and line range of a shell command."""
-    segments = [s for s in re.split(r'\s*(?:\|\||&&|;|\|)\s*', command) if s.strip()]
+    segments = commands(command)
     program, pattern, span = None, None, None
     for segment in segments:
         tokens = [t for t in words(segment) if not re.fullmatch(r'[A-Z_][A-Z0-9_]*=.*', t)]
@@ -244,9 +289,8 @@ def bash_action(command, cwd=None):
         name = Path(tokens[0]).name
         if program is None:
             program = name if name != 'git' or len(tokens) < 2 else f'git {tokens[1]}'
-        args = [t for t in tokens[1:] if not t.startswith('-')]
-        if name in SEARCHERS and pattern is None and args:
-            pattern = args[0]
+        if name in SEARCHERS and pattern is None:
+            pattern = search_pattern(tokens)
         if name == 'git' and pattern is None:
             for flag in ('-S', '-G', '--grep'):
                 if flag in tokens[:-1]:

@@ -89,6 +89,21 @@ class ActionTests(unittest.TestCase):
                          ('git log', ['pricing.py'], 'price + discount', None))
         self.assertEqual(nap.bash_action('LC_ALL=C python3 -m unittest -v test_rates')[0], 'python3')
 
+    def test_a_search_pattern_is_the_pattern_not_a_flag_value_or_half_an_alternation(self):
+        # A `|` inside quotes is part of the pattern, not a pipe.
+        self.assertEqual(nap.bash_action("grep -En 'error|warn' app.log | head -n 5"),
+                         ('grep', ['app.log'], 'error|warn', 'head:5'))
+        self.assertEqual(nap.bash_action('rg "a && b; c" src/lib.rs'), ('rg', ['src/lib.rs'], 'a && b; c', None))
+        # An option's separate value is not the pattern.
+        self.assertEqual(nap.bash_action('grep -n -A 2 needle src/a.py'), ('grep', ['src/a.py'], 'needle', None))
+        self.assertEqual(nap.bash_action("rg -g '*.py' -m 3 needle src/"), ('rg', ['src'], 'needle', None))
+        self.assertEqual(nap.bash_action('grep --include=*.py -r needle .')[2], 'needle')
+        # `-e` and `--` say which word the pattern is.
+        self.assertEqual(nap.bash_action('grep -n -e needle src/a.py'), ('grep', ['src/a.py'], 'needle', None))
+        self.assertEqual(nap.bash_action('rg -n -- -flag src/a.py'), ('rg', ['src/a.py'], '-flag', None))
+        # Two steps that differ only by their pattern are different actions.
+        self.assertNotEqual(nap.bash_action('grep -A 2 alpha f.py'), nap.bash_action('grep -A 2 beta f.py'))
+
     def test_tool_calls_and_answers_compare_by_their_parts(self):
         read = nap.action([{'type': 'thinking', 'thinking': ''},
                            {'type': 'tool_use', 'name': 'Read', 'input': {'file_path': './billing.py', 'offset': 900, 'limit': 40}}])
