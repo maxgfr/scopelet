@@ -986,6 +986,13 @@ fn text_units<'a>(
     for i in (0..n).filter(|&i| collapsed.get(i)) {
         trivial.clear(i);
     }
+    // Collapsed sections by their header line, which each unit asks for: a
+    // diff of thousands of files is not searched once per line.
+    let generated: HashMap<usize, &DiffSection> = sections
+        .iter()
+        .filter(|s| s.generated)
+        .map(|s| (s.header, s))
+        .collect();
     // Context is the window around a diagnostic; head and tail lines only
     // count for priority.
     let mut context = Bits::new(n);
@@ -1269,7 +1276,7 @@ fn text_units<'a>(
             line
         };
         let mut unit = Unit::text(record, label, view, raw, priority, limit, bare);
-        if let Some(section) = sections.iter().find(|s| s.generated && s.header == i) {
+        if let Some(section) = generated.get(&i) {
             let source = if bare {
                 String::new()
             } else {
