@@ -239,3 +239,40 @@ fn an_incomplete_scan_says_each_reason_once() {
     let unreadable = notes.iter().filter(|n| n.contains("unreadable")).count();
     assert_eq!(unreadable, 1, "{notes:?}");
 }
+
+/// A scan reads 128 MiB at most: it stops before the file that would take
+/// it past the cap. It once stopped after it, up to 32 MiB too late.
+#[test]
+fn a_scan_stops_before_the_file_that_would_exceed_its_byte_cap() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("repo");
+    std::fs::create_dir_all(&root).unwrap();
+    // Five sparse files of 30 MiB: four fit in 128 MiB, the fifth does not.
+    for i in 0..5 {
+        let file = std::fs::File::create(root.join(format!("big{i}.bin"))).unwrap();
+        file.set_len(30 * 1024 * 1024).unwrap();
+    }
+    std::fs::write(root.join("z-last.txt"), "after the cap\n").unwrap();
+    let view = ok(cli(
+        &dir.path().join("cache"),
+        "4",
+        &["query", "--repo", root.to_str().unwrap(), "--count"],
+        None,
+    ));
+    assert_eq!(view["scan_complete"], false, "{view}");
+    let manifest = ok(cli(
+        &dir.path().join("cache"),
+        "4",
+        &["expand", view["artifact"].as_str().unwrap(), "--manifest"],
+        None,
+    ));
+    assert_eq!(manifest["skipped"]["binary_or_non_utf8"], 4, "{manifest}");
+    assert!(
+        manifest["notes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|n| n.as_str().unwrap().contains("scan stopped at")),
+        "{manifest}"
+    );
+}

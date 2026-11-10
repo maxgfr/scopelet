@@ -6,6 +6,9 @@ use serde_json::Value;
 use std::path::Path;
 use std::sync::{Arc, atomic::AtomicBool};
 
+/// Bytes a repository scan reads at most.
+const SCAN_BYTES: u64 = 128 * 1024 * 1024;
+
 pub fn load(source: &Source, store: &Store, cancel: Arc<AtomicBool>) -> Result<Dataset> {
     load_search(source, store, cancel, None)
 }
@@ -60,17 +63,19 @@ pub(crate) fn load_search(
                 if !entry.file_type().is_some_and(|t| t.is_file()) {
                     continue;
                 }
-                if files >= 20000 || bytes >= 128 * 1024 * 1024 {
-                    candidates.push(Candidate::Capped);
-                    break;
-                }
-                files += 1;
                 // Oversize files are not read and never counted toward the cap.
                 let size = entry
                     .metadata()
                     .map(|m| m.len())
                     .ok()
                     .filter(|&s| s <= MAX_INPUT as u64);
+                // The scan stops before the file that would take it past the
+                // cap, not after it: the limit is what is read at most.
+                if files >= 20000 || bytes + size.unwrap_or(0) > SCAN_BYTES {
+                    candidates.push(Candidate::Capped);
+                    break;
+                }
+                files += 1;
                 bytes += size.unwrap_or(0);
                 candidates.push(Candidate::File {
                     name: entry
