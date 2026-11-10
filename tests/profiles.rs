@@ -448,6 +448,15 @@ fn options_that_write_run_or_wait_are_never_recognized() {
         "tail -Fq build.log",
         "docker logs -tf api",
         "kubectl logs -fp api",
+        // getopt_long and Git accept any unique prefix of a long option.
+        "git grep --open=vim needle",
+        "git grep --open-files vim needle",
+        "git log -p --out=/tmp/out",
+        "tail --fol build.log",
+        "tail --fol=name build.log",
+        "tail --ret build.log",
+        "rg --hostname-bin=/tmp/evil needle",
+        "rg --hostname-bin /tmp/evil needle",
     ] {
         assert_eq!(profile(&args(command)), None, "{command}");
     }
@@ -457,6 +466,11 @@ fn options_that_write_run_or_wait_are_never_recognized() {
         "sort --compress-program=/tmp/evil",
         "sort --compress-program /tmp/evil",
         "tail -fn5",
+        "sort --out=/tmp/out",
+        "sort --o /tmp/out",
+        "sort --compress-prog=/tmp/evil",
+        "tail --fol",
+        "rg --hostname-bin=/tmp/evil needle",
     ] {
         assert_eq!(
             scopelet::commands::filter(&args(command)),
@@ -471,10 +485,17 @@ fn options_that_write_run_or_wait_are_never_recognized() {
         "tree -L 2",
         "tail -n 5 build.log",
         "docker logs -t api",
+        // Options of their own that merely share letters with an unsafe one.
+        "git diff --text",
+        "git diff --output-indicator-new=+",
+        "git log -p --oneline",
+        "rg --pretty needle",
     ] {
         assert!(profile(&args(command)).is_some(), "{command}");
     }
     assert!(scopelet::commands::filter(&args("uniq -c")).is_some());
+    assert!(scopelet::commands::filter(&args("sort --reverse")).is_some());
+    assert!(scopelet::commands::filter(&args("sort --rev -k2")).is_some());
 }
 
 /// The file-read threshold belongs to the compressor, not only to hooks:

@@ -421,11 +421,7 @@ pub fn profile(args: &[String]) -> Option<Profile> {
         {
             tests
         }
-        "rg" if args.len() >= 2
-            && !args.iter().any(|a| a == "--pre" || a.starts_with("--pre=")) =>
-        {
-            Some(Profile::Search)
-        }
+        "rg" if args.len() >= 2 && !rg_runs_program(args) => Some(Profile::Search),
         "grep" if args.len() >= 3 => Some(Profile::Search),
         "find"
             if !args.iter().any(|a| {
@@ -459,13 +455,20 @@ pub fn profile(args: &[String]) -> Option<Profile> {
             }
             let command = rest.first().map(String::as_str).unwrap_or("");
             // Options that run a program, start a pager or write a file.
+            // `--text` is an option of its own, not short for `--textconv`.
             let unsafe_option = |a: &String| {
-                matches!(
-                    a.as_str(),
-                    "--paginate" | "--ext-diff" | "--textconv" | "--interactive"
-                ) || ["--output", "--open-files-in-pager"]
-                    .iter()
-                    .any(|o| a == o || a.starts_with(&format!("{o}=")))
+                (a != "--text"
+                    && long_option(
+                        a,
+                        &[
+                            "paginate",
+                            "ext-diff",
+                            "textconv",
+                            "interactive",
+                            "output",
+                            "open-files-in-pager",
+                        ],
+                    ))
                     || (command == "grep" && a.starts_with("-O"))
             };
             if rest.iter().any(unsafe_option) {
@@ -695,11 +698,33 @@ pub struct Filter {
     pub bounds_output: bool,
 }
 
+/// Whether `arg` is one of these long options, in full or abbreviated, with
+/// or without `=VALUE`. `getopt_long` and Git's option parser accept any
+/// unambiguous prefix (`sort --out=F` is `--output=F`), so a prefix counts as
+/// every option it could stand for.
+fn long_option(arg: &str, names: &[&str]) -> bool {
+    arg.strip_prefix("--").is_some_and(|rest| {
+        let name = rest.split('=').next().unwrap_or("");
+        !name.is_empty() && names.iter().any(|full| full.starts_with(name))
+    })
+}
+
+/// ripgrep options that run another program: a preprocessor for each file,
+/// or a command asked for the host name of hyperlinks.
+fn rg_runs_program(args: &[String]) -> bool {
+    args.iter().any(|a| {
+        ["--pre", "--hostname-bin"].iter().any(|option| {
+            a.strip_prefix(option)
+                .is_some_and(|rest| rest.is_empty() || rest.starts_with('='))
+        })
+    })
+}
+
 /// Whether a short-flag cluster (`-il`) or a long flag names one of these.
 fn has_flag(args: &[String], short: &[char], long: &[&str]) -> bool {
     args.iter().skip(1).any(|a| {
-        if let Some(name) = a.strip_prefix("--") {
-            long.contains(&name.split('=').next().unwrap_or(""))
+        if a.starts_with("--") {
+            long_option(a, long)
         } else {
             a.strip_prefix('-')
                 .is_some_and(|cluster| cluster.chars().any(|c| short.contains(&c)))
@@ -749,9 +774,7 @@ pub fn filter(args: &[String]) -> Option<Filter> {
     match name {
         "head" | "wc" => Some(bounded),
         "tail" if !has_flag(args, &['f', 'F'], &["follow", "retry"]) => Some(bounded),
-        "grep" | "egrep" | "fgrep" | "rg"
-            if !args.iter().any(|a| a == "--pre" || a.starts_with("--pre=")) =>
-        {
+        "grep" | "egrep" | "fgrep" | "rg" if !rg_runs_program(args) => {
             let counts = has_flag(
                 args,
                 &['c', 'l', 'L', 'q'],

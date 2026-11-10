@@ -233,7 +233,8 @@ install|upgrade`, `bundle install`); searches and listings (`rg`, `grep`,
 `-p`), `show`, `status`, `blame` and `grep` with no option before the
 subcommand other than `--no-pager` or `-C DIR` (`-c` can name a program) and
 none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
-`--textconv`, `--output`, `grep -O`); logs (`docker
+`--textconv`, `--output`, `grep -O`, also when a long option is abbreviated);
+logs (`docker
 logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
 `nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
 `rtk` are recognized by the program they run, not by a substring.

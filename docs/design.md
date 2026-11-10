@@ -335,7 +335,10 @@ ls-files`); Git `diff`, `log` (with
 `-p`), `show`, `status`, `blame` and `grep` with no option before the
 subcommand other than `--no-pager` or `-C DIR` (`-c` can name a program) and
 none that pages, runs a program or writes a file (`--paginate`, `--ext-diff`,
-`--textconv`, `--output`, `grep -O`); `gh pr diff` with the Git profile;
+`--textconv`, `--output`, `grep -O`; an abbreviated long option, such as
+`--out=F` or `tail --fol`, counts as every option it could shorten, and
+`rg --pre`/`--hostname-bin` run a program too); `gh pr diff` with the Git
+profile;
 logs (`docker
 logs`/`kubectl logs` without `-f`, `jq` on a file, `gh run view` of a named
 run or job with `--log` or `--log-failed`; without a run it opens a picker,
