@@ -2335,11 +2335,21 @@ fn failures(text: &str) -> Vec<Failure> {
             .map(|c| format!("{}:{}", &c[1], &c[2]))
     };
     // The lines below a failure, up to the next test's: where a run without
-    // `-v` logs it, and where a panic leaves its trace.
-    let below = |at: usize| {
+    // `-v` logs it, and where a panic leaves its trace. The result lines of
+    // its own subtests are part of its report, so a parent is located by
+    // the subtest that failed, as it is with `-v`.
+    let below = |at: usize, name: &str| {
+        let nested = format!("{name}/");
         lines[at + 1..]
             .iter()
-            .take_while(|l| !l.starts_with("=== ") && !l.trim_start().starts_with("--- "))
+            .take_while(|l| {
+                !l.starts_with("=== ")
+                    && l.trim_start().strip_prefix("--- ").is_none_or(|result| {
+                        result
+                            .split_once(": ")
+                            .is_some_and(|(_, test)| test.starts_with(&nested))
+                    })
+            })
             .find_map(|l| located(l))
     };
     // With `-v`, a test's output is streamed under the `=== RUN`, `=== CONT`
@@ -2353,7 +2363,7 @@ fn failures(text: &str) -> Vec<Failure> {
     for (i, line) in lines.iter().enumerate() {
         if let Some(fail) = GO_FAIL.captures(line) {
             let name = fail.get(1).unwrap().as_str();
-            add(name, first.get(name).cloned().or_else(|| below(i)));
+            add(name, first.get(name).cloned().or_else(|| below(i, name)));
         } else if let Some(marker) = GO_MARKER.captures(line) {
             let name = marker.get(2).unwrap().as_str();
             streaming = (&marker[1] != "PAUSE").then_some(name);
@@ -2363,7 +2373,7 @@ fn failures(text: &str) -> Vec<Failure> {
                     l.starts_with("=== ") || l.starts_with("--- ") || l.starts_with("panic: ")
                 });
                 if next.is_some_and(|l| l.starts_with("panic: ")) {
-                    add(name, first.get(name).cloned().or_else(|| below(i)));
+                    add(name, first.get(name).cloned().or_else(|| below(i, name)));
                 }
                 // A rerun (`-count`) is located by its own lines.
                 first.remove(name);

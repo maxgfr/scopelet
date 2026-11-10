@@ -1516,13 +1516,14 @@ fn failures_of_parallel_go_tests_point_at_their_own_log_line() {
         ),
         "{text}"
     );
-    // Without `-v` the same run logs each failure below its own line.
+    // Without `-v` the same run logs each failure below its own line, and a
+    // parent is located by its failed subtest, as it is above.
     let quiet = "--- FAIL: TestGroup (0.00s)\n    --- FAIL: TestGroup/inner (0.00s)\n        par_test.go:28: inner got 5\n--- FAIL: TestSerial (0.00s)\n    par_test.go:33: serial got 6\n--- FAIL: TestBeta (0.01s)\n    par_test.go:16: beta starts\n    par_test.go:18: beta got 3, want 4\n--- FAIL: TestAlpha (0.03s)\n    par_test.go:11: alpha got 1, want 2\nFAIL\nFAIL\texample.com/gopar\t0.040s\nFAIL\n";
     let text = test_view(dir.path(), &format!("{}{quiet}", passes(600)));
     assert_eq!(
         action_line(&text),
         Some(
-            "failed=5: TestGroup, TestGroup/inner (par_test.go:28), TestSerial (par_test.go:33), TestBeta (par_test.go:16), TestAlpha (par_test.go:11)"
+            "failed=5: TestGroup (par_test.go:28), TestGroup/inner (par_test.go:28), TestSerial (par_test.go:33), TestBeta (par_test.go:16), TestAlpha (par_test.go:11)"
         ),
         "{text}"
     );
