@@ -716,80 +716,78 @@ fn execute(cli: Cli) -> Result<i32> {
                 "max_bytes must be 1024..1048576"
             );
             let id = store.resolve(&id)?;
-            if store.contains(&id) {
-                let how = if !find.is_empty() {
-                    "find"
-                } else if raw {
-                    "raw"
-                } else if manifest {
-                    "manifest"
-                } else if id.starts_with("blob:") {
-                    "range"
-                } else {
-                    "page"
-                };
-                scopelet::events::expanded(Some(store.root.clone()), &id, how);
-            }
-            if !find.is_empty() {
-                let data = scopelet::recovery::search(
-                    &store,
-                    &id,
-                    &find,
-                    (regex, ignore_case),
-                    context,
-                    source.as_deref(),
-                )?;
-                print(&scopelet::recovery::render(
-                    &data, &store, max_bytes, offset,
-                )?)?;
-                return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
-                    130
-                } else {
-                    0
-                });
-            }
-            if id.starts_with("blob:") && !raw {
-                ensure!(!manifest, "--manifest requires an artifact");
-                // A blob is paged by lines: the lines that fit, then next_start.
-                print(&scopelet::recovery::page(
-                    &store,
-                    &id,
-                    start.unwrap_or(1),
-                    end.unwrap_or(usize::MAX),
-                    max_bytes,
-                )?)?;
-                return Ok(if cancel.load(std::sync::atomic::Ordering::SeqCst) {
-                    130
-                } else {
-                    0
-                });
-            }
-            let bytes = store.get(&id)?;
-            // Expansion is use: keep the item out of the next age-based cleanup.
-            store.touch(&id);
-            if raw {
-                std::io::stdout().write_all(&bytes)?;
-                return Ok(0);
-            }
-            if id.starts_with("artifact:") {
-                let data = store.dataset(&id)?;
-                if manifest {
-                    let schema = scopelet::store::artifact_schema(&bytes)?;
-                    print(&manifest_view(&data, max_bytes, schema)?)?;
-                } else {
-                    ensure!(
-                        start.is_none() && end.is_none(),
-                        "line ranges require a blob reference"
-                    );
-                    // The dataset is already stored under this id; do not write it again.
-                    print(&render::render_stored(
-                        &data,
-                        id,
-                        Mode::Default,
-                        max_bytes,
-                        offset,
-                    )?)?;
+            let how = if !find.is_empty() {
+                "find"
+            } else if raw {
+                "raw"
+            } else if manifest {
+                "manifest"
+            } else if id.starts_with("blob:") {
+                "range"
+            } else {
+                "page"
+            };
+            let expand = || -> Result<()> {
+                if !find.is_empty() {
+                    let data = scopelet::recovery::search(
+                        &store,
+                        &id,
+                        &find,
+                        (regex, ignore_case),
+                        context,
+                        source.as_deref(),
+                    )?;
+                    return print(&scopelet::recovery::render(
+                        &data, &store, max_bytes, offset,
+                    )?);
                 }
+                if id.starts_with("blob:") && !raw {
+                    ensure!(!manifest, "--manifest requires an artifact");
+                    // A blob is paged by lines: the lines that fit, then next_start.
+                    return print(&scopelet::recovery::page(
+                        &store,
+                        &id,
+                        start.unwrap_or(1),
+                        end.unwrap_or(usize::MAX),
+                        max_bytes,
+                    )?);
+                }
+                let bytes = store.get(&id)?;
+                // Expansion is use: keep the item out of the next age-based cleanup.
+                store.touch(&id);
+                if raw {
+                    std::io::stdout().write_all(&bytes)?;
+                    return Ok(());
+                }
+                if id.starts_with("artifact:") {
+                    let data = store.dataset(&id)?;
+                    if manifest {
+                        let schema = scopelet::store::artifact_schema(&bytes)?;
+                        print(&manifest_view(&data, max_bytes, schema)?)?;
+                    } else {
+                        ensure!(
+                            start.is_none() && end.is_none(),
+                            "line ranges require a blob reference"
+                        );
+                        // The dataset is already stored under this id; do not write it again.
+                        print(&render::render_stored(
+                            &data,
+                            id.clone(),
+                            Mode::Default,
+                            max_bytes,
+                            offset,
+                        )?)?;
+                    }
+                }
+                Ok(())
+            };
+            expand()?;
+            // Journaled once the evidence was read: a failed expansion read
+            // nothing and must not count toward a profile's expand rate.
+            scopelet::events::expanded(Some(store.root.clone()), &id, how);
+            // A raw original is bytes for a file or a pipe, complete or not.
+            if raw && find.is_empty() {
+                return Ok(0);
             }
         }
         Cmd::Clean {

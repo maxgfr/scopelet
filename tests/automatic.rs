@@ -1102,6 +1102,47 @@ fn stats_count_compressions_pass_throughs_and_later_expansions() {
     }
 }
 
+/// The journal records how evidence was read. An expansion that failed read
+/// nothing, so it must not raise the expand rate that flags a tight budget.
+#[test]
+fn a_failed_expansion_is_not_counted_as_one() {
+    let dir = tempfile::tempdir().unwrap();
+    let big: String = (0..2000).map(|i| format!("line {i} of noise\n")).collect();
+    let view = cli(dir.path())
+        .arg("compress")
+        .write_stdin(big)
+        .output()
+        .unwrap()
+        .stdout;
+    let view = String::from_utf8(view).unwrap();
+    let id = view_id(&view);
+    let stats = || -> Value {
+        let out = cli(dir.path())
+            .args(["stats", "--days", "1"])
+            .output()
+            .unwrap();
+        serde_json::from_slice(&out.stdout).unwrap()
+    };
+    for failing in [
+        &["expand", id, "--find", "noise", "--source", "no-such-label"][..],
+        &["expand", id, "--start", "1", "--end", "3"][..],
+        &["expand", id, "--find", "(", "--regex"][..],
+    ] {
+        cli(dir.path()).args(failing).assert().failure();
+    }
+    let before = stats();
+    assert_eq!(before["expands"], 0, "{before}");
+    assert_eq!(before["expanded_after_compression"], 0, "{before}");
+    cli(dir.path())
+        .args(["expand", id, "--find", "line 7 of"])
+        .assert()
+        .success();
+    let after = stats();
+    assert_eq!(after["expands"], 1, "{after}");
+    assert_eq!(after["expands_by_kind"]["find"], 1, "{after}");
+    assert_eq!(after["expanded_after_compression"], 1, "{after}");
+}
+
 fn session_state(dir: &std::path::Path, session: &str, agent: Option<&str>) -> Option<Value> {
     let key = scopelet::session::key(session, agent);
     fs::read(dir.join("config/sessions").join(key))
