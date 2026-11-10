@@ -1392,6 +1392,41 @@ fn session_state(dir: &std::path::Path, session: &str, agent: Option<&str>) -> O
         .map(|bytes| serde_json::from_slice(&bytes).unwrap())
 }
 
+/// Hooks of one context run side by side when a host makes tool calls in
+/// parallel. Each one's outputs must be remembered: every hook once loaded
+/// the state, worked, then saved it, and the last to finish erased the
+/// others' entries.
+#[test]
+fn concurrent_hooks_of_one_context_all_remember_what_they_showed() {
+    let dir = tempfile::tempdir().unwrap();
+    let start = json!({"hook_event_name":"SessionStart","session_id":"p1","source":"startup"});
+    assert_ne!(hook(dir.path(), "claude", start), json!({}));
+    const PARALLEL: usize = 16;
+    let events: Vec<Value> = (0..PARALLEL)
+        .map(|n| {
+            let log: String = (0..3000)
+                .map(|i| format!("call {n} step {i} compiled module_{}\n", i * 7 % 311))
+                .collect();
+            bash_result("p1", "make build", &log)
+        })
+        .collect();
+    std::thread::scope(|scope| {
+        for event in &events {
+            scope.spawn(|| {
+                let result = hook(dir.path(), "claude", event.clone());
+                assert!(shown(event, &result, "stdout").starts_with("[scopelet v5 "));
+            });
+        }
+    });
+    let state = session_state(dir.path(), "p1", None).unwrap();
+    assert_eq!(state["seen"].as_array().unwrap().len(), PARALLEL, "{state}");
+    // Each of them is a repeat the next time it comes.
+    for event in &events {
+        let again = shown(event, &hook(dir.path(), "claude", event.clone()), "stdout");
+        assert!(again.contains(" repeat: identical"), "{again}");
+    }
+}
+
 /// Each context keeps a private JSON state: the main conversation under its
 /// session, a subagent under its session and agent. A marker written by an
 /// earlier version (the bare mode) still counts as announced.

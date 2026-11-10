@@ -760,9 +760,12 @@ fn claude_result(event: &Value) -> Result<Value> {
     // view or raw) is replaced by a reference to it.
     let mut repeated = vec![false; fields.len()];
     let context = context_key(event);
-    let mut state = context.as_deref().map(crate::session::load);
-    let loaded = state.clone();
-    if let Some(state) = &mut state {
+    // What the context had been shown when this result arrived. The outputs
+    // this result shows are added in one locked step at the end, since
+    // other hooks of the same context run meanwhile.
+    let state = context.as_deref().map(crate::session::load);
+    let mut shown: Vec<String> = Vec::new();
+    if let Some(before) = &state {
         for (i, field) in fields.iter().enumerate() {
             let raw = output[*field].as_str().unwrap();
             if raw.len() <= compress::SMALL || raw.len() > MAX_INPUT {
@@ -772,7 +775,7 @@ fn claude_result(event: &Value) -> Result<Value> {
             let hash = crate::session::short(&hash);
             // Seen before this result: its other stream holding the same
             // bytes is as new to the conversation as this one.
-            if loaded.as_ref().is_some_and(|before| before.saw(hash))
+            if before.saw(hash)
                 && let Some(marker) =
                     compress::repeat_recorded("claude", program, raw.as_bytes(), None, profile)
             {
@@ -780,17 +783,19 @@ fn claude_result(event: &Value) -> Result<Value> {
                 repeated[i] = true;
                 changed = true;
             }
-            state.remember(hash);
+            shown.push(hash.to_owned());
         }
     }
     let remembered = || {
-        // Written only when it changed: most results are small and remember
+        // Nothing to write for most results: they are small and remember
         // nothing, and a hook runs on every tool call.
-        if state != loaded
-            && let (Some(key), Some(state)) = (&context, &state)
-        {
+        if let Some(key) = context.as_deref().filter(|_| !shown.is_empty()) {
             // Best effort: a lost write only misses a later repeat.
-            let _ = crate::session::save(key, state);
+            let _ = crate::session::update(key, false, |state| {
+                for hash in &shown {
+                    state.remember(hash);
+                }
+            });
         }
     };
     if !changed
@@ -860,29 +865,27 @@ fn context(event: &Value, mode: Preference) -> Result<Value> {
     let Some(key) = context_key(event) else {
         return Ok(json!({}));
     };
-    let mut state = crate::session::load(&key);
-    let before = state.clone();
     let start = name == "SessionStart";
-    if start && matches!(event["source"].as_str(), Some("compact" | "clear")) {
-        state.seen.clear();
-    }
-    if start && event["source"] == "clear" {
-        state.anchors.clear();
-    }
-    // A prompt, or a context started over, opens a new turn.
-    state.new_turn();
-    // Prompt terms stay in this private state, never in the event journal.
-    if name == "UserPromptSubmit"
-        && let Some(prompt) = event["prompt"].as_str()
-    {
-        state.anchor(crate::session::prompt_anchors(prompt));
-    }
-    let announce = start || state.mode != Some(mode);
-    state.mode = Some(mode);
     // A start rewrites the file so cleanup sees the context as recent.
-    if start || state != before {
-        crate::session::save(&key, &state)?;
-    }
+    let announce = crate::session::update(&key, start, |state| {
+        if start && matches!(event["source"].as_str(), Some("compact" | "clear")) {
+            state.seen.clear();
+        }
+        if start && event["source"] == "clear" {
+            state.anchors.clear();
+        }
+        // A prompt, or a context started over, opens a new turn.
+        state.new_turn();
+        // Prompt terms stay in this private state, never in the event journal.
+        if name == "UserPromptSubmit"
+            && let Some(prompt) = event["prompt"].as_str()
+        {
+            state.anchor(crate::session::prompt_anchors(prompt));
+        }
+        let announce = start || state.mode != Some(mode);
+        state.mode = Some(mode);
+        announce
+    })?;
     if !announce {
         return Ok(json!({}));
     }
@@ -1120,12 +1123,15 @@ fn loop_note(event: &Value, name: &str, out: &mut Value) {
     let program = crate::commands::program(command);
     let shown = program.as_deref().unwrap_or("command");
     let signature = digest(format!("{shown}\n{signature}").as_bytes());
-    let mut state = crate::session::load(&key);
-    let count = state.failed(crate::session::short(&signature));
-    let note = count >= LOOP_REPEATS && !state.nudged;
-    state.nudged |= note;
-    // Best effort: a lost write only delays a note.
-    let _ = crate::session::save(&key, &state);
+    // Counted in one locked step: two failures reported side by side are
+    // two, not one. Best effort: a lost write only delays a note.
+    let (count, note) = crate::session::update(&key, false, |state| {
+        let count = state.failed(crate::session::short(&signature));
+        let note = count >= LOOP_REPEATS && !state.nudged;
+        state.nudged |= note;
+        (count, note)
+    })
+    .unwrap_or((0, false));
     if !note {
         return;
     }

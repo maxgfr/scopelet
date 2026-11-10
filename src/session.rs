@@ -200,6 +200,50 @@ pub fn save(key: &str, state: &State) -> Result<()> {
     crate::integration::write_atomic(&folder()?.join(key), &serde_json::to_vec(state)?)
 }
 
+/// How long a hook waits for another hook's update before going ahead
+/// without the lock: a hook never blocks on another.
+const LOCK_WAIT: std::time::Duration = std::time::Duration::from_millis(100);
+
+/// An advisory lock on the sessions directory, released when dropped (or
+/// when its process dies). None when it cannot be had in `LOCK_WAIT`.
+#[cfg(unix)]
+fn lock() -> Option<fs::File> {
+    use std::os::fd::AsRawFd;
+    let folder = folder().ok()?;
+    let directory = fs::File::open(&folder).ok()?;
+    let started = std::time::Instant::now();
+    loop {
+        if unsafe { libc::flock(directory.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
+            return Some(directory);
+        }
+        if started.elapsed() >= LOCK_WAIT {
+            return None;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(2));
+    }
+}
+#[cfg(not(unix))]
+fn lock() -> Option<fs::File> {
+    None
+}
+
+/// Read a context's state, change it and write it back as one step, and
+/// return what `change` returned. The hooks of one context run side by side
+/// (parallel tool calls, a subagent next to its session): each used to load
+/// the state, work, then save, so one's write erased what another had just
+/// remembered. The state is written only when it changed, or when `always`
+/// asks for it (a session start marks the context as recent for cleanup).
+pub fn update<R>(key: &str, always: bool, change: impl FnOnce(&mut State) -> R) -> Result<R> {
+    let _held = lock();
+    let mut state = load(key);
+    let before = state.clone();
+    let result = change(&mut state);
+    if always || state != before {
+        save(key, &state)?;
+    }
+    Ok(result)
+}
+
 /// The full key of the one context whose key starts with `prefix` (at least
 /// `PREFIX` hex characters), or None.
 pub fn find(prefix: &str) -> Option<String> {

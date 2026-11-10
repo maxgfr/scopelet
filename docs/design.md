@@ -510,6 +510,9 @@ section), densest first; `git log -p` keeps head and tail alternation.
 and each subagent separately, by `agent_id`) keeps a private state under
 `<config>/sessions/`: the mode it was told, 16-character hash prefixes of at
 most 512 outputs it was shown (oldest forgotten first), and its prompt anchors.
+A hook reads, changes and writes that state as one step under an advisory
+lock on the directory (waited for 100 ms at most, then done without): hooks
+of one context run side by side when tool calls are made in parallel.
 A Bash stream or Grep content over 2048 bytes (even a file read) whose hash is
 in that state is replaced by `[scopelet v5 ID repeat: identical to output
 already shown in this conversation (N lines)]`; its original and artifact are
