@@ -179,3 +179,63 @@ fn reusing_a_scan_checks_the_files_its_records_came_from() {
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("source changed"));
 }
+
+/// A reason a scan is incomplete is said once, however many files it covers:
+/// twenty unreadable files once filled the sixteen-note cap with copies of
+/// one sentence and pushed out the notes that came after it.
+#[cfg(unix)]
+#[test]
+fn an_incomplete_scan_says_each_reason_once() {
+    use std::os::unix::fs::PermissionsExt;
+    // Later reasons are still recorded after one that repeats.
+    let mut data = scopelet::model::Dataset::default();
+    for _ in 0..40 {
+        data.incomplete("some files unreadable or over 32 MiB".into());
+    }
+    data.incomplete("scan interrupted".into());
+    assert_eq!(
+        data.notes,
+        ["some files unreadable or over 32 MiB", "scan interrupted"]
+    );
+    assert!(!data.scan_complete);
+
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("repo");
+    repo(&root, 40);
+    let locked: Vec<_> = (0..20)
+        .map(|i| root.join(format!("d{}/f{i:04}.txt", i % 7)))
+        .collect();
+    for path in &locked {
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o000)).unwrap();
+    }
+    let view = cli(
+        &dir.path().join("cache"),
+        "4",
+        &["query", "--repo", root.to_str().unwrap(), "--count"],
+        None,
+    );
+    for path in &locked {
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o644)).unwrap();
+    }
+    let view = ok(view);
+    let manifest = ok(cli(
+        &dir.path().join("cache"),
+        "4",
+        &["expand", view["artifact"].as_str().unwrap(), "--manifest"],
+        None,
+    ));
+    if manifest["skipped"]["unreadable_or_oversize"] != 20 {
+        // Root reads a mode-000 file: nothing here is unreadable to it.
+        assert_eq!(view["scan_complete"], true, "{view}");
+        return;
+    }
+    assert_eq!(view["scan_complete"], false, "{view}");
+    let notes: Vec<&str> = manifest["notes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|n| n.as_str().unwrap())
+        .collect();
+    let unreadable = notes.iter().filter(|n| n.contains("unreadable")).count();
+    assert_eq!(unreadable, 1, "{notes:?}");
+}

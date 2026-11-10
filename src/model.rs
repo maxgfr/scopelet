@@ -265,8 +265,10 @@ impl Dataset {
 
     pub fn incomplete(&mut self, note: String) {
         self.scan_complete = false;
-        // The full record of omissions lives in snapshots and skipped counts.
-        if self.notes.len() < 16 {
+        // The full record of omissions lives in snapshots and skipped counts;
+        // a reason is said once, so one that repeats per file cannot fill
+        // the cap and push out the reasons after it.
+        if self.notes.len() < 16 && !self.notes.contains(&note) {
             self.notes.push(note);
         }
     }
