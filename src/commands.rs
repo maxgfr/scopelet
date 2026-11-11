@@ -314,20 +314,45 @@ fn known_tool(args: &[String]) -> bool {
         Some("vitest") => second == "run",
         Some("prettier") => has("--check"),
         // `--ui` and `--debug` open a window and wait for it.
-        Some("playwright") => second == "test" && !has("--ui") && !has("--debug"),
+        // `--ui`, `--ui-port`/`--ui-host` (UI mode) and `--debug` open a
+        // window and wait for it.
+        Some("playwright") => {
+            second == "test"
+                && !args.iter().any(|a| {
+                    a == "--debug"
+                        || a == "--ui"
+                        || a.starts_with("--ui-")
+                        || a.starts_with("--ui=")
+                })
+        }
         _ => false,
     }
 }
 
-/// pytest's `-f` (`--looponfail`) reruns failing tests until interrupted.
+/// pytest's `-f` (`--looponfail`) reruns failing tests until interrupted,
+/// alone or in a cluster (`-xf`). A letter after one of pytest's options
+/// that take a value (`-rf`, `-kfoo`) is that value, not `-f`.
 fn pytest_loops(args: &[String]) -> bool {
-    args.iter().any(|a| a == "-f")
+    args.iter().any(|a| {
+        a.strip_prefix('-')
+            .filter(|cluster| !cluster.starts_with('-'))
+            .is_some_and(|cluster| {
+                cluster
+                    .chars()
+                    .take_while(|c| !"rkmpcoWnN".contains(*c))
+                    .any(|c| c == 'f')
+            })
+    })
 }
 
 /// A watch or loop mode under any of its spellings: `--watch`, `--watch=…`,
 /// `--watchAll`, `--watch-path`, Gradle's `--continuous`, pytest's
 /// `--looponfail`. The command never ends on its own.
+/// `--watch=false` and `--watchAll=false` turn watching off.
 fn watches(arg: &str) -> bool {
+    if matches!(arg, "--watch=false" | "--watchAll=false") {
+        return false;
+    }
     matches!(arg, "--watch" | "--continuous" | "--looponfail")
         || ["--watch=", "--watchAll", "--watch-path"]
             .iter()

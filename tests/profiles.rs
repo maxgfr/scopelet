@@ -45,6 +45,14 @@ fn safe_families_are_recognized_with_their_profile() {
         ("dotnet build", Profile::Tests),
         ("npm test -w packages/api", Profile::Tests),
         ("pytest -x tests", Profile::Tests),
+        // Watching turned off, and an `f` that is an option's value.
+        ("npm test -- --watchAll=false", Profile::Tests),
+        ("npx jest --watchAll=false", Profile::Tests),
+        ("npx jest --watch=false", Profile::Tests),
+        ("pytest -rf tests", Profile::Tests),
+        ("pytest -rfE tests", Profile::Tests),
+        ("pytest -kfoo tests", Profile::Tests),
+        ("pytest --ff tests", Profile::Tests),
         // Letters that mean a watch or a loop for another tool only.
         ("npx jest -w 4", Profile::Tests),
         ("npx jest -t name", Profile::Tests),
@@ -153,6 +161,12 @@ fn writing_waiting_or_unknown_commands_are_not_recognized() {
         "uv run pytest -f tests",
         "dotnet watch test",
         "node --test --watch-path=src",
+        "npx playwright test --ui-port=8080",
+        "npx playwright test --ui-host=0.0.0.0",
+        "npx playwright test --ui=true",
+        "pytest -xf tests",
+        "pytest -fx tests",
+        "uv run pytest -vf",
         // A picker without a run, a browser, a run that never ends.
         "gh run view --log",
         "gh run view -R o/r --log",
