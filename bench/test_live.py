@@ -564,11 +564,16 @@ class ApiTests(unittest.TestCase):
             def read(self, *args):
                 raise ssl.SSLEOFError('EOF occurred in violation of protocol')
         answers = [http.client.RemoteDisconnected('closed'), Reset(), http.client.IncompleteRead(b'{'),
-                   TlsCut(), io.BytesIO(b'{"ok": tr'), io.BytesIO(b'{"ok": 1}')]
+                   TlsCut(), io.BytesIO(b'{"ok": tr'), io.BytesIO(b'{"text": "caf\xc3'), OSError(65, 'No route to host'),
+                   io.BytesIO(b'{"ok": 1}')]
         waits.clear()
         with patch('urllib.request.urlopen', urlopen):
-            self.assertEqual(live.post_json('https://api/x', b'{}', {}, 5, 6, waits.append), {'ok': 1})
-        self.assertEqual(waits, [1, 2, 4, 8, 16])
+            self.assertEqual(live.post_json('https://api/x', b'{}', {}, 5, 8, waits.append), {'ok': 1})
+        self.assertEqual(waits, [1, 2, 4, 8, 16, 32, 64])
+        # A body that never decodes ends as a network failure, not a crash.
+        with patch('urllib.request.urlopen', lambda request, timeout: io.BytesIO(b'\xc3')), \
+                self.assertRaisesRegex(RuntimeError, '^network: '):
+            live.post_json('https://api/x', b'{}', {}, 5, 2, lambda _: None)
         # A refusal is the answer, not retried.
         with patch('urllib.request.urlopen', side_effect=urllib.error.HTTPError('u', 400, 'bad', {}, io.BytesIO(b'no'))), \
                 self.assertRaisesRegex(RuntimeError, 'HTTP 400: no'):

@@ -156,6 +156,26 @@ class ContentTests(unittest.TestCase):
             else:
                 os.kill(pid, 9)
                 self.fail('the hung child outlived the timeout')
+        # An interrupt of the probe takes its run with it.
+        with tempfile.TemporaryDirectory() as temp:
+            child = Path(temp) / 'child'
+
+            def interrupted(self, *args, **kwargs):
+                while not child.exists() or not child.read_text().strip():
+                    time.sleep(0.01)
+                raise KeyboardInterrupt
+            with patch.object(subprocess.Popen, 'communicate', interrupted), self.assertRaises(KeyboardInterrupt):
+                content.bounded(['/bin/sh', '-c', f'echo $$ > {child}; exec sleep 60'], 120)
+            pid = int(child.read_text())
+            for _ in range(50):
+                try:
+                    os.kill(pid, 0)
+                except ProcessLookupError:
+                    break
+                time.sleep(0.05)
+            else:
+                os.kill(pid, 9)
+                self.fail('the run outlived the interrupt')
         ok = content.bounded(['/bin/cat'], 5, input=b'bytes')
         self.assertEqual((ok.returncode, ok.stdout, ok.timed_out), (0, b'bytes', False))
 

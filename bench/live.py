@@ -78,7 +78,6 @@ def post_json(url, body, headers, timeout, retries, sleep=time.sleep):
     and network errors are retried `retries` times; any other HTTP error is
     the answer, raised as RuntimeError."""
     import http.client
-    import ssl
     import urllib.error
     import urllib.request
     for attempt in range(retries + 1):
@@ -90,11 +89,11 @@ def post_json(url, body, headers, timeout, retries, sleep=time.sleep):
             if error.code not in (429, 500, 502, 503, 529) or attempt == retries:
                 raise RuntimeError(f'HTTP {error.code}: {error.read().decode(errors="replace")[:300]}') from None
             sleep(retry_after(error.headers.get('retry-after'), attempt))
-        # A connection lost before or while the answer is read (a reset, a
-        # TLS stream cut short, a server that hung up, a body truncated into
-        # JSON that does not parse) is the network too.
-        except (urllib.error.URLError, TimeoutError, ConnectionError, ssl.SSLError,
-                http.client.HTTPException, json.JSONDecodeError) as error:
+        # A connection lost before or while the answer is read is the
+        # network too: any OSError (a reset, a TLS stream cut short, a
+        # timeout), a server that hung up, and a body cut short, which does
+        # not decode (ValueError: inside a character, or as JSON).
+        except (OSError, http.client.HTTPException, ValueError) as error:
             if attempt == retries:
                 raise RuntimeError(f'network: {error!r}') from None
             sleep(2 ** attempt)

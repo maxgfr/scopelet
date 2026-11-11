@@ -116,16 +116,32 @@ def bounded(command, timeout, input=None, stdin=None, **kwargs):
     """
     process = subprocess.Popen(command, stdin=subprocess.PIPE if input is not None else stdin,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True, **kwargs)
-    try:
-        stdout, stderr = process.communicate(input, timeout=timeout)
-        code, timed_out = process.returncode, False
-    except subprocess.TimeoutExpired:
+    def kill():
         try:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
-        stdout, stderr = process.communicate()
+    try:
+        stdout, stderr = process.communicate(input, timeout=timeout)
+        code, timed_out = process.returncode, False
+    except subprocess.TimeoutExpired:
+        kill()
+        # A descendant that left the group can still hold the pipes: what
+        # they carry by then is kept, and the run returns anyway.
+        try:
+            stdout, stderr = process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            for pipe in (process.stdout, process.stderr):
+                pipe.close()
+            process.wait()
+            stdout, stderr = b'', b''
         code, timed_out = 124, True
+    except BaseException:
+        # Out of the terminal's process group, the run does not get the
+        # interrupt that stops the probe: it is killed here before going on.
+        kill()
+        process.wait()
+        raise
     result = subprocess.CompletedProcess(command, code, stdout or b'', stderr or b'')
     result.timed_out = timed_out
     return result
