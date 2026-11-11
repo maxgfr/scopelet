@@ -467,6 +467,102 @@ fn a_refused_host_file_leaves_every_host_untouched() {
     assert!(!dir.path().join("opencode/plugins/scopelet.js").exists());
 }
 
+/// An event Scopelet does not install is someone else's: its shape does not
+/// matter. A settings file with an object under a custom event was refused
+/// for install and uninstall alike.
+#[test]
+fn another_tools_hook_event_of_any_shape_is_left_alone() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir(dir.path().join("claude")).unwrap();
+    let path = dir.path().join("claude/settings.json");
+    let custom = json!({"hooks":{"Custom":{"x":1}}});
+    fs::write(&path, serde_json::to_vec(&custom).unwrap()).unwrap();
+    for action in ["install", "uninstall"] {
+        let out = cli(dir.path())
+            .args([action, "--agent", "claude"])
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{action}: {out:?}");
+    }
+    let value: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    assert_eq!(value, custom);
+    // One Scopelet edits must still be an array.
+    fs::write(&path, r#"{"hooks":{"PostToolUse":{"x":1}}}"#).unwrap();
+    assert!(
+        !cli(dir.path())
+            .args(["install", "--agent", "claude"])
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+}
+
+/// A link that leads nowhere, at a host's file or its directory, is refused
+/// before anything is written: no host, and not the pinned binary.
+#[cfg(unix)]
+#[test]
+fn a_dangling_link_is_refused_before_anything_is_written() {
+    use std::os::unix::fs::symlink;
+    for broken in ["codex/hooks.json", "opencode/plugins"] {
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir_all(dir.path().join("codex")).unwrap();
+        fs::create_dir_all(dir.path().join("opencode")).unwrap();
+        symlink(dir.path().join("nowhere"), dir.path().join(broken)).unwrap();
+        let out = cli(dir.path())
+            .args(["install", "--agent", "all"])
+            .output()
+            .unwrap();
+        assert!(!out.status.success(), "{broken}: {out:?}");
+        assert!(
+            String::from_utf8_lossy(&out.stderr).contains("symlink"),
+            "{out:?}"
+        );
+        assert!(
+            !dir.path().join("claude/settings.json").exists(),
+            "{broken}"
+        );
+        assert!(!dir.path().join("config/bin/scopelet").exists(), "{broken}");
+    }
+    // An invalid file is refused before the binary is copied too.
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("codex")).unwrap();
+    fs::write(dir.path().join("codex/hooks.json"), "{not json").unwrap();
+    assert!(
+        !cli(dir.path())
+            .args(["install", "--agent", "all"])
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+    assert!(!dir.path().join("config/bin/scopelet").exists());
+}
+
+/// `plugin` linked to `plugins`: the legacy cleanup must not delete the
+/// plugin it just installed.
+#[cfg(unix)]
+#[test]
+fn a_legacy_plugin_directory_linked_to_plugins_is_not_cleaned_away() {
+    use std::os::unix::fs::symlink;
+    let dir = tempfile::tempdir().unwrap();
+    let opencode = dir.path().join("opencode");
+    fs::create_dir_all(opencode.join("plugins")).unwrap();
+    symlink(opencode.join("plugins"), opencode.join("plugin")).unwrap();
+    for _ in 0..2 {
+        cli(dir.path())
+            .args(["install", "--agent", "opencode"])
+            .assert()
+            .success();
+        assert!(opencode.join("plugins/scopelet.js").is_file());
+    }
+    cli(dir.path())
+        .args(["uninstall", "--agent", "opencode"])
+        .assert()
+        .success();
+    assert!(!opencode.join("plugins/scopelet.js").exists());
+}
+
 #[test]
 fn uninstall_reports_its_own_note_for_every_host() {
     let dir = tempfile::tempdir().unwrap();
