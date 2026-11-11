@@ -30,17 +30,22 @@ const root = join(cacheHome, 'scopelet', 'bin', version);
 
 async function bytes(url, limit) {
   let response;
-  try {
-    response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
-  } catch (error) {
-    // fetch says only "fetch failed": the reason (an unresolved host, a
-    // refused connection, a proxy or TLS error) is in its cause.
-    const reason = error.cause?.message || error.cause?.code || error.message;
-    throw new Error(`Download failed: ${reason} (${url})`);
-  }
-  // A redirect may not leave HTTPS on the way to the asset.
-  if (response.url && !response.url.startsWith('https://')) {
-    throw new Error(`Download refused: redirected off HTTPS to ${response.url}`);
+  // Redirects are followed here, one at a time, so that none of them leaves
+  // HTTPS on the way to the asset, not only the last.
+  for (let hops = 0, at = url; ; hops++) {
+    try {
+      response = await fetch(at, { redirect: 'manual', signal: AbortSignal.timeout(120_000) });
+    } catch (error) {
+      // fetch says only "fetch failed": the reason (an unresolved host, a
+      // refused connection, a proxy or TLS error) is in its cause.
+      const reason = error.cause?.message || error.cause?.code || error.message;
+      throw new Error(`Download failed: ${reason} (${url})`);
+    }
+    const location = response.headers.get('location');
+    if (response.status < 300 || response.status > 399 || !location) break;
+    if (hops === 10) throw new Error(`Download failed: too many redirects (${url})`);
+    at = new URL(location, at).href;
+    if (!at.startsWith('https://')) throw new Error(`Download refused: redirected off HTTPS to ${at}`);
   }
   if (!response.ok) throw new Error(`Download failed: HTTP ${response.status} (${url})`);
   const chunks = []; let length = 0;

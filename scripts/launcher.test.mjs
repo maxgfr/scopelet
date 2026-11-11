@@ -160,14 +160,25 @@ test('a download redirected off HTTPS is refused', () => {
   const dir = mkdtempSync(join(tmpdir(), 'scopelet-redirect-'));
   try {
     const prelude = join(dir, 'redirect.mjs');
-    writeFileSync(prelude, `globalThis.fetch = async () => {
-      const response = new Response('anything');
-      Object.defineProperty(response, 'url', { value: 'http://mirror.example/scopelet' });
-      return response;
-    };`);
+    // GitHub sends release assets on to another HTTPS host; one hop in the
+    // chain goes through plain HTTP before coming back to HTTPS.
+    const calls = join(dir, 'fetches');
+    writeFileSync(prelude, `
+      import { appendFileSync } from 'node:fs';
+      const hops = { 'https://github.com/': 'https://objects.example/a', 'https://objects.example/a': 'http://mirror.example/b',
+        'http://mirror.example/b': 'https://objects.example/c' };
+      globalThis.fetch = async (url, options) => {
+        appendFileSync(${JSON.stringify(calls)}, url + ' ' + options.redirect + '\\n');
+        const next = Object.entries(hops).find(([from]) => String(url).startsWith(from));
+        return next ? new Response(null, { status: 302, headers: { location: next[1] } }) : new Response('payload');
+      };`);
     const result = run(launcherWith(dir), dir, prelude);
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /redirected off HTTPS to http:\/\/mirror\.example\/scopelet/);
+    assert.match(result.stderr, /redirected off HTTPS to http:\/\/mirror\.example\/b/);
+    // The plain HTTP hop was never fetched, and every fetch handled its own redirect.
+    const asked = readFileSync(calls, 'utf8').trim().split('\n');
+    assert.deepEqual(asked.map(line => line.split(' ')[1]), ['manual', 'manual']);
+    assert.ok(!asked.some(line => line.startsWith('http://')), asked.join('\n'));
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
