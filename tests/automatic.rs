@@ -360,6 +360,113 @@ fn install_follows_a_linked_settings_file_or_directory() {
     }
 }
 
+/// A linked OpenCode plugin file: uninstall removes the link and leaves what
+/// it pointed at, install writes the plugin in its place. It once deleted the
+/// target, left a dangling link and refused the next install.
+#[cfg(unix)]
+#[test]
+fn a_linked_opencode_plugin_survives_uninstall_and_reinstall() {
+    use std::os::unix::fs::symlink;
+    let dir = tempfile::tempdir().unwrap();
+    let plugins = dir.path().join("opencode/plugins");
+    fs::create_dir_all(&plugins).unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    let kept = dir.path().join("dotfiles-scopelet.js");
+    fs::rename(plugins.join("scopelet.js"), &kept).unwrap();
+    symlink(&kept, plugins.join("scopelet.js")).unwrap();
+    let rendered = fs::read(&kept).unwrap();
+    cli(dir.path())
+        .args(["uninstall", "--agent", "opencode"])
+        .assert()
+        .success();
+    assert!(fs::symlink_metadata(plugins.join("scopelet.js")).is_err());
+    assert_eq!(fs::read(&kept).unwrap(), rendered);
+    // A link to an outdated copy: the plugin replaces the link, the copy
+    // stays as it was.
+    let outdated = b"// ScopeletPlugin from an earlier release\n";
+    fs::write(&kept, outdated).unwrap();
+    symlink(&kept, plugins.join("scopelet.js")).unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    assert!(
+        !fs::symlink_metadata(plugins.join("scopelet.js"))
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+    assert_eq!(fs::read(plugins.join("scopelet.js")).unwrap(), rendered);
+    assert_eq!(fs::read(&kept).unwrap(), outdated);
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+}
+
+/// OpenCode's `plugins` directory kept in dotfiles as a link: the legacy
+/// `plugin/scopelet.js` beside it in OpenCode's own directory is still
+/// removed, so the hooks do not run twice.
+#[cfg(unix)]
+#[test]
+fn the_legacy_plugin_is_removed_when_the_plugins_directory_is_a_link() {
+    use std::os::unix::fs::symlink;
+    let dir = tempfile::tempdir().unwrap();
+    let opencode = dir.path().join("opencode");
+    fs::create_dir_all(opencode.join("plugin")).unwrap();
+    fs::create_dir_all(dir.path().join("dotfiles/plugins")).unwrap();
+    symlink(
+        dir.path().join("dotfiles/plugins"),
+        opencode.join("plugins"),
+    )
+    .unwrap();
+    fs::write(
+        opencode.join("plugin/scopelet.js"),
+        "// ScopeletPlugin legacy\n",
+    )
+    .unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    assert!(!opencode.join("plugin/scopelet.js").exists());
+    assert!(dir.path().join("dotfiles/plugins/scopelet.js").is_file());
+}
+
+/// A host file that would be refused stops the install before any host is
+/// written, so `--agent all` never leaves some hosts installed.
+#[test]
+fn a_refused_host_file_leaves_every_host_untouched() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("opencode/plugins")).unwrap();
+    fs::write(
+        dir.path().join("opencode/plugins/scopelet.js"),
+        "// someone else's plugin\n",
+    )
+    .unwrap();
+    let out = cli(dir.path())
+        .args(["install", "--agent", "all"])
+        .output()
+        .unwrap();
+    assert!(!out.status.success(), "{out:?}");
+    assert!(String::from_utf8_lossy(&out.stderr).contains("not a Scopelet plugin"));
+    assert!(!dir.path().join("claude/settings.json").exists());
+    assert!(!dir.path().join("codex/hooks.json").exists());
+    fs::create_dir_all(dir.path().join("codex")).unwrap();
+    fs::write(dir.path().join("codex/hooks.json"), "{not json").unwrap();
+    fs::remove_file(dir.path().join("opencode/plugins/scopelet.js")).unwrap();
+    let out = cli(dir.path())
+        .args(["install", "--agent", "all"])
+        .output()
+        .unwrap();
+    assert!(!out.status.success(), "{out:?}");
+    assert!(!dir.path().join("claude/settings.json").exists());
+    assert!(!dir.path().join("opencode/plugins/scopelet.js").exists());
+}
+
 #[test]
 fn uninstall_reports_its_own_note_for_every_host() {
     let dir = tempfile::tempdir().unwrap();

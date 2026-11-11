@@ -133,6 +133,45 @@ fn resolved(path: &Path) -> PathBuf {
         }
     }
 }
+/// The file a host names and the one to edit. A settings file is followed
+/// through its links. The OpenCode plugin is generated, not edited: only its
+/// directory is followed, so uninstalling a linked plugin removes the link,
+/// never what it points at.
+fn host_path(agent: Agent) -> Result<(PathBuf, PathBuf)> {
+    let named = host_file(agent)?;
+    let path = match (agent, named.parent(), named.file_name()) {
+        (Agent::Opencode, Some(parent), Some(file)) => resolved(parent).join(file),
+        _ => resolved(&named),
+    };
+    Ok((named, path))
+}
+/// Whether installing into this host's file would be refused.
+fn validate(agent: Agent, path: &Path) -> Result<()> {
+    let bytes = match fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(e.into()),
+    };
+    if agent == Agent::Opencode {
+        ensure!(
+            String::from_utf8_lossy(&bytes).contains(PLUGIN_MARKER),
+            "refusing to replace {}: not a Scopelet plugin",
+            path.display()
+        );
+        return Ok(());
+    }
+    let value: Value =
+        serde_json::from_slice(&bytes).context("invalid existing host configuration")?;
+    let object = value.as_object().context("host config must be an object")?;
+    if let Some(hooks) = object.get("hooks") {
+        let hooks = hooks.as_object().context("hooks must be an object")?;
+        ensure!(
+            hooks.values().all(Value::is_array),
+            "hook event must be an array"
+        );
+    }
+    Ok(())
+}
 fn host_name(agent: Agent) -> &'static str {
     match agent {
         Agent::Claude => "claude",
@@ -212,11 +251,15 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
     } else {
         vec![agent]
     };
+    // Every host's file is checked before any is written: one that would be
+    // refused must not leave the hosts before it half installed.
+    for &agent in &agents {
+        validate(agent, &host_path(agent)?.1)?;
+    }
     let mut paths = Vec::new();
     for agent in agents {
         // Reported as the host names it, edited where it really is.
-        let named = host_file(agent)?;
-        let path = resolved(&named);
+        let (named, path) = host_path(agent)?;
         let old = match fs::read(&path) {
             Ok(b) => Some(b),
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
@@ -233,9 +276,11 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                 path.display()
             );
             // Earlier releases wrote `plugin/scopelet.js`, which OpenCode still
-            // loads: drop our copy so the hooks never run twice.
-            if let Some(legacy) = path.parent().and_then(Path::parent) {
-                let legacy = legacy.join("plugin").join("scopelet.js");
+            // loads: drop our copy so the hooks never run twice. It sits in
+            // the configuration directory OpenCode names, wherever its
+            // `plugins` directory leads.
+            if let Some(legacy) = named.parent().and_then(Path::parent) {
+                let legacy = resolved(legacy).join("plugin").join("scopelet.js");
                 if let Ok(bytes) = fs::read(&legacy)
                     && String::from_utf8_lossy(&bytes).contains(PLUGIN_MARKER)
                 {
@@ -252,6 +297,11 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
             } else if old.as_deref() != Some(rendered.as_bytes()) {
                 if let Some(bytes) = &old {
                     backup(&config, name, bytes, "js")?;
+                }
+                // A link to an earlier copy of the plugin is replaced by the
+                // file itself; what it pointed at is left as it was.
+                if fs::symlink_metadata(&path).is_ok_and(|m| m.file_type().is_symlink()) {
+                    fs::remove_file(&path)?;
                 }
                 write_atomic(&path, rendered.as_bytes())?;
             }
