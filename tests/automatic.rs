@@ -640,6 +640,78 @@ fn a_legacy_plugin_linked_file_by_file_is_still_cleaned_away() {
     }
 }
 
+/// The current plugin a link to a legacy copy that already holds what this
+/// install writes: removing the legacy copy must not leave the link dangling
+/// and the install claiming success.
+#[cfg(unix)]
+#[test]
+fn a_current_plugin_linked_to_an_identical_legacy_copy_is_rewritten() {
+    use std::os::unix::fs::symlink;
+    let dir = tempfile::tempdir().unwrap();
+    let opencode = dir.path().join("opencode");
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    fs::create_dir_all(opencode.join("plugin")).unwrap();
+    fs::rename(
+        opencode.join("plugins/scopelet.js"),
+        opencode.join("plugin/scopelet.js"),
+    )
+    .unwrap();
+    let rendered = fs::read(opencode.join("plugin/scopelet.js")).unwrap();
+    symlink(
+        "../plugin/scopelet.js",
+        opencode.join("plugins/scopelet.js"),
+    )
+    .unwrap();
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    assert!(fs::symlink_metadata(opencode.join("plugin/scopelet.js")).is_err());
+    assert!(
+        !fs::symlink_metadata(opencode.join("plugins/scopelet.js"))
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+    assert_eq!(
+        fs::read(opencode.join("plugins/scopelet.js")).unwrap(),
+        rendered
+    );
+}
+
+/// A backups directory that is a link stops the install before any host is
+/// written, not after the first one was.
+#[cfg(unix)]
+#[test]
+fn a_linked_backups_directory_is_refused_before_anything_is_written() {
+    use std::os::unix::fs::symlink;
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("config")).unwrap();
+    fs::create_dir_all(dir.path().join("claude")).unwrap();
+    fs::write(
+        dir.path().join("claude/settings.json"),
+        "{\"theme\": \"dark\"}\n",
+    )
+    .unwrap();
+    symlink(
+        dir.path().join("elsewhere"),
+        dir.path().join("config/backups"),
+    )
+    .unwrap();
+    let out = cli(dir.path())
+        .args(["install", "--agent", "all"])
+        .output()
+        .unwrap();
+    assert!(!out.status.success(), "{out:?}");
+    assert_eq!(
+        fs::read_to_string(dir.path().join("claude/settings.json")).unwrap(),
+        "{\"theme\": \"dark\"}\n"
+    );
+}
+
 /// `plugin` linked to `plugins`: the legacy cleanup must not delete the
 /// plugin it just installed.
 #[cfg(unix)]

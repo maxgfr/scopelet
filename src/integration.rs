@@ -284,6 +284,14 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
     for &agent in &agents {
         validate(agent, &host_path(agent)?.1, remove)?;
     }
+    // Backups are written before a host's file is replaced: a directory for
+    // them that is a link would be refused after the first host was written.
+    let backups = config.join("backups");
+    ensure!(
+        !fs::symlink_metadata(&backups).is_ok_and(|m| m.file_type().is_symlink()),
+        "directory is a symlink: {}",
+        backups.display()
+    );
     if !remove {
         let bytes = fs::read(std::env::current_exe()?)?;
         if fs::read(&binary).ok().as_deref() != Some(&bytes) {
@@ -335,6 +343,9 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                     fs::remove_file(&legacy)?;
                 }
             }
+            // What the plugin path holds now: a link to the legacy file just
+            // removed leads nowhere, and must be written, not taken as current.
+            let old = fs::read(&path).ok();
             let rendered = plugin_source(&config, &binary)?;
             if remove {
                 if let Some(bytes) = &old {
