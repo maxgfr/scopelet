@@ -216,7 +216,11 @@ fn lock() -> Option<fs::File> {
         if unsafe { libc::flock(directory.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } == 0 {
             return Some(directory);
         }
-        if started.elapsed() >= LOCK_WAIT {
+        // Only a lock another hook holds is worth waiting for: a filesystem
+        // without `flock` answers otherwise, and waiting would only cost
+        // every update the whole delay.
+        let held = std::io::Error::last_os_error().kind() == std::io::ErrorKind::WouldBlock;
+        if !held || started.elapsed() >= LOCK_WAIT {
             return None;
         }
         std::thread::sleep(std::time::Duration::from_millis(2));
