@@ -350,6 +350,10 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
             if remove {
                 if let Some(bytes) = &old {
                     backup(&config, name, bytes, "js")?;
+                }
+                // A link, even one the legacy cleanup just left dangling, is
+                // ours to remove with the plugin.
+                if fs::symlink_metadata(&path).is_ok() {
                     fs::remove_file(&path)?;
                 }
             } else if old.as_deref() != Some(rendered.as_bytes()) {

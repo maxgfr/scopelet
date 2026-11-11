@@ -682,6 +682,39 @@ fn a_current_plugin_linked_to_an_identical_legacy_copy_is_rewritten() {
     );
 }
 
+/// The same layout uninstalled: the legacy copy and the link to it both go,
+/// so no dangling plugin link is left behind.
+#[cfg(unix)]
+#[test]
+fn uninstall_removes_a_plugin_link_to_the_legacy_copy() {
+    use std::os::unix::fs::symlink;
+    let dir = tempfile::tempdir().unwrap();
+    let opencode = dir.path().join("opencode");
+    cli(dir.path())
+        .args(["install", "--agent", "opencode"])
+        .assert()
+        .success();
+    fs::create_dir_all(opencode.join("plugin")).unwrap();
+    fs::rename(
+        opencode.join("plugins/scopelet.js"),
+        opencode.join("plugin/scopelet.js"),
+    )
+    .unwrap();
+    symlink(
+        "../plugin/scopelet.js",
+        opencode.join("plugins/scopelet.js"),
+    )
+    .unwrap();
+    for _ in 0..2 {
+        cli(dir.path())
+            .args(["uninstall", "--agent", "opencode"])
+            .assert()
+            .success();
+        assert!(fs::symlink_metadata(opencode.join("plugin/scopelet.js")).is_err());
+        assert!(fs::symlink_metadata(opencode.join("plugins/scopelet.js")).is_err());
+    }
+}
+
 /// A backups directory that is a link stops the install before any host is
 /// written, not after the first one was.
 #[cfg(unix)]
