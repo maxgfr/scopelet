@@ -108,9 +108,12 @@ def bounded(command, timeout, **kwargs):
     124, not an exception: a binary that hangs is a failed run kept in the
     report, as one that crashes is, instead of the end of the probe."""
     try:
-        return subprocess.run(command, capture_output=True, timeout=timeout, **kwargs)
+        result = subprocess.run(command, capture_output=True, timeout=timeout, **kwargs)
+        result.timed_out = False
     except subprocess.TimeoutExpired as expired:
-        return subprocess.CompletedProcess(command, 124, expired.stdout or b'', expired.stderr or b'')
+        result = subprocess.CompletedProcess(command, 124, expired.stdout or b'', expired.stderr or b'')
+        result.timed_out = True
+    return result
 
 
 def summarize(samples):
@@ -150,9 +153,13 @@ def measure(binary, out, warmups, repetitions):
                                      input=original)
                     elapsed = time.perf_counter() - started
                     output = result.stdout
-                    if rep >= 0:
+                    # A hang is recorded once, even in a warmup, and ends this
+                    # state's runs: the next ones would only hang as long again.
+                    if rep >= 0 or result.timed_out:
                         samples.append({'seconds': elapsed, 'output_bytes': len(output), 'exit_code': result.returncode,
-                                        'sha256': hashlib.sha256(output).hexdigest()})
+                                        'sha256': hashlib.sha256(output).hexdigest(), 'timed_out': result.timed_out})
+                    if result.timed_out:
+                        break
                 visible = [fact in output.decode(errors='replace') for fact in facts]
                 exact, recovered = recovery(binary, cache, output, original)
                 case['states'][state] = {

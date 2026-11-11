@@ -77,6 +77,7 @@ def post_json(url, body, headers, timeout, retries, sleep=time.sleep):
     """POST `body` and return the decoded JSON answer. Rate limits, overload
     and network errors are retried `retries` times; any other HTTP error is
     the answer, raised as RuntimeError."""
+    import http.client
     import urllib.error
     import urllib.request
     for attempt in range(retries + 1):
@@ -88,9 +89,11 @@ def post_json(url, body, headers, timeout, retries, sleep=time.sleep):
             if error.code not in (429, 500, 502, 503, 529) or attempt == retries:
                 raise RuntimeError(f'HTTP {error.code}: {error.read().decode(errors="replace")[:300]}') from None
             sleep(retry_after(error.headers.get('retry-after'), attempt))
-        except (urllib.error.URLError, TimeoutError) as error:
+        # A connection lost before or while the answer is read (a reset, a
+        # server that hung up, a truncated body) is the network too.
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as error:
             if attempt == retries:
-                raise RuntimeError(f'network: {error}') from None
+                raise RuntimeError(f'network: {error!r}') from None
             sleep(2 ** attempt)
     raise AssertionError('unreachable')
 

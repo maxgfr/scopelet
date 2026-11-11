@@ -552,6 +552,18 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(live.post_json('https://api/x', b'{}', {}, 5, 5, waits.append), {'input_tokens': 7})
         self.assertEqual(len(calls), 4)
         self.assertEqual(waits, [0.0, 2, 4])
+        # A connection lost while the answer is read is retried too.
+        import http.client
+
+        class Reset(io.BytesIO):
+            def read(self, *args):
+                raise ConnectionResetError('reset by peer')
+        answers = [http.client.RemoteDisconnected('closed'), Reset(), http.client.IncompleteRead(b'{'),
+                   io.BytesIO(b'{"ok": 1}')]
+        waits.clear()
+        with patch('urllib.request.urlopen', urlopen):
+            self.assertEqual(live.post_json('https://api/x', b'{}', {}, 5, 5, waits.append), {'ok': 1})
+        self.assertEqual(waits, [1, 2, 4])
         # A refusal is the answer, not retried.
         with patch('urllib.request.urlopen', side_effect=urllib.error.HTTPError('u', 400, 'bad', {}, io.BytesIO(b'no'))), \
                 self.assertRaisesRegex(RuntimeError, 'HTTP 400: no'):

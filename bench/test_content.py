@@ -94,11 +94,16 @@ class ContentTests(unittest.TestCase):
                 patch.object(content.subprocess, 'run', side_effect=fake):
             binary = Path(temp) / 'binary'
             binary.write_bytes(b'frozen')
-            report = content.measure(binary, Path(temp) / 'out', 0, 2)
+            report = content.measure(binary, Path(temp) / 'out', 3, 30)
+            # Two states, one hung run each: not 2 x 33.
+            self.assertEqual(sum('compress' in call.args[0] for call in content.subprocess.run.call_args_list), 2)
             self.assertTrue((Path(temp) / 'out' / 'report.json').exists())
+        # A hang is recorded once per state, then that state stops: the next
+        # runs would only hang as long again.
         for state in ('cold', 'warm'):
-            self.assertEqual(report['cases']['tiny']['states'][state]['failures'], 2)
-        self.assertIn('tiny/cold: 2 non-zero exit(s)', content.failures(report))
+            self.assertEqual(report['cases']['tiny']['states'][state]['failures'], 1)
+            self.assertTrue(report['cases']['tiny']['states'][state]['samples'][0]['timed_out'])
+        self.assertIn('tiny/cold: 1 non-zero exit(s)', content.failures(report))
         # A recovery that hangs cannot claim a round trip either.
         with patch.object(content.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['x'], 30)):
             exact, recovered = content.recovery(Path('/bin/scopelet'), Path('/cache'), ('artifact:' + 'a' * 64).encode(), b'o')

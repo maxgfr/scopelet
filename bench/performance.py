@@ -86,7 +86,8 @@ def measure(binary, args, stdin, cache):
     pattern=r'(\d+)\s+maximum resident set size' if platform.system()=='Darwin' else r'Maximum resident set size \(kbytes\):\s*(\d+)'
     match=re.search(pattern,stderr)
     rss=int(match[1])*(1 if platform.system()=='Darwin' else 1024) if match else None
-    return {'seconds':elapsed,'rss_bytes':rss,'exit_code':result.returncode,'stdout_sha256':sha(result.stdout),'output_bytes':len(result.stdout)}, result.stdout
+    return {'seconds':elapsed,'rss_bytes':rss,'exit_code':result.returncode,'stdout_sha256':sha(result.stdout),'output_bytes':len(result.stdout),
+            'timed_out':getattr(result,'timed_out',False)}, result.stdout
 
 
 def summarize(samples):
@@ -136,6 +137,7 @@ def run(options):
             for state in ['cold','warm']:
                 key=f'{name}/{state}';report['cases'][key]={}
                 for rep in range(-options.warmups,options.repetitions):
+                    hung=False
                     arms=list(names)
                     if rep%2:arms.reverse()
                     hashes={}
@@ -152,12 +154,16 @@ def run(options):
                         if sample['exit_code']:
                             (out/f'{name}-{state}-{arm}-failure.stdout').write_bytes(stdout)
                         hashes[arm]=sample['stdout_sha256']
-                        if rep>=0:
+                        # A hang is recorded once, even in a warmup, and ends
+                        # this state's runs: the next ones would hang as long.
+                        hung|=sample.get('timed_out',False)
+                        if rep>=0 or sample.get('timed_out'):
                             report['cases'][key].setdefault(arm,{'samples':[]})['samples'].append(sample)
-                        if rep==options.repetitions-1:
+                        if rep==options.repetitions-1 and arm in report['cases'][key]:
                             report['cases'][key][arm]['cache_bytes']=sum(p.stat().st_size for p in cache.rglob('*') if p.is_file())
                     if rep>=0 and len(set(hashes.values()))>1:
                         report['output_mismatches'].append({'case':key,'repetition':rep,'stdout_sha256':hashes})
+                    if hung:break
                 for cell in report['cases'][key].values():cell['summary']=summarize(cell['samples'])
                 print(json.dumps({'case':key,**{a:c['summary'] for a,c in report['cases'][key].items()}}),flush=True)
                 (out/'report.json').write_text(json.dumps(report,indent=2)+'\n')

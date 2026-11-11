@@ -94,6 +94,25 @@ class RunTests(unittest.TestCase):
         self.assertEqual(stdout, b'partial')
         self.assertEqual(performance.summarize([taken])['failures'], 1)
 
+    def test_a_hang_ends_its_state_after_one_recorded_sample(self):
+        calls = []
+
+        def measure(binary, args, source, cache):
+            calls.append(binary.name)
+            return {**sample(b'')[0], 'exit_code': 124, 'timed_out': True}, b''
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            binary = root / 'binary'; binary.write_bytes(b'frozen')
+            options = Namespace(out=root / 'out', binary=[('release', binary)], warmups=5, repetitions=30,
+                                stress=False, cases='small')
+            with patch.object(performance, 'fixtures', side_effect=fake_fixture), \
+                    patch.object(performance, 'measure', side_effect=measure), \
+                    patch.object(performance, 'binary_version', return_value='scopelet 0.0.0'), patch('builtins.print'):
+                report = performance.run(options)
+        self.assertEqual(len(calls), 2)
+        for state in ('cold', 'warm'):
+            self.assertEqual(report['cases'][f'small/{state}']['release']['summary']['failures'], 1)
+
     def test_duplicate_arm_names_are_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
