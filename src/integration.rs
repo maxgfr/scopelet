@@ -146,23 +146,29 @@ fn host_path(agent: Agent) -> Result<(PathBuf, PathBuf)> {
     Ok((named, path))
 }
 /// Whether installing into this host's file would be refused.
-fn validate(agent: Agent, path: &Path) -> Result<()> {
-    // What `write_atomic` refuses, refused before anything is written: a
-    // link that leads nowhere (a live one was followed by `host_path`; the
-    // OpenCode plugin's own link is replaced, not written through), and a
-    // directory on the way that is a link leading nowhere.
+fn validate(agent: Agent, path: &Path, remove: bool) -> Result<()> {
+    // What writing would refuse, refused before anything is written: a link
+    // that leads nowhere at the file (a live one was followed by `host_path`;
+    // the OpenCode plugin's own link is replaced, not written through) or at
+    // any directory on the way to it that does not exist yet. Uninstalling
+    // writes nothing through such a link, so it is not stopped by one.
     let link = |p: &Path| fs::symlink_metadata(p).is_ok_and(|m| m.file_type().is_symlink());
-    ensure!(
-        agent == Agent::Opencode || !link(path),
-        "refusing to replace symlink: {}",
-        path.display()
-    );
-    if let Some(parent) = path.parent() {
+    if !remove {
         ensure!(
-            !link(parent),
-            "directory is a symlink: {}",
-            parent.display()
+            agent == Agent::Opencode || !link(path),
+            "refusing to replace symlink: {}",
+            path.display()
         );
+        for directory in path.ancestors().skip(1) {
+            if fs::metadata(directory).is_ok() {
+                break;
+            }
+            ensure!(
+                !link(directory),
+                "directory is a symlink: {}",
+                directory.display()
+            );
+        }
     }
     let bytes = match fs::read(path) {
         Ok(bytes) => bytes,
@@ -276,7 +282,7 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
     // binary included: one that would be refused must not leave the hosts
     // before it, or the binary, half installed.
     for &agent in &agents {
-        validate(agent, &host_path(agent)?.1)?;
+        validate(agent, &host_path(agent)?.1, remove)?;
     }
     if !remove {
         let bytes = fs::read(std::env::current_exe()?)?;
@@ -319,8 +325,8 @@ pub fn install(agent: Agent, remove: bool) -> Result<Value> {
                 let legacy = resolved(legacy).join("plugin").join("scopelet.js");
                 // `plugin` may lead to `plugins` itself: that is the file
                 // being installed, not a second copy.
-                let same = fs::canonicalize(&legacy).ok() == fs::canonicalize(&path).ok()
-                    || resolved(&legacy) == path;
+                let directory = |p: &Path| p.parent().and_then(|d| fs::canonicalize(d).ok());
+                let same = directory(&legacy).is_some() && directory(&legacy) == directory(&path);
                 if !same
                     && let Ok(bytes) = fs::read(&legacy)
                     && String::from_utf8_lossy(&bytes).contains(PLUGIN_MARKER)

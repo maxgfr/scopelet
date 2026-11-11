@@ -539,6 +539,107 @@ fn a_dangling_link_is_refused_before_anything_is_written() {
     assert!(!dir.path().join("config/bin/scopelet").exists());
 }
 
+/// A link that leads nowhere at one host stops an install, which would have
+/// to write through it, but not an uninstall, which removes the hooks of
+/// every other host and has nothing to write there.
+#[cfg(unix)]
+#[test]
+fn a_dangling_link_does_not_block_uninstalling_the_other_hosts() {
+    use std::os::unix::fs::symlink;
+    for broken in ["codex/hooks.json", "codex", "opencode/plugins", "opencode"] {
+        let dir = tempfile::tempdir().unwrap();
+        cli(dir.path())
+            .args(["install", "--agent", "all"])
+            .assert()
+            .success();
+        let target = dir.path().join(broken);
+        if target.is_dir() {
+            fs::remove_dir_all(&target).unwrap();
+        } else {
+            fs::remove_file(&target).unwrap();
+        }
+        symlink(dir.path().join("nowhere"), &target).unwrap();
+        let out = cli(dir.path())
+            .args(["uninstall", "--agent", "all"])
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{broken}: {out:?}");
+        let settings: Value =
+            serde_json::from_slice(&fs::read(dir.path().join("claude/settings.json")).unwrap())
+                .unwrap();
+        assert!(settings.get("hooks").is_none(), "{broken}: {settings}");
+        if broken.starts_with("codex") {
+            // OpenCode's plugin, reachable, was removed too.
+            assert!(
+                !dir.path().join("opencode/plugins/scopelet.js").exists(),
+                "{broken}"
+            );
+        }
+    }
+}
+
+/// A link that leads nowhere further up, at a configuration directory that
+/// does not exist yet, is refused before anything is written too.
+#[cfg(unix)]
+#[test]
+fn a_dangling_link_higher_up_is_refused_before_anything_is_written() {
+    use std::os::unix::fs::symlink;
+    let dir = tempfile::tempdir().unwrap();
+    symlink(dir.path().join("nowhere"), dir.path().join("opencode")).unwrap();
+    let out = cli(dir.path())
+        .args(["install", "--agent", "all"])
+        .output()
+        .unwrap();
+    assert!(!out.status.success(), "{out:?}");
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("symlink"),
+        "{out:?}"
+    );
+    assert!(!dir.path().join("claude/settings.json").exists());
+    assert!(!dir.path().join("codex/hooks.json").exists());
+    assert!(!dir.path().join("config/bin/scopelet").exists());
+}
+
+/// A plugin file linked across the legacy and current directories is still
+/// two copies: the legacy one goes, on install as on uninstall.
+#[cfg(unix)]
+#[test]
+fn a_legacy_plugin_linked_file_by_file_is_still_cleaned_away() {
+    use std::os::unix::fs::symlink;
+    let marker = "// ScopeletPlugin legacy\n";
+    // The current file a link to the legacy one, then the other way round.
+    for current_links_to_legacy in [true, false] {
+        let dir = tempfile::tempdir().unwrap();
+        let opencode = dir.path().join("opencode");
+        fs::create_dir_all(opencode.join("plugin")).unwrap();
+        fs::create_dir_all(opencode.join("plugins")).unwrap();
+        if current_links_to_legacy {
+            fs::write(opencode.join("plugin/scopelet.js"), marker).unwrap();
+            symlink(
+                opencode.join("plugin/scopelet.js"),
+                opencode.join("plugins/scopelet.js"),
+            )
+            .unwrap();
+        } else {
+            fs::write(opencode.join("plugins/scopelet.js"), marker).unwrap();
+            symlink(
+                "../plugins/scopelet.js",
+                opencode.join("plugin/scopelet.js"),
+            )
+            .unwrap();
+        }
+        cli(dir.path())
+            .args(["install", "--agent", "opencode"])
+            .assert()
+            .success();
+        assert!(
+            fs::symlink_metadata(opencode.join("plugin/scopelet.js")).is_err(),
+            "legacy kept ({current_links_to_legacy})"
+        );
+        assert!(opencode.join("plugins/scopelet.js").is_file());
+    }
+}
+
 /// `plugin` linked to `plugins`: the legacy cleanup must not delete the
 /// plugin it just installed.
 #[cfg(unix)]
