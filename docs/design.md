@@ -460,10 +460,12 @@ a match within a whitespace-delimited token that contains `/` or `::`, or
 ends with a file extension, is a path or an identifier (`src/error.rs`,
 `Error::new`, `failure.py`), not an outcome. Each tier is filled alternately
 from the head and the tail so the final summary survives a flood of early
-diagnostics. When the view carries diagnostics and cannot show every ordinary
-line anyway, ordinary lines stop at a quarter of the available budget, so the
-view ends where the evidence does; an ordinary listing without diagnostics
-still fills the budget. Small repetitions inside a diagnostic's context stay
+diagnostics. When the view carries evidence ranked above context (the second
+and third tiers: diagnostics, their located frames, and the rare lines of a
+mostly folded record, but not lines lifted by an anchor alone) and cannot show
+every ordinary line anyway, ordinary lines stop at a quarter of the available
+budget, so the view ends where the evidence does; an ordinary listing with
+none of it still fills the budget. Small repetitions inside a diagnostic's context stay
 in source order; massive repetition (eight lines or more) folds wherever it
 is. Vocabulary words match without regard to case on ASCII word boundaries,
 but anchored markers (`FAIL`, `FAILED`, `FATAL`, pytest's `E` prefix) and type
@@ -542,7 +544,9 @@ display copy and masked by template, so timings, counters and addresses do
 not make a new failure while a different failing test or message does. A
 passing run, whose summaries count `0 failed`, has no failure. Failures are
 keyed by program and counted in the context's private state (at most 32 per
-turn). Claude Code reports a Bash call that exits non-zero as
+turn). A subagent's context starts one turn at its `SubagentStart` and keeps
+it for its whole life, since a subagent works on one task and gets no prompt
+of its own: it gets at most one note. Claude Code reports a Bash call that exits non-zero as
 `PostToolUseFailure`, whose `error` text carries the output after `Exit code
 N` and allows no replacement, so that event is installed (matcher `Bash`) to
 count and note only: such an output is not compressed. The shape was captured
