@@ -29,6 +29,9 @@ exports.verifyRelease = async (config, { nextRelease }) => {
 };
 exports.prepare = async (config, { nextRelease }) => {
   execFileSync('python3', ['scripts/prepare_release.py', nextRelease.version], { stdio: 'inherit' });
-  execFileSync('python3', ['scripts/check_skill.py', '--pack'], { stdio: 'inherit' });
+  // The binaries' checksums go into the launcher before the skill is packed,
+  // so the skill carries them; the packed skill's own line is added last.
   execFileSync('python3', ['scripts/release_checksums.py', nextRelease.version], { stdio: 'inherit' });
+  execFileSync('python3', ['scripts/check_skill.py', '--pack'], { stdio: 'inherit' });
+  execFileSync('python3', ['scripts/release_checksums.py', '--skill'], { stdio: 'inherit' });
 };

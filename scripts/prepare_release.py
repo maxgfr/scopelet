@@ -19,6 +19,13 @@ def prepare(root, version):
         text=path.read_text()
         if text.count(before)!=1:raise ValueError(f'ambiguous version in {path}')
         updates[path]=text.replace(before,after,1)
+    # The launcher pins the hashes of one version's binaries: a new version
+    # starts without any, until `release_checksums.py` writes its own.
+    launcher=root/'skills/scopelet/scripts/scopelet.mjs'
+    if old!=version:
+        updates[launcher],count=re.subn(r'(?s)(// pinned-checksums:start\n).*?(// pinned-checksums:end)',
+                                        r'\1const pinned = {};\n\2',updates[launcher])
+        if count!=1:raise ValueError(f'{launcher} has no pinned-checksums block')
     # The documented versions are prose, so their wording can drift: what is
     # checked is that each file names the new version afterwards. The README
     # may already carry it (the publish job takes the one the build bumped).

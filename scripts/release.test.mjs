@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { mkdtempSync, cpSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, cpSync, readFileSync, rmSync, mkdirSync, writeFileSync, existsSync, utimesSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -62,8 +63,47 @@ test('version synchronization changes release files without touching dependency 
     assert.match(setup,/installs Scopelet \*\*9\.8\.7\*\*/);
     assert.match(setup,/--tag v9\.8\.7 /);
     assert.match(readFileSync(join(root,'README.md'),'utf8'),/--tag v9\.8\.7 /);
+    // The checksums pinned for the previous version do not follow the bump.
+    assert.match(readFileSync(join(root,'skills/scopelet/scripts/scopelet.mjs'),'utf8'),
+      /\/\/ pinned-checksums:start\nconst pinned = \{\};\n\/\/ pinned-checksums:end/);
     // Running it again for the same version changes nothing and still passes.
     execFileSync('python3',[join(root,'scripts/prepare_release.py'),'9.8.7']);
+    // The same bundle packs to the same bytes, whenever it is packed.
+    const packed=readFileSync(join(root,'dist/scopelet.skill'));
+    const later=new Date(Date.now()+86_400_000);
+    for (const file of ['SKILL.md','scripts/scopelet.mjs','references/setup.md']) utimesSync(join(root,'skills/scopelet',file),later,later);
+    execFileSync('python3',[join(root,'scripts/check_skill.py'),'--pack']);
+    assert.ok(readFileSync(join(root,'dist/scopelet.skill')).equals(packed),'the skill archive must be reproducible');
+  } finally { rmSync(root,{recursive:true,force:true}); }
+});
+test('a release pins its binaries in the launcher the skill carries, and lists the skill', () => {
+  const root=mkdtempSync(join(tmpdir(),'scopelet-release-'));
+  try {
+    for (const path of ['Cargo.toml','Cargo.lock','README.md','LICENSE','skills','scripts']) cpSync(path,join(root,path),{recursive:true});
+    const dist=join(root,'dist');mkdirSync(dist);
+    const targets=['aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','x86_64-unknown-linux-gnu'];
+    const sha=content=>createHash('sha256').update(content).digest('hex');
+    for(const target of targets) {
+      writeFileSync(join(dist,`scopelet-${target}`),`synthetic 9.8.7 ${target}`);
+      writeFileSync(join(dist,`scopelet-${target}.version`),'scopelet 9.8.7\n');
+    }
+    // The plugin's prepare step, in the copy: it runs its scripts from the
+    // working directory.
+    execFileSync(process.execPath,['-e',"require('./scripts/release-plugin.cjs').prepare({}, {nextRelease:{version:'9.8.7'}}).catch(error=>{console.error(error);process.exit(1)})"],{cwd:root,stdio:'pipe'});
+    const launcher=readFileSync(join(root,'skills/scopelet/scripts/scopelet.mjs'),'utf8');
+    assert.match(launcher,/const version = '9\.8\.7'/);
+    const sums=readFileSync(join(dist,'SHA256SUMS'),'utf8').trim().split('\n').map(line=>line.split(/\s+/));
+    assert.deepEqual(sums.map(([,name])=>name),[...targets.map(target=>`scopelet-${target}`),'scopelet.skill']);
+    for(const target of targets) {
+      const digest=sha(`synthetic 9.8.7 ${target}`);
+      assert.ok(sums.some(([hash,name])=>hash===digest&&name===`scopelet-${target}`),target);
+      assert.ok(launcher.includes(`  '${target}': '${digest}',\n`),`${target} is not pinned`);
+    }
+    // The skill was packed after the pins were written, and its line is its hash.
+    assert.equal(sums[4][0],sha(readFileSync(join(dist,'scopelet.skill'))));
+    const packed=execFileSync('python3',['-c',"import sys,zipfile;sys.stdout.write(zipfile.ZipFile(sys.argv[1]).read('scopelet/scripts/scopelet.mjs').decode())",join(dist,'scopelet.skill')],{encoding:'utf8'});
+    assert.equal(packed,launcher);
+    execFileSync('python3',[join(root,'scripts/check_skill.py')]);
   } finally { rmSync(root,{recursive:true,force:true}); }
 });
 test('version synchronization fails when a documented version would be left behind', async () => {
@@ -92,10 +132,14 @@ test('version synchronization fails when a documented version would be left behi
 });
 
 test('release assets reject missing or mismatched matrix versions', async () => {
-  const { mkdirSync, writeFileSync, existsSync } = await import('node:fs');
   const root=mkdtempSync(join(tmpdir(),'scopelet-assets-'));
   try {
     const dist=join(root,'dist');mkdirSync(dist);
+    // The launcher these binaries are pinned in, at their version.
+    const launcher=join(root,'skills/scopelet/scripts/scopelet.mjs');
+    mkdirSync(join(root,'skills/scopelet/scripts'),{recursive:true});
+    const unpinned=readFileSync('skills/scopelet/scripts/scopelet.mjs','utf8').replace(/const version = '[^']+'/,"const version = '0.2.0'");
+    writeFileSync(launcher,unpinned);
     const targets=['aarch64-apple-darwin','x86_64-apple-darwin','aarch64-unknown-linux-gnu','x86_64-unknown-linux-gnu'];
     for(const target of targets) {
       writeFileSync(join(dist,`scopelet-${target}`),`synthetic ${target}`);
@@ -105,11 +149,28 @@ test('release assets reject missing or mismatched matrix versions', async () => 
     writeFileSync(join(dist,`scopelet-${targets[0]}.version`),'scopelet 0.1.3\n');
     assert.throws(()=>execFileSync('python3',[script,'0.2.0'],{cwd:root,stdio:'pipe'}));
     assert.equal(existsSync(join(dist,'SHA256SUMS')),false);
+    assert.equal(readFileSync(launcher,'utf8'),unpinned);
     writeFileSync(join(dist,`scopelet-${targets[0]}.version`),'scopelet 0.2.0\n');
+    // A launcher at another version is not given these binaries' hashes.
+    writeFileSync(launcher,unpinned.replace("'0.2.0'","'0.1.9'"));
+    assert.throws(()=>execFileSync('python3',[script,'0.2.0'],{cwd:root,stdio:'pipe'}));
+    assert.equal(existsSync(join(dist,'SHA256SUMS')),false);
+    writeFileSync(launcher,unpinned);
     execFileSync('python3',[script,'0.2.0'],{cwd:root});
     const sums=readFileSync(join(dist,'SHA256SUMS'),'utf8').trim().split('\n');
     assert.equal(sums.length,4);
     for(const target of targets) assert.equal(existsSync(join(dist,`scopelet-${target}.version`)),false);
+    for(const line of sums) {
+      const [hash,name]=line.split(/\s+/);
+      assert.ok(readFileSync(launcher,'utf8').includes(`  '${name.replace('scopelet-','')}': '${hash}',\n`),name);
+    }
+    // The packed skill is listed after them, once, however often it is added.
+    writeFileSync(join(dist,'scopelet.skill'),'packed skill');
+    for(let i=0;i<2;i++) execFileSync('python3',[script,'--skill'],{cwd:root});
+    const listed=readFileSync(join(dist,'SHA256SUMS'),'utf8').trim().split('\n');
+    assert.equal(listed.length,5);
+    assert.deepEqual(listed.slice(0,4),sums);
+    assert.match(listed[4],/^[a-f0-9]{64}  scopelet\.skill$/);
   } finally {rmSync(root,{recursive:true,force:true});}
 });
 

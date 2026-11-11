@@ -16,7 +16,16 @@ assert 0 < len(description) <= 1024
 assert len(text.encode()) <= 1536, 'keep the entrypoint under 1.5 KiB'
 version = re.search(r'^version = "([^"]+)"$', (root / 'Cargo.toml').read_text(), re.M).group(1)
 assert f'version: "{version}"' in front
-assert f"const version = '{version}'" in (skill / 'scripts/scopelet.mjs').read_text()
+launcher = (skill / 'scripts/scopelet.mjs').read_text()
+assert f"const version = '{version}'" in launcher
+# The launcher pins the checksum of every release binary of its version, or
+# none between a version bump and its release.
+pinned = re.search(r'// pinned-checksums:start\n(.*?)// pinned-checksums:end', launcher, re.S)
+assert pinned, 'the launcher must carry its pinned-checksums block'
+pins = re.findall(r"^  '([a-z0-9_-]+)': '[a-f0-9]{64}',$", pinned[1], re.M)
+assert pinned[1] == 'const pinned = {};\n' or (
+    sorted(pins) == ['aarch64-apple-darwin', 'aarch64-unknown-linux-gnu', 'x86_64-apple-darwin', 'x86_64-unknown-linux-gnu']
+    and pinned[1].count('\n') == 6), 'the launcher pins all four release targets or none'
 # Automatic by design: every host may pick the skill on its own. Manual is the
 # user's opt-out, documented in the README, never the shipped default.
 assert not re.search(r'^disable-model-invocation:\s*true\s*$', front, re.M), 'Claude Code and OpenCode must be allowed to load the skill'
@@ -31,9 +40,14 @@ assert not any(p.name == '.DS_Store' or '__pycache__' in p.parts for p in files)
 if '--pack' in sys.argv:
     dist = root / 'dist'
     dist.mkdir(exist_ok=True)
+    # The same bundle always packs to the same bytes: fixed timestamps and
+    # modes, in sorted order, so the archive's checksum means something.
     with zipfile.ZipFile(dist / 'scopelet.skill', 'w', zipfile.ZIP_DEFLATED) as z:
         for path in files:
-            z.write(path, path.relative_to(skill.parent).as_posix())
+            entry = zipfile.ZipInfo(path.relative_to(skill.parent).as_posix(), date_time=(1980, 1, 1, 0, 0, 0))
+            entry.compress_type = zipfile.ZIP_DEFLATED
+            entry.external_attr = 0o100644 << 16
+            z.writestr(entry, path.read_bytes())
     with zipfile.ZipFile(dist / 'scopelet.skill') as z:
         assert len(z.namelist()) == len(files)
         assert all('\\' not in name for name in z.namelist())

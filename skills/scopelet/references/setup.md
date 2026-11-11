@@ -23,8 +23,11 @@ Invoke `/scopelet <task>` in Claude Code or OpenCode, `$scopelet <task>` in Code
 Explicit invocation accesses advanced queries; installed hooks run independently.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
 The launcher installs Scopelet **1.2.6** into the user's cache, downloading the
-matching macOS/Linux release from github.com and verifying its SHA-256. Node 18+
-is sufficient for the launcher itself. The launcher alone changes no agent
+matching macOS/Linux release from github.com and verifying its SHA-256 against
+the checksums pinned in the launcher when the release was cut, so a binary
+replaced on the release page afterwards is refused. Linux releases need glibc;
+on musl (Alpine) install with Cargo. Node 18+ is sufficient for the launcher
+itself. The launcher alone changes no agent
 settings; `install` explicitly installs user hooks.
 
 In the commands below, replace `scopelet` with
@@ -70,8 +73,9 @@ Existing ignore rules and read-only caches are preserved; unwritable directories
 may lack these markers; explicit no-ignore searches can still include it.
 
 Remove the skill using `npx skills remove scopelet --global -a codex claude-code opencode -y`; remove
-a Cargo install with `cargo uninstall scopelet`. The launcher cache can be
-deleted separately. Remove automatic hooks first with `scopelet uninstall --agent all`.
+a Cargo install with `cargo uninstall scopelet`. The launcher keeps its binary
+under `$XDG_CACHE_HOME/scopelet/bin`, otherwise `~/.cache/scopelet/bin`, apart
+from the evidence cache above; it can be deleted separately. Remove automatic hooks first with `scopelet uninstall --agent all`.
 The binary and local cache can be removed separately. Scopelet configures no
 proxy and sends nothing anywhere: it keeps a local journal, never transmitted,
 of its compression decisions in `<cache>/events/YYYY-MM.jsonl` (time, host,
