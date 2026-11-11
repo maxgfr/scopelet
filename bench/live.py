@@ -83,6 +83,11 @@ def post_json(url, body, headers, timeout, retries, sleep=time.sleep):
     # A key read from a file with a CRLF ending carries a `\r` that http.client
     # refuses (and quotes in its error, key and all): header values are trimmed.
     headers = {name: value.strip() for name, value in headers.items()}
+    # A line break left inside a value is refused here, by name: http.client
+    # would quote the value, an API key, in its error and so in the report.
+    for name, value in headers.items():
+        if '\r' in value or '\n' in value:
+            raise ValueError(f'header {name} holds a line break')
     for attempt in range(retries + 1):
         request = urllib.request.Request(url, data=body, method='POST', headers=headers)
         try:

@@ -581,6 +581,10 @@ class ApiTests(unittest.TestCase):
         with patch('urllib.request.urlopen', lambda request, timeout: sent.append(request.get_header('X-api-key')) or io.BytesIO(b'{}')):
             live.post_json('https://api/x', b'{}', {'x-api-key': 'sk-secret\r\n'}, 5, 0)
         self.assertEqual(sent, ['sk-secret'])
+        # A key with a line break inside is refused without being quoted.
+        with self.assertRaises(ValueError) as refused:
+            live.post_json('https://api/x', b'{}', {'x-api-key': 'sk-a\nsk-b'}, 5, 0)
+        self.assertNotIn('sk-a', str(refused.exception))
         # A body that never decodes ends as a network failure, not a crash.
         with patch('urllib.request.urlopen', lambda request, timeout: io.BytesIO(b'\xc3')), \
                 self.assertRaisesRegex(RuntimeError, '^network: '):

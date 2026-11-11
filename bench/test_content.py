@@ -185,7 +185,10 @@ class ContentTests(unittest.TestCase):
                 self.fail('the run outlived the interrupt')
         # What a run printed before a descendant held its pipes past the
         # timeout is kept; a leader already gone does not make it raise.
-        held = content.bounded(['/bin/sh', '-c', 'echo partial; echo perr >&2; (setsid sleep 20 >&1 2>&2 &) ; sleep 30'], 1)
+        # The holder leaves the group with setsid(2), which every Unix has;
+        # the setsid(1) command does not exist on macOS.
+        holder = (f"{sys.executable} -c 'import os,time; os.fork() and os._exit(0); os.setsid(); time.sleep(20)'")
+        held = content.bounded(['/bin/sh', '-c', f'echo partial; echo perr >&2; {holder}; sleep 30'], 1)
         self.assertEqual((held.returncode, held.timed_out), (124, True))
         self.assertIn(b'partial', held.stdout)
         self.assertIn(b'perr', held.stderr)
