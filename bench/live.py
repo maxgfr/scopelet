@@ -80,6 +80,9 @@ def post_json(url, body, headers, timeout, retries, sleep=time.sleep):
     import http.client
     import urllib.error
     import urllib.request
+    # A key read from a file with a CRLF ending carries a `\r` that http.client
+    # refuses (and quotes in its error, key and all): header values are trimmed.
+    headers = {name: value.strip() for name, value in headers.items()}
     for attempt in range(retries + 1):
         request = urllib.request.Request(url, data=body, method='POST', headers=headers)
         try:
@@ -92,8 +95,9 @@ def post_json(url, body, headers, timeout, retries, sleep=time.sleep):
         # A connection lost before or while the answer is read is the
         # network too: any OSError (a reset, a TLS stream cut short, a
         # timeout), a server that hung up, and a body cut short, which does
-        # not decode (ValueError: inside a character, or as JSON).
-        except (OSError, http.client.HTTPException, ValueError) as error:
+        # not decode, inside a character or as JSON. Other errors are not
+        # transient and are not retried.
+        except (OSError, http.client.HTTPException, UnicodeDecodeError, json.JSONDecodeError) as error:
             if attempt == retries:
                 raise RuntimeError(f'network: {error!r}') from None
             sleep(2 ** attempt)

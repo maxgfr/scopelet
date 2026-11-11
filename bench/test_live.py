@@ -570,6 +570,17 @@ class ApiTests(unittest.TestCase):
         with patch('urllib.request.urlopen', urlopen):
             self.assertEqual(live.post_json('https://api/x', b'{}', {}, 5, 8, waits.append), {'ok': 1})
         self.assertEqual(waits, [1, 2, 4, 8, 16, 32, 64])
+        # A deterministic error is not retried: it fails at once.
+        tries = []
+        with patch('urllib.request.urlopen', lambda request, timeout: tries.append(1) or (_ for _ in ()).throw(ValueError('bad'))), \
+                self.assertRaises(ValueError):
+            live.post_json('https://api/x', b'{}', {}, 5, 6, lambda _: self.fail('slept'))
+        self.assertEqual(len(tries), 1)
+        # A key with a CRLF ending is sent trimmed, and never quoted in an error.
+        sent = []
+        with patch('urllib.request.urlopen', lambda request, timeout: sent.append(request.get_header('X-api-key')) or io.BytesIO(b'{}')):
+            live.post_json('https://api/x', b'{}', {'x-api-key': 'sk-secret\r\n'}, 5, 0)
+        self.assertEqual(sent, ['sk-secret'])
         # A body that never decodes ends as a network failure, not a crash.
         with patch('urllib.request.urlopen', lambda request, timeout: io.BytesIO(b'\xc3')), \
                 self.assertRaisesRegex(RuntimeError, '^network: '):

@@ -23,6 +23,7 @@ import signal
 import statistics
 import subprocess
 import tempfile
+import threading
 import time
 
 
@@ -117,10 +118,20 @@ def bounded(command, timeout, input=None, stdin=None, **kwargs):
     process = subprocess.Popen(command, stdin=subprocess.PIPE if input is not None else stdin,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True, **kwargs)
     def kill():
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+        # The group, then the leader: once the leader is gone and only a
+        # descendant that left the group remains, macOS refuses the group.
+        for target in (lambda: os.killpg(process.pid, signal.SIGKILL), process.kill):
+            try:
+                target()
+            except OSError:
+                pass
+    # A termination of the probe ends its run as an interrupt does, where it
+    # can be caught (the main thread).
+    def terminated(signum, frame):
+        raise SystemExit(128 + signum)
+    previous = None
+    if threading.current_thread() is threading.main_thread():
+        previous = signal.signal(signal.SIGTERM, terminated)
     try:
         stdout, stderr = process.communicate(input, timeout=timeout)
         code, timed_out = process.returncode, False
@@ -130,11 +141,11 @@ def bounded(command, timeout, input=None, stdin=None, **kwargs):
         # they carry by then is kept, and the run returns anyway.
         try:
             stdout, stderr = process.communicate(timeout=5)
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as held:
+            stdout, stderr = held.output, held.stderr
             for pipe in (process.stdout, process.stderr):
                 pipe.close()
             process.wait()
-            stdout, stderr = b'', b''
         code, timed_out = 124, True
     except BaseException:
         # Out of the terminal's process group, the run does not get the
@@ -142,6 +153,9 @@ def bounded(command, timeout, input=None, stdin=None, **kwargs):
         kill()
         process.wait()
         raise
+    finally:
+        if previous is not None:
+            signal.signal(signal.SIGTERM, previous)
     result = subprocess.CompletedProcess(command, code, stdout or b'', stderr or b'')
     result.timed_out = timed_out
     return result

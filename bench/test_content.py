@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import os
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -16,6 +17,12 @@ class Hung:
 
     def __init__(self):
         self.waited = False
+
+    def kill(self):
+        pass
+
+    def wait(self, timeout=None):
+        return -9
 
     def communicate(self, input=None, timeout=None):
         if timeout is not None and not self.waited:
@@ -176,6 +183,36 @@ class ContentTests(unittest.TestCase):
             else:
                 os.kill(pid, 9)
                 self.fail('the run outlived the interrupt')
+        # What a run printed before a descendant held its pipes past the
+        # timeout is kept; a leader already gone does not make it raise.
+        held = content.bounded(['/bin/sh', '-c', 'echo partial; echo perr >&2; (setsid sleep 20 >&1 2>&2 &) ; sleep 30'], 1)
+        self.assertEqual((held.returncode, held.timed_out), (124, True))
+        self.assertIn(b'partial', held.stdout)
+        self.assertIn(b'perr', held.stderr)
+        # A termination of the probe takes its run with it too.
+        with tempfile.TemporaryDirectory() as temp:
+            child = Path(temp) / 'child'
+            probe = subprocess.Popen([sys.executable, '-c', f"""
+import sys; sys.path.insert(0, {str(Path(content.__file__).parent)!r})
+import content
+content.bounded(['/bin/sh', '-c', 'echo $$ > {child}; exec sleep 60'], 120)
+"""])
+            for _ in range(200):
+                if child.exists() and child.read_text().strip():
+                    break
+                time.sleep(0.02)
+            probe.terminate()
+            probe.wait(10)
+            pid = int(child.read_text())
+            for _ in range(50):
+                try:
+                    os.kill(pid, 0)
+                except ProcessLookupError:
+                    break
+                time.sleep(0.05)
+            else:
+                os.kill(pid, 9)
+                self.fail('the run outlived the termination of its probe')
         ok = content.bounded(['/bin/cat'], 5, input=b'bytes')
         self.assertEqual((ok.returncode, ok.stdout, ok.timed_out), (0, b'bytes', False))
 
