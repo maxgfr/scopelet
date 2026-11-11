@@ -22,7 +22,7 @@ trust step. First installation enables default mode.
 Invoke `/scopelet <task>` in Claude Code or OpenCode, `$scopelet <task>` in Codex.
 Explicit invocation accesses advanced queries; installed hooks run independently.
 Run `node <installed-skill>/scripts/scopelet.mjs doctor` to check availability.
-The launcher installs Scopelet **1.2.6** into the user's cache, downloading the
+The launcher installs Scopelet **1.2.7** into the user's cache, downloading the
 matching macOS/Linux release from github.com and verifying its SHA-256 against
 the checksums pinned in the launcher when the release was cut, so a binary
 replaced on the release page afterwards is refused. Linux releases need glibc;
@@ -36,7 +36,7 @@ An independently installed binary is also supported:
 
 ```sh
 brew install maxgfr/tap/scopelet
-cargo install --git https://github.com/maxgfr/scopelet --tag v1.2.6 --locked
+cargo install --git https://github.com/maxgfr/scopelet --tag v1.2.7 --locked
 ```
 
 Homebrew is the one install that puts `scopelet` on PATH and needs no Node.
