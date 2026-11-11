@@ -34,9 +34,18 @@ jobs:
       - run: python3 -m unittest discover -s bench -p 'test_*.py'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm test
-      - run: npm install -g @maxgfr/codeindex@2.30.0
-      - run: python3 scripts/install_ci_webindex.py "$RUNNER_TEMP/scopelet-adapters"
-      - run: echo "$RUNNER_TEMP/scopelet-adapters" >> "$GITHUB_PATH"
+      # The adapters are checked against the engines a user installs today — the
+      # latest release of each, as `brew install maxgfr/tap/webindex` and
+      # `npm install -g @maxgfr/codeindex` give them — not versions pinned once
+      # and left behind. The webindex CLI is one standalone file.
+      - run: npm install -g @maxgfr/codeindex
+      - name: Install the webindex CLI (latest release)
+        run: |
+          mkdir -p "$RUNNER_TEMP/scopelet-adapters"
+          curl -fsSL https://github.com/maxgfr/webindex/releases/latest/download/webindex.mjs -o "$RUNNER_TEMP/scopelet-adapters/webindex"
+          chmod +x "$RUNNER_TEMP/scopelet-adapters/webindex"
+          echo "$RUNNER_TEMP/scopelet-adapters" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/scopelet-adapters/webindex" version
       - run: python3 scripts/check_adapters.py target/debug/scopelet
       - run: cargo build --release --locked
       - run: python3 scripts/check_readme.py --binary target/release/scopelet
