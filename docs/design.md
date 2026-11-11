@@ -373,7 +373,7 @@ force. Watch/debug/interactive forms (`--watch`, `--watchAll`, `--watch-path`,
 `tsc -w`, Gradle's `--continuous`/`-t`, pytest's `-f`/`--looponfail`, `dotnet
 watch`, `playwright test --ui`/`--ui-port`/`--ui-host`/`--debug`, `--pdb`,
 `--interactive`; `-f` in a cluster such as `pytest -xf` too, `--watch=false`
-and `--watchAll=false` not) and
+too since Node keeps watching with it, Jest's `--watchAll=false` not) and
 unrecognized syntax stay
 native. Every eligible command executes once; stdout/stderr and process status
 remain independent of presentation.

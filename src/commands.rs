@@ -348,9 +348,11 @@ fn pytest_loops(args: &[String]) -> bool {
 /// A watch or loop mode under any of its spellings: `--watch`, `--watch=…`,
 /// `--watchAll`, `--watch-path`, Gradle's `--continuous`, pytest's
 /// `--looponfail`. The command never ends on its own.
-/// `--watch=false` and `--watchAll=false` turn watching off.
+/// Jest's `--watchAll=false` turns watching off. `--watch=false` does not
+/// for every tool (`node --test --watch=false` still watches), so it stays
+/// a watch.
 fn watches(arg: &str) -> bool {
-    if matches!(arg, "--watch=false" | "--watchAll=false") {
+    if arg == "--watchAll=false" {
         return false;
     }
     matches!(arg, "--watch" | "--continuous" | "--looponfail")

@@ -48,7 +48,6 @@ fn safe_families_are_recognized_with_their_profile() {
         // Watching turned off, and an `f` that is an option's value.
         ("npm test -- --watchAll=false", Profile::Tests),
         ("npx jest --watchAll=false", Profile::Tests),
-        ("npx jest --watch=false", Profile::Tests),
         ("pytest -rf tests", Profile::Tests),
         ("pytest -rfE tests", Profile::Tests),
         ("pytest -kfoo tests", Profile::Tests),
@@ -162,6 +161,9 @@ fn writing_waiting_or_unknown_commands_are_not_recognized() {
         "dotnet watch test",
         "node --test --watch-path=src",
         "npx playwright test --ui-port=8080",
+        // Node keeps watching with `--watch=false`.
+        "node --test --watch=false",
+        "npx jest --watch=false",
         "npx playwright test --ui-host=0.0.0.0",
         "npx playwright test --ui=true",
         "pytest -xf tests",
