@@ -202,6 +202,33 @@ test('a temporary left by a killed install does not block the next one, and old 
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('a scopelet in a relative PATH entry is never run', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'scopelet-relative-'));
+  try {
+    const project = join(dir, 'project');
+    mkdirSync(project);
+    writeFileSync(join(project, 'scopelet'), `#!/bin/sh\nif [ "$1" = "--version" ]; then echo "scopelet ${version}"; else echo "PROJECT FILE RAN"; fi\n`, { mode: 0o700 });
+    const cache = join(dir, 'scopelet', 'bin', version);
+    mkdirSync(cache, { recursive: true });
+    const content = '#!/bin/sh\necho "cached release"\n';
+    writeFileSync(join(cache, 'scopelet'), content, { mode: 0o700 });
+    writeFileSync(join(cache, 'scopelet.sha256'), sha256(content));
+    const script = launcherWith(dir);
+    for (const path of ['.', `.:${dir}`, `${dir}:`, `:${dir}`]) {
+      const env = { ...process.env, XDG_CACHE_HOME: dir, PATH: path };
+      delete env.SCOPELET_BIN;
+      const result = spawnSync(process.execPath, ['--import', offline(dir), script, 'doctor'], { encoding: 'utf8', env, cwd: project, timeout: 5000 });
+      assert.equal(result.status, 0, `${path}: ${result.stderr}`);
+      assert.equal(result.stdout, 'cached release\n', path);
+    }
+    // An absolute entry is still used.
+    const env = { ...process.env, XDG_CACHE_HOME: dir, PATH: project };
+    delete env.SCOPELET_BIN;
+    const found = spawnSync(process.execPath, [script, 'doctor'], { encoding: 'utf8', env, timeout: 5000 });
+    assert.match(found.stdout, /PROJECT FILE RAN/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('verified cached release runs offline', () => {
   const dir = mkdtempSync(join(tmpdir(), 'scopelet-cached-'));
   try {

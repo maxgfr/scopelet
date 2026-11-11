@@ -3,7 +3,8 @@ import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync, spawn } from 'node:child_process';
 import { mkdir, readFile, readdir, stat, writeFile, rename, chmod, rm } from 'node:fs/promises';
 import { homedir, constants } from 'node:os';
-import { isAbsolute, join } from 'node:path';
+import { accessSync, statSync, constants as files } from 'node:fs';
+import { delimiter, isAbsolute, join } from 'node:path';
 
 const version = '1.2.7';
 // The SHA-256 of this version's release binaries, written here when the
@@ -85,11 +86,25 @@ async function hashOf(path) {
   }
 }
 
+// The `scopelet` on the PATH, searched in its absolute entries only: a
+// relative or empty entry is the working directory, a project whose files
+// are never run.
+function onPath() {
+  for (const dir of (process.env.PATH || '').split(delimiter)) {
+    if (!isAbsolute(dir)) continue;
+    const file = join(dir, 'scopelet');
+    try {
+      accessSync(file, files.X_OK);
+      if (statSync(file).isFile()) return file;
+    } catch {}
+  }
+}
+
 async function binary() {
   // Explicit override is useful for offline installs and independent tests.
   const override = process.env.SCOPELET_BIN;
-  const candidate = override || 'scopelet';
-  const check = spawnSync(candidate, ['--version'], { encoding: 'utf8', timeout: 5000 });
+  const candidate = override || onPath();
+  const check = candidate ? spawnSync(candidate, ['--version'], { encoding: 'utf8', timeout: 5000 }) : {};
   if (check.status === 0 && check.stdout.trim() === `scopelet ${version}`) return candidate;
   if (override) {
     // A missing file, a hung binary and another version are different fixes.
