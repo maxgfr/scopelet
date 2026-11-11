@@ -86,8 +86,10 @@ class RunTests(unittest.TestCase):
             self.assertEqual(error.exception.code, 1)
 
     def test_a_hung_binary_is_a_failed_sample_not_an_aborted_probe(self):
-        hung = subprocess.TimeoutExpired(['scopelet'], 120, output=b'partial', stderr=b'')
-        with tempfile.TemporaryDirectory() as temp, patch.object(performance.subprocess, 'run', side_effect=hung):
+        from test_content import Hung
+        with tempfile.TemporaryDirectory() as temp, \
+                patch.object(performance.subprocess, 'Popen', side_effect=lambda command, **kw: Hung()), \
+                patch.object(performance.content.os, 'killpg'):
             taken, stdout = performance.measure(Path('/bin/echo'), ['compress'], None, Path(temp))
         self.assertEqual(taken['exit_code'], 124)
         self.assertIsNone(taken['rss_bytes'])

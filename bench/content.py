@@ -14,10 +14,12 @@ import functools
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import platform
 import re
 import shutil
+import signal
 import statistics
 import subprocess
 import tempfile
@@ -103,16 +105,29 @@ def recovery(binary, cache, output, original):
     return result.returncode == 0 and result.stdout == original, result.stdout
 
 
-def bounded(command, timeout, **kwargs):
-    """`subprocess.run` with captured output whose timeout is a result, exit
-    124, not an exception: a binary that hangs is a failed run kept in the
-    report, as one that crashes is, instead of the end of the probe."""
+def bounded(command, timeout, input=None, stdin=None, **kwargs):
+    """Run `command` with captured output; a timeout is a result, exit 124,
+    not an exception: a binary that hangs is a failed run kept in the report,
+    as one that crashes is, instead of the end of the probe.
+
+    The command runs in a process group of its own, which a timeout kills
+    whole: what hangs under `/usr/bin/time` is its child, which killing
+    `time` alone left running.
+    """
+    process = subprocess.Popen(command, stdin=subprocess.PIPE if input is not None else stdin,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True, **kwargs)
     try:
-        result = subprocess.run(command, capture_output=True, timeout=timeout, **kwargs)
-        result.timed_out = False
-    except subprocess.TimeoutExpired as expired:
-        result = subprocess.CompletedProcess(command, 124, expired.stdout or b'', expired.stderr or b'')
-        result.timed_out = True
+        stdout, stderr = process.communicate(input, timeout=timeout)
+        code, timed_out = process.returncode, False
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        stdout, stderr = process.communicate()
+        code, timed_out = 124, True
+    result = subprocess.CompletedProcess(command, code, stdout or b'', stderr or b'')
+    result.timed_out = timed_out
     return result
 
 

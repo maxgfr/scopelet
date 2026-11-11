@@ -558,12 +558,17 @@ class ApiTests(unittest.TestCase):
         class Reset(io.BytesIO):
             def read(self, *args):
                 raise ConnectionResetError('reset by peer')
+        import ssl
+
+        class TlsCut(io.BytesIO):
+            def read(self, *args):
+                raise ssl.SSLEOFError('EOF occurred in violation of protocol')
         answers = [http.client.RemoteDisconnected('closed'), Reset(), http.client.IncompleteRead(b'{'),
-                   io.BytesIO(b'{"ok": 1}')]
+                   TlsCut(), io.BytesIO(b'{"ok": tr'), io.BytesIO(b'{"ok": 1}')]
         waits.clear()
         with patch('urllib.request.urlopen', urlopen):
-            self.assertEqual(live.post_json('https://api/x', b'{}', {}, 5, 5, waits.append), {'ok': 1})
-        self.assertEqual(waits, [1, 2, 4])
+            self.assertEqual(live.post_json('https://api/x', b'{}', {}, 5, 6, waits.append), {'ok': 1})
+        self.assertEqual(waits, [1, 2, 4, 8, 16])
         # A refusal is the answer, not retried.
         with patch('urllib.request.urlopen', side_effect=urllib.error.HTTPError('u', 400, 'bad', {}, io.BytesIO(b'no'))), \
                 self.assertRaisesRegex(RuntimeError, 'HTTP 400: no'):

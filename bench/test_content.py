@@ -1,10 +1,27 @@
 import json
 from pathlib import Path
+import os
 import subprocess
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 import content
+
+
+class Hung:
+    """A process that does not finish before its timeout."""
+    pid = 2 ** 22 + 7
+    returncode = None
+
+    def __init__(self):
+        self.waited = False
+
+    def communicate(self, input=None, timeout=None):
+        if timeout is not None and not self.waited:
+            self.waited = True
+            raise subprocess.TimeoutExpired('scopelet', timeout, output=b'partial')
+        return b'partial', b''
 
 
 class ContentTests(unittest.TestCase):
@@ -13,20 +30,20 @@ class ContentTests(unittest.TestCase):
         artifact = 'artifact:' + 'a' * 64
         blob = 'blob:' + 'b' * 64
         manifest = json.dumps({'snapshots': [{'blob': blob}]}).encode()
-        with patch.object(content.subprocess, 'run', side_effect=[subprocess.CompletedProcess([], 0, manifest), subprocess.CompletedProcess([], 0, original)]) as run:
+        with patch.object(content, 'bounded', side_effect=[subprocess.CompletedProcess([], 0, manifest), subprocess.CompletedProcess([], 0, original)]) as run:
             exact, recovered = content.recovery(Path('/bin/scopelet'), Path('/cache'), artifact.encode(), original)
         self.assertTrue(exact)
         self.assertEqual(recovered, original)
         self.assertEqual(run.call_args_list[-1].args[0][-2:], [blob, '--raw'])
 
     def test_read_failure_cannot_claim_roundtrip(self):
-        with patch.object(content.subprocess, 'run', return_value=subprocess.CompletedProcess([], 2, b'')):
+        with patch.object(content, 'bounded', return_value=subprocess.CompletedProcess([], 2, b'')):
             exact, recovered = content.recovery(Path('/bin/scopelet'), Path('/cache'), ('artifact:' + 'a' * 64).encode(), b'original')
         self.assertFalse(exact)
         self.assertIsNone(recovered)
 
     def test_untouched_output_counts_as_roundtrip_without_an_artifact(self):
-        with patch.object(content.subprocess, 'run') as run:
+        with patch.object(content, 'bounded') as run:
             exact, recovered = content.recovery(Path('/bin/scopelet'), Path('/cache'), b'same', b'same')
         self.assertTrue(exact)
         self.assertIsNone(recovered)
@@ -81,22 +98,33 @@ class ContentTests(unittest.TestCase):
         self.assertIn('non-zero exit', problems[1])
 
     def test_a_hung_binary_is_a_failed_run_kept_in_the_report(self):
+        started = []
         real = subprocess.run
 
-        def fake(command, **kwargs):
+        def version(command, **kwargs):
+            # The binary's version; anything else (`platform` asks `uname`) runs.
             if '--version' in command:
                 return subprocess.CompletedProcess(command, 0, 'scopelet 0.0.0\n', '')
+            return real(command, **kwargs)
+        real_popen = subprocess.Popen
+
+        def popen(command, **kwargs):
+            # The binary hangs; anything else really runs.
             if 'compress' in command or 'expand' in command:
-                raise subprocess.TimeoutExpired(command, kwargs['timeout'], output=b'partial')
-            return real(command, **kwargs)  # `platform` asks `uname`
+                started.append(command)
+                return Hung()
+            return real_popen(command, **kwargs)
         with tempfile.TemporaryDirectory() as temp, patch('builtins.print'), \
                 patch.object(content, 'fixtures', return_value={'tiny': (b'x' * 64, ['x'])}), \
-                patch.object(content.subprocess, 'run', side_effect=fake):
+                patch.object(content.subprocess, 'run', side_effect=version), \
+                patch.object(content.subprocess, 'Popen', side_effect=popen), \
+                patch.object(content.os, 'killpg') as killed:
             binary = Path(temp) / 'binary'
             binary.write_bytes(b'frozen')
             report = content.measure(binary, Path(temp) / 'out', 3, 30)
-            # Two states, one hung run each: not 2 x 33.
-            self.assertEqual(sum('compress' in call.args[0] for call in content.subprocess.run.call_args_list), 2)
+            # Two states, one hung run each: not 2 x 33, and each one killed.
+            self.assertEqual(sum('compress' in command for command in started), 2)
+            self.assertEqual(killed.call_count, 2)
             self.assertTrue((Path(temp) / 'out' / 'report.json').exists())
         # A hang is recorded once per state, then that state stops: the next
         # runs would only hang as long again.
@@ -105,9 +133,31 @@ class ContentTests(unittest.TestCase):
             self.assertTrue(report['cases']['tiny']['states'][state]['samples'][0]['timed_out'])
         self.assertIn('tiny/cold: 1 non-zero exit(s)', content.failures(report))
         # A recovery that hangs cannot claim a round trip either.
-        with patch.object(content.subprocess, 'run', side_effect=subprocess.TimeoutExpired(['x'], 30)):
+        with patch.object(content.subprocess, 'Popen', side_effect=lambda command, **kw: Hung()), \
+                patch.object(content.os, 'killpg'):
             exact, recovered = content.recovery(Path('/bin/scopelet'), Path('/cache'), ('artifact:' + 'a' * 64).encode(), b'o')
         self.assertFalse(exact)
+
+    def test_a_timeout_kills_the_whole_process_group(self):
+        # What hangs under `/usr/bin/time` is its child: the shell's
+        # background sleep stands for it.
+        with tempfile.TemporaryDirectory() as temp:
+            child = Path(temp) / 'child'
+            result = content.bounded(['/bin/sh', '-c', f'sleep 60 & echo $! > {child}; wait'], 1)
+            self.assertEqual(result.returncode, 124)
+            self.assertTrue(result.timed_out)
+            pid = int(child.read_text())
+            for _ in range(50):
+                try:
+                    os.kill(pid, 0)
+                except ProcessLookupError:
+                    break
+                time.sleep(0.05)
+            else:
+                os.kill(pid, 9)
+                self.fail('the hung child outlived the timeout')
+        ok = content.bounded(['/bin/cat'], 5, input=b'bytes')
+        self.assertEqual((ok.returncode, ok.stdout, ok.timed_out), (0, b'bytes', False))
 
     def test_summary_keeps_exit_failures(self):
         value = content.summarize([{'seconds': .5, 'exit_code': 7}, {'seconds': .1, 'exit_code': 0}])
