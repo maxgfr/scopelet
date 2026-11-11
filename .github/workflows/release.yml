@@ -36,6 +36,8 @@ jobs:
   binary:
     needs: version
     if: needs.version.outputs.version != ''
+    # A build takes under five minutes; a hung step fails here, not in six hours.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
