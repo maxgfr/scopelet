@@ -46,9 +46,6 @@ import shlex
 import subprocess
 import sys
 import tempfile
-import time
-import urllib.error
-import urllib.request
 import uuid
 
 import live
@@ -353,21 +350,8 @@ class ApiClient:
     def __call__(self, messages):
         body = json.dumps({'model': self.model, 'max_tokens': 4096, 'system': SYSTEM, 'tools': TOOLS,
                            'messages': messages}).encode()
-        for attempt in range(self.retries + 1):
-            request = urllib.request.Request(ENDPOINT, data=body, method='POST', headers={
-                'x-api-key': self.key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json'})
-            try:
-                with urllib.request.urlopen(request, timeout=300) as response:
-                    return json.load(response)
-            except urllib.error.HTTPError as error:
-                if error.code not in (429, 500, 502, 503, 529) or attempt == self.retries:
-                    raise RuntimeError(f'HTTP {error.code}: {error.read().decode(errors="replace")[:300]}') from None
-                time.sleep(float(error.headers.get('retry-after') or 2 ** attempt))
-            except (urllib.error.URLError, TimeoutError) as error:
-                if attempt == self.retries:
-                    raise RuntimeError(f'network: {error}') from None
-                time.sleep(2 ** attempt)
-        raise AssertionError('unreachable')
+        return live.post_json(ENDPOINT, body, {'x-api-key': self.key, 'anthropic-version': '2023-06-01',
+                                               'content-type': 'application/json'}, 300, self.retries)
 
 
 def replay(messages, step, text):

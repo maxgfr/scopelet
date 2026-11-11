@@ -18,6 +18,15 @@ class TokensTests(unittest.TestCase):
     def test_refuses_to_run_without_live(self):
         self.assertEqual(tokens.main(['--out', '/nonexistent/tokens.json']), 2)
 
+    def test_the_default_report_is_a_new_file_never_the_stored_one(self):
+        seen = []
+        with patch.dict(os.environ, {'ANTHROPIC_API_KEY': 'k'}), \
+                patch.object(tokens, 'measure', side_effect=lambda binary, counter, models, out, baseline: seen.append(out) or {'summary': {}}), \
+                patch('builtins.print'):
+            self.assertEqual(tokens.main(['--live']), 0)
+        self.assertRegex(seen[0].name, r'^tokens-\d{8}T\d{6}Z\.json$')
+        self.assertFalse(seen[0].exists())
+
     def test_refuses_without_a_key(self):
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(tokens.main(['--live', '--out', '/nonexistent/tokens.json']), 2)

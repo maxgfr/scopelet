@@ -27,10 +27,9 @@ import subprocess
 import sys
 import tempfile
 import time
-import urllib.error
-import urllib.request
 
 import content
+import live
 
 HERE = Path(__file__).resolve().parent
 MODELS = ['claude-opus-5-5', 'claude-haiku-5-5']
@@ -114,20 +113,11 @@ class ApiCounter:
         self.retries = retries
 
     def __call__(self, model, text):
+        # Rate limits, overload and network errors are retried, as nap.py's
+        # client does; anything else is the answer.
         body = json.dumps({'model': model, 'messages': [{'role': 'user', 'content': text}]}).encode()
-        for attempt in range(self.retries + 1):
-            request = urllib.request.Request(ENDPOINT, data=body, method='POST', headers={
-                'x-api-key': self.key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json'})
-            try:
-                with urllib.request.urlopen(request, timeout=60) as response:
-                    return json.load(response)['input_tokens']
-            except urllib.error.HTTPError as error:
-                # Rate limits and overload are retried; anything else is the answer.
-                if error.code not in (429, 500, 502, 503, 529) or attempt == self.retries:
-                    detail = error.read().decode(errors='replace')[:300]
-                    raise RuntimeError(f'HTTP {error.code}: {detail}') from None
-                time.sleep(float(error.headers.get('retry-after') or 2 ** attempt))
-        raise AssertionError('unreachable')
+        return live.post_json(ENDPOINT, body, {'x-api-key': self.key, 'anthropic-version': '2023-06-01',
+                                               'content-type': 'application/json'}, 60, self.retries)['input_tokens']
 
 
 def counted(counter, model, text, memo):
@@ -220,7 +210,9 @@ def main(argv=None):
                    help='binary under test: the `single` view')
     p.add_argument('--baseline', type=Path, help='reference binary (such as the 0.11.1 release): the `baseline` view')
     p.add_argument('--model', action='append', help=f'repeatable; default {" and ".join(MODELS)}')
-    p.add_argument('--out', type=Path, default=HERE / 'results' / 'tokens.json')
+    # The stored reports are evidence and are never overwritten: the default
+    # is a new name, as live.py's is.
+    p.add_argument('--out', type=Path, help='report path; default bench/results/tokens-<UTC time>.json')
     args = p.parse_args(argv)
     if not args.live:
         print('tokens.py calls the token counting API; pass --live to run it.', file=sys.stderr)
@@ -229,6 +221,7 @@ def main(argv=None):
     if not key:
         print('ANTHROPIC_API_KEY is not set.', file=sys.stderr)
         return 2
+    args.out = args.out or HERE / 'results' / time.strftime('tokens-%Y%m%dT%H%M%SZ.json', time.gmtime())
     if args.out.exists():
         p.error(f'{args.out} exists; completed evidence is never overwritten')
     report = measure(args.scopelet.resolve(), ApiCounter(key), args.model or MODELS, args.out,

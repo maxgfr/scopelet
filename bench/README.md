@@ -161,7 +161,7 @@ ANTHROPIC_API_KEY=... python3 bench/tokens.py --live \
 Flags: `--live` (required), `--scopelet BINARY` (default
 `target/release/scopelet`), `--baseline BINARY`, `--model MODEL` (repeatable;
 default `claude-opus-5-5` and `claude-haiku-5-5`), `--out PATH` (default
-`bench/results/tokens.json`, which must not exist).
+`bench/results/tokens-<UTC time>.json`, which must not exist).
 
 The current report, `results/tokens-20261105-124.json`, counts the 1.2.4
 release binary (`4a5d2280b2b0…`) on the 26 cases for `claude-opus-5-5` and

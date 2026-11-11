@@ -56,6 +56,45 @@ def load_tasks():
     return json.loads((FIXTURES / 'tasks.json').read_text())
 
 
+def retry_after(value, attempt):
+    """Seconds to wait before retrying: a `Retry-After` header as seconds or
+    as an HTTP date, otherwise exponential backoff. Never negative."""
+    if value:
+        try:
+            return max(0.0, float(value))
+        except ValueError:
+            pass
+        try:
+            from email.utils import parsedate_to_datetime
+            from datetime import datetime, timezone
+            return max(0.0, (parsedate_to_datetime(value) - datetime.now(timezone.utc)).total_seconds())
+        except (TypeError, ValueError):
+            pass
+    return float(2 ** attempt)
+
+
+def post_json(url, body, headers, timeout, retries, sleep=time.sleep):
+    """POST `body` and return the decoded JSON answer. Rate limits, overload
+    and network errors are retried `retries` times; any other HTTP error is
+    the answer, raised as RuntimeError."""
+    import urllib.error
+    import urllib.request
+    for attempt in range(retries + 1):
+        request = urllib.request.Request(url, data=body, method='POST', headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.load(response)
+        except urllib.error.HTTPError as error:
+            if error.code not in (429, 500, 502, 503, 529) or attempt == retries:
+                raise RuntimeError(f'HTTP {error.code}: {error.read().decode(errors="replace")[:300]}') from None
+            sleep(retry_after(error.headers.get('retry-after'), attempt))
+        except (urllib.error.URLError, TimeoutError) as error:
+            if attempt == retries:
+                raise RuntimeError(f'network: {error}') from None
+            sleep(2 ** attempt)
+    raise AssertionError('unreachable')
+
+
 def write_report(path, report):
     """Replace `path` with `report` as JSON: whole, or not at all.
 

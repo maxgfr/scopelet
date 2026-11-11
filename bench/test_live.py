@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -523,6 +524,38 @@ class ReportTests(unittest.TestCase):
                     patch('builtins.print'), self.assertRaises(KeyboardInterrupt):
                 live.main(['--live', '--arm', 'off', '--task', 'find_receipt', '--runs', '2', '--out', str(out)])
             self.assertEqual(len(json.loads(out.read_text())['records']), 1)
+
+
+class ApiTests(unittest.TestCase):
+    def test_retry_after_reads_seconds_or_an_http_date_and_never_raises(self):
+        self.assertEqual(live.retry_after('3', 0), 3.0)
+        self.assertEqual(live.retry_after('-5', 0), 0.0)
+        self.assertEqual(live.retry_after(None, 3), 8.0)
+        self.assertEqual(live.retry_after('soon', 1), 2.0)
+        later = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(time.time() + 30))
+        self.assertTrue(20 <= live.retry_after(later, 0) <= 31, live.retry_after(later, 0))
+        self.assertEqual(live.retry_after('Thu, 01 Jan 1970 00:00:00 GMT', 0), 0.0)
+
+    def test_post_json_retries_overload_and_the_network_then_answers(self):
+        import urllib.error
+        waits, calls = [], []
+        answers = [urllib.error.HTTPError('u', 529, 'overloaded', {'retry-after': 'Thu, 01 Jan 1970 00:00:00 GMT'}, io.BytesIO(b'')),
+                   urllib.error.URLError('reset'), TimeoutError('slow'), io.BytesIO(b'{"input_tokens": 7}')]
+
+        def urlopen(request, timeout):
+            calls.append(request.full_url)
+            answer = answers.pop(0)
+            if isinstance(answer, Exception):
+                raise answer
+            return answer
+        with patch('urllib.request.urlopen', urlopen):
+            self.assertEqual(live.post_json('https://api/x', b'{}', {}, 5, 5, waits.append), {'input_tokens': 7})
+        self.assertEqual(len(calls), 4)
+        self.assertEqual(waits, [0.0, 2, 4])
+        # A refusal is the answer, not retried.
+        with patch('urllib.request.urlopen', side_effect=urllib.error.HTTPError('u', 400, 'bad', {}, io.BytesIO(b'no'))), \
+                self.assertRaisesRegex(RuntimeError, 'HTTP 400: no'):
+            live.post_json('https://api/x', b'{}', {}, 5, 5, waits.append)
 
 
 class LiveGuardTests(unittest.TestCase):
