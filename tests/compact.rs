@@ -1538,7 +1538,7 @@ fn failures_of_parallel_go_tests_point_at_their_own_log_line() {
     );
 }
 
-/// Audit finding: a failure line too long for a small budget is left out
+/// A failure line too long for a small budget is left out
 /// instead of making the view fail back to the raw output.
 #[test]
 fn failures_never_starve_a_small_budget() {
@@ -2459,7 +2459,7 @@ fn json_projections_keep_one_link_column() {
     assert_eq!(table.rows.len(), 30, "{text}");
 }
 
-/// Audit finding: a field that only some objects carry, and an envelope's
+/// A field that only some objects carry, and an envelope's
 /// nested field, are named rather than silently left out, and the header is
 /// not complete.
 #[test]

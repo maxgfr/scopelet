@@ -2327,7 +2327,7 @@ fn host_notifications_and_numbers_add_no_anchors() {
     assert!(!journal.contains("\"anchored\":true"), "{journal}");
 }
 
-/// Audit finding: package installs, `git ls-files` and `uv run` with
+/// Package installs, `git ls-files` and `uv run` with
 /// options are wrapped for Codex with their profile, and no format flag.
 #[test]
 fn codex_wraps_installs_listings_and_uv_runs_with_their_profile() {
