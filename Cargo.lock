@@ -531,7 +531,7 @@ dependencies = [
 
 [[package]]
 name = "scopelet"
-version = "1.2.9"
+version = "1.2.10"
 dependencies = [
  "anyhow",
  "assert_cmd",

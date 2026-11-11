@@ -6,7 +6,7 @@ import { homedir, constants } from 'node:os';
 import { accessSync, statSync, constants as files } from 'node:fs';
 import { delimiter, isAbsolute, join } from 'node:path';
 
-const version = '1.2.9';
+const version = '1.2.10';
 // The SHA-256 of this version's release binaries, written here when the
 // release is cut (`scripts/release_checksums.py`). This file reaches the user
 // through the skill, apart from the release: a binary replaced on the
@@ -14,10 +14,10 @@ const version = '1.2.9';
 // release; the release's own SHA256SUMS is then asked instead.
 // pinned-checksums:start
 const pinned = {
-  'aarch64-apple-darwin': 'd8f19fc99c52645c1f0ec59da54056e62723dfaa3393dd0fcb72d0c6424bf84c',
-  'x86_64-apple-darwin': '490f706ba54ead6d809d4fa6e4964fbd07de55487539a9e0bb94c18199b7d5ce',
-  'aarch64-unknown-linux-gnu': 'd9601a17dec1b0c757a484e8a4337800a35237630850ef9b8ce08ddbd7083a55',
-  'x86_64-unknown-linux-gnu': '39b93a041f79ed756a02c964ee6a3b3268e0e1b587f5a6031d44087d8a25f0ab',
+  'aarch64-apple-darwin': 'd81ab3ac5bf05790ae1cd1e7611f850b11a3933f189de09884127d8ccbea827f',
+  'x86_64-apple-darwin': 'a5e9ff7eb9d3766460493018cfd29de02c2354f1bbe8bfc2f008e89436fc23df',
+  'aarch64-unknown-linux-gnu': 'd9cf34285c12050f71c9ef06a3737bec5b11b04e0a195861b8a74ebc568edf25',
+  'x86_64-unknown-linux-gnu': 'e3c674b61fc4b92b65bdd5dcb4194a8189ab3456cd428c700ac35454b886a380',
 };
 // pinned-checksums:end
 const targets = { 'darwin-arm64': 'aarch64-apple-darwin', 'darwin-x64': 'x86_64-apple-darwin',
