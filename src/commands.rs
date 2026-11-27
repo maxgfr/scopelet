@@ -40,10 +40,10 @@ impl Profile {
         }
     }
     /// Outputs up to this size stay byte-exact: a source file of ordinary
-    /// size is read whole.
+    /// size, or a few of them read together, is read whole.
     pub fn small(self) -> usize {
         match self {
-            Self::FileRead => 16 * 1024,
+            Self::FileRead => 32 * 1024,
             _ => crate::compress::SMALL,
         }
     }
@@ -163,7 +163,7 @@ fn reads_files(args: &[String]) -> Option<Profile> {
 /// newlines outside quotes, without redirections or leading assignments.
 /// Words keep `$`, globs and the like as literal text: this reading only
 /// names what runs.
-fn lenient_commands(command: &str) -> Vec<Vec<String>> {
+pub(crate) fn lenient_commands(command: &str) -> Vec<Vec<String>> {
     let mut commands: Vec<Vec<String>> = Vec::new();
     let mut words: Vec<String> = Vec::new();
     let mut word = String::new();

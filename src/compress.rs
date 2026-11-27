@@ -10,6 +10,11 @@ type HashSet<K> = foldhash::HashSet<K>;
 
 pub const DEFAULT_BUDGET: usize = 4096;
 pub const SMALL: usize = 2048;
+/// A JSON document (one object or array, such as `gh pr view --json`) up to
+/// this size is never shown in part, whatever its profile: a partial view
+/// cuts its string fields, the part an API answer is usually read for. It
+/// stays exact unless a complete view (a lossless table) is smaller.
+pub const JSON_SMALL: usize = 8 * 1024;
 /// Line limit of explicit compact queries: selection memory grows with the
 /// number of units.
 pub const MAX_LINES: usize = 100_000;
@@ -299,9 +304,30 @@ pub fn automatic_journaled<'a>(
     budget: Option<usize>,
     anchors: &[String],
 ) -> Cow<'a, [u8]> {
+    automatic_read(host, program, bytes, path, profile, budget, anchors, &[])
+}
+
+/// `automatic_journaled` of an output that is `files` read whole, in order:
+/// each file's name as the command gave it and its length in `bytes`, which
+/// they cover exactly. A read of several files too large to show whole keeps
+/// whole files and says which file every line shown comes from
+/// (`files_view`); with fewer than two files, or files that do not cover
+/// `bytes`, it is `automatic_journaled`.
+#[allow(clippy::too_many_arguments)]
+pub fn automatic_read<'a>(
+    host: &str,
+    program: Option<&str>,
+    bytes: &'a [u8],
+    path: Option<PathBuf>,
+    profile: Option<crate::commands::Profile>,
+    budget: Option<usize>,
+    anchors: &[String],
+    files: &[(String, usize)],
+) -> Cow<'a, [u8]> {
     let shape = Shape::of(profile, budget);
-    let (output, decision) = automatic_with(bytes, shape, anchors, || Store::open(path.clone()))
-        .unwrap_or_else(|_| (Cow::Borrowed(bytes), Decision::unchanged(Reason::Error)));
+    let (output, decision) =
+        automatic_with(bytes, shape, anchors, files, || Store::open(path.clone()))
+            .unwrap_or_else(|_| (Cow::Borrowed(bytes), Decision::unchanged(Reason::Error)));
     if !bytes.is_empty() {
         crate::events::record(
             path,
@@ -333,13 +359,16 @@ pub fn automatic_decision<'a>(
     profile: Option<crate::commands::Profile>,
     budget: Option<usize>,
 ) -> Result<(Cow<'a, [u8]>, Decision)> {
-    automatic_with(bytes, Shape::of(profile, budget), &[], || Store::open(path))
+    automatic_with(bytes, Shape::of(profile, budget), &[], &[], || {
+        Store::open(path)
+    })
 }
 
 fn automatic_with<'a>(
     bytes: &'a [u8],
     shape: Shape,
     anchors: &[String],
+    files: &[(String, usize)],
     store: impl FnOnce() -> Result<Store>,
 ) -> Result<(Cow<'a, [u8]>, Decision)> {
     let unchanged = |reason| Ok((Cow::Borrowed(bytes), Decision::unchanged(reason)));
@@ -371,6 +400,11 @@ fn automatic_with<'a>(
         return unchanged(Reason::NonUtf8);
     };
     let parsed = Parsed::detected(text.to_owned());
+    let json_small = bytes.len() <= JSON_SMALL
+        && matches!(
+            &parsed,
+            Parsed::Json(serde_json::Value::Object(_) | serde_json::Value::Array(_))
+        );
     let format = parsed.format();
     let data = Dataset {
         records: parsed.records("input", String::new()),
@@ -396,17 +430,28 @@ fn automatic_with<'a>(
     let failed_len = failed.as_ref().map_or(0, String::len);
     let mut anchoring = Anchoring::new(anchors);
     anchoring.focus(text);
-    let (mut result, shown) = view(
-        &data,
-        shape.budget - failed_len,
-        Some(text),
-        AUTO_MAX_LINES,
-        Kind::of(shape.profile),
-        &mut anchoring,
-    )?;
+    let whole = match files {
+        [_, _, ..] => files_view(text, files, shape.budget - failed_len, &Frame::new(&data)),
+        _ => None,
+    };
+    let (mut result, shown) = match whole {
+        Some(whole) => whole,
+        None => view(
+            &data,
+            shape.budget - failed_len,
+            Some(text),
+            AUTO_MAX_LINES,
+            Kind::of(shape.profile),
+            &mut anchoring,
+        )?,
+    };
     if let Some(line) = &failed {
         let end = result.find('\n').unwrap() + 1;
         result.insert_str(end, line);
+    }
+    // A small JSON document is shown whole (a complete table) or not at all.
+    if json_small && !result.starts_with(&Frame::new(&data).header(0, 0)) {
+        return unchanged(Reason::Small);
     }
     if shown == 0 || result.len() + 512 > bytes.len() || result.len() * 5 > bytes.len() * 4 {
         return unchanged(Reason::Savings);
@@ -2555,6 +2600,88 @@ impl Frame {
     fn header(&self, omitted: usize, abridged: usize) -> String {
         header(PLACEHOLDER_ID, omitted, abridged, self.scan_complete)
     }
+}
+
+/// A read of several whole files (`cat a.tsx b.tsx c.tsx`) too large to show
+/// whole: whole files in command order while they fit, then the first lines
+/// of the first file left out. Every block is labelled with its file and its
+/// lines in that file (`b.tsx:1-205`, lines indented by one space), and every
+/// line left out is named by file and range (`c.tsx:1-167 omitted`), so a
+/// view never shows lines scattered across files it does not name. None when
+/// `files` do not cover `text` or no line fits.
+fn files_view(
+    text: &str,
+    files: &[(String, usize)],
+    budget: usize,
+    frame: &Frame,
+) -> Option<(String, usize)> {
+    use std::fmt::Write;
+    let mut parts: Vec<(&str, Vec<&str>)> = Vec::with_capacity(files.len());
+    let mut at: usize = 0;
+    for (name, len) in files {
+        let part = text.get(at..at.checked_add(*len)?)?;
+        parts.push((name, part.split_inclusive('\n').collect()));
+        at += len;
+    }
+    if at != text.len() {
+        return None;
+    }
+    let total: usize = parts.iter().map(|(_, lines)| lines.len()).sum();
+    // Bytes of a block's label, and of its lines as written.
+    let label = |name: &str, lines: usize| name.len() + 1 + 1 + 1 + digits(lines) + 1;
+    let written = |line: &str| 1 + line.len() + usize::from(!line.ends_with('\n'));
+    // The widest omission note a file can need: `name:a-b omitted`.
+    let note =
+        |name: &str, lines: usize| name.len() + 1 + 2 * digits(lines) + 1 + " omitted\n".len();
+    let notes: usize = parts
+        .iter()
+        .filter(|(_, lines)| !lines.is_empty())
+        .map(|(name, lines)| note(name, lines.len()))
+        .sum();
+    let mut left = budget.checked_sub(frame.reserve(total) + notes)?;
+    let mut shown = vec![0; parts.len()];
+    for (i, (name, lines)) in parts.iter().enumerate() {
+        let cost = label(name, lines.len()) + lines.iter().map(|l| written(l)).sum::<usize>();
+        if !lines.is_empty() && cost <= left {
+            left -= cost;
+            left += note(name, lines.len());
+            shown[i] = lines.len();
+        }
+    }
+    if let Some(i) = (0..parts.len()).find(|&i| shown[i] < parts[i].1.len()) {
+        let (name, lines) = &parts[i];
+        if let Some(mut room) = left.checked_sub(label(name, lines.len())) {
+            for line in lines {
+                match room.checked_sub(written(line)) {
+                    Some(rest) => room = rest,
+                    None => break,
+                }
+                shown[i] += 1;
+            }
+        }
+    }
+    let kept: usize = shown.iter().sum();
+    if kept == 0 {
+        return None;
+    }
+    let mut body = String::new();
+    for ((name, lines), &k) in parts.iter().zip(&shown) {
+        if k > 0 {
+            let _ = writeln!(body, "{name}:1-{k}");
+            for line in &lines[..k] {
+                body.push(' ');
+                body.push_str(line);
+                if !line.ends_with('\n') {
+                    body.push('\n');
+                }
+            }
+        }
+        if k < lines.len() {
+            let _ = writeln!(body, "{name}:{}-{} omitted", k + 1, lines.len());
+        }
+    }
+    let output = frame.finish(&body, total - kept);
+    (output.len() <= budget).then_some((output, kept))
 }
 
 /// Selected units shown in part: lines cut behind `text_truncated`, and

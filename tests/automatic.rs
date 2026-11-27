@@ -2066,7 +2066,7 @@ fn repeat_outputs_become_a_reference_to_what_was_shown() {
     );
     assert_eq!(recovered(dir.path(), &second), log.as_bytes());
 
-    // A file read up to 16 KiB is shown whole the first time, then referenced.
+    // A file read up to 32 KiB is shown whole the first time, then referenced.
     let source = "fn parse(input: &str) -> usize { input.len() }\n".repeat(80);
     let read = bash_result("r1", "cat src/parse.rs", &source);
     assert_eq!(hook(dir.path(), "claude", read.clone()), json!({}));
@@ -2758,4 +2758,153 @@ fn failure_hook_is_installed_for_claude_only() {
     let out = cli(dir.path()).arg("doctor").output().unwrap();
     let doctor: Value = serde_json::from_slice(&out.stdout).unwrap();
     assert_eq!(doctor["integration"]["hosts"][0]["hooks_configured"], false);
+}
+
+/// The three TSX components of `bench/fixtures/cat_tsx_components.txt` (the
+/// output of `cat` on them), written as files in `dir`: each file starts at
+/// its `import React` line.
+fn tsx_components(dir: &std::path::Path) -> (String, Vec<(&'static str, String)>) {
+    let read = fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/bench/fixtures/cat_tsx_components.txt"
+    ))
+    .unwrap();
+    let names = [
+        "RatingStars.tsx",
+        "ContributionRating.tsx",
+        "RatingPanel.tsx",
+    ];
+    let mut files: Vec<(&str, String)> = Vec::new();
+    for line in read.split_inclusive('\n') {
+        if line.starts_with("import React") {
+            files.push((names[files.len()], String::new()));
+        }
+        files.last_mut().unwrap().1.push_str(line);
+    }
+    assert_eq!(files.len(), 3);
+    for (name, text) in &files {
+        fs::write(dir.join(name), text).unwrap();
+    }
+    (read, files)
+}
+
+fn read_event(dir: &std::path::Path, command: &str, stdout: &str) -> Value {
+    let mut event = bash_result(&format!("{command}{}", stdout.len()), command, stdout);
+    event["cwd"] = json!(dir);
+    event
+}
+
+/// Issue 31: a moderate read of several source files (15 KB of TSX) passes
+/// through byte-exact, whatever reads the files: an output that is the named
+/// files read whole is a file read even when the command line is not one the
+/// grammar knows.
+#[test]
+fn a_moderate_multi_file_source_read_passes_through() {
+    let dir = tempfile::tempdir().unwrap();
+    let work = dir.path().join("src");
+    fs::create_dir(&work).unwrap();
+    let (read, _) = tsx_components(&work);
+    assert!(read.len() > 14_000 && read.len() < 16_384, "{}", read.len());
+    let names = "RatingStars.tsx ContributionRating.tsx RatingPanel.tsx";
+    for command in [
+        format!("cat {names}"),
+        format!("awk 1 {names}"),
+        format!("cd src && awk 1 {names}"),
+        format!("echo {names} | xargs cat"),
+    ] {
+        let cwd = if command.starts_with("cd ") {
+            dir.path()
+        } else {
+            &work
+        };
+        let event = read_event(cwd, &command, &read);
+        assert_eq!(hook(dir.path(), "claude", event), json!({}), "{command}");
+    }
+    // A host that trimmed the trailing newline still shows the files read.
+    let trimmed = read.trim_end();
+    let event = read_event(&work, &format!("awk 1 {names}"), trimmed);
+    assert_eq!(hook(dir.path(), "claude", event), json!({}));
+    // Bytes that are not the files' contents are not a file read: an
+    // unrecognized command keeps the generic budget.
+    let edited = read.replacen("useCallback", "useMemo", 1);
+    let event = read_event(&work, &format!("awk 1 {names}"), &edited);
+    let view = shown(&event, &hook(dir.path(), "claude", event.clone()), "stdout");
+    assert!(view.len() <= 4096, "{}", view.len());
+}
+
+/// A read of several files too large to show whole keeps whole files, each
+/// labelled with its name and lines, and names every line left out by file
+/// and range, instead of scattered unlabelled lines.
+#[test]
+fn a_large_multi_file_read_keeps_whole_files_named() {
+    let dir = tempfile::tempdir().unwrap();
+    let (_, mut files) = tsx_components(dir.path());
+    let generated: String = (0..900)
+        .map(|i| format!("export const MESSAGE_{i:04} = \"message number {i}\";\n"))
+        .collect();
+    fs::write(dir.path().join("messages.ts"), &generated).unwrap();
+    files.insert(1, ("messages.ts", generated));
+    let names: Vec<&str> = files.iter().map(|(name, _)| *name).collect();
+    let read: String = files.iter().map(|(_, text)| text.as_str()).collect();
+    assert!(read.len() > 32 * 1024, "{}", read.len());
+    let event = read_event(dir.path(), &format!("cat {}", names.join(" ")), &read);
+    let view = shown(&event, &hook(dir.path(), "claude", event.clone()), "stdout");
+    assert!(view.len() <= 16 * 1024, "{}", view.len());
+    let mut lines = view.lines();
+    assert!(lines.next().unwrap().contains(" omitted="), "{view}");
+    let body: Vec<&str> = lines.collect();
+    // Every block is a whole file or a file's first lines, labelled
+    // `name:1-k`, and what is left out is `name:a-b omitted`.
+    let mut i = 0;
+    for (name, text) in &files {
+        let total = text.lines().count();
+        let mut kept = 0;
+        if let Some(range) = body[i].strip_prefix(&format!("{name}:1-")) {
+            kept = range.parse::<usize>().unwrap();
+            for (shown, line) in body[i + 1..=i + kept].iter().zip(text.lines()) {
+                assert_eq!(shown.strip_prefix(' '), Some(line), "{name}");
+            }
+            i += kept + 1;
+        }
+        if kept < total {
+            assert_eq!(body[i], format!("{name}:{}-{total} omitted", kept + 1));
+            i += 1;
+        }
+    }
+    assert_eq!(i, body.len(), "{view}");
+    // The three components fit whole; the long generated file does not.
+    for (name, text) in files.iter().filter(|(name, _)| name.ends_with(".tsx")) {
+        let label = format!("{name}:1-{}", text.lines().count());
+        assert!(body.contains(&label.as_str()), "{label} in {view}");
+    }
+    assert!(view.contains("messages.ts:"), "{view}");
+    assert!(view.contains(" omitted\n"), "{view}");
+    assert_eq!(recovered(dir.path(), &view), read.as_bytes());
+}
+
+/// Issue 31: a `gh ... --json` answer of a few KB stays intact; a cut string
+/// field hid the body the agent was asked to review.
+#[test]
+fn a_small_json_document_is_never_cut() {
+    let dir = tempfile::tempdir().unwrap();
+    let json = fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/bench/fixtures/gh_pr_view_json.txt"
+    ))
+    .unwrap();
+    assert!(json.len() > 4096 && json.len() <= compress::JSON_SMALL);
+    let command =
+        "gh pr view 412 --json author,body,comments,files,labels,number,reviews,state,title";
+    let event = bash_result("gh", command, &json);
+    assert_eq!(hook(dir.path(), "claude", event), json!({}));
+    let kept = compress::automatic_decision(json.as_bytes(), Some(dir.path().into()), None, None)
+        .unwrap()
+        .0;
+    assert_eq!(kept.as_ref(), json.as_bytes());
+    // A larger document is still compressed to the default budget.
+    let large = format!("[{json},{json}]");
+    let view = compress::automatic_decision(large.as_bytes(), Some(dir.path().into()), None, None)
+        .unwrap()
+        .0;
+    assert!(view.len() <= compress::DEFAULT_BUDGET, "{}", view.len());
 }

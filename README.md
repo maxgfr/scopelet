@@ -132,7 +132,7 @@ the output exactly as printed.
 
 ```mermaid
 flowchart TD
-    A["A command prints its output<br/>Claude Code and OpenCode hooks, Codex through run --auto"] --> B{"Small?<br/>up to 2 KiB, 16 KiB for a file read"}
+    A["A command prints its output<br/>Claude Code and OpenCode hooks, Codex through run --auto"] --> B{"Small?<br/>up to 2 KiB, 32 KiB for a file read,<br/>8 KiB for a JSON document"}
     B -->|yes| M["The model reads it unchanged"]
     B -->|no| C["Profile from the command<br/>tests, search, git, logs, file read, install"]
     C --> D["Bounded view, within the profile's budget<br/>terminal noise removed, repeats counted,<br/>diagnostics and their locations first"]
@@ -364,8 +364,12 @@ is left alone, and `SCOPELET_LOOPGUARD=0` turns the note off.
 
 Each recognized command gets a budget that fits what its output is for: 2 KiB
 for package installs, 4 KiB for tests, 8 KiB for searches, Git and logs, 16 KiB
-for file reads, which stay whole up to 16 KiB so an ordinary source file is read
-as written. Small automatic outputs never open the cache store. A local
+for file reads, which stay whole up to 32 KiB so an ordinary source file, or a
+few read together, is read as written. In Claude Code an output that is, byte
+for byte, files the command line names (`cat a.tsx b.tsx`, `awk 1 a.tsx`) is a
+file read whatever the command; when several such files are too large to show
+whole, the view keeps whole files, each under its name. A JSON document up to
+8 KiB (`gh pr view --json`) is never shown in part. Small automatic outputs never open the cache store. A local
 journal, never transmitted, records each decision; `scopelet stats` shows
 compressions, bytes saved, why outputs passed through, repeats, loop notes, which programs
 were compressed without a profile, and per profile how often a view was
@@ -388,6 +392,7 @@ colour codes and keeping only the final state of a progress bar. Then:
 | `4 similar=480 last=492 text` | 480 lines share this shape, first at 4, last at 492 |
 | `7 text_truncated bytes=12000 prefix…` | one line too big for the budget, cut on a character boundary |
 | `40-44` then indented lines | lines 40 to 44 verbatim, one space of indent each |
+| `src/a.tsx:1-191` then indented lines, `src/b.tsx:1-205 omitted` | a read of several files: lines 1 to 191 of `src/a.tsx` verbatim; lines 1 to 205 of `src/b.tsx` left out |
 | `40-44 file=src/a.rs more=7` then ` 12:text` | search results of one file, its path written once; 7 of its matches not shown |
 | `9-95 file=Cargo.lock changed=+43/-3 omitted` | a lockfile's or generated file's diff, counted |
 | `src/components/ files=402 ext=tsx:400,ts:2` | a large directory of a listing, with its first and last entries |

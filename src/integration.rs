@@ -772,13 +772,85 @@ fn context_key(event: &Value) -> Option<String> {
 
 /// What a Claude Code tool result offers for compression: the string fields
 /// that carry its text, the profile that shapes them and the size up to which
-/// they stay exact, the command its anchors come from and extra anchors.
+/// they stay exact, the command its anchors come from and extra anchors, and
+/// the files the first field is, read whole (`read_files`).
 struct ClaudeResult<'a> {
     fields: &'static [&'static str],
     profile: Option<Profile>,
     small: usize,
     command: &'a str,
     anchors: Vec<String>,
+    files: Vec<(String, usize)>,
+}
+
+/// Files the command line names that are listed before reading any: a
+/// longer list is not one read.
+const READ_FILES: usize = 64;
+
+/// The files a Bash output is, byte for byte: regular files the command line
+/// names (outside its options and its programs), in order, whose contents
+/// together are the output, but for trailing whitespace the host may have
+/// trimmed. Names resolve against the event's absolute working directory and
+/// a `cd` before them. Each comes with its name as the command gave it and
+/// its length in the output. Whatever reads them (`cat`, `awk 1`, `xargs
+/// cat`), such an output is an explicit file read; None when it is not
+/// exactly that. Sizes are checked before any file is read, so a command
+/// naming a large file is not read again.
+fn read_files(command: &str, event: &Value, output: &str) -> Option<Vec<(String, usize)>> {
+    let cwd = event["cwd"].as_str().map(Path::new)?;
+    if !cwd.is_absolute() || output.is_empty() || output.len() > MAX_INPUT {
+        return None;
+    }
+    // Trailing whitespace the host trimmed, at most.
+    const TRIMMED: u64 = 64;
+    let mut dir = cwd.to_path_buf();
+    let mut named: Vec<(&str, PathBuf)> = Vec::new();
+    let mut total: u64 = 0;
+    let commands = crate::commands::lenient_commands(command);
+    for argv in &commands {
+        if Path::new(&argv[0]).file_name().is_some_and(|n| n == "cd") {
+            match argv.as_slice() {
+                [_, to] => dir = dir.join(to),
+                _ => return None,
+            }
+            continue;
+        }
+        for word in &argv[1..] {
+            if word.is_empty() || word.starts_with('-') {
+                continue;
+            }
+            let path = dir.join(word);
+            let Ok(meta) = fs::metadata(&path) else {
+                continue;
+            };
+            if !meta.is_file() {
+                continue;
+            }
+            total += meta.len();
+            named.push((word, path));
+            if named.len() > READ_FILES || total > output.len() as u64 + TRIMMED {
+                return None;
+            }
+        }
+    }
+    if named.is_empty() || total < output.len() as u64 {
+        return None;
+    }
+    let output = output.as_bytes();
+    let mut files = Vec::with_capacity(named.len());
+    let mut at = 0;
+    for (name, path) in named {
+        // Bounded: a file may have grown, or been replaced, since its size.
+        let content = crate::store::read_bounded(&path, output.len() + TRIMMED as usize).ok()?;
+        let end = output.len().min(at + content.len());
+        let (shown, rest) = content.split_at(end - at);
+        if output[at..end] != *shown || !rest.iter().all(u8::is_ascii_whitespace) {
+            return None;
+        }
+        files.push((name.to_owned(), end - at));
+        at = end;
+    }
+    (at == output.len()).then_some(files)
 }
 
 /// The fields of a Claude Code result to compress, or None for a shape left
@@ -801,6 +873,7 @@ fn claude_fields(event: &Value) -> Option<ClaudeResult<'_>> {
             small: compress::SMALL,
             command: "",
             anchors,
+            files: Vec::new(),
         });
     }
     let command = event["tool_input"]["command"].as_str().unwrap_or("");
@@ -811,13 +884,24 @@ fn claude_fields(event: &Value) -> Option<ClaudeResult<'_>> {
     {
         return None;
     }
-    let (profile, small) = limits(command);
+    // An output that is files read whole is a file read, however the
+    // command line reads them; only an output that may be compressed is
+    // checked against the files.
+    let stdout = output["stdout"].as_str().unwrap();
+    let files = (stdout.len() > compress::SMALL)
+        .then(|| read_files(command, event, stdout))
+        .flatten();
+    let (profile, small) = match files {
+        Some(_) => (Some(Profile::FileRead), Profile::FileRead.small()),
+        None => limits(command),
+    };
     Some(ClaudeResult {
         fields: &["stdout", "stderr"],
         profile,
         small,
         command,
         anchors: Vec::new(),
+        files: files.unwrap_or_default(),
     })
 }
 
@@ -833,6 +917,7 @@ fn claude_result(event: &Value) -> Result<Value> {
         small,
         command,
         anchors: extra,
+        files,
     } = result;
     let mut output = event["tool_response"].clone();
     let total: usize = fields
@@ -922,7 +1007,8 @@ fn claude_result(event: &Value) -> Result<Value> {
         if raw.len() > MAX_INPUT {
             return Ok(json!({}));
         }
-        let small = compress::automatic_journaled(
+        // The files read are those of the first field, stdout.
+        let small = compress::automatic_read(
             "claude",
             program,
             raw.as_bytes(),
@@ -930,6 +1016,7 @@ fn claude_result(event: &Value) -> Result<Value> {
             profile,
             None,
             &anchors,
+            if i == 0 { &files } else { &[] },
         );
         if small.as_ref() != raw.as_bytes() {
             output[*field] = json!(String::from_utf8(small.into_owned())?);

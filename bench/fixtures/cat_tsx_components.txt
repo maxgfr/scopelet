@@ -1,0 +1,563 @@
+import React, { useCallback, useMemo, useState } from "react";
+import { css } from "@styled-system/css";
+
+import { StarIcon } from "../icons/StarIcon";
+import { useReducedMotion } from "../hooks/useReducedMotion";
+
+export type RatingValue = 0 | 1 | 2 | 3 | 4 | 5;
+
+export interface RatingStarsProps {
+  /** Current value; 0 means nothing selected yet. */
+  value: RatingValue;
+  /** Called with the new value when a star is chosen. */
+  onChange?: (value: RatingValue) => void;
+  /** Number of stars to render. */
+  max?: 5;
+  /** Accessible label of the whole group. */
+  label: string;
+  /** Read-only stars render as an image with a text alternative. */
+  readOnly?: boolean;
+  size?: "small" | "medium" | "large";
+  disabled?: boolean;
+  className?: string;
+}
+
+const SIZES: Record<NonNullable<RatingStarsProps["size"]>, number> = {
+  small: 16,
+  medium: 24,
+  large: 32,
+};
+
+const STAR_LABELS = [
+  "Very poor",
+  "Poor",
+  "Average",
+  "Good",
+  "Excellent",
+] as const;
+
+function clamp(value: number, max: number): RatingValue {
+  if (Number.isNaN(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(max, Math.round(value))) as RatingValue;
+}
+
+export const RatingStars = ({
+  value,
+  onChange,
+  max = 5,
+  label,
+  readOnly = false,
+  size = "medium",
+  disabled = false,
+  className,
+}: RatingStarsProps) => {
+  const [hovered, setHovered] = useState<RatingValue | null>(null);
+  const reducedMotion = useReducedMotion();
+  const pixels = SIZES[size];
+
+  const shown = hovered ?? value;
+
+  const stars = useMemo(
+    () => Array.from({ length: max }, (_, index) => (index + 1) as RatingValue),
+    [max]
+  );
+
+  const select = useCallback(
+    (star: RatingValue) => {
+      if (readOnly || disabled || !onChange) {
+        return;
+      }
+      onChange(star === value ? 0 : star);
+    },
+    [disabled, onChange, readOnly, value]
+  );
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (readOnly || disabled) {
+        return;
+      }
+      switch (event.key) {
+        case "ArrowRight":
+        case "ArrowUp":
+          event.preventDefault();
+          select(clamp(value + 1, max));
+          break;
+        case "ArrowLeft":
+        case "ArrowDown":
+          event.preventDefault();
+          select(clamp(value - 1, max));
+          break;
+        case "Home":
+          event.preventDefault();
+          select(1);
+          break;
+        case "End":
+          event.preventDefault();
+          select(clamp(max, max));
+          break;
+        default:
+          break;
+      }
+    },
+    [disabled, max, readOnly, select, value]
+  );
+
+  if (readOnly) {
+    return (
+      <span
+        role="img"
+        aria-label={`${label}: ${value} out of ${max}`}
+        className={`${wrapperStyle} ${className ?? ""}`}
+      >
+        {stars.map((star) => (
+          <StarIcon
+            key={star}
+            width={pixels}
+            height={pixels}
+            filled={star <= value}
+            aria-hidden="true"
+          />
+        ))}
+      </span>
+    );
+  }
+
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? -1 : 0}
+      onKeyDown={handleKeyDown}
+      onMouseLeave={() => setHovered(null)}
+      className={`${wrapperStyle} ${className ?? ""}`}
+    >
+      {stars.map((star) => {
+        const active = star <= shown;
+        return (
+          <button
+            key={star}
+            type="button"
+            role="radio"
+            aria-checked={star === value}
+            aria-label={STAR_LABELS[star - 1]}
+            title={STAR_LABELS[star - 1]}
+            disabled={disabled}
+            tabIndex={-1}
+            onClick={() => select(star)}
+            onMouseEnter={() => setHovered(star)}
+            onFocus={() => setHovered(star)}
+            onBlur={() => setHovered(null)}
+            className={buttonStyle({ active, animated: !reducedMotion })}
+          >
+            <StarIcon width={pixels} height={pixels} filled={active} />
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
+const wrapperStyle = css({
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "0.25rem",
+  outline: "none",
+  borderRadius: "0.25rem",
+  _focusVisible: {
+    boxShadow: "0 0 0 2px var(--colors-focus)",
+  },
+});
+
+const buttonStyle = ({ active, animated }: { active: boolean; animated: boolean }) =>
+  css({
+    display: "inline-flex",
+    padding: "0.125rem",
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    color: active ? "var(--colors-star-active)" : "var(--colors-star-idle)",
+    transition: animated ? "transform 120ms ease-out, color 120ms" : "none",
+    _hover: {
+      transform: animated ? "scale(1.15)" : "none",
+    },
+    _disabled: {
+      cursor: "not-allowed",
+      opacity: 0.5,
+    },
+  });
+import React, { useEffect, useReducer, useRef } from "react";
+import { css } from "@styled-system/css";
+
+import { RatingStars, RatingValue } from "./RatingStars";
+import { sendFeedback } from "../api/feedback";
+import { useTracking } from "../hooks/useTracking";
+
+type Status = "idle" | "submitting" | "submitted" | "error";
+
+interface State {
+  rating: RatingValue;
+  comment: string;
+  status: Status;
+  error?: string;
+}
+
+type Action =
+  | { type: "rate"; rating: RatingValue }
+  | { type: "comment"; comment: string }
+  | { type: "submit" }
+  | { type: "success" }
+  | { type: "failure"; error: string }
+  | { type: "reset" };
+
+const initialState: State = { rating: 0, comment: "", status: "idle" };
+
+export const COMMENT_MAX_LENGTH = 500;
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "rate":
+      return { ...state, rating: action.rating, status: "idle", error: undefined };
+    case "comment":
+      return { ...state, comment: action.comment.slice(0, COMMENT_MAX_LENGTH) };
+    case "submit":
+      return { ...state, status: "submitting", error: undefined };
+    case "success":
+      return { ...state, status: "submitted" };
+    case "failure":
+      return { ...state, status: "error", error: action.error };
+    case "reset":
+      return initialState;
+    default:
+      return state;
+  }
+}
+
+export interface ContributionRatingProps {
+  contributionSlug: string;
+  idcc?: string;
+  title: string;
+  onSubmitted?: (rating: RatingValue) => void;
+}
+
+export const ContributionRating = ({
+  contributionSlug,
+  idcc,
+  title,
+  onSubmitted,
+}: ContributionRatingProps) => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { emitRatingEvent, emitCommentEvent } = useTracking();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const askComment = state.rating > 0 && state.rating <= 3;
+
+  useEffect(() => {
+    if (askComment && state.status === "idle") {
+      textareaRef.current?.focus();
+    }
+  }, [askComment, state.status]);
+
+  useEffect(() => {
+    dispatch({ type: "reset" });
+  }, [contributionSlug, idcc]);
+
+  const handleRate = (rating: RatingValue) => {
+    dispatch({ type: "rate", rating });
+    if (rating > 0) {
+      emitRatingEvent(contributionSlug, rating, idcc);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (state.rating === 0 || state.status === "submitting") {
+      return;
+    }
+    dispatch({ type: "submit" });
+    try {
+      await sendFeedback({
+        slug: contributionSlug,
+        idcc,
+        rating: state.rating,
+        comment: state.comment.trim() || undefined,
+      });
+      if (state.comment.trim()) {
+        emitCommentEvent(contributionSlug, state.comment.length);
+      }
+      dispatch({ type: "success" });
+      onSubmitted?.(state.rating);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unexpected error while sending feedback";
+      dispatch({ type: "failure", error: message });
+    }
+  };
+
+  if (state.status === "submitted") {
+    return (
+      <p role="status" className={thanksStyle}>
+        Thank you, your feedback on “{title}” was recorded.
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className={formStyle} aria-busy={state.status === "submitting"}>
+      <fieldset className={fieldsetStyle}>
+        <legend className={legendStyle}>Was this answer useful?</legend>
+        <RatingStars
+          label={`Rate “${title}”`}
+          value={state.rating}
+          onChange={handleRate}
+          disabled={state.status === "submitting"}
+        />
+      </fieldset>
+
+      {askComment && (
+        <div className={commentStyle}>
+          <label htmlFor={`comment-${contributionSlug}`}>
+            What was missing? (optional)
+          </label>
+          <textarea
+            id={`comment-${contributionSlug}`}
+            ref={textareaRef}
+            value={state.comment}
+            maxLength={COMMENT_MAX_LENGTH}
+            rows={4}
+            onChange={(event) => dispatch({ type: "comment", comment: event.target.value })}
+          />
+          <span className={counterStyle} aria-live="polite">
+            {state.comment.length}/{COMMENT_MAX_LENGTH}
+          </span>
+        </div>
+      )}
+
+      {state.status === "error" && (
+        <p role="alert" className={errorStyle}>
+          {state.error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        className={submitStyle}
+        disabled={state.rating === 0 || state.status === "submitting"}
+      >
+        {state.status === "submitting" ? "Sending…" : "Send"}
+      </button>
+    </form>
+  );
+};
+
+const formStyle = css({
+  display: "flex",
+  flexDirection: "column",
+  gap: "1rem",
+  padding: "1.5rem",
+  borderRadius: "0.5rem",
+  background: "var(--colors-surface)",
+});
+
+const fieldsetStyle = css({ border: "none", margin: 0, padding: 0 });
+
+const legendStyle = css({ fontWeight: 600, marginBottom: "0.5rem" });
+
+const commentStyle = css({
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.25rem",
+  "& textarea": {
+    resize: "vertical",
+    minHeight: "6rem",
+    padding: "0.5rem",
+    borderRadius: "0.25rem",
+    border: "1px solid var(--colors-border)",
+  },
+});
+
+const counterStyle = css({ alignSelf: "flex-end", fontSize: "0.75rem", color: "var(--colors-muted)" });
+
+const errorStyle = css({ color: "var(--colors-error)", margin: 0 });
+
+const thanksStyle = css({ color: "var(--colors-success)", fontWeight: 600 });
+
+const submitStyle = css({
+  alignSelf: "flex-start",
+  padding: "0.5rem 1.25rem",
+  borderRadius: "0.25rem",
+  border: "none",
+  background: "var(--colors-primary)",
+  color: "white",
+  cursor: "pointer",
+  _disabled: { opacity: 0.5, cursor: "not-allowed" },
+});
+import React, { useMemo, useState } from "react";
+import { css } from "@styled-system/css";
+
+import { ContributionRating } from "./ContributionRating";
+import { RatingStars, RatingValue } from "./RatingStars";
+import { useRatingSummary } from "../hooks/useRatingSummary";
+
+export interface RatingPanelProps {
+  contributionSlug: string;
+  title: string;
+  idcc?: string;
+  /** Hide the aggregated score, e.g. while it is being recomputed. */
+  hideSummary?: boolean;
+}
+
+function average(counts: number[]): number {
+  const total = counts.reduce((sum, count) => sum + count, 0);
+  if (total === 0) {
+    return 0;
+  }
+  const weighted = counts.reduce((sum, count, index) => sum + count * (index + 1), 0);
+  return weighted / total;
+}
+
+function percent(count: number, total: number): string {
+  return total === 0 ? "0%" : `${Math.round((count / total) * 100)}%`;
+}
+
+export const RatingPanel = ({
+  contributionSlug,
+  title,
+  idcc,
+  hideSummary = false,
+}: RatingPanelProps) => {
+  const { data, isLoading, error, refresh } = useRatingSummary(contributionSlug, idcc);
+  const [justRated, setJustRated] = useState<RatingValue | null>(null);
+
+  const counts = data?.counts ?? [0, 0, 0, 0, 0];
+  const total = counts.reduce((sum, count) => sum + count, 0);
+  const mean = useMemo(() => average(counts), [counts]);
+
+  const handleSubmitted = (rating: RatingValue) => {
+    setJustRated(rating);
+    void refresh();
+  };
+
+  return (
+    <section aria-labelledby={`rating-${contributionSlug}`} className={panelStyle}>
+      <h2 id={`rating-${contributionSlug}`} className={titleStyle}>
+        Your opinion
+      </h2>
+
+      {!hideSummary && (
+        <div className={summaryStyle}>
+          {isLoading && <p className={mutedStyle}>Loading ratings…</p>}
+          {error && (
+            <p role="alert" className={mutedStyle}>
+              Ratings are unavailable right now.
+            </p>
+          )}
+          {!isLoading && !error && total > 0 && (
+            <>
+              <RatingStars
+                readOnly
+                label="Average rating"
+                value={Math.round(mean) as RatingValue}
+                size="small"
+              />
+              <span className={scoreStyle}>
+                {mean.toFixed(1)} / 5 · {total} {total === 1 ? "rating" : "ratings"}
+              </span>
+              <ul className={barsStyle}>
+                {counts
+                  .map((count, index) => ({ count, star: index + 1 }))
+                  .reverse()
+                  .map(({ count, star }) => (
+                    <li key={star} className={barRowStyle}>
+                      <span>{star}★</span>
+                      <span className={barTrackStyle}>
+                        <span
+                          className={barFillStyle}
+                          style={{ width: percent(count, total) }}
+                        />
+                      </span>
+                      <span className={mutedStyle}>{percent(count, total)}</span>
+                    </li>
+                  ))}
+              </ul>
+            </>
+          )}
+          {!isLoading && !error && total === 0 && (
+            <p className={mutedStyle}>Be the first to rate this answer.</p>
+          )}
+        </div>
+      )}
+
+      {justRated !== null ? (
+        <p role="status" className={mutedStyle}>
+          You rated this answer {justRated} out of 5.
+        </p>
+      ) : (
+        <ContributionRating
+          contributionSlug={contributionSlug}
+          idcc={idcc}
+          title={title}
+          onSubmitted={handleSubmitted}
+        />
+      )}
+    </section>
+  );
+};
+
+const panelStyle = css({
+  display: "grid",
+  gridTemplateColumns: { base: "1fr", md: "minmax(0, 1fr) minmax(0, 2fr)" },
+  gap: "1.5rem",
+  marginTop: "2rem",
+  padding: "1.5rem",
+  borderTop: "1px solid var(--colors-border)",
+});
+
+const titleStyle = css({
+  gridColumn: "1 / -1",
+  fontSize: "1.25rem",
+  fontWeight: 700,
+  margin: 0,
+});
+
+const summaryStyle = css({
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.5rem",
+});
+
+const scoreStyle = css({ fontSize: "0.875rem", fontWeight: 600 });
+
+const mutedStyle = css({ fontSize: "0.875rem", color: "var(--colors-muted)", margin: 0 });
+
+const barsStyle = css({
+  listStyle: "none",
+  margin: 0,
+  padding: 0,
+  display: "flex",
+  flexDirection: "column",
+  gap: "0.25rem",
+});
+
+const barRowStyle = css({
+  display: "grid",
+  gridTemplateColumns: "2rem 1fr 3rem",
+  alignItems: "center",
+  gap: "0.5rem",
+  fontSize: "0.75rem",
+});
+
+const barTrackStyle = css({
+  height: "0.5rem",
+  borderRadius: "999px",
+  background: "var(--colors-track)",
+  overflow: "hidden",
+});
+
+const barFillStyle = css({
+  display: "block",
+  height: "100%",
+  background: "var(--colors-star-active)",
+});

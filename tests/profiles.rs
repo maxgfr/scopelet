@@ -191,7 +191,7 @@ fn profile_budgets_grow_with_what_the_output_is_for() {
         assert_eq!(profile.small(), 2048);
     }
     assert_eq!(Profile::FileRead.budget(), 16384);
-    assert_eq!(Profile::FileRead.small(), 16384);
+    assert_eq!(Profile::FileRead.small(), 32768);
     assert_eq!(Profile::Install.budget(), 2048);
     assert_eq!(Profile::Install.small(), 2048);
 }
@@ -321,7 +321,7 @@ fn hook(dir: &std::path::Path, agent: &str, event: Value) -> Value {
 #[test]
 fn codex_rewrites_carry_the_profile_budget() {
     let dir = tempfile::tempdir().unwrap();
-    std::fs::write(dir.path().join("big.rs"), "fn x() {}\n".repeat(2000)).unwrap();
+    std::fs::write(dir.path().join("big.rs"), "fn x() {}\n".repeat(4000)).unwrap();
     std::fs::write(dir.path().join("mid.rs"), "fn x() {}\n".repeat(1000)).unwrap();
     let command = |line: &str| {
         let event = json!({"hook_event_name":"PreToolUse","tool_name":"Bash","cwd":dir.path(),"tool_input":{"command":line}});
@@ -377,7 +377,7 @@ fn claude_keeps_ordinary_source_reads_whole_and_compresses_large_ones() {
         ),
         json!({})
     );
-    // A read in pieces is a file read too: it stays whole below 16 KiB.
+    // A read in pieces is a file read too: it stays whole below 32 KiB.
     for command in [
         "sed -n 1,150p src/lib.rs; sed -n 150,300p src/lib.rs",
         "cat src/lib.rs src/main.rs",

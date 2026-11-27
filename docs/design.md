@@ -184,8 +184,10 @@ context was already shown becomes a one-line repeat reference that recovers it
 All originals remain available. Automatic detection of malformed JSONL falls
 back to text selection and never asserts an exact aggregate.
 
-Automatic inputs up to 2048 bytes remain unchanged (16 KiB for a recognized
-file read). Larger inputs have a 4096 byte target per stream (the recognized
+Automatic inputs up to 2048 bytes remain unchanged (32 KiB for a recognized
+file read). A JSON document (one object or array) up to 8 KiB is never shown
+in part, whatever its profile: it stays unchanged unless a complete view (a
+lossless table) is smaller, since a partial view cuts its string fields. Larger inputs have a 4096 byte target per stream (the recognized
 command's profile target when there is one) and need both 512 bytes and 20%
 savings including all metadata before replacement. Non-UTF-8 input, existing
 Scopelet output and host persisted-output previews remain unchanged; those
@@ -202,7 +204,7 @@ host and cannot recover an earlier truncation.
 Automatic runs and Claude hooks avoid opening the store when both streams fit
 the small-output threshold. Codex also bypasses the wrapper for a plain `cat` or
 `nl` of a regular file whose metadata reports at most the file-read threshold
-(16 KiB). Relative paths require
+(32 KiB). Relative paths require
 a known absolute working directory. Metadata only chooses whether to compress:
 the native command still reads the current file and enforces host permissions.
 A file growing after the check stays correct, though that read may miss savings.
@@ -355,7 +357,7 @@ and `--web` is never recognized); and file reads (`cat`,
 `rtk` are recognized by the program they run, not by a substring.
 Each recognized command has a profile that sets its byte target: 4 KiB for
 tests, 8 KiB for searches, Git and logs, 16 KiB for file reads and 2 KiB for
-installs. A file read also stays exact up to 16 KiB, and it is not ranked by diagnostic
+installs. A file read also stays exact up to 32 KiB, and it is not ranked by diagnostic
 words (a string saying `error` in source code is not an outcome). Hooks take
 the profile from the parsed command (Codex passes `run --auto --profile`;
 Claude Code and OpenCode classify the command after the fact). Classifying
@@ -367,7 +369,17 @@ open a compound command (`do`, `then`, `else`, `elif`, `if`, `while`,
 (`for …`, `select …`, `case …`, `done`, `fi`, `esac`, `}`), and takes the
 first recognized command (`for f in a b; do cat "$f"; done` reads files), where `cat` of several files or with `-n`/`-b`/`-s`/`-v`
 and `nl` with its numbering options also read files (`sed -n 1,80p a; sed -n
-1,80p b`, `cat a b`, `nl -ba f | sed -n 40,90p`). Codex's grammar and what it
+1,80p b`, `cat a b`, `nl -ba f | sed -n 40,90p`). Claude Code's hook also
+reads its stdout as a file read when it is, byte for byte, regular files the
+command line names (outside programs and options), in order: whatever reads
+them (`awk 1 a b`, `echo a b | xargs cat`), and with trailing whitespace the
+host trimmed. Names resolve against the event's absolute `cwd` and any `cd`
+before them; sizes are compared before a file is read, at most 64 files are
+listed, and a mismatch keeps the command's profile. When at least two such
+files are too large to show whole, the view keeps whole files in command order
+while they fit, then the first lines of the first one left out: each block is
+`name:1-K` with its lines indented by one space, and every line left out is
+named `name:A-B omitted`; no line is shown without its file. Codex's grammar and what it
 wraps are unchanged. The shell grammar and permission envelope remain in
 force. Watch/debug/interactive forms (`--watch`, `--watchAll`, `--watch-path`,
 `tsc -w`, Gradle's `--continuous`/`-t`, pytest's `-f`/`--looponfail`, `dotnet
