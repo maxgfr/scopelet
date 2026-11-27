@@ -99,9 +99,30 @@
   },
   "rust_large": {
     "profile": "file-read",
-    "min_reduction": 20,
+    "min_reduction": null,
     "visible": true,
-    "facts": ["\n }\n", "\n \n", "pub fn install(agent: Agent, remove: bool) -> Result<Value> {"],
+    "facts": ["\n}\n", "\n\n", "pub fn install(agent: Agent, remove: bool) -> Result<Value> {"],
+    "pending_facts": []
+  },
+  "rust_xlarge": {
+    "profile": "file-read",
+    "min_reduction": 60,
+    "visible": true,
+    "facts": ["\n }\n", "\n \n", "pub fn hook_stdin(agent: Agent) -> Result<Value> {"],
+    "pending_facts": []
+  },
+  "cat_tsx_components": {
+    "profile": "file-read",
+    "min_reduction": null,
+    "visible": true,
+    "facts": ["  const handleKeyDown = useCallback(", "  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {", "  const { data, isLoading, error, refresh } = useRatingSummary(contributionSlug, idcc);", "const barFillStyle = css({"],
+    "pending_facts": []
+  },
+  "gh_pr_view_json": {
+    "profile": null,
+    "min_reduction": null,
+    "visible": true,
+    "facts": ["\"number\":412", "\"title\":\"Refresh session tokens before they expire\"", "REVIEW-MARKER-END-OF-BODY"],
     "pending_facts": []
   }
 }

@@ -182,12 +182,12 @@ needed. Other policy hooks
 must remain enabled. Interactive commands should always use native tools.
 
 Small automatic outputs do not open the cache. Codex leaves a plain `cat` of a
-known regular file up to 16 KiB native; missing paths, unknown working directories
+known regular file up to 32 KiB native; missing paths, unknown working directories
 and larger files retain the normal command path. The host still reads the file
 and enforces its permissions, so a subsequent file change is not hidden.
 
-Compression leaves outputs up to 2 KiB intact (16 KiB for a recognized file
-read). Larger outputs are replaced only if the complete replacement saves at
+Compression leaves outputs up to 2 KiB intact (32 KiB for a recognized file
+read, 8 KiB for a JSON document unless a complete table of it is smaller). Larger outputs are replaced only if the complete replacement saves at
 least 20% and 512 bytes, with a 4 KiB target per stream, or the recognized
 command's target. Repetitions have counts; selected lines stay exact; omissions and
 immutable recovery references are explicit. A host-truncated input cannot be
@@ -243,8 +243,8 @@ logs`/`kubectl logs` without `-f`, `jq` on a file); and file reads (`cat`,
 `nl`, `head`/`tail` without `-f`, print-only `sed -n`). Scopelet itself and
 `rtk` are recognized by the program they run, not by a substring.
 Each kind has its own byte target: 4 KiB for tests, 8 KiB for searches, Git
-and logs, 16 KiB for file reads, which also stay exact up to 16 KiB so an
-ordinary source file is read whole, and 2 KiB for installs. Unsupported syntax still runs
+and logs, 16 KiB for file reads, which also stay exact up to 32 KiB so an
+ordinary source file, or a few read together, is read whole, and 2 KiB for installs. Unsupported syntax still runs
 natively. Recognition
 permits wrapping; it does not guarantee compression. Outputs are replaced only
 when the complete view clears the existing savings gate. Rejected compression
